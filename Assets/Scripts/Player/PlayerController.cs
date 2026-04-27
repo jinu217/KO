@@ -147,7 +147,7 @@ public class PlayerController : MonoBehaviour
 
         currentHp = GameManager.Instance.playerMaxHp;
 
-        inventoryUI = FindObjectOfType<InventoryUI>(); // InventoryUI 찾기
+        inventoryUI = FindFirstObjectByType<InventoryUI>(); // InventoryUI 찾기
 
     }
 
