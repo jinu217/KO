@@ -529,11 +529,11 @@ public class PlayerController : MonoBehaviour
 
         // 포션 회복량 계산 (고정값 + %)
 
-        float fixedHeal = GameManager.Instance.potionHealAmount;
+        float baseHeal = GameManager.Instance.potionHealAmount;
 
-        float percentHeal = GameManager.Instance.playerMaxHp * GameManager.Instance.potionHealPercent;
+        float percentHeal = baseHeal * GameManager.Instance.potionHealPercent;
 
-        float totalHeal = fixedHeal + percentHeal;
+        float totalHeal = baseHeal + percentHeal;
 
 
 
