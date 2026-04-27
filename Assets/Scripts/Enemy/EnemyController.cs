@@ -98,7 +98,16 @@ public abstract class EnemyController : MonoBehaviour
 
         if (playerCol != null)
         {
+            bool wasChasing = isChasing;
             playerTransform = playerCol.transform;
+
+            // 최초 감지 시 반응 지연을 우선 적용
+            if (!wasChasing && !isReacting && reactionTimer <= 0f)
+            {
+                StartReaction();
+                return;
+            }
+
             isChasing = true;
 
             float xDist = (playerTransform.position.x - transform.position.x) * walkDirection;
@@ -113,10 +122,6 @@ public abstract class EnemyController : MonoBehaviour
                     StartAttack();
                 }
             }
-            else
-            {
-                if (!isReacting && reactionTimer <= 0 && !isChasing) StartReaction();
-            }
         }
         else
         {
@@ -127,7 +132,7 @@ public abstract class EnemyController : MonoBehaviour
 
     protected void StartAttack()
     {
-        attackTimer = data.preAttackDelay + data.postAttackDelay;
+        // 공격 타이머의 실질 설정은 각 Attack() 구현에서 담당
         lastAttackTime = Time.time;
         Attack();
     }
