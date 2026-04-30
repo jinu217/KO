@@ -11,6 +11,12 @@ public class GameManager : MonoBehaviour
     public float playerAttackSpeed = 1f;          // 초당 공격 횟수
     public float playerCriticalChance = 0.5f;     // 크리티컬 확률 (50%)
     public float playerCriticalMultiplier = 1.5f; // 크리티컬 데미지 배율
+    public float playerDefense = 10f;             // 방어력
+
+    [Header("포션 설정")]
+    public int potionCount = 5;                   // 포션 개수 (초기값)
+    public float potionHealAmount = 20f;          // 포션 회복량 (고정)
+    public float potionHealPercent = 0.2f;        // 포션 회복 % (최대 HP의 20%)
 
     void Awake()
     {

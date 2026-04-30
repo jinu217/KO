@@ -38,4 +38,5 @@ public class EnemyData : ScriptableObject
 
     [Header("원거리 전용")]
     public GameObject projectilePrefab; // 발사체: 원거리 몬스터일 경우 생성할 화살/마법구 등의 프리팹
+    public float rangedAttackRange = 0f; // 원거리 발사 사거리: 0 이하이면 attackRange를 그대로 사용(호환용)
 }
