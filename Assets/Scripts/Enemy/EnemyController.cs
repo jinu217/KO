@@ -1,56 +1,67 @@
 using UnityEngine;
 using System.Collections;
 
+// [적 AI - 공통 베이스] 근거리/원거리 적이 공유하는 감지, 이동, 절벽 회피, 상태/타이머 처리
 public abstract class EnemyController : MonoBehaviour
 {
-    public EnemyData data;
-    public LayerMask playerLayer;
-    public LayerMask groundLayer;
-    public Transform groundCheck;
+    // -------------------- 인스펙터 참조 --------------------
+    public EnemyData data;         // 적 행동/스탯 데이터(ScriptableObject)
+    public LayerMask playerLayer;  // 플레이어 탐지/공격 판정 레이어
+    public LayerMask groundLayer;  // 지면 감지 레이어
+    public Transform groundCheck;  // 절벽 감지용 Ray 시작 위치
 
-    protected Rigidbody2D rb;
-    protected SpriteRenderer spriteRenderer;
-    protected Transform playerTransform;
+    // -------------------- 컴포넌트/대상 --------------------
+    protected Rigidbody2D rb;          // 물리 이동 제어
+    protected SpriteRenderer spriteRenderer; // 좌우 반전 처리
+    protected Transform playerTransform;      // 현재 추적 대상 플레이어
 
+    // -------------------- 상태 값 --------------------
     [Header("상태 정보")]
-    protected float currentHp;
-    protected int walkDirection = 1;
-    protected bool isChasing;
-    protected bool isReacting;
-    protected bool isIdle;
-    protected bool isWandering;
-    protected bool hasLookedAround;
+    protected float currentHp;      // 현재 체력
+    protected int walkDirection = 1;// 이동 방향(-1:왼쪽, 1:오른쪽)
+    protected bool isChasing;       // 플레이어 추적 중 여부
+    protected bool isReacting;      // 최초 감지 반응 지연 상태
+    protected bool isIdle;          // 경직/대기 상태
+    protected bool isWandering;     // 절벽 회피 등 강제 배회 상태
+    protected bool hasLookedAround; // Idle 중 고개 돌리기 수행 여부
 
     [Header("범위 및 시간 설정")]
-    protected float unreachableTimer = 0f; 
+    protected float unreachableTimer = 0f; // 추격 실패 누적 시간
 
     [Header("절벽 미련 설정")]
-    protected int hesitationCount = 0;   
-    public int maxHesitation = 5;        
-    protected float pauseTimer = 0f;     
+    protected int hesitationCount = 0; // (확장용) 절벽 앞 망설임 횟수
+    public int maxHesitation = 5;      // (확장용) 최대 망설임 횟수
+    protected float pauseTimer = 0f;   // (확장용) 일시 정지 타이머
 
+    // -------------------- 타이머 --------------------
     [Header("타이머")]
-    protected float nextUpdateTimer;
-    protected int delayedDirection;
-    protected float reactionTimer;
-    protected float idleTimer;
-    protected float wanderTimer;
-    protected float attackTimer;
-    protected float knockbackTimer;
-    protected float lastAttackTime;
+    protected float nextUpdateTimer; // 추적 방향 갱신 시각
+    protected int delayedDirection;  // 추적 지연 반영 방향
+    protected float reactionTimer;   // 반응 지연 타이머
+    protected float idleTimer;       // Idle 상태 타이머
+    protected float wanderTimer;     // 배회 상태 타이머
+    protected float attackTimer;     // 공격 상태 타이머(>0이면 공격 중)
+    protected float knockbackTimer;  // 넉백 상태 타이머
+    protected float lastAttackTime;  // 마지막 공격 시각
 
-    protected bool isKnockback => knockbackTimer > 0;
-    protected bool isAttacking => attackTimer > 0;
+    // 읽기 전용 상태 프로퍼티
+    protected bool isKnockback => knockbackTimer > 0; // 넉백 중 여부
+    protected bool isAttacking => attackTimer > 0;    // 공격 중 여부
 
+    // 컴포넌트 초기화
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+
+        // 시작 방향 랜덤 설정
         walkDirection = (Random.value < 0.5f) ? -1 : 1;
         delayedDirection = walkDirection;
+
         rb.mass = 10f;
     }
 
+    // 시작 시 체력/플레이어 충돌 무시 설정
     protected virtual void Start()
     {
         if (data != null) currentHp = data.maxHp;
@@ -63,23 +74,24 @@ public abstract class EnemyController : MonoBehaviour
             Collider2D playerCol = player.GetComponent<Collider2D>();
             if (playerCol != null)
             {
+                // 적-플레이어 직접 물리 충돌 무시(공격 판정은 별도 처리)
                 Physics2D.IgnoreCollision(enemyCol, playerCol, true);
             }
         }
     }
 
+    // 프레임 로직: 상태 차단 -> 플레이어 감지 -> 타이머 처리
     protected virtual void Update()
     {
-        // [수정] 넉백 중이거나 경직(isIdle) 중일 때는 AI 로직 전체 차단
+        // 넉백/경직 중에는 AI 중지
         if (isKnockback || isIdle)
         {
             HandleTimers();
-            // 경직 중에는 제자리 정지, 넉백 중에는 물리 엔진에 맡김
             if (isIdle) rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
             return;
         }
 
-        // 공격 및 반응 중일 때 이동 차단
+        // 공격/반응 중 이동 차단
         if (isAttacking || isReacting)
         {
             HandleTimers();
@@ -91,8 +103,10 @@ public abstract class EnemyController : MonoBehaviour
         HandleTimers();
     }
 
+    // 플레이어 탐지 + 공격 시도 판단
     private void CheckPlayerDetection()
     {
+        // 추적 중에는 chaseRange, 평소에는 detectRange 사용
         float currentRange = isChasing ? data.chaseRange : data.detectRange;
         Collider2D playerCol = Physics2D.OverlapCircle(transform.position, currentRange, playerLayer);
 
@@ -101,7 +115,7 @@ public abstract class EnemyController : MonoBehaviour
             bool wasChasing = isChasing;
             playerTransform = playerCol.transform;
 
-            // 최초 감지 시 반응 지연을 우선 적용
+            // 최초 감지 시 반응 지연 우선
             if (!wasChasing && !isReacting && reactionTimer <= 0f)
             {
                 StartReaction();
@@ -113,6 +127,7 @@ public abstract class EnemyController : MonoBehaviour
             float xDist = (playerTransform.position.x - transform.position.x) * walkDirection;
             float yDist = Mathf.Abs(transform.position.y - playerTransform.position.y);
 
+            // 전방 + 공격 높이 범위 안이면 공격 쿨다운 체크 후 StartAttack
             if (xDist > 0 && xDist <= data.attackRange && yDist <= data.attackHeight / 2f)
             {
                 rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
@@ -130,13 +145,14 @@ public abstract class EnemyController : MonoBehaviour
         }
     }
 
+    // 공격 시작 공통 처리(공격 시각 갱신)
     protected void StartAttack()
     {
-        // 공격 타이머의 실질 설정은 각 Attack() 구현에서 담당
         lastAttackTime = Time.time;
-        Attack();
+        Attack(); // 실제 공격 로직은 자식 클래스 구현
     }
 
+    // 근거리 타격 판정(전방 박스)
     protected void CheckHit()
     {
         Vector2 attackPos = (Vector2)transform.position + new Vector2(walkDirection * data.attackOffset, data.attackHeightOffset);
@@ -153,6 +169,7 @@ public abstract class EnemyController : MonoBehaviour
         }
     }
 
+    // 플레이어 쪽으로 추적 이동(방향 갱신 지연 포함)
     protected void MoveTowardsPlayer()
     {
         if (playerTransform == null) return;
@@ -169,6 +186,7 @@ public abstract class EnemyController : MonoBehaviour
         Flip(walkDirection);
     }
 
+    // 물리 프레임 로직: 절벽 감지 + 이동 상태 처리
     protected virtual void FixedUpdate()
     {
         if (isKnockback) return;
@@ -178,31 +196,31 @@ public abstract class EnemyController : MonoBehaviour
             return;
         }
 
-        // 1. 낭떠러지 감지
+        // 1) 절벽 감지
         RaycastHit2D groundInfo = Physics2D.Raycast(groundCheck.position, Vector2.down, data.checkDistance, groundLayer);
 
-        // 2. 거리 및 범위 체크
+        // 2) 거리/범위 체크
         float distanceToPlayer = playerTransform != null ? Vector2.Distance(transform.position, playerTransform.position) : float.MaxValue;
-        bool isInDetectRange = distanceToPlayer <= data.detectRange; // 노란색
-        bool isInChaseRange = distanceToPlayer <= data.chaseRange;   // 빨간색
+        bool isInDetectRange = distanceToPlayer <= data.detectRange; // 노란 원
+        bool isInChaseRange = distanceToPlayer <= data.chaseRange;   // 빨간 원
 
-        // [중요] 절벽 감지 시: 방향을 틀고 탈출하는 동안(0.2초)은 감지를 무시해야 끼이지 않고 전진합니다.
+        // 절벽 발견 시: 방향 전환 후 배회
         if (groundInfo.collider == null && !(isWandering && wanderTimer > 0.2f))
         {
             rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
 
             if (!isWandering)
             {
-                if (isInDetectRange) // 노란 범위: 무한 반복
+                if (isInDetectRange)
                 {
                     isWandering = true;
-                    wanderTimer = 0.6f; // 0.6초간 확실히 후퇴
+                    wanderTimer = 0.6f;
                     walkDirection *= -1;
                     delayedDirection = walkDirection;
                     Flip(walkDirection);
                     unreachableTimer = 0f;
                 }
-                else if (isInChaseRange) // 빨간 범위: 5초 체크
+                else if (isInChaseRange)
                 {
                     unreachableTimer += Time.fixedDeltaTime;
                     if (unreachableTimer < 5.0f)
@@ -218,20 +236,27 @@ public abstract class EnemyController : MonoBehaviour
                         StopChasingForced();
                     }
                 }
-                else { StopChasingForced(); }
+                else
+                {
+                    StopChasingForced();
+                }
+
                 return;
             }
         }
 
-        // [평지 타이머]
+        // 평지에서 추적 불가 누적 시간 관리
         if (!isInDetectRange && isInChaseRange && isChasing)
         {
             unreachableTimer += Time.fixedDeltaTime;
             if (unreachableTimer >= 5.0f) StopChasingForced();
         }
-        else { unreachableTimer = 0f; }
+        else
+        {
+            unreachableTimer = 0f;
+        }
 
-        // 3. 이동 로직
+        // 3) 이동 상태 분기
         if (isWandering)
         {
             rb.linearVelocity = new Vector2(walkDirection * data.moveSpeed, rb.linearVelocity.y);
@@ -247,12 +272,12 @@ public abstract class EnemyController : MonoBehaviour
         }
     }
 
+    // 추적 강제 종료 + 반대 방향 배회 전환
     private void StopChasingForced()
     {
         isWandering = true;
-        wanderTimer = 2.0f; // 2초간 반대 방향으로 이동
+        wanderTimer = 2.0f;
 
-        // 플레이어의 반대 방향 계산
         if (playerTransform != null)
             walkDirection = transform.position.x > playerTransform.position.x ? 1 : -1;
         else
@@ -265,11 +290,32 @@ public abstract class EnemyController : MonoBehaviour
         nextUpdateTimer = Time.time + 1.0f;
     }
 
-    protected void StartReaction() { isReacting = true; isIdle = false; reactionTimer = data.reactionTime; rb.linearVelocity = Vector2.zero; }
-    protected void StartIdle() { if (isChasing || isWandering) return; isIdle = true; hasLookedAround = false; idleTimer = data.idleDuration; }
-    protected void ApplyMovement(float speed) { rb.linearVelocity = new Vector2(walkDirection * speed, rb.linearVelocity.y); Flip(walkDirection); }
+    // 반응 상태 시작
+    protected void StartReaction()
+    {
+        isReacting = true;
+        isIdle = false;
+        reactionTimer = data.reactionTime;
+        rb.linearVelocity = Vector2.zero;
+    }
 
-    // [센서 위치 수정] 방향에 따라 센서를 발 앞으로 옮깁니다.
+    // Idle 상태 시작
+    protected void StartIdle()
+    {
+        if (isChasing || isWandering) return;
+        isIdle = true;
+        hasLookedAround = false;
+        idleTimer = data.idleDuration;
+    }
+
+    // 단순 이동 적용
+    protected void ApplyMovement(float speed)
+    {
+        rb.linearVelocity = new Vector2(walkDirection * speed, rb.linearVelocity.y);
+        Flip(walkDirection);
+    }
+
+    // 좌우 반전 + groundCheck 센서 위치 보정
     protected void Flip(float dir)
     {
         if (Mathf.Approximately(dir, 0)) return;
@@ -277,23 +323,24 @@ public abstract class EnemyController : MonoBehaviour
 
         if (groundCheck != null)
         {
-            // 직접 입력했던 0.5f 대신 변수를 사용!
             groundCheck.localPosition = new Vector3(data.groundCheckOffset * Mathf.Sign(dir), groundCheck.localPosition.y, 0);
         }
     }
 
+    // 자식 클래스에서 구현할 실제 공격 함수
     protected abstract void Attack();
 
+    // 모든 상태 타이머 갱신
     protected void HandleTimers()
     {
         if (knockbackTimer > 0)
         {
             knockbackTimer -= Time.deltaTime;
-            // [추가] 넉백 타이머가 끝나는 순간 즉시 경직(Idle) 상태로 전환
             if (knockbackTimer <= 0)
             {
+                // 넉백 종료 후 짧은 경직 부여
                 isIdle = true;
-                idleTimer = 0.3f; // 0.3초간 멍 때리기
+                idleTimer = 0.3f;
             }
         }
 
@@ -302,7 +349,11 @@ public abstract class EnemyController : MonoBehaviour
         if (reactionTimer > 0)
         {
             reactionTimer -= Time.deltaTime;
-            if (reactionTimer <= 0) { isReacting = false; isChasing = true; }
+            if (reactionTimer <= 0)
+            {
+                isReacting = false;
+                isChasing = true;
+            }
         }
 
         if (wanderTimer > 0)
@@ -314,48 +365,52 @@ public abstract class EnemyController : MonoBehaviour
         if (isIdle)
         {
             idleTimer -= Time.deltaTime;
-            // 평소 순찰 중 Idle일 때만 고개 돌리기 수행
+
+            // 비전투 Idle 중 한 번 고개 돌리기
             if (!isChasing && !isWandering && idleTimer <= data.idleDuration / 2f && !hasLookedAround)
             {
                 Flip(walkDirection * -1);
                 hasLookedAround = true;
             }
+
             if (idleTimer <= 0) isIdle = false;
         }
     }
 
+    // 피격 처리(체력 감소 + 넉백)
     public virtual void TakeDamage(float damage, float kPower)
     {
         currentHp -= damage;
 
-        // 넉백 설정
         knockbackTimer = 0.2f;
-        isIdle = false; // 넉백 당하는 순간 경직 상태 해제 (새로운 넉백 우선)
-
-        rb.linearVelocity = Vector2.zero; // 기존 속도 초기화
+        isIdle = false;
+        rb.linearVelocity = Vector2.zero;
 
         float dir = playerTransform != null ? Mathf.Sign(transform.position.x - playerTransform.position.x) : -walkDirection;
-
-        // kPower에 따라 뒤로 날아가고, 위로 살짝 뜸 (5f)
         rb.linearVelocity = new Vector2(dir * kPower, 5f);
 
         if (currentHp <= 0) gameObject.SetActive(false);
     }
 
+    // 디버그 시각화: 감지/추적/공격/절벽 감지 영역 표시
     protected virtual void OnDrawGizmos()
     {
         if (data == null) return;
 
+        // detectRange (노란 원)
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, data.detectRange);
 
+        // chaseRange (빨간 원)
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, data.chaseRange);
 
+        // 근거리 공격 박스(하늘색)
         Gizmos.color = Color.cyan;
         Vector3 attackCenter = transform.position + new Vector3(walkDirection * data.attackOffset, data.attackHeightOffset, 0);
-        Gizmos.DrawWireCube(attackCenter, new Vector3(data.attackRange, data.attackHeight, 0)); 
-        
+        Gizmos.DrawWireCube(attackCenter, new Vector3(data.attackRange, data.attackHeight, 0));
+
+        // 절벽 감지 Ray(파란색)
         if (groundCheck != null)
         {
             Gizmos.color = Color.blue;
