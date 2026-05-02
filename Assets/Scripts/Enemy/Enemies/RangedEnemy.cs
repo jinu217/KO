@@ -29,6 +29,42 @@ public class RangedEnemy : EnemyController
             return;
         }
 
+        // 피격 어그로가 남아있으면 탐지 범위를 무시하고 강제 추격
+        if (forcedAggroTimer > 0f)
+        {
+            if (playerTransform == null)
+            {
+                GameObject playerObj = GameObject.FindWithTag("Player");
+                if (playerObj != null) playerTransform = playerObj.transform;
+            }
+
+            if (playerTransform != null)
+            {
+                isChasing = true;
+
+                float attackDist = Vector2.Distance(transform.position, playerTransform.position);
+
+                // 절벽 회피 배회 중에는 방향 강제 보정을 하지 않아야 절벽 반전이 유지됨
+                if (!isWandering && !edgeTurnLock)
+                {
+                    walkDirection = (playerTransform.position.x >= transform.position.x) ? 1 : -1;
+                    Flip(walkDirection);
+                }
+                if (attackDist <= EffectiveRangedAttackRange)
+                {
+                    rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+
+                    if (Time.time > lastAttackTime + (1f / data.attackSpeed))
+                    {
+                        StartAttack();
+                    }
+                }
+
+                HandleTimers();
+                return;
+            }
+        }
+
         // 추적 중이면 chaseRange, 아니면 detectRange 기준으로 플레이어 탐지
         float currentRange = isChasing ? data.chaseRange : data.detectRange;
         Collider2D playerCol = Physics2D.OverlapCircle(transform.position, currentRange, playerLayer);
@@ -48,12 +84,15 @@ public class RangedEnemy : EnemyController
 
             isChasing = true;
 
-            // 항상 플레이어 방향을 보도록 보정
-            walkDirection = (playerTransform.position.x >= transform.position.x) ? 1 : -1;
-            Flip(walkDirection);
-
             // 원거리 공격 사거리 내이면 정지 + 공격 쿨다운 체크
             float attackDist = Vector2.Distance(transform.position, playerTransform.position);
+
+            // 절벽 회피 배회 중에는 방향 강제 보정을 하지 않아야 절벽 반전이 유지됨
+            if (!isWandering && !edgeTurnLock)
+            {
+                walkDirection = (playerTransform.position.x >= transform.position.x) ? 1 : -1;
+                Flip(walkDirection);
+            }
             if (attackDist <= EffectiveRangedAttackRange)
             {
                 rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
@@ -106,13 +145,19 @@ public class RangedEnemy : EnemyController
             }
         }
 
-        // 3) 절벽 처리(기존 공통 구조 유지)
-        if (groundInfo.collider == null && !(isWandering && wanderTimer > 0.2f))
+        // 3) 절벽 처리: 상태와 무관하게 즉시 정지 + 방향 전환 처리
+        // (배회 중 절벽 감지 예외를 두면 낙사할 수 있음)
+        if (groundInfo.collider == null)
         {
-            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+            // 절벽 감지 중에는 배회 상태를 유지해 Update에서 방향이 다시 플레이어 쪽으로 덮이지 않게 함
+            isWandering = true;
+            wanderTimer = Mathf.Max(wanderTimer, 0.2f);
 
-            if (!isWandering)
+            // 절벽에서 매 프레임 반전하면 제자리에서 떨림/고착되므로 1회만 반전
+            if (!edgeTurnLock)
             {
+                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+
                 if (isInDetectRange)
                 {
                     isWandering = true;
@@ -143,8 +188,20 @@ public class RangedEnemy : EnemyController
                     StopChasingForcedForRanged();
                 }
 
-                return;
+                edgeTurnLock = true;
             }
+            else
+            {
+                // 이미 반전한 뒤에도 센서가 절벽을 보고 있으면 반대 방향으로 뒤로 물러남
+                rb.linearVelocity = new Vector2(walkDirection * data.moveSpeed, rb.linearVelocity.y);
+                Flip(walkDirection);
+            }
+
+            return;
+        }
+        else
+        {
+            edgeTurnLock = false;
         }
 
         // 4) 평지 추적 실패 타이머

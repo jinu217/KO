@@ -16,7 +16,7 @@ public class GameManager : MonoBehaviour
     [Header("포션 설정")]
     public int potionCount = 5;                   // 보유 포션 개수
     public float potionHealAmount = 20f;          // 고정 회복량
-    public float potionHealPercent = 0.2f;        // 비율 회복량(최대 체력 기준)
+    public float potionHealPercent = 0.2f;        // 비율 회복량(포션 회복량 기준)
 
     // 씬 전체에서 단 하나만 유지되는 싱글톤 초기화
     void Awake()

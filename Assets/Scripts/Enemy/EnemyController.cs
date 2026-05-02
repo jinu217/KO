@@ -32,6 +32,7 @@ public abstract class EnemyController : MonoBehaviour
     protected int hesitationCount = 0; // (확장용) 절벽 앞 망설임 횟수
     public int maxHesitation = 5;      // (확장용) 최대 망설임 횟수
     protected float pauseTimer = 0f;   // (확장용) 일시 정지 타이머
+    protected bool edgeTurnLock = false; // 절벽에서 방향 전환 1회만 수행하기 위한 락
 
     // -------------------- 타이머 --------------------
     [Header("타이머")]
@@ -43,6 +44,9 @@ public abstract class EnemyController : MonoBehaviour
     protected float attackTimer;     // 공격 상태 타이머(>0이면 공격 중)
     protected float knockbackTimer;  // 넉백 상태 타이머
     protected float lastAttackTime;  // 마지막 공격 시각
+
+    [Header("피격 어그로")]
+    protected float forcedAggroTimer; // 피격 후 강제 추격 유지 시간
 
     // 읽기 전용 상태 프로퍼티
     protected bool isKnockback => knockbackTimer > 0; // 넉백 중 여부
@@ -78,6 +82,13 @@ public abstract class EnemyController : MonoBehaviour
                 Physics2D.IgnoreCollision(enemyCol, playerCol, true);
             }
         }
+
+        // 몬스터끼리는 서로 겹치도록 Enemy 레이어 간 물리 충돌 무시
+        int enemyLayerIndex = LayerMask.NameToLayer("Enemy");
+        if (enemyLayerIndex != -1)
+        {
+            Physics2D.IgnoreLayerCollision(enemyLayerIndex, enemyLayerIndex, true);
+        }
     }
 
     // 프레임 로직: 상태 차단 -> 플레이어 감지 -> 타이머 처리
@@ -106,6 +117,36 @@ public abstract class EnemyController : MonoBehaviour
     // 플레이어 탐지 + 공격 시도 판단
     private void CheckPlayerDetection()
     {
+        // 피격 어그로가 남아있으면 탐지 범위를 무시하고 강제 추격
+        if (forcedAggroTimer > 0f)
+        {
+            if (playerTransform == null)
+            {
+                GameObject playerObj = GameObject.FindWithTag("Player");
+                if (playerObj != null) playerTransform = playerObj.transform;
+            }
+
+            if (playerTransform != null)
+            {
+                isChasing = true;
+
+                float xDist = (playerTransform.position.x - transform.position.x) * walkDirection;
+                float yDist = Mathf.Abs(transform.position.y - playerTransform.position.y);
+
+                if (xDist > 0 && xDist <= data.attackRange && yDist <= data.attackHeight / 2f)
+                {
+                    rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+
+                    if (Time.time > lastAttackTime + (1f / data.attackSpeed))
+                    {
+                        StartAttack();
+                    }
+                }
+
+                return;
+            }
+        }
+
         // 추적 중에는 chaseRange, 평소에는 detectRange 사용
         float currentRange = isChasing ? data.chaseRange : data.detectRange;
         Collider2D playerCol = Physics2D.OverlapCircle(transform.position, currentRange, playerLayer);
@@ -196,6 +237,13 @@ public abstract class EnemyController : MonoBehaviour
             return;
         }
 
+        // 피격 어그로 중에는 강제로 플레이어 참조를 유지 시도
+        if (forcedAggroTimer > 0f && playerTransform == null)
+        {
+            GameObject playerObj = GameObject.FindWithTag("Player");
+            if (playerObj != null) playerTransform = playerObj.transform;
+        }
+
         // 1) 절벽 감지
         RaycastHit2D groundInfo = Physics2D.Raycast(groundCheck.position, Vector2.down, data.checkDistance, groundLayer);
 
@@ -204,13 +252,19 @@ public abstract class EnemyController : MonoBehaviour
         bool isInDetectRange = distanceToPlayer <= data.detectRange; // 노란 원
         bool isInChaseRange = distanceToPlayer <= data.chaseRange;   // 빨간 원
 
-        // 절벽 발견 시: 방향 전환 후 배회
-        if (groundInfo.collider == null && !(isWandering && wanderTimer > 0.2f))
+        // 절벽 발견 시: 상태와 무관하게 즉시 정지 + 방향 전환 처리
+        // (배회 중 예외로 절벽 감지를 건너뛰면 한 발 더 나가서 떨어질 수 있음)
+        if (groundInfo.collider == null)
         {
-            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+            // 절벽 감지 중에는 배회 상태를 유지해 방향 강제 갱신을 막음
+            isWandering = true;
+            wanderTimer = Mathf.Max(wanderTimer, 0.2f);
 
-            if (!isWandering)
+            // 절벽에서 매 프레임 반전하면 제자리에서 떨림/고착되므로 1회만 반전
+            if (!edgeTurnLock)
             {
+                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+
                 if (isInDetectRange)
                 {
                     isWandering = true;
@@ -241,8 +295,20 @@ public abstract class EnemyController : MonoBehaviour
                     StopChasingForced();
                 }
 
-                return;
+                edgeTurnLock = true;
             }
+            else
+            {
+                // 이미 반전한 뒤에도 센서가 절벽을 보고 있으면 반대 방향으로 뒤로 물러남
+                rb.linearVelocity = new Vector2(walkDirection * data.moveSpeed, rb.linearVelocity.y);
+                Flip(walkDirection);
+            }
+
+            return;
+        }
+        else
+        {
+            edgeTurnLock = false;
         }
 
         // 평지에서 추적 불가 누적 시간 관리
@@ -375,12 +441,27 @@ public abstract class EnemyController : MonoBehaviour
 
             if (idleTimer <= 0) isIdle = false;
         }
+
+        if (forcedAggroTimer > 0f)
+            forcedAggroTimer -= Time.deltaTime;
     }
 
     // 피격 처리(체력 감소 + 넉백)
     public virtual void TakeDamage(float damage, float kPower)
     {
         currentHp -= damage;
+
+        // 피격 시 2초간 강제 추격
+        forcedAggroTimer = 2f;
+        isChasing = true;
+        isReacting = false;
+        isWandering = false;
+
+        if (playerTransform == null)
+        {
+            GameObject playerObj = GameObject.FindWithTag("Player");
+            if (playerObj != null) playerTransform = playerObj.transform;
+        }
 
         knockbackTimer = 0.2f;
         isIdle = false;

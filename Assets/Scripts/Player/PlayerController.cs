@@ -84,7 +84,7 @@ public class PlayerController : MonoBehaviour
         }
 
         currentHp = GameManager.Instance.playerMaxHp;
-        inventoryUI = FindFirstObjectByType<InventoryUI>();
+        inventoryUI = FindInventoryUIAnyState();
     }
 
     // 매 프레임 상태 업데이트(지면 체크, 점프 리셋)
@@ -116,7 +116,15 @@ public class PlayerController : MonoBehaviour
     public void OnMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
-        if (isDashing || isKnockback || isInventoryOpen) return;
+
+        // 인벤토리 열림 중에는 플레이어 이동 대신 인벤토리 선택 커서 이동에 사용
+        if (isInventoryOpen)
+        {
+            if (inventoryUI != null) inventoryUI.Navigate(moveInput);
+            return;
+        }
+
+        if (isDashing || isKnockback) return;
 
         if (moveInput.x != 0) UpdateFacingDirection();
     }
@@ -210,6 +218,15 @@ public class PlayerController : MonoBehaviour
     {
         if (!context.started) return;
 
+        if (inventoryUI == null)
+            inventoryUI = FindInventoryUIAnyState();
+
+        if (inventoryUI == null)
+        {
+            Debug.LogWarning("InventoryUI를 찾을 수 없습니다. InventoryPanel에 InventoryUI가 붙어있는지 확인해 주세요.");
+            return;
+        }
+
         isInventoryOpen = !isInventoryOpen;
         OpenInventory();
     }
@@ -281,6 +298,9 @@ public class PlayerController : MonoBehaviour
     // 피격 처리(방어력 적용 + 넉백 + 게임오버 체크)
     public void TakeDamage(float damage, Vector2 enemyPos)
     {
+        // 대쉬 중에는 무적 처리
+        if (isDashing) return;
+
         float defenseRate = GameManager.Instance.playerDefense / (GameManager.Instance.playerDefense + 100f);
         float finalDamage = Mathf.Max(damage * 0.2f, damage * (1f - defenseRate));
 
@@ -388,12 +408,33 @@ public class PlayerController : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
+    // 비활성 오브젝트까지 포함해서 InventoryUI 탐색
+    private InventoryUI FindInventoryUIAnyState()
+    {
+        // 우선 활성 오브젝트에서 탐색
+        InventoryUI found = FindFirstObjectByType<InventoryUI>();
+        if (found != null) return found;
+
+        // 비활성 오브젝트까지 포함 탐색
+        var all = Resources.FindObjectsOfTypeAll<InventoryUI>();
+        foreach (var ui in all)
+        {
+            if (ui == null) continue;
+            if (!ui.gameObject.scene.IsValid()) continue; // 에셋/프리팹 제외
+            return ui;
+        }
+
+        return null;
+    }
+
     // 디버그 시각화: 현재 무기 공격 박스
     private void OnDrawGizmos()
     {
-        if (rb == null) return;
+        // 에디터(플레이 전)에서도 보이도록 Rigidbody2D null 체크로 막지 않음
+        float facing = transform.localScale.x;
+        if (Mathf.Approximately(facing, 0f)) facing = 1f;
 
-        float dir = Mathf.Sign(transform.localScale.x);
+        float dir = Mathf.Sign(facing);
         Vector2 size = GetWeaponAttackSize();
         Vector3 pos = transform.position + Vector3.right * dir * GetWeaponOffset();
 
