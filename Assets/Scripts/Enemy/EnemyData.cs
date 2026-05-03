@@ -11,8 +11,8 @@ public class EnemyData : ScriptableObject
     public float chaseSpeed = 3.5f;      // 플레이어 추적 속도
 
     [Header("인식 범위")]
-    public float detectRange = 5f;       // 최초 인식 범위(노란 원)
-    public float chaseRange = 10f;       // 추적 유지 범위(빨간 원)
+    public float detectRange = 4f;       // 최초 인식 범위(노란 원)
+    public float chaseRange = 7f;       // 추적 유지 범위(빨간 원)
     [Range(0, 360)]
     public float viewAngle = 180f;       // (확장용) 시야각
 
@@ -34,8 +34,8 @@ public class EnemyData : ScriptableObject
     public float attackOffset = 0.5f;    // 근거리 공격 박스 X 오프셋(전방 거리)
 
     [Header("공격 상세 시간")]
-    public float preAttackDelay = 0.3f;  // 선딜레이(공격 시작 ~ 실제 판정 전)
-    public float postAttackDelay = 0.4f; // 후딜레이(공격 후 경직 시간)
+    public float preAttackDelay = 0.4f;  // 선딜레이(공격 시작 ~ 실제 판정 전)
+    public float postAttackDelay = 0.5f; // 후딜레이(공격 후 경직 시간)
 
     [Header("원거리 전용")]
     public GameObject projectilePrefab;   // 발사할 투사체 프리팹

@@ -23,7 +23,11 @@ public abstract class EnemyController : MonoBehaviour
     protected bool isReacting;      // 최초 감지 반응 지연 상태
     protected bool isIdle;          // 경직/대기 상태
     protected bool isWandering;     // 절벽 회피 등 강제 배회 상태
-    protected bool hasLookedAround; // Idle 중 고개 돌리기 수행 여부
+    protected bool hasLookedAround; // (호환용) Idle 중 고개 돌리기 수행 여부
+    protected int idleStartDirection; // Idle 시작 시 바라보던 방향
+    protected bool isPatrolIdleActive; // 현재 Idle이 순찰 두리번 Idle인지 여부
+    protected int patrolLookTargetCount; // 이번 Idle에서 수행할 두리번 왕복 횟수(1~2)
+    protected int patrolLookDoneCount;   // 이번 Idle에서 수행한 방향 전환 횟수
 
     [Header("범위 및 시간 설정")]
     protected float unreachableTimer = 0f; // 추격 실패 누적 시간
@@ -44,6 +48,25 @@ public abstract class EnemyController : MonoBehaviour
     protected float attackTimer;     // 공격 상태 타이머(>0이면 공격 중)
     protected float knockbackTimer;  // 넉백 상태 타이머
     protected float lastAttackTime;  // 마지막 공격 시각
+
+    [Header("순찰 Idle 설정")]
+    public bool enablePatrolIdle = true;       // 순찰 중 랜덤 멈춤 사용 여부
+    public float patrolIdleMinInterval = 3.0f; // 순찰 Idle 기본 최소 간격
+    public float patrolIdleMaxInterval = 6.0f; // 순찰 Idle 기본 최대 간격
+    [Range(0f, 1f)] public float patrolIdleChance = 0.6f; // 예약 시점 도달 시 실제 Idle 진입 확률
+
+    public float patrolIdleRetryMinInterval = 1.0f; // 확률 실패 시 재시도 최소 간격
+    public float patrolIdleRetryMaxInterval = 2.0f; // 확률 실패 시 재시도 최대 간격
+
+    public float patrolIdleDurationMin = 0.8f; // 순찰 Idle 최소 지속 시간
+    public float patrolIdleDurationMax = 1.4f; // 순찰 Idle 최대 지속 시간
+
+    [Range(0f, 1f)] public float secondLookChance = 0.35f; // 2회 두리번(좌우 좌우: 왕복 2회) 확률
+    [Range(0f, 1f)] public float firstLookNormalizedTime = 0.33f;  // 첫 두리번 실행 시점(Idle 진행률)
+    [Range(0f, 1f)] public float secondLookNormalizedTime = 0.66f; // 두 번째 두리번 실행 시점(Idle 진행률)
+
+    protected float nextPatrolIdleTime;        // 다음 순찰 Idle 시작 시각
+    protected float patrolIdleTotalDuration;   // 이번 순찰 Idle 총 길이
 
     [Header("피격 어그로")]
     protected float forcedAggroTimer; // 피격 후 강제 추격 유지 시간
@@ -89,16 +112,30 @@ public abstract class EnemyController : MonoBehaviour
         {
             Physics2D.IgnoreLayerCollision(enemyLayerIndex, enemyLayerIndex, true);
         }
+
+        ScheduleNextPatrolIdle();
     }
 
     // 프레임 로직: 상태 차단 -> 플레이어 감지 -> 타이머 처리
     protected virtual void Update()
     {
-        // 넉백/경직 중에는 AI 중지
-        if (isKnockback || isIdle)
+        // 넉백 중에는 AI 중지
+        if (isKnockback)
         {
             HandleTimers();
-            if (isIdle) rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+            return;
+        }
+
+        // Idle 중에도 플레이어 감지는 수행(눈 마주치면 즉시 인식/반응)
+        if (isIdle)
+        {
+            CheckPlayerDetection();
+            HandleTimers();
+
+            // 여전히 Idle이면 제자리 유지
+            if (isIdle)
+                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+
             return;
         }
 
@@ -128,12 +165,17 @@ public abstract class EnemyController : MonoBehaviour
 
             if (playerTransform != null)
             {
+                // 강제 어그로 중에도 시야 밖(뒤쪽)은 인식하지 않음
+                if (!IsTargetInView(playerTransform))
+                {
+                    isChasing = false;
+                    playerTransform = null;
+                    return;
+                }
+
                 isChasing = true;
 
-                float xDist = (playerTransform.position.x - transform.position.x) * walkDirection;
-                float yDist = Mathf.Abs(transform.position.y - playerTransform.position.y);
-
-                if (xDist > 0 && xDist <= data.attackRange && yDist <= data.attackHeight / 2f)
+                if (IsPlayerInMeleeAttackRange())
                 {
                     rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
 
@@ -153,6 +195,14 @@ public abstract class EnemyController : MonoBehaviour
 
         if (playerCol != null)
         {
+            // 시야 밖(뒤쪽) 플레이어는 인식하지 않음
+            if (!IsTargetInView(playerCol.transform))
+            {
+                isChasing = false;
+                playerTransform = null;
+                return;
+            }
+
             bool wasChasing = isChasing;
             playerTransform = playerCol.transform;
 
@@ -165,11 +215,8 @@ public abstract class EnemyController : MonoBehaviour
 
             isChasing = true;
 
-            float xDist = (playerTransform.position.x - transform.position.x) * walkDirection;
-            float yDist = Mathf.Abs(transform.position.y - playerTransform.position.y);
-
-            // 전방 + 공격 높이 범위 안이면 공격 쿨다운 체크 후 StartAttack
-            if (xDist > 0 && xDist <= data.attackRange && yDist <= data.attackHeight / 2f)
+            // 전방 공격 박스 범위 안이면 공격 쿨다운 체크 후 StartAttack
+            if (IsPlayerInMeleeAttackRange())
             {
                 rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
 
@@ -208,6 +255,33 @@ public abstract class EnemyController : MonoBehaviour
                 player.TakeDamage(data.damage, (Vector2)transform.position);
             }
         }
+    }
+
+    // 현재 바라보는 방향(시야각 포함) 안에 타겟이 있는지 확인
+    protected bool IsTargetInView(Transform target)
+    {
+        if (target == null || data == null) return false;
+
+        Vector2 toTarget = (target.position - transform.position);
+        if (toTarget.sqrMagnitude <= 0.0001f) return true;
+
+        Vector2 forward = new Vector2(walkDirection, 0f);
+        float halfView = Mathf.Clamp(data.viewAngle * 0.5f, 0f, 180f);
+        float angle = Vector2.Angle(forward, toTarget.normalized);
+
+        return angle <= halfView;
+    }
+
+    // 근거리 공격 박스 기준으로 플레이어가 실제 사거리 안에 있는지 확인
+    protected bool IsPlayerInMeleeAttackRange()
+    {
+        if (playerTransform == null) return false;
+
+        Vector2 attackPos = (Vector2)transform.position + new Vector2(walkDirection * data.attackOffset, data.attackHeightOffset);
+        Vector2 attackSize = new Vector2(data.attackRange, data.attackHeight);
+
+        Collider2D hit = Physics2D.OverlapBox(attackPos, attackSize, 0, playerLayer);
+        return hit != null;
     }
 
     // 플레이어 쪽으로 추적 이동(방향 갱신 지연 포함)
@@ -330,7 +404,22 @@ public abstract class EnemyController : MonoBehaviour
         }
         else if (isChasing)
         {
-            MoveTowardsPlayer();
+            // 플레이어가 근거리 공격 가능 범위 안에 있는 동안에는 쿨타임 중에도 제자리 유지
+            if (playerTransform != null)
+            {
+                if (IsPlayerInMeleeAttackRange())
+                {
+                    rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+                }
+                else
+                {
+                    MoveTowardsPlayer();
+                }
+            }
+            else
+            {
+                MoveTowardsPlayer();
+            }
         }
         else
         {
@@ -370,8 +459,17 @@ public abstract class EnemyController : MonoBehaviour
     {
         if (isChasing || isWandering) return;
         isIdle = true;
+        isPatrolIdleActive = true;
         hasLookedAround = false;
-        idleTimer = data.idleDuration;
+        patrolLookDoneCount = 0;
+        patrolLookTargetCount = (Random.value <= secondLookChance) ? 2 : 1;
+
+        idleStartDirection = walkDirection;
+
+        float minDuration = Mathf.Max(0.05f, patrolIdleDurationMin);
+        float maxDuration = Mathf.Max(minDuration, patrolIdleDurationMax);
+        patrolIdleTotalDuration = Random.Range(minDuration, maxDuration);
+        idleTimer = patrolIdleTotalDuration;
     }
 
     // 단순 이동 적용
@@ -396,6 +494,22 @@ public abstract class EnemyController : MonoBehaviour
     // 자식 클래스에서 구현할 실제 공격 함수
     protected abstract void Attack();
 
+    // 다음 순찰 Idle 시작 시각 예약(기본 간격)
+    protected void ScheduleNextPatrolIdle()
+    {
+        float min = Mathf.Max(0.1f, patrolIdleMinInterval);
+        float max = Mathf.Max(min, patrolIdleMaxInterval);
+        nextPatrolIdleTime = Time.time + Random.Range(min, max);
+    }
+
+    // 순찰 Idle 확률 실패 시 빠른 재시도 예약
+    protected void ScheduleNextPatrolIdleRetry()
+    {
+        float min = Mathf.Max(0.1f, patrolIdleRetryMinInterval);
+        float max = Mathf.Max(min, patrolIdleRetryMaxInterval);
+        nextPatrolIdleTime = Time.time + Random.Range(min, max);
+    }
+
     // 모든 상태 타이머 갱신
     protected void HandleTimers()
     {
@@ -404,8 +518,9 @@ public abstract class EnemyController : MonoBehaviour
             knockbackTimer -= Time.deltaTime;
             if (knockbackTimer <= 0)
             {
-                // 넉백 종료 후 짧은 경직 부여
+                // 넉백 종료 후 짧은 경직 부여(순찰 Idle 아님)
                 isIdle = true;
+                isPatrolIdleActive = false;
                 idleTimer = 0.3f;
             }
         }
@@ -432,18 +547,97 @@ public abstract class EnemyController : MonoBehaviour
         {
             idleTimer -= Time.deltaTime;
 
-            // 비전투 Idle 중 한 번 고개 돌리기
-            if (!isChasing && !isWandering && idleTimer <= data.idleDuration / 2f && !hasLookedAround)
+            if (isPatrolIdleActive)
             {
-                Flip(walkDirection * -1);
-                hasLookedAround = true;
+                float total = Mathf.Max(0.001f, patrolIdleTotalDuration);
+                float progress = Mathf.Clamp01(1f - (idleTimer / total));
+
+                bool canLook = !isChasing && !isWandering && !isReacting && !isAttacking && !isKnockback;
+
+                float firstT = Mathf.Clamp01(firstLookNormalizedTime);
+                float secondT = Mathf.Clamp01(secondLookNormalizedTime);
+                if (secondT <= firstT) secondT = Mathf.Min(0.99f, firstT + 0.05f);
+
+                // 왕복 1회 = 방향 전환 2번(좌우)
+                // 왕복 2회 = 방향 전환 4번(좌우 좌우)
+                int targetFlipCount = patrolLookTargetCount * 2;
+
+                float thirdT = Mathf.Lerp(secondT, 1f, 0.45f);
+                float fourthT = Mathf.Lerp(secondT, 1f, 0.85f);
+
+                if (canLook && patrolLookDoneCount < 1 && progress >= firstT)
+                {
+                    walkDirection *= -1;
+                    delayedDirection = walkDirection;
+                    Flip(walkDirection);
+                    patrolLookDoneCount++;
+                    hasLookedAround = true;
+                }
+
+                if (canLook && patrolLookDoneCount < 2 && progress >= secondT)
+                {
+                    walkDirection *= -1;
+                    delayedDirection = walkDirection;
+                    Flip(walkDirection);
+                    patrolLookDoneCount++;
+                    hasLookedAround = true;
+                }
+
+                if (canLook && targetFlipCount >= 4 && patrolLookDoneCount < 3 && progress >= thirdT)
+                {
+                    walkDirection *= -1;
+                    delayedDirection = walkDirection;
+                    Flip(walkDirection);
+                    patrolLookDoneCount++;
+                    hasLookedAround = true;
+                }
+
+                if (canLook && targetFlipCount >= 4 && patrolLookDoneCount < 4 && progress >= fourthT)
+                {
+                    walkDirection *= -1;
+                    delayedDirection = walkDirection;
+                    Flip(walkDirection);
+                    patrolLookDoneCount++;
+                    hasLookedAround = true;
+                }
             }
 
-            if (idleTimer <= 0) isIdle = false;
+            if (idleTimer <= 0)
+            {
+                isIdle = false;
+
+                // 순찰 두리번 Idle은 종료 시 원래 보던 방향으로 복귀
+                if (isPatrolIdleActive && !isChasing && !isWandering && !isReacting && !isAttacking && !isKnockback)
+                {
+                    walkDirection = idleStartDirection;
+                    delayedDirection = walkDirection;
+                    Flip(walkDirection);
+                }
+
+                isPatrolIdleActive = false;
+                ScheduleNextPatrolIdle();
+            }
         }
 
         if (forcedAggroTimer > 0f)
             forcedAggroTimer -= Time.deltaTime;
+
+        // 순찰 중에는 가끔 멈춰서 두리번거리는 Idle 진입
+        if (enablePatrolIdle
+            && !isIdle
+            && !isChasing
+            && !isWandering
+            && !isReacting
+            && !isAttacking
+            && !isKnockback
+            && forcedAggroTimer <= 0f
+            && Time.time >= nextPatrolIdleTime)
+        {
+            if (Random.value <= Mathf.Clamp01(patrolIdleChance))
+                StartIdle();
+            else
+                ScheduleNextPatrolIdleRetry();
+        }
     }
 
     // 피격 처리(체력 감소 + 넉백)
