@@ -4,6 +4,14 @@ using UnityEngine;
 // 사용자 지정 이동 규칙(장비 5칸 + 인벤토리 12칸)에 맞춘 네비게이션
 public class InventoryNavigationController : MonoBehaviour
 {
+    private enum SelectionArea
+    {
+        None,
+        Equipment,
+        Inventory
+    }
+
+    public System.Action<InventorySlotUI> onConfirmSlot;
     [Header("장비 슬롯(5)")]
     public InventorySlotUI[] equipmentSlots = new InventorySlotUI[5];
 
@@ -24,13 +32,6 @@ public class InventoryNavigationController : MonoBehaviour
     private const int EQ_GLOVES = 2;
     private const int EQ_BOOTS = 3;
     private const int EQ_WEAPON = 4;
-
-    private enum SelectionArea
-    {
-        None,
-        Equipment,
-        Inventory
-    }
 
     private SelectionArea selectionArea = SelectionArea.None;
     private int equipmentIndex = 0;
@@ -199,6 +200,29 @@ public class InventoryNavigationController : MonoBehaviour
         if (inventorySlots == null || inventorySlots.Length == 0) return;
         inventoryIndex = Mathf.Clamp(index, 0, inventorySlots.Length - 1);
         selectionArea = SelectionArea.Inventory;
+    }
+
+    public InventorySlotUI GetSelectedSlot()
+    {
+        if (selectionArea == SelectionArea.Equipment)
+        {
+            if (equipmentSlots != null && equipmentIndex >= 0 && equipmentIndex < equipmentSlots.Length)
+                return equipmentSlots[equipmentIndex];
+        }
+        else if (selectionArea == SelectionArea.Inventory)
+        {
+            if (inventorySlots != null && inventoryIndex >= 0 && inventoryIndex < inventorySlots.Length)
+                return inventorySlots[inventoryIndex];
+        }
+
+        return null;
+    }
+
+    public void ConfirmCurrentSelection()
+    {
+        InventorySlotUI slot = GetSelectedSlot();
+        if (slot == null) return;
+        onConfirmSlot?.Invoke(slot);
     }
 
     private void RefreshSelectionVisual()

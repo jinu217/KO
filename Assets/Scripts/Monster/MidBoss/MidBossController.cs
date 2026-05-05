@@ -38,12 +38,29 @@ public abstract class MidBossController : MonoBehaviour
 
     protected virtual void Start()
     {
-        if (data != null)
-            currentHp = data.maxHp;
+        if (data == null)
+        {
+            Debug.LogError($"{gameObject.name}에 MidBossData가 연결되지 않았습니다.");
+            enabled = false;
+            return;
+        }
+
+        currentHp = data.maxHp;
 
         GameObject player = GameObject.FindWithTag("Player");
+
         if (player != null)
+        {
             playerTransform = player.transform;
+
+            Collider2D bossCol = GetComponent<Collider2D>();
+            Collider2D playerCol = player.GetComponent<Collider2D>();
+
+            if (bossCol != null && playerCol != null)
+            {
+                Physics2D.IgnoreCollision(bossCol, playerCol, true);
+            }
+        }
 
         lastBasicAttackTime = -999f;
 

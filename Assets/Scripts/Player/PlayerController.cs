@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 public enum WeaponType
 {
     Sword,
-    Mace,
+    Blunt,
     Spear,
     Axe,
     Scythe
@@ -22,16 +22,10 @@ public class PlayerController : MonoBehaviour
 
     // -------------------- 이동/점프 --------------------
     [Header("이동 및 점프 설정")]
-    public float moveSpeed = 5f;   // 좌우 이동 속도
-    public float jumpForce = 15f;  // 점프 초기 속도(힘)
-    public int maxJumpCount = 1;   // 최대 점프 횟수(1=단점프, 2=더블점프)
     private int currentJumpCount;  // 남은 점프 횟수
 
     // -------------------- 대쉬 --------------------
     [Header("대쉬(Dash) 설정")]
-    public float dashVelocity = 20f; // 대쉬 속도
-    public float dashTime = 0.2f;    // 대쉬 지속 시간
-    public float dashCooldown = 1f;  // 대쉬 재사용 대기 시간
     private bool isDashing;          // 대쉬 중 여부
     private bool canDash = true;     // 대쉬 가능 여부
 
@@ -83,15 +77,17 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        // 플레이어 관련 스탯은 GameManager 기준으로 사용
         currentHp = GameManager.Instance.playerMaxHp;
+        currentJumpCount = GameManager.Instance.playerMaxJumpCount;
         inventoryUI = FindInventoryUIAnyState();
     }
 
     // 매 프레임 상태 업데이트(지면 체크, 점프 리셋)
     void Update()
     {
-        // 인벤토리 열림 중에는 조작 로직 중지
-        if (isInventoryOpen) return;
+        // UI 열림 중에는 조작 로직 중지
+        if (isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
 
         // 1) 지면 체크(일반 지면 + 점프스루 발판)
         Collider2D groundCollider = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer | thinFloorLayer);
@@ -109,7 +105,7 @@ public class PlayerController : MonoBehaviour
 
         // 3) 지면 착지 시 점프 횟수 복구
         if (isGrounded && rb.linearVelocity.y <= 0.1f && !isDownJumping)
-            currentJumpCount = maxJumpCount;
+            currentJumpCount = GameManager.Instance.playerMaxJumpCount;
     }
 
     // -------------------- 입력 콜백: 이동 --------------------
@@ -124,6 +120,9 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        // 보상 UI 열림 중에는 플레이어 이동 입력 무시
+        if (ChestRewardUI.IsAnyOpen) return;
+
         if (isDashing || isKnockback) return;
 
         if (moveInput.x != 0) UpdateFacingDirection();
@@ -132,7 +131,7 @@ public class PlayerController : MonoBehaviour
     // -------------------- 입력 콜백: 점프/하향 점프 --------------------
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (isDashing || isKnockback || isInventoryOpen || !context.started) return;
+        if (isDashing || isKnockback || isInventoryOpen || ChestRewardUI.IsAnyOpen || !context.started) return;
 
         // 하향 점프: 아래 입력 + 지상 + Ground2 위
         if (isGrounded && moveInput.y < -0.1f)
@@ -148,7 +147,7 @@ public class PlayerController : MonoBehaviour
         // 일반 점프
         if (currentJumpCount > 0)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, GameManager.Instance.playerJumpForce);
             currentJumpCount--;
         }
     }
@@ -178,7 +177,7 @@ public class PlayerController : MonoBehaviour
     // -------------------- 입력 콜백: 대쉬 --------------------
     public void OnDash(InputAction.CallbackContext context)
     {
-        if (isKnockback || isInventoryOpen) return;
+        if (isKnockback || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
         if (context.started && canDash && !isDashing) StartCoroutine(DashAction());
     }
 
@@ -192,21 +191,29 @@ public class PlayerController : MonoBehaviour
         rb.gravityScale = 0f;
 
         float dashDir = moveInput.x != 0 ? Mathf.Sign(moveInput.x) : lastHorizontalDirection;
-        rb.linearVelocity = new Vector2(dashDir * dashVelocity, 0f);
+        rb.linearVelocity = new Vector2(dashDir * GameManager.Instance.playerDashVelocity, 0f);
 
-        yield return new WaitForSeconds(dashTime);
+        yield return new WaitForSeconds(GameManager.Instance.playerDashTime);
 
         rb.gravityScale = prevGravity;
         isDashing = false;
 
-        yield return new WaitForSeconds(dashCooldown);
+        yield return new WaitForSeconds(GameManager.Instance.playerDashCooldown);
         canDash = true;
     }
 
     // -------------------- 입력 콜백: 공격 --------------------
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if (!context.started || isDashing || isKnockback || isInventoryOpen) return;
+        if (!context.started || isDashing || isKnockback || ChestRewardUI.IsAnyOpen) return;
+
+        // 인벤토리 열림 중 Attack(Z)는 아이템 장착 확인 키로 사용
+        if (isInventoryOpen)
+        {
+            if (inventoryUI != null) inventoryUI.ConfirmCurrentSelection();
+            return;
+        }
+
         if (Time.time < lastAttackTime + (1f / GameManager.Instance.playerAttackSpeed)) return;
 
         Attack();
@@ -216,7 +223,7 @@ public class PlayerController : MonoBehaviour
     // -------------------- 입력 콜백: 인벤토리 --------------------
     public void OnInventory(InputAction.CallbackContext context)
     {
-        if (!context.started) return;
+        if (!context.started || ChestRewardUI.IsAnyOpen) return;
 
         if (inventoryUI == null)
             inventoryUI = FindInventoryUIAnyState();
@@ -234,7 +241,7 @@ public class PlayerController : MonoBehaviour
     // -------------------- 입력 콜백: 포션 --------------------
     public void OnHPPotion(InputAction.CallbackContext context)
     {
-        if (!context.started || isInventoryOpen) return;
+        if (!context.started || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
         UsePotion();
     }
 
@@ -293,6 +300,70 @@ public class PlayerController : MonoBehaviour
         GameManager.Instance.potionCount--;
 
         Debug.Log("포션 사용! " + totalHeal + "의 HP 회복됨. 남은 포션: " + GameManager.Instance.potionCount + " | 현재 HP: " + currentHp);
+    }
+
+    public void ApplyItemStats(ItemStats stats)
+    {
+        if (GameManager.Instance == null) return;
+
+        GameManager.Instance.playerMaxHp += stats.hp;
+        GameManager.Instance.playerDefense += stats.defense;
+        GameManager.Instance.playerAttackDamage += stats.attack;
+        GameManager.Instance.playerAttackSpeed += stats.attackSpeed;
+        GameManager.Instance.playerCriticalChance += stats.criticalChance;
+        GameManager.Instance.playerCriticalMultiplier += stats.criticalDamage;
+
+        GameManager.Instance.playerMoveSpeed += stats.moveSpeed;
+
+        // 최대 체력 증가 시 현재 체력도 함께 보정
+        currentHp += stats.hp;
+
+        Debug.Log($"아이템 스탯 적용: HP+{stats.hp}, 방어+{stats.defense}, 이동속도+{stats.moveSpeed}, 공격력+{stats.attack}, 공격속도+{stats.attackSpeed}, 치확+{stats.criticalChance}, 치피+{stats.criticalDamage}");
+    }
+
+    public void RemoveItemStats(ItemStats stats)
+    {
+        if (GameManager.Instance == null) return;
+
+        GameManager.Instance.playerMaxHp -= stats.hp;
+        GameManager.Instance.playerDefense -= stats.defense;
+        GameManager.Instance.playerAttackDamage -= stats.attack;
+        GameManager.Instance.playerAttackSpeed -= stats.attackSpeed;
+        GameManager.Instance.playerCriticalChance -= stats.criticalChance;
+        GameManager.Instance.playerCriticalMultiplier -= stats.criticalDamage;
+
+        GameManager.Instance.playerMoveSpeed -= stats.moveSpeed;
+
+        // 최대 체력이 줄어들면 현재 체력도 최대치 이내로 보정
+        currentHp = Mathf.Min(currentHp, GameManager.Instance.playerMaxHp);
+
+        Debug.Log($"아이템 스탯 제거: HP-{stats.hp}, 방어-{stats.defense}, 이동속도-{stats.moveSpeed}, 공격력-{stats.attack}, 공격속도-{stats.attackSpeed}, 치확-{stats.criticalChance}, 치피-{stats.criticalDamage}");
+    }
+
+    public void SetCurrentWeaponFromInventoryType(InventoryWeaponType inventoryWeaponType)
+    {
+        switch (inventoryWeaponType)
+        {
+            case InventoryWeaponType.Sword:
+                currentWeapon = WeaponType.Sword;
+                break;
+            case InventoryWeaponType.Blunt:
+                currentWeapon = WeaponType.Blunt;
+                break;
+            case InventoryWeaponType.Spear:
+                currentWeapon = WeaponType.Spear;
+                break;
+            case InventoryWeaponType.Axe:
+                currentWeapon = WeaponType.Axe;
+                break;
+            case InventoryWeaponType.Scythe:
+                currentWeapon = WeaponType.Scythe;
+                break;
+            default:
+                break;
+        }
+
+        Debug.Log($"현재 무기 타입 변경: {currentWeapon}");
     }
 
     // 피격 처리(방어력 적용 + 넉백 + 게임오버 체크)
@@ -366,7 +437,7 @@ public class PlayerController : MonoBehaviour
         switch (currentWeapon)
         {
             case WeaponType.Sword: return new Vector2(2.0f, 1.2f);
-            case WeaponType.Mace: return new Vector2(1.2f, 2.0f);
+            case WeaponType.Blunt: return new Vector2(1.2f, 2.0f);
             case WeaponType.Spear: return new Vector2(3.5f, 0.6f);
             case WeaponType.Axe: return new Vector2(1.8f, 1.8f);
             case WeaponType.Scythe: return new Vector2(2.5f, 1.5f);
@@ -380,7 +451,7 @@ public class PlayerController : MonoBehaviour
         switch (currentWeapon)
         {
             case WeaponType.Sword: return 1.2f;
-            case WeaponType.Mace: return 0.8f;
+            case WeaponType.Blunt: return 0.8f;
             case WeaponType.Spear: return 2.0f;
             case WeaponType.Axe: return 1.0f;
             case WeaponType.Scythe: return 1.5f;
@@ -394,7 +465,7 @@ public class PlayerController : MonoBehaviour
         switch (currentWeapon)
         {
             case WeaponType.Sword: return 5f;
-            case WeaponType.Mace: return 10f;
+            case WeaponType.Blunt: return 10f;
             case WeaponType.Spear: return 3f;
             case WeaponType.Axe: return 8f;
             case WeaponType.Scythe: return 6f;
@@ -453,7 +524,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(moveInput.x * GameManager.Instance.playerMoveSpeed, rb.linearVelocity.y);
         }
     }
 }

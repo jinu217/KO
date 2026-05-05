@@ -13,6 +13,14 @@ public class GameManager : MonoBehaviour
     public float playerCriticalMultiplier = 1.5f; // 크리티컬 데미지 배율
     public float playerDefense = 10f;             // 방어력(피해 감소 계산에 사용)
 
+    [Header("플레이어 이동/액션 스탯")]
+    public float playerMoveSpeed = 5f;            // 좌우 이동 속도
+    public float playerJumpForce = 15f;           // 점프 힘
+    public int playerMaxJumpCount = 1;            // 최대 점프 횟수
+    public float playerDashVelocity = 20f;        // 대쉬 속도
+    public float playerDashTime = 0.2f;           // 대쉬 지속 시간
+    public float playerDashCooldown = 1f;         // 대쉬 쿨다운
+
     [Header("포션 설정")]
     public int potionCount = 5;                   // 보유 포션 개수
     public float potionHealAmount = 20f;          // 고정 회복량
