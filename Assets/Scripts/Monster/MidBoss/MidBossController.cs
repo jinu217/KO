@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 public abstract class MidBossController : MonoBehaviour
 {
@@ -12,10 +12,16 @@ public abstract class MidBossController : MonoBehaviour
 
     [Header("벽 감지")]
     public Transform wallCheck;
-    public float wallCheckDistance = 0.5f;
+
+    [Header("방향 전환")]
+    [SerializeField] protected float turnDeadZone = 0.2f;
+
+    [Header("추격 정지 거리")]
+    [SerializeField] protected float stopDistanceX = 0.35f;
 
     protected Rigidbody2D rb;
     protected SpriteRenderer spriteRenderer;
+    protected Collider2D bossCollider;
     protected Transform playerTransform;
 
     protected float currentHp;
@@ -24,16 +30,33 @@ public abstract class MidBossController : MonoBehaviour
     protected bool isChasing;
     protected bool isAttacking;
     protected bool isDead;
+    protected bool isBuffed;
 
     protected float lastBasicAttackTime;
     protected float lastPattern1Time;
     protected float lastPattern2Time;
     protected float lastPattern3Time;
 
+    [Header("공격 전환 딜레이")]
+    [SerializeField] protected float patternTransitionDelay = 0.5f;
+
+    protected enum BossAttackKind
+    {
+        None,
+        Basic,
+        Pattern1,
+        Pattern2,
+        Pattern3
+    }
+
+    protected BossAttackKind lastAttackKind = BossAttackKind.None;
+    protected float lastAttackEndTime = -999f;
+
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        bossCollider = GetComponent<Collider2D>();
     }
 
     protected virtual void Start()
@@ -53,13 +76,9 @@ public abstract class MidBossController : MonoBehaviour
         {
             playerTransform = player.transform;
 
-            Collider2D bossCol = GetComponent<Collider2D>();
             Collider2D playerCol = player.GetComponent<Collider2D>();
-
-            if (bossCol != null && playerCol != null)
-            {
-                Physics2D.IgnoreCollision(bossCol, playerCol, true);
-            }
+            if (bossCollider != null && playerCol != null)
+                Physics2D.IgnoreCollision(bossCollider, playerCol, true);
         }
 
         lastBasicAttackTime = -999f;
@@ -89,10 +108,14 @@ public abstract class MidBossController : MonoBehaviour
 
         LookAtPlayer();
 
-        if (CanUseSelectedAttack())
+        // 범위 안이면 무조건 정지
+        // 쿨타임까지 준비됐을 때만 공격 실행
+        if (IsInSelectedAttackRange())
         {
             StopMove();
-            TryAttack();
+
+            if (CanUseSelectedAttack())
+                TryAttack();
         }
     }
 
@@ -104,7 +127,8 @@ public abstract class MidBossController : MonoBehaviour
         {
             LookAtPlayer();
 
-            if (CanUseSelectedAttack())
+            // 범위 안이면 쿨타임 중이어도 다가가지 않음
+            if (IsInSelectedAttackRange())
             {
                 StopMove();
                 return;
@@ -145,7 +169,19 @@ public abstract class MidBossController : MonoBehaviour
 
     protected virtual void MoveToPlayer()
     {
-        LookAtPlayer();
+        if (playerTransform == null)
+        {
+            StopMove();
+            return;
+        }
+
+        float xDistance = Mathf.Abs(playerTransform.position.x - transform.position.x);
+
+        if (xDistance <= stopDistanceX)
+        {
+            StopMove();
+            return;
+        }
 
         if (IsWallInFront())
         {
@@ -153,7 +189,22 @@ public abstract class MidBossController : MonoBehaviour
             return;
         }
 
-        rb.linearVelocity = new Vector2(lookDirection * data.chaseSpeed, rb.linearVelocity.y);
+        float speed = GetMoveSpeed();
+
+        rb.linearVelocity = new Vector2(
+            lookDirection * speed,
+            rb.linearVelocity.y
+        );
+    }
+
+    protected virtual float GetMoveSpeed()
+    {
+        float speed = data.chaseSpeed;
+
+        if (isBuffed)
+            speed *= data.buffMoveSpeedMultiplier;
+
+        return speed;
     }
 
     protected virtual void LookAtPlayer()
@@ -162,10 +213,10 @@ public abstract class MidBossController : MonoBehaviour
 
         float dir = playerTransform.position.x - transform.position.x;
 
-        if (dir > 0)
-            lookDirection = 1;
-        else if (dir < 0)
-            lookDirection = -1;
+        if (Mathf.Abs(dir) < turnDeadZone)
+            return;
+
+        lookDirection = dir > 0 ? 1 : -1;
 
         if (spriteRenderer != null)
             spriteRenderer.flipX = lookDirection < 0;
@@ -178,7 +229,7 @@ public abstract class MidBossController : MonoBehaviour
         RaycastHit2D hit = Physics2D.Raycast(
             wallCheck.position,
             Vector2.right * lookDirection,
-            wallCheckDistance,
+            data.wallCheckDistance,
             wallLayer
         );
 
@@ -193,18 +244,21 @@ public abstract class MidBossController : MonoBehaviour
 
         if (nextAttack == 1 && CanUsePattern1())
         {
+            if (!CanStartPatternByTransitionRule()) return;
             StartCoroutine(Pattern1Routine());
             return;
         }
 
         if (nextAttack == 2 && CanUsePattern2())
         {
+            if (!CanStartPatternByTransitionRule()) return;
             StartCoroutine(Pattern2Routine());
             return;
         }
 
         if (nextAttack == 3 && CanUsePattern3())
         {
+            if (!CanStartPatternByTransitionRule()) return;
             StartCoroutine(Pattern3Routine());
             return;
         }
@@ -212,15 +266,14 @@ public abstract class MidBossController : MonoBehaviour
         if (nextAttack == 0 && CanUseBasicAttack())
         {
             StartCoroutine(BasicAttackRoutine());
-            return;
         }
     }
 
     protected virtual int GetNextAttackIndex()
     {
-        bool pattern1Ready = Time.time >= lastPattern1Time + data.pattern1Cooldown;
-        bool pattern2Ready = Time.time >= lastPattern2Time + data.pattern2Cooldown;
-        bool pattern3Ready = Time.time >= lastPattern3Time + data.pattern3Cooldown;
+        bool pattern1Ready = Time.time >= lastPattern1Time + GetCooldown(data.pattern1Cooldown);
+        bool pattern2Ready = Time.time >= lastPattern2Time + GetCooldown(data.pattern2Cooldown);
+        bool pattern3Ready = Time.time >= lastPattern3Time + GetCooldown(data.pattern3Cooldown);
 
         if (pattern1Ready) return 1;
         if (pattern2Ready) return 2;
@@ -229,7 +282,16 @@ public abstract class MidBossController : MonoBehaviour
         return 0;
     }
 
-    protected virtual bool CanUseSelectedAttack()
+    protected virtual float GetCooldown(float baseCooldown)
+    {
+        if (isBuffed)
+            return baseCooldown * data.buffCooldownMultiplier;
+
+        return baseCooldown;
+    }
+
+    // 범위만 체크
+    protected virtual bool IsInSelectedAttackRange()
     {
         int nextAttack = GetNextAttackIndex();
 
@@ -255,20 +317,32 @@ public abstract class MidBossController : MonoBehaviour
 
         if (nextAttack == 3)
         {
-            return IsPlayerInAttackRange(
-                data.pattern3Range,
-                data.pattern3Height,
-                data.pattern3Offset,
-                data.pattern3HeightOffset
-            );
+            return true;
         }
+
+        return IsPlayerInAttackRange(
+            data.basicAttackRange,
+            data.basicAttackHeight,
+            data.basicAttackOffset,
+            data.basicAttackHeightOffset
+        );
+    }
+
+    // 쿨타임 + 범위 체크
+    protected virtual bool CanUseSelectedAttack()
+    {
+        int nextAttack = GetNextAttackIndex();
+
+        if (nextAttack == 1) return CanUsePattern1();
+        if (nextAttack == 2) return CanUsePattern2();
+        if (nextAttack == 3) return CanUsePattern3();
 
         return CanUseBasicAttack();
     }
 
     protected virtual bool CanUseBasicAttack()
     {
-        if (Time.time < lastBasicAttackTime + data.basicAttackCooldown)
+        if (Time.time < lastBasicAttackTime + GetCooldown(data.basicAttackCooldown))
             return false;
 
         return IsPlayerInAttackRange(
@@ -281,7 +355,7 @@ public abstract class MidBossController : MonoBehaviour
 
     protected virtual bool CanUsePattern1()
     {
-        if (Time.time < lastPattern1Time + data.pattern1Cooldown)
+        if (Time.time < lastPattern1Time + GetCooldown(data.pattern1Cooldown))
             return false;
 
         return IsPlayerInAttackRange(
@@ -294,7 +368,7 @@ public abstract class MidBossController : MonoBehaviour
 
     protected virtual bool CanUsePattern2()
     {
-        if (Time.time < lastPattern2Time + data.pattern2Cooldown)
+        if (Time.time < lastPattern2Time + GetCooldown(data.pattern2Cooldown))
             return false;
 
         return IsPlayerInAttackRange(
@@ -307,19 +381,24 @@ public abstract class MidBossController : MonoBehaviour
 
     protected virtual bool CanUsePattern3()
     {
+        if (isBuffed) return false;
+
         if (Time.time < lastPattern3Time + data.pattern3Cooldown)
             return false;
 
-        return IsPlayerInAttackRange(
-            data.pattern3Range,
-            data.pattern3Height,
-            data.pattern3Offset,
-            data.pattern3HeightOffset
-        );
+        return true;
     }
 
-    protected virtual bool IsPlayerInAttackRange(float range, float height, float offset, float heightOffset = 0f)
+    protected virtual bool IsPlayerInAttackRange(
+        float range,
+        float height,
+        float offset,
+        float heightOffset = 0f
+    )
     {
+        if (range <= 0f || height <= 0f)
+            return true;
+
         Vector2 center = (Vector2)transform.position + new Vector2(
             lookDirection * offset,
             heightOffset
@@ -337,18 +416,22 @@ public abstract class MidBossController : MonoBehaviour
         StopMove();
         lastBasicAttackTime = Time.time;
 
+        OnBasicAttackStart();
+
         yield return new WaitForSeconds(data.basicPreDelay);
 
-        HitPlayer(
-            data.basicAttackDamage,
-            data.basicAttackRange,
-            data.basicAttackHeight,
-            data.basicAttackOffset,
-            data.basicAttackHeightOffset
-        );
+        for (int i = 0; i < data.basicAttackCount; i++)
+        {
+            BasicAttackAction(i);
+
+            if (i < data.basicAttackCount - 1)
+                yield return new WaitForSeconds(data.basicAttackInterval);
+        }
 
         yield return new WaitForSeconds(data.basicPostDelay);
 
+        OnBasicAttackEnd();
+        MarkAttackEnded(BossAttackKind.Basic);
         isAttacking = false;
     }
 
@@ -358,12 +441,16 @@ public abstract class MidBossController : MonoBehaviour
         StopMove();
         lastPattern1Time = Time.time;
 
+        OnPattern1Start();
+
         yield return new WaitForSeconds(data.pattern1PreDelay);
 
-        Pattern1();
+        yield return Pattern1Action();
 
         yield return new WaitForSeconds(data.pattern1PostDelay);
 
+        OnPattern1End();
+        MarkAttackEnded(BossAttackKind.Pattern1);
         isAttacking = false;
     }
 
@@ -373,12 +460,16 @@ public abstract class MidBossController : MonoBehaviour
         StopMove();
         lastPattern2Time = Time.time;
 
+        OnPattern2Start();
+
         yield return new WaitForSeconds(data.pattern2PreDelay);
 
-        Pattern2();
+        yield return Pattern2Action();
 
         yield return new WaitForSeconds(data.pattern2PostDelay);
 
+        OnPattern2End();
+        MarkAttackEnded(BossAttackKind.Pattern2);
         isAttacking = false;
     }
 
@@ -388,16 +479,65 @@ public abstract class MidBossController : MonoBehaviour
         StopMove();
         lastPattern3Time = Time.time;
 
+        OnPattern3Start();
+
         yield return new WaitForSeconds(data.pattern3PreDelay);
 
-        Pattern3();
+        yield return Pattern3Action();
 
         yield return new WaitForSeconds(data.pattern3PostDelay);
 
+        OnPattern3End();
+        MarkAttackEnded(BossAttackKind.Pattern3);
         isAttacking = false;
     }
 
-    protected virtual void HitPlayer(float damage, float range, float height, float offset, float heightOffset = 0f)
+    protected virtual void BasicAttackAction(int attackIndex)
+    {
+        HitPlayer(
+            GetFinalDamage(data.basicAttackDamage),
+            data.basicAttackRange,
+            data.basicAttackHeight,
+            data.basicAttackOffset,
+            data.basicAttackHeightOffset
+        );
+    }
+
+    protected virtual bool CanStartPatternByTransitionRule()
+    {
+        if (patternTransitionDelay <= 0f) return true;
+
+        bool wasBasicOrPattern = lastAttackKind != BossAttackKind.None;
+        if (!wasBasicOrPattern) return true;
+
+        return Time.time >= lastAttackEndTime + patternTransitionDelay;
+    }
+
+    protected virtual void MarkAttackEnded(BossAttackKind kind)
+    {
+        lastAttackKind = kind;
+        lastAttackEndTime = Time.time;
+    }
+
+    protected abstract IEnumerator Pattern1Action();
+    protected abstract IEnumerator Pattern2Action();
+    protected abstract IEnumerator Pattern3Action();
+
+    protected virtual float GetFinalDamage(float baseDamage)
+    {
+        if (isBuffed)
+            return baseDamage * data.buffDamageMultiplier;
+
+        return baseDamage;
+    }
+
+    protected virtual void HitPlayer(
+        float damage,
+        float range,
+        float height,
+        float offset,
+        float heightOffset = 0f
+    )
     {
         Vector2 center = (Vector2)transform.position + new Vector2(
             lookDirection * offset,
@@ -412,9 +552,26 @@ public abstract class MidBossController : MonoBehaviour
         {
             if (hit.TryGetComponent<PlayerController>(out var player))
             {
-                player.TakeDamage(damage, (Vector2)transform.position);
+                player.TakeDamageNoIFrame(damage, (Vector2)transform.position);
             }
         }
+    }
+
+    protected virtual Collider2D GetPlayerHit(
+    float range,
+    float height,
+    float offset,
+    float heightOffset = 0f
+)
+    {
+        Vector2 center = (Vector2)transform.position + new Vector2(
+            lookDirection * offset,
+            heightOffset
+        );
+
+        Vector2 size = new Vector2(range, height);
+
+        return Physics2D.OverlapBox(center, size, 0f, playerLayer);
     }
 
     protected virtual void StopMove()
@@ -443,9 +600,17 @@ public abstract class MidBossController : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    protected abstract void Pattern1();
-    protected abstract void Pattern2();
-    protected abstract void Pattern3();
+    protected virtual void OnBasicAttackStart() { }
+    protected virtual void OnBasicAttackEnd() { }
+
+    protected virtual void OnPattern1Start() { }
+    protected virtual void OnPattern1End() { }
+
+    protected virtual void OnPattern2Start() { }
+    protected virtual void OnPattern2End() { }
+
+    protected virtual void OnPattern3Start() { }
+    protected virtual void OnPattern3End() { }
 
     protected virtual void OnDrawGizmos()
     {
@@ -459,57 +624,40 @@ public abstract class MidBossController : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, data.chaseRange);
 
-        Gizmos.color = Color.cyan;
-        Vector3 basicCenter = transform.position + new Vector3(
-            dir * data.basicAttackOffset,
-            data.basicAttackHeightOffset,
-            0f
-        );
-        Gizmos.DrawWireCube(
-            basicCenter,
-            new Vector3(data.basicAttackRange, data.basicAttackHeight, 0f)
-        );
-
-        Gizmos.color = Color.magenta;
-        Vector3 p1Center = transform.position + new Vector3(
-            dir * data.pattern1Offset,
-            data.pattern1HeightOffset,
-            0f
-        );
-        Gizmos.DrawWireCube(
-            p1Center,
-            new Vector3(data.pattern1Range, data.pattern1Height, 0f)
-        );
-
-        Gizmos.color = Color.blue;
-        Vector3 p2Center = transform.position + new Vector3(
-            dir * data.pattern2Offset,
-            data.pattern2HeightOffset,
-            0f
-        );
-        Gizmos.DrawWireCube(
-            p2Center,
-            new Vector3(data.pattern2Range, data.pattern2Height, 0f)
-        );
-
-        Gizmos.color = Color.green;
-        Vector3 p3Center = transform.position + new Vector3(
-            dir * data.pattern3Offset,
-            data.pattern3HeightOffset,
-            0f
-        );
-        Gizmos.DrawWireCube(
-            p3Center,
-            new Vector3(data.pattern3Range, data.pattern3Height, 0f)
-        );
+        DrawAttackBox(Color.cyan, data.basicAttackRange, data.basicAttackHeight, data.basicAttackOffset, data.basicAttackHeightOffset, dir);
+        DrawAttackBox(Color.magenta, data.pattern1Range, data.pattern1Height, data.pattern1Offset, data.pattern1HeightOffset, dir);
+        DrawAttackBox(Color.green, data.pattern2Range, data.pattern2Height, data.pattern2Offset, data.pattern2HeightOffset, dir);
+        DrawAttackBox(Color.brown, data.pattern3Range, data.pattern3Height, data.pattern3Offset, data.pattern3HeightOffset, dir);
 
         if (wallCheck != null)
         {
             Gizmos.color = Color.white;
             Gizmos.DrawRay(
                 wallCheck.position,
-                Vector2.right * dir * wallCheckDistance
+                Vector2.right * dir * data.wallCheckDistance
             );
         }
+    }
+
+    protected virtual void DrawAttackBox(
+        Color color,
+        float range,
+        float height,
+        float offset,
+        float heightOffset,
+        int dir
+    )
+    {
+        if (range <= 0f || height <= 0f) return;
+
+        Gizmos.color = color;
+
+        Vector3 center = transform.position + new Vector3(
+            dir * offset,
+            heightOffset,
+            0f
+        );
+
+        Gizmos.DrawWireCube(center, new Vector3(range, height, 0f));
     }
 }

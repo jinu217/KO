@@ -40,4 +40,16 @@ public class EnemyData : ScriptableObject
     [Header("원거리 전용")]
     public GameObject projectilePrefab;   // 발사할 투사체 프리팹
     public float rangedAttackRange = 0f;  // 원거리 발사 사거리(0 이하면 attackRange 사용)
+
+    [Header("피격 반응")]
+    [Tooltip("넉백 저항(0=가벼움, 1=매우 무거움)")]
+    [Range(0f, 1f)] public float knockbackResistance = 0.2f;
+    [Tooltip("피격 시 행동 정지 시간")]
+    public float hitStunDuration = 0.15f;
+
+    [Header("벽 충돌 보정")]
+    [Tooltip("벽에 넉백 충돌 시 추가 피해")]
+    public float wallBonusDamage = 0f;
+    [Tooltip("벽에 넉백 충돌 시 추가 경직")]
+    public float wallStunDuration = 0.2f;
 }

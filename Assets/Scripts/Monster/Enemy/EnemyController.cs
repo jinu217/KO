@@ -9,6 +9,8 @@ public abstract class EnemyController : MonoBehaviour
     public LayerMask playerLayer;  // 플레이어 탐지/공격 판정 레이어
     public LayerMask groundLayer;  // 지면 감지 레이어
     public Transform groundCheck;  // 절벽 감지용 Ray 시작 위치
+    public Transform wallCheck;    // 벽 충돌 감지용 기준점(선택)
+    public float wallCheckDistance = 0.2f; // 벽 감지 거리
 
     // -------------------- 컴포넌트/대상 --------------------
     protected Rigidbody2D rb;          // 물리 이동 제어
@@ -47,7 +49,13 @@ public abstract class EnemyController : MonoBehaviour
     protected float wanderTimer;     // 배회 상태 타이머
     protected float attackTimer;     // 공격 상태 타이머(>0이면 공격 중)
     protected float knockbackTimer;  // 넉백 상태 타이머
+    protected float hitStunTimer;    // 피격 경직 타이머
+    protected float chaseLostSightGraceTimer; // 추격 중 시야 이탈 허용 타이머
     protected float lastAttackTime;  // 마지막 공격 시각
+
+    protected bool hasWallImpactPending;
+    protected float pendingWallImpactDamage;
+    protected float pendingWallStunDuration;
 
     [Header("순찰 Idle 설정")]
     public bool enablePatrolIdle = true;       // 순찰 중 랜덤 멈춤 사용 여부
@@ -74,6 +82,7 @@ public abstract class EnemyController : MonoBehaviour
     // 읽기 전용 상태 프로퍼티
     protected bool isKnockback => knockbackTimer > 0; // 넉백 중 여부
     protected bool isAttacking => attackTimer > 0;    // 공격 중 여부
+    protected bool isHitStunned => hitStunTimer > 0;  // 피격 경직 중 여부
 
     // 컴포넌트 초기화
     protected virtual void Awake()
@@ -119,8 +128,8 @@ public abstract class EnemyController : MonoBehaviour
     // 프레임 로직: 상태 차단 -> 플레이어 감지 -> 타이머 처리
     protected virtual void Update()
     {
-        // 넉백 중에는 AI 중지
-        if (isKnockback)
+        // 넉백/경직 중에는 AI 중지
+        if (isKnockback || isHitStunned)
         {
             HandleTimers();
             return;
@@ -165,15 +174,21 @@ public abstract class EnemyController : MonoBehaviour
 
             if (playerTransform != null)
             {
-                // 강제 어그로 중에도 시야 밖(뒤쪽)은 인식하지 않음
-                if (!IsTargetInView(playerTransform))
-                {
-                    isChasing = false;
-                    playerTransform = null;
-                    return;
-                }
-
+                // 피격으로 발생한 강제 어그로 동안에는 시야/등뒤 조건을 무시하고 추격
                 isChasing = true;
+                chaseLostSightGraceTimer = 0.35f;
+
+                // 절벽 회피/반전 중에는 강제 어그로가 방향을 다시 덮어쓰지 않게 보호
+                if (!isWandering && !edgeTurnLock)
+                {
+                    float dx = playerTransform.position.x - transform.position.x;
+                    if (Mathf.Abs(dx) > 0.05f)
+                    {
+                        walkDirection = dx > 0f ? 1 : -1;
+                        delayedDirection = walkDirection;
+                        Flip(walkDirection);
+                    }
+                }
 
                 if (IsPlayerInMeleeAttackRange())
                 {
@@ -195,16 +210,24 @@ public abstract class EnemyController : MonoBehaviour
 
         if (playerCol != null)
         {
-            // 시야 밖(뒤쪽) 플레이어는 인식하지 않음
-            if (!IsTargetInView(playerCol.transform))
+            bool inView = IsTargetInView(playerCol.transform);
+
+            // 시야 밖(뒤쪽) 처리:
+            // - 비추격 상태에서는 기존처럼 인식하지 않음
+            // - 이미 추격 중이면 시야를 잠깐 잃어도 계속 추격(원거리와 유사 동작)
+            if (!inView && !isChasing)
             {
-                isChasing = false;
                 playerTransform = null;
                 return;
             }
 
             bool wasChasing = isChasing;
             playerTransform = playerCol.transform;
+            isChasing = true;
+
+            // 추격 중에는 시야 유예 타이머를 계속 리프레시해서
+            // 지형 상하 분리/등뒤 위치에서도 추격 상태가 쉽게 끊기지 않게 함
+            chaseLostSightGraceTimer = 0.35f;
 
             // 최초 감지 시 반응 지연 우선
             if (!wasChasing && !isReacting && reactionTimer <= 0f)
@@ -212,8 +235,6 @@ public abstract class EnemyController : MonoBehaviour
                 StartReaction();
                 return;
             }
-
-            isChasing = true;
 
             // 전방 공격 박스 범위 안이면 공격 쿨다운 체크 후 StartAttack
             if (IsPlayerInMeleeAttackRange())
@@ -230,6 +251,7 @@ public abstract class EnemyController : MonoBehaviour
         {
             isChasing = false;
             playerTransform = null;
+            chaseLostSightGraceTimer = 0f;
         }
     }
 
@@ -291,10 +313,17 @@ public abstract class EnemyController : MonoBehaviour
 
         if (Time.time >= nextUpdateTimer)
         {
-            float realDir = Mathf.Sign(playerTransform.position.x - transform.position.x);
-            delayedDirection = (int)realDir;
+            float dx = playerTransform.position.x - transform.position.x;
+
+            // 플레이어가 위/아래에 있어 X 차이가 거의 0이면 기존 방향 유지(0 방향 고정 방지)
+            if (Mathf.Abs(dx) > 0.05f)
+                delayedDirection = dx > 0f ? 1 : -1;
+
             nextUpdateTimer = Time.time + data.positionUpdateDelay;
         }
+
+        if (delayedDirection == 0)
+            delayedDirection = (walkDirection == 0) ? 1 : walkDirection;
 
         walkDirection = delayedDirection;
         rb.linearVelocity = new Vector2(walkDirection * data.chaseSpeed, rb.linearVelocity.y);
@@ -304,7 +333,19 @@ public abstract class EnemyController : MonoBehaviour
     // 물리 프레임 로직: 절벽 감지 + 이동 상태 처리
     protected virtual void FixedUpdate()
     {
-        if (isKnockback) return;
+        if (isKnockback)
+        {
+            PreventKnockbackFallFromLedge();
+            CheckKnockbackWallImpact();
+            return;
+        }
+
+        if (isHitStunned)
+        {
+            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+            return;
+        }
+
         if (isIdle || isReacting || isAttacking)
         {
             rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
@@ -525,6 +566,12 @@ public abstract class EnemyController : MonoBehaviour
             }
         }
 
+        if (hitStunTimer > 0)
+        {
+            hitStunTimer -= Time.deltaTime;
+            if (hitStunTimer < 0f) hitStunTimer = 0f;
+        }
+
         if (attackTimer > 0) attackTimer -= Time.deltaTime;
 
         if (reactionTimer > 0)
@@ -640,7 +687,7 @@ public abstract class EnemyController : MonoBehaviour
         }
     }
 
-    // 피격 처리(체력 감소 + 넉백)
+    // 피격 처리(체력 감소 + 넉백 + 경직 + 벽 충돌 추가 효과)
     public virtual void TakeDamage(float damage, float kPower)
     {
         currentHp -= damage;
@@ -657,14 +704,83 @@ public abstract class EnemyController : MonoBehaviour
             if (playerObj != null) playerTransform = playerObj.transform;
         }
 
-        knockbackTimer = 0.2f;
+        // 뒤에서 맞아도 즉시 플레이어를 인지하도록 바라보는 방향 갱신
+        if (playerTransform != null)
+        {
+            float dx = playerTransform.position.x - transform.position.x;
+            if (Mathf.Abs(dx) > 0.05f)
+            {
+                walkDirection = dx > 0f ? 1 : -1;
+                delayedDirection = walkDirection;
+                Flip(walkDirection);
+            }
+        }
+
+        float resistance = (data != null) ? Mathf.Clamp01(data.knockbackResistance) : 0f;
+        float effectiveKnockback = Mathf.Max(0f, kPower * (1f - resistance));
+
+        knockbackTimer = Mathf.Max(0.05f, 0.12f + effectiveKnockback * 0.02f);
+        hitStunTimer = Mathf.Max(hitStunTimer, data != null ? data.hitStunDuration : 0.15f);
         isIdle = false;
         rb.linearVelocity = Vector2.zero;
 
         float dir = playerTransform != null ? Mathf.Sign(transform.position.x - playerTransform.position.x) : -walkDirection;
-        rb.linearVelocity = new Vector2(dir * kPower, 5f);
+        float knockbackY = Mathf.Lerp(2.5f, 5f, 1f - resistance);
+        rb.linearVelocity = new Vector2(dir * effectiveKnockback, knockbackY);
+
+        hasWallImpactPending = true;
+        pendingWallImpactDamage = data != null ? data.wallBonusDamage : 0f;
+        pendingWallStunDuration = data != null ? data.wallStunDuration : 0f;
 
         if (currentHp <= 0) gameObject.SetActive(false);
+    }
+
+    // 넉백 중 절벽으로 밀려 떨어지는 상황 방지
+    protected virtual void PreventKnockbackFallFromLedge()
+    {
+        if (groundCheck == null || data == null) return;
+        if (Mathf.Approximately(rb.linearVelocity.x, 0f)) return;
+
+        float movingDir = Mathf.Sign(rb.linearVelocity.x);
+        Vector2 rayOrigin = (Vector2)transform.position + new Vector2(data.groundCheckOffset * movingDir, groundCheck.localPosition.y);
+        RaycastHit2D groundInfo = Physics2D.Raycast(rayOrigin, Vector2.down, data.checkDistance, groundLayer);
+
+        if (groundInfo.collider == null)
+        {
+            // 수직 넉백은 유지하고 수평만 차단해서 낙사 방지
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            walkDirection = (int)-movingDir;
+            delayedDirection = walkDirection;
+            Flip(walkDirection);
+        }
+    }
+
+    // 넉백 중 벽 충돌 시 추가 피해/스턴 처리
+    protected virtual void CheckKnockbackWallImpact()
+    {
+        if (!hasWallImpactPending) return;
+        if (wallCheck == null) return;
+
+        int wallMask = groundLayer;
+        float moveDir = !Mathf.Approximately(rb.linearVelocity.x, 0f) ? Mathf.Sign(rb.linearVelocity.x) : walkDirection;
+        RaycastHit2D hit = Physics2D.Raycast(wallCheck.position, Vector2.right * moveDir, wallCheckDistance, wallMask);
+        if (hit.collider == null) return;
+
+        hasWallImpactPending = false;
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
+        if (pendingWallImpactDamage > 0f)
+        {
+            currentHp -= pendingWallImpactDamage;
+            if (currentHp <= 0f)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+        }
+
+        if (pendingWallStunDuration > 0f)
+            hitStunTimer = Mathf.Max(hitStunTimer, pendingWallStunDuration);
     }
 
     // 디버그 시각화: 감지/추적/공격/절벽 감지 영역 표시
@@ -690,6 +806,14 @@ public abstract class EnemyController : MonoBehaviour
         {
             Gizmos.color = Color.blue;
             Gizmos.DrawRay(groundCheck.position, Vector2.down * data.checkDistance);
+        }
+
+        // 벽 감지 Ray(흰색)
+        if (wallCheck != null)
+        {
+            Gizmos.color = Color.white;
+            float dir = (rb != null && !Mathf.Approximately(rb.linearVelocity.x, 0f)) ? Mathf.Sign(rb.linearVelocity.x) : walkDirection;
+            Gizmos.DrawRay(wallCheck.position, Vector2.right * dir * wallCheckDistance);
         }
     }
 }
