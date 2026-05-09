@@ -27,6 +27,9 @@ public abstract class MidBossController : MonoBehaviour
     protected float currentHp;
     protected int lookDirection = 1;
 
+    protected float nextPositionUpdateTime;
+    protected int delayedDirection = 1;
+
     protected bool isChasing;
     protected bool isAttacking;
     protected bool isDead;
@@ -86,6 +89,9 @@ public abstract class MidBossController : MonoBehaviour
         lastPattern1Time = Time.time - data.pattern1Cooldown + data.patternStartDelay;
         lastPattern2Time = Time.time - data.pattern2Cooldown + data.patternStartDelay;
         lastPattern3Time = Time.time - data.pattern3Cooldown + data.patternStartDelay;
+
+        delayedDirection = lookDirection;
+        nextPositionUpdateTime = Time.time;
     }
 
     protected virtual void Update()
@@ -192,7 +198,7 @@ public abstract class MidBossController : MonoBehaviour
         float speed = GetMoveSpeed();
 
         rb.linearVelocity = new Vector2(
-            lookDirection * speed,
+            delayedDirection * speed,
             rb.linearVelocity.y
         );
     }
@@ -211,12 +217,19 @@ public abstract class MidBossController : MonoBehaviour
     {
         if (playerTransform == null) return;
 
+        // 플레이어 위치 방향을 일정 시간마다만 갱신
+        if (Time.time < nextPositionUpdateTime)
+            return;
+
         float dir = playerTransform.position.x - transform.position.x;
 
         if (Mathf.Abs(dir) < turnDeadZone)
             return;
 
-        lookDirection = dir > 0 ? 1 : -1;
+        delayedDirection = dir > 0 ? 1 : -1;
+        lookDirection = delayedDirection;
+
+        nextPositionUpdateTime = Time.time + data.positionUpdateDelay;
 
         if (spriteRenderer != null)
             spriteRenderer.flipX = lookDirection < 0;

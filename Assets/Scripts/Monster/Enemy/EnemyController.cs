@@ -19,6 +19,7 @@ public abstract class EnemyController : MonoBehaviour
 
     // -------------------- 상태 값 --------------------
     [Header("상태 정보")]
+    [SerializeField, Tooltip("현재 체력(디버그 확인용)")]
     protected float currentHp;      // 현재 체력
     protected int walkDirection = 1;// 이동 방향(-1:왼쪽, 1:오른쪽)
     protected bool isChasing;       // 플레이어 추적 중 여부
@@ -56,6 +57,8 @@ public abstract class EnemyController : MonoBehaviour
     protected bool hasWallImpactPending;
     protected float pendingWallImpactDamage;
     protected float pendingWallStunDuration;
+
+    private float wallCheckLocalOffsetX;
 
     [Header("순찰 Idle 설정")]
     public bool enablePatrolIdle = true;       // 순찰 중 랜덤 멈춤 사용 여부
@@ -95,6 +98,9 @@ public abstract class EnemyController : MonoBehaviour
         delayedDirection = walkDirection;
 
         rb.mass = 10f;
+
+        if (wallCheck != null)
+            wallCheckLocalOffsetX = Mathf.Abs(wallCheck.localPosition.x);
     }
 
     // 시작 시 체력/플레이어 충돌 무시 설정
@@ -530,6 +536,15 @@ public abstract class EnemyController : MonoBehaviour
         {
             groundCheck.localPosition = new Vector3(data.groundCheckOffset * Mathf.Sign(dir), groundCheck.localPosition.y, 0);
         }
+
+        if (wallCheck != null)
+        {
+            float wallX = wallCheckLocalOffsetX;
+            if (Mathf.Approximately(wallX, 0f))
+                wallX = Mathf.Abs(wallCheck.localPosition.x);
+
+            wallCheck.localPosition = new Vector3(wallX * Mathf.Sign(dir), wallCheck.localPosition.y, wallCheck.localPosition.z);
+        }
     }
 
     // 자식 클래스에서 구현할 실제 공격 함수
@@ -805,6 +820,7 @@ public abstract class EnemyController : MonoBehaviour
         if (groundCheck != null)
         {
             Gizmos.color = Color.blue;
+            Gizmos.DrawWireSphere(groundCheck.position, 0.05f);
             Gizmos.DrawRay(groundCheck.position, Vector2.down * data.checkDistance);
         }
 
@@ -812,7 +828,11 @@ public abstract class EnemyController : MonoBehaviour
         if (wallCheck != null)
         {
             Gizmos.color = Color.white;
+            Gizmos.DrawWireSphere(wallCheck.position, 0.05f);
+
             float dir = (rb != null && !Mathf.Approximately(rb.linearVelocity.x, 0f)) ? Mathf.Sign(rb.linearVelocity.x) : walkDirection;
+            if (Mathf.Approximately(dir, 0f)) dir = 1f;
+
             Gizmos.DrawRay(wallCheck.position, Vector2.right * dir * wallCheckDistance);
         }
     }

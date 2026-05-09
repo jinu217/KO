@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -79,13 +80,55 @@ public class PlayerController : MonoBehaviour
 
     // -------------------- 대쉬 --------------------
     [Header("대쉬(Dash) 설정")]
+    [Tooltip("대쉬 이동 거리")]
+    public float dashDistance = 3f;
+    [Tooltip("대쉬 이동 속도")]
+    public float dashSpeed = 20f;
+    [Tooltip("대쉬 쿨다운")]
+    public float dashCooldown = 0.5f;
+
     private bool isDashing;          // 대쉬 중 여부
     private bool canDash = true;     // 대쉬 가능 여부
 
     // -------------------- 하향 점프 --------------------
     [Header("하향 점프(Down Jump) 설정")]
     public LayerMask thinFloorLayer; // 점프스루 발판 레이어(Ground2)
+    [Tooltip("강화 하강 판정용 연속 입력 허용 시간")]
+    public float empoweredDownJumpWindow = 0.5f;
+    [Tooltip("강화 하강 착지 충격 범위(사각형)")]
+    public Vector2 empoweredDownJumpImpactSize = new Vector2(2.5f, 1.5f);
+    [Tooltip("강화 하강 착지 충격 중심 오프셋(위/아래, 좌/우 조정)")]
+    public Vector2 empoweredDownJumpImpactOffset = Vector2.zero;
+    [Tooltip("강화 하강 착지 충격 데미지")]
+    public float empoweredDownJumpDamage = 5f;
+    [Tooltip("강화 하강 착지 넉백 파워")]
+    public float empoweredDownJumpKnockbackPower = 6f;
+    [Tooltip("강화 하강 중 하강 속도 배율(일반 하강 대비)")]
+    public float empoweredDownJumpFallSpeedMultiplier = 1.2f;
+    [Tooltip("강화 하강 착지 후 이동 불가 시간")]
+    public float empoweredDownJumpMoveDelay = 0.5f;
+    [Tooltip("강화 하강 디버그 로그 출력")]
+    public bool debugEmpoweredDownJump = true;
+
+    [Header("낙하 데미지/스턴 설정")]
+    [Tooltip("이 높이 이상 떨어지면 낙하 데미지 적용")]
+    public float fallDamageMinHeight = 3f;
+    [Tooltip("낙하 데미지 값")]
+    public float fallDamageAmount = 5f;
+    [Tooltip("낙하 데미지 시 스턴(이동 지연) 시간")]
+    public float fallDamageStunDelay = 0.5f;
+
     private bool isDownJumping;      // 하향 점프 진행 중 여부
+    private bool isEmpoweredDownJump;// 강화 하향 점프 여부
+    private float downJumpStartTime = -999f;
+    private bool empowerWindowActive;
+    private bool wasDownInputHeld;
+    private Collider2D ignoredThinFloorCollider;
+    private bool isMoveDelayed;
+    private float moveDelayEndTime;
+    private bool isTrackingFall;
+    private float fallStartY;
+    private bool ignoreFallDamageOnNextLanding;
 
     // -------------------- 지면 체크 --------------------
     [Header("지면 체크(Ground Check)")]
@@ -167,17 +210,30 @@ public class PlayerController : MonoBehaviour
         if (isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
 
         // 1) 지면 체크(일반 지면 + 점프스루 발판)
-        Collider2D groundCollider = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer | thinFloorLayer);
+        Collider2D groundCollider = FindGroundCollider();
         isGrounded = groundCollider != null;
 
         if (isGrounded && groundCollider.TryGetComponent<SpriteRenderer>(out SpriteRenderer gSr))
             currentGroundOrder = gSr.sortingOrder;
 
-        // 2) 하향 점프 상태 리셋
+        // 지면 이탈/착지 전환 감지(낙하 데미지용)
+        if (wasGrounded && !isGrounded)
+        {
+            isTrackingFall = true;
+            fallStartY = transform.position.y;
+        }
+
+        // 2) 하향 점프 상태 리셋 + 강화 입력(아래) 감지
         if (isDownJumping)
         {
+            HandleEmpoweredDownJumpInput();
+
             if (isGrounded && rb.linearVelocity.y < -0.1f)
                 ResetDownJump();
+        }
+        else
+        {
+            wasDownInputHeld = moveInput.y < -0.1f;
         }
 
         // 3) 코요테 타임 & 점프 횟수/버퍼 관리
@@ -214,7 +270,11 @@ public class PlayerController : MonoBehaviour
         // 4) 가변 점프 높이(버튼 유지 시 상승 보정)
         if (!isDashing)
         {
-            if (isJumpHeld && !isGrounded && rb.linearVelocity.y > 0f)
+            if (isDownJumping && isEmpoweredDownJump)
+            {
+                rb.gravityScale = originalGravity * empoweredDownJumpFallSpeedMultiplier;
+            }
+            else if (isJumpHeld && !isGrounded && rb.linearVelocity.y > 0f)
             {
                 jumpHoldTimer += Time.deltaTime;
                 if (jumpHoldTimer <= maxJumpHoldTime)
@@ -230,6 +290,14 @@ public class PlayerController : MonoBehaviour
                 rb.gravityScale = originalGravity;
             }
         }
+
+        // 이동 지연 타이머 갱신
+        if (isMoveDelayed && Time.time >= moveDelayEndTime)
+            isMoveDelayed = false;
+
+        // 착지 시 낙하 데미지/스턴 처리(강화 하강 제외)
+        if (!wasGrounded && isGrounded)
+            HandleLandingFallDamage();
 
         wasGrounded = isGrounded;
     }
@@ -249,7 +317,7 @@ public class PlayerController : MonoBehaviour
         // 보상 UI 열림 중에는 플레이어 이동 입력 무시
         if (ChestRewardUI.IsAnyOpen) return;
 
-        if (isDashing || isKnockback) return;
+        if (isDashing || isKnockback || isMoveDelayed) return;
 
         if (moveInput.x != 0) UpdateFacingDirection();
     }
@@ -257,7 +325,7 @@ public class PlayerController : MonoBehaviour
     // -------------------- 입력 콜백: 점프/하향 점프 --------------------
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (isDashing || isKnockback || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
+        if (isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
 
         // 버튼을 뗐을 때: 상승 속도 컷(짧은 점프)
         if (context.canceled)
@@ -273,13 +341,18 @@ public class PlayerController : MonoBehaviour
 
         if (!context.started) return;
 
-        // 하향 점프: 아래 입력 + 지상 + Ground2 위
-        if (isGrounded && moveInput.y < -0.1f)
+        // 하강 점프 시작: 아래 + 점프 (Ground2 위)
+        if (moveInput.y < -0.1f && !isDownJumping)
         {
             Collider2D hit = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, thinFloorLayer);
             if (hit != null)
             {
-                StartCoroutine(ThinFloorDownJumpRoutine());
+                isEmpoweredDownJump = false;
+                StartCoroutine(ThinFloorDownJumpRoutine(hit));
+
+                if (debugEmpoweredDownJump)
+                    Debug.Log($"[DownJump] Start normal down jump t={Time.time:F3}");
+
                 return;
             }
         }
@@ -294,29 +367,81 @@ public class PlayerController : MonoBehaviour
     // 하향 점프 종료 시 충돌 복구
     void ResetDownJump()
     {
+        bool landedWithEmpowered = isEmpoweredDownJump;
         isDownJumping = false;
-        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Ground"), false);
+
+        if (ignoredThinFloorCollider != null && bodyCollider != null)
+        {
+            Physics2D.IgnoreCollision(bodyCollider, ignoredThinFloorCollider, false);
+            ignoredThinFloorCollider = null;
+        }
+
+        if (landedWithEmpowered)
+        {
+            if (debugEmpoweredDownJump)
+                Debug.Log($"[DownJump] Empowered landing impact t={Time.time:F3}");
+
+            ApplyEmpoweredDownJumpImpact();
+            ApplyMoveDelay(empoweredDownJumpMoveDelay);
+            ignoreFallDamageOnNextLanding = true;
+        }
+
+        isEmpoweredDownJump = false;
+        downJumpStartTime = -999f;
+        empowerWindowActive = false;
+        wasDownInputHeld = moveInput.y < -0.1f;
     }
 
-    // Ground2 통과용 하향 점프 루틴
-    private IEnumerator ThinFloorDownJumpRoutine()
+    // Ground2 통과용 하향 점프 루틴(시작 발판만 무시)
+    private IEnumerator ThinFloorDownJumpRoutine(Collider2D startThinFloor)
     {
         isDownJumping = true;
-        int pL = LayerMask.NameToLayer("Player"), tL = LayerMask.NameToLayer("Ground2");
+        isEmpoweredDownJump = false;
+        downJumpStartTime = Time.time;
+        empowerWindowActive = true;
+        wasDownInputHeld = moveInput.y < -0.1f;
 
-        Physics2D.IgnoreLayerCollision(pL, tL, true);
+        // 하강 시작 시점부터 낙하 추적
+        isTrackingFall = true;
+        fallStartY = transform.position.y;
+
+        if (debugEmpoweredDownJump)
+            Debug.Log($"[DownJump] Window open ({empoweredDownJumpWindow:F2}s) from t={downJumpStartTime:F3}");
+
+        if (startThinFloor != null && bodyCollider != null)
+        {
+            ignoredThinFloorCollider = startThinFloor;
+            Physics2D.IgnoreCollision(bodyCollider, ignoredThinFloorCollider, true);
+        }
+
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, -2f);
 
-        yield return new WaitForSeconds(0.45f);
+        if (ignoredThinFloorCollider != null)
+        {
+            while (ignoredThinFloorCollider != null)
+            {
+                if (bodyCollider == null) break;
 
-        Physics2D.IgnoreLayerCollision(pL, tL, false);
-        isDownJumping = false;
+                Bounds floorBounds = ignoredThinFloorCollider.bounds;
+                Bounds playerBounds = bodyCollider.bounds;
+
+                // 시작 발판을 충분히 통과하면 충돌 복구
+                if (playerBounds.max.y < floorBounds.min.y - 0.02f)
+                {
+                    Physics2D.IgnoreCollision(bodyCollider, ignoredThinFloorCollider, false);
+                    ignoredThinFloorCollider = null;
+                    break;
+                }
+
+                yield return null;
+            }
+        }
     }
 
     // -------------------- 입력 콜백: 대쉬 --------------------
     public void OnDash(InputAction.CallbackContext context)
     {
-        if (isKnockback || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
+        if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
         if (context.started && canDash && !isDashing) StartCoroutine(DashAction());
     }
 
@@ -330,14 +455,29 @@ public class PlayerController : MonoBehaviour
         rb.gravityScale = 0f;
 
         float dashDir = moveInput.x != 0 ? Mathf.Sign(moveInput.x) : lastHorizontalDirection;
-        rb.linearVelocity = new Vector2(dashDir * GameManager.Instance.playerDashVelocity, 0f);
+        float moved = 0f;
 
-        yield return new WaitForSeconds(GameManager.Instance.playerDashTime);
+        // 대쉬 시작 시 관성 제거
+        rb.linearVelocity = Vector2.zero;
 
+        while (moved < dashDistance)
+        {
+            float step = dashSpeed * Time.fixedDeltaTime;
+            float remain = dashDistance - moved;
+            if (step > remain) step = remain;
+
+            rb.MovePosition(rb.position + new Vector2(dashDir * step, 0f));
+            moved += step;
+
+            yield return new WaitForFixedUpdate();
+        }
+
+        // 대쉬 종료 시 즉시 정지(미끄러짐 방지)
+        rb.linearVelocity = Vector2.zero;
         rb.gravityScale = prevGravity;
         isDashing = false;
 
-        yield return new WaitForSeconds(GameManager.Instance.playerDashCooldown);
+        yield return new WaitForSeconds(dashCooldown);
         canDash = true;
     }
 
@@ -689,7 +829,7 @@ public class PlayerController : MonoBehaviour
         {
             case WeaponType.Sword: return 5f;
             case WeaponType.Blunt: return 10f;
-            case WeaponType.Spear: return 3f;
+            case WeaponType.Spear: return 100f;
             case WeaponType.Axe: return 8f;
             case WeaponType.Scythe: return 6f;
             default: return 5f;
@@ -811,6 +951,158 @@ public class PlayerController : MonoBehaviour
         return Mathf.Lerp(airDecelAtLowSpeed, airDecelAtHighSpeed, speed01);
     }
 
+    // 하강 시작 후 0.5초 내 "아래" 신규 입력을 받으면 강화 하강 전환
+    private void HandleEmpoweredDownJumpInput()
+    {
+        if (!empowerWindowActive || isEmpoweredDownJump)
+        {
+            wasDownInputHeld = moveInput.y < -0.1f;
+            return;
+        }
+
+        float elapsed = Time.time - downJumpStartTime;
+        if (elapsed > empoweredDownJumpWindow)
+        {
+            empowerWindowActive = false;
+            if (debugEmpoweredDownJump)
+                Debug.Log($"[DownJump] Window expired (elapsed={elapsed:F3})");
+
+            wasDownInputHeld = moveInput.y < -0.1f;
+            return;
+        }
+
+        bool isDownHeld = moveInput.y < -0.1f;
+        bool downPressedThisFrame = isDownHeld && !wasDownInputHeld;
+
+        if (downPressedThisFrame)
+        {
+            isEmpoweredDownJump = true;
+            empowerWindowActive = false;
+
+            // 강화 하강 전환 즉시 하강 속도를 보정해서 체감이 바로 나게 함
+            if (rb.linearVelocity.y < 0f)
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * empoweredDownJumpFallSpeedMultiplier);
+
+            if (debugEmpoweredDownJump)
+                Debug.Log($"[DownJump] Empowered ON at elapsed={elapsed:F3}");
+        }
+
+        wasDownInputHeld = isDownHeld;
+    }
+
+    // 하향 점프 중 시작 발판(무시 중 콜라이더)은 지면 판정에서 제외
+    private Collider2D FindGroundCollider()
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius, groundLayer | thinFloorLayer);
+        foreach (var hit in hits)
+        {
+            if (hit == null) continue;
+            if (isDownJumping && ignoredThinFloorCollider != null && hit == ignoredThinFloorCollider) continue;
+            return hit;
+        }
+
+        return null;
+    }
+
+    // 강화 하향 점프 착지 충격
+    private void ApplyEmpoweredDownJumpImpact()
+    {
+        Vector2 center = (Vector2)transform.position + empoweredDownJumpImpactOffset;
+        Collider2D[] hits = Physics2D.OverlapBoxAll(center, empoweredDownJumpImpactSize, 0f, enemyLayer);
+
+        HashSet<int> damagedRootIds = new HashSet<int>();
+        int damagedCount = 0;
+
+        foreach (var hit in hits)
+        {
+            if (hit == null) continue;
+
+            EnemyController enemy = hit.GetComponentInParent<EnemyController>();
+            if (enemy != null)
+            {
+                int rootId = enemy.gameObject.GetInstanceID();
+                if (damagedRootIds.Add(rootId))
+                {
+                    enemy.TakeDamage(empoweredDownJumpDamage, empoweredDownJumpKnockbackPower);
+                    damagedCount++;
+
+                    if (debugEmpoweredDownJump)
+                        Debug.Log($"[DownJump] Hit Enemy: {enemy.gameObject.name}, dmg={empoweredDownJumpDamage}, kb={empoweredDownJumpKnockbackPower}");
+                }
+                continue;
+            }
+
+            MidBossController midBoss = hit.GetComponentInParent<MidBossController>();
+            if (midBoss != null)
+            {
+                int rootId = midBoss.gameObject.GetInstanceID();
+                if (damagedRootIds.Add(rootId))
+                {
+                    midBoss.TakeDamage(empoweredDownJumpDamage, empoweredDownJumpKnockbackPower);
+                    damagedCount++;
+
+                    if (debugEmpoweredDownJump)
+                        Debug.Log($"[DownJump] Hit MidBoss: {midBoss.gameObject.name}, dmg={empoweredDownJumpDamage}, kb={empoweredDownJumpKnockbackPower}");
+                }
+            }
+        }
+
+        if (debugEmpoweredDownJump)
+            Debug.Log($"[DownJump] Impact summary: colliders={hits.Length}, targetsDamaged={damagedCount}, center={center}, size={empoweredDownJumpImpactSize}");
+    }
+
+    // 이동 지연 적용(중복 시 더 긴 시간 유지)
+    private void ApplyMoveDelay(float delay)
+    {
+        float targetEnd = Time.time + Mathf.Max(0f, delay);
+        if (!isMoveDelayed)
+        {
+            isMoveDelayed = true;
+            moveInput.x = 0f;
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            moveDelayEndTime = targetEnd;
+            return;
+        }
+
+        moveDelayEndTime = Mathf.Max(moveDelayEndTime, targetEnd);
+    }
+
+    // 착지 시 낙하 데미지/스턴 처리(강화 하강 착지는 제외)
+    private void HandleLandingFallDamage()
+    {
+        if (!isTrackingFall)
+        {
+            ignoreFallDamageOnNextLanding = false;
+            return;
+        }
+
+        float fallenHeight = fallStartY - transform.position.y;
+
+        if (ignoreFallDamageOnNextLanding)
+        {
+            if (debugEmpoweredDownJump)
+                Debug.Log($"[Fall] ignored after empowered landing (fallen={fallenHeight:F2})");
+
+            ignoreFallDamageOnNextLanding = false;
+            isTrackingFall = false;
+            return;
+        }
+
+        if (!isDownJumping && fallenHeight >= fallDamageMinHeight)
+        {
+            currentHp -= fallDamageAmount;
+            ApplyMoveDelay(fallDamageStunDelay);
+
+            if (debugEmpoweredDownJump)
+                Debug.Log($"[Fall] damage applied: fallen={fallenHeight:F2}, dmg={fallDamageAmount}, stun={fallDamageStunDelay}, hp={currentHp:F1}");
+
+            if (currentHp <= 0f)
+                GameOver();
+        }
+
+        isTrackingFall = false;
+    }
+
     // 디버그 시각화: 현재 무기 공격 박스
     private void OnDrawGizmos()
     {
@@ -824,6 +1116,10 @@ public class PlayerController : MonoBehaviour
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireCube(pos, new Vector3(size.x, size.y, 0));
+
+        Gizmos.color = new Color(1f, 0.4f, 0.1f, 0.8f);
+        Vector3 impactCenter = transform.position + (Vector3)empoweredDownJumpImpactOffset;
+        Gizmos.DrawWireCube(impactCenter, new Vector3(empoweredDownJumpImpactSize.x, empoweredDownJumpImpactSize.y, 0f));
     }
 
     // 물리 프레임 이동 처리
@@ -837,17 +1133,25 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        if (isMoveDelayed)
+        {
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            return;
+        }
+
+        // 넉백 중/해제 직후 관성 제거 목적(수평 속도 잔여 방지)
+        if (!isKnockback && Mathf.Abs(moveInput.x) <= 0.01f && !isDownJumping)
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
         HandleCornerCorrection();
 
         float maxSpeed = GameManager.Instance.playerMoveSpeed;
         float targetSpeedX = moveInput.x * maxSpeed;
-        float currentSpeedX = rb.linearVelocity.x;
 
-        bool hasInput = Mathf.Abs(moveInput.x) > 0.01f;
-        float speed01 = (maxSpeed > 0.001f) ? Mathf.Abs(currentSpeedX) / maxSpeed : 0f;
-        float controlRate = GetHorizontalControlRate(hasInput, isGrounded, speed01);
+        // 관성/미끄러짐 완전 제거: 항상 즉시 목표 속도로 고정
+        if (Mathf.Abs(moveInput.x) <= 0.01f)
+            targetSpeedX = 0f;
 
-        float nextSpeedX = Mathf.MoveTowards(currentSpeedX, targetSpeedX, controlRate * Time.fixedDeltaTime);
-        rb.linearVelocity = new Vector2(nextSpeedX, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(targetSpeedX, rb.linearVelocity.y);
     }
 }

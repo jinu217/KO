@@ -7,6 +7,8 @@ using TMPro;
 // 보물상자 보상 선택 UI
 // - 랜덤으로 나온 아이템 3개를 버튼으로 표시
 // - 방향키 이동 + Attack(Z)으로 하나 선택 시 인벤토리에 지급
+// - 작은 아이콘은 원본 크기 유지
+// - 큰 아이콘은 보상 슬롯 최대 크기 안으로 자동 축소
 public class ChestRewardUI : MonoBehaviour
 {
     public static bool IsAnyOpen { get; private set; }
@@ -18,6 +20,16 @@ public class ChestRewardUI : MonoBehaviour
     [SerializeField] private Button[] rewardButtons = new Button[3];
     [SerializeField] private TMP_Text[] rewardTexts = new TMP_Text[3];
     [SerializeField] private Image[] rewardIcons = new Image[3];
+
+    [Header("아이콘 크기")]
+    [Tooltip("1이면 스프라이트 원본 픽셀 크기 기준. 전체적으로 작으면 1.2~1.5 정도로 올리세요.")]
+    [SerializeField] private float iconUIScale = 1f;
+
+    [Tooltip("보상 슬롯 안에서 허용할 최대 아이콘 너비")]
+    [SerializeField] private float iconMaxWidth = 120f;
+
+    [Tooltip("보상 슬롯 안에서 허용할 최대 아이콘 높이")]
+    [SerializeField] private float iconMaxHeight = 80f;
 
     [Header("선택 색상")]
     [SerializeField] private Color normalColor = Color.white;
@@ -76,7 +88,7 @@ public class ChestRewardUI : MonoBehaviour
         }
 
         moveAction = playerInput.actions["Move"];
-        attackAction = playerInput.actions["Attack"]; // 습득키: Attack(Z)
+        attackAction = playerInput.actions["Attack"];
 
         isInitialized = true;
     }
@@ -84,6 +96,7 @@ public class ChestRewardUI : MonoBehaviour
     private void Update()
     {
         if (!IsOpen) return;
+
         HandleKeyboardInput();
     }
 
@@ -134,8 +147,11 @@ public class ChestRewardUI : MonoBehaviour
             if (Time.unscaledTime >= lastMoveTime + moveRepeatDelay)
             {
                 int direction = 0;
-                if (move.x > 0.5f || move.y < -0.5f) direction = 1;
-                else if (move.x < -0.5f || move.y > 0.5f) direction = -1;
+
+                if (move.x > 0.5f || move.y < -0.5f)
+                    direction = 1;
+                else if (move.x < -0.5f || move.y > 0.5f)
+                    direction = -1;
 
                 if (direction != 0)
                 {
@@ -155,13 +171,18 @@ public class ChestRewardUI : MonoBehaviour
     private void MoveSelection(int direction)
     {
         if (currentRewards == null || currentRewards.Count == 0) return;
-        if (selectedIndex < 0) SelectFirstValid();
+
+        if (selectedIndex < 0)
+            SelectFirstValid();
+
         if (selectedIndex < 0) return;
 
         int next = selectedIndex;
+
         for (int i = 0; i < rewardButtons.Length; i++)
         {
             next = (next + direction + rewardButtons.Length) % rewardButtons.Length;
+
             if (IsValidRewardIndex(next))
             {
                 selectedIndex = next;
@@ -174,6 +195,7 @@ public class ChestRewardUI : MonoBehaviour
     private void SelectFirstValid()
     {
         selectedIndex = -1;
+
         for (int i = 0; i < rewardButtons.Length; i++)
         {
             if (IsValidRewardIndex(i))
@@ -190,6 +212,7 @@ public class ChestRewardUI : MonoBehaviour
         if (i < 0 || i >= currentRewards.Count) return false;
         if (i >= rewardButtons.Length) return false;
         if (rewardButtons[i] == null || !rewardButtons[i].gameObject.activeSelf) return false;
+
         return currentRewards[i] != null;
     }
 
@@ -202,18 +225,26 @@ public class ChestRewardUI : MonoBehaviour
 
             btn.onClick.RemoveAllListeners();
 
-            bool valid = currentRewards != null && i < currentRewards.Count && currentRewards[i] != null;
+            bool valid = currentRewards != null &&
+                         i < currentRewards.Count &&
+                         currentRewards[i] != null;
+
             btn.gameObject.SetActive(valid);
 
             if (!valid)
             {
-                if (rewardTexts != null && i < rewardTexts.Length && rewardTexts[i] != null)
-                    rewardTexts[i].text = string.Empty;
-
-                if (rewardIcons != null && i < rewardIcons.Length && rewardIcons[i] != null)
+                if (rewardTexts != null &&
+                    i < rewardTexts.Length &&
+                    rewardTexts[i] != null)
                 {
-                    rewardIcons[i].sprite = null;
-                    rewardIcons[i].enabled = false;
+                    rewardTexts[i].text = string.Empty;
+                }
+
+                if (rewardIcons != null &&
+                    i < rewardIcons.Length &&
+                    rewardIcons[i] != null)
+                {
+                    ClearRewardIcon(rewardIcons[i]);
                 }
 
                 continue;
@@ -222,17 +253,70 @@ public class ChestRewardUI : MonoBehaviour
             int captured = i;
             InventoryItemData item = currentRewards[captured];
 
-            if (rewardTexts != null && captured < rewardTexts.Length && rewardTexts[captured] != null)
-                rewardTexts[captured].text = item.itemName;
-
-            if (rewardIcons != null && captured < rewardIcons.Length && rewardIcons[captured] != null)
+            if (rewardTexts != null &&
+                captured < rewardTexts.Length &&
+                rewardTexts[captured] != null)
             {
-                rewardIcons[captured].sprite = item.itemSprite;
-                rewardIcons[captured].enabled = item.itemSprite != null;
+                rewardTexts[captured].text = item.itemName;
+            }
+
+            if (rewardIcons != null &&
+                captured < rewardIcons.Length &&
+                rewardIcons[captured] != null)
+            {
+                SetRewardIcon(rewardIcons[captured], item.itemSprite);
             }
 
             btn.onClick.AddListener(() => OnSelectReward(captured));
         }
+    }
+
+    private void SetRewardIcon(Image icon, Sprite sprite)
+    {
+        if (icon == null) return;
+
+        icon.sprite = sprite;
+        icon.enabled = sprite != null;
+        icon.preserveAspect = true;
+
+        AspectRatioFitter fitter = icon.GetComponent<AspectRatioFitter>();
+        if (fitter != null)
+            Destroy(fitter);
+
+        if (sprite == null) return;
+
+        RectTransform rt = icon.rectTransform;
+
+        float safeScale = Mathf.Max(0.01f, iconUIScale);
+
+        float width = sprite.rect.width * safeScale;
+        float height = sprite.rect.height * safeScale;
+
+        float widthScale = iconMaxWidth / Mathf.Max(width, 0.01f);
+        float heightScale = iconMaxHeight / Mathf.Max(height, 0.01f);
+
+        float fitScale = Mathf.Min(widthScale, heightScale, 1f);
+
+        width *= fitScale;
+        height *= fitScale;
+
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = new Vector2(width, height);
+    }
+
+    private void ClearRewardIcon(Image icon)
+    {
+        if (icon == null) return;
+
+        icon.sprite = null;
+        icon.enabled = false;
+
+        AspectRatioFitter fitter = icon.GetComponent<AspectRatioFitter>();
+        if (fitter != null)
+            Destroy(fitter);
     }
 
     private void RefreshSelectionVisual()
@@ -251,6 +335,7 @@ public class ChestRewardUI : MonoBehaviour
     private void ClearButtonListeners()
     {
         if (rewardButtons == null) return;
+
         for (int i = 0; i < rewardButtons.Length; i++)
         {
             if (rewardButtons[i] != null)
@@ -272,8 +357,7 @@ public class ChestRewardUI : MonoBehaviour
         }
 
         bool added = inventoryUI.TryAddItemToInventory(selected);
-        if (!added)
-            return;
+        if (!added) return;
 
         Debug.Log($"보물상자 보상 선택: {selected.itemName}");
 

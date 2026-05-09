@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce4096f662becef42abf880a92ab92bd, type: 3}
   m_Name: Stage1_Enemy_1
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  maxHp: 20
+  maxHp: 200
   damage: 5
   moveSpeed: 2
   chaseSpeed: 3.5
@@ -21,7 +21,7 @@ MonoBehaviour:
   viewAngle: 180
   idleDuration: 2
   reactionTime: 0.5
-  positionUpdateDelay: 0.5
+  positionUpdateDelay: 0.55
   checkDistance: 0.7
   groundCheckOffset: 0.5
   wanderDuration: 0.7
@@ -34,3 +34,7 @@ MonoBehaviour:
   postAttackDelay: 0.5
   projectilePrefab: {fileID: 0}
   rangedAttackRange: 0
+  knockbackResistance: 0.2
+  hitStunDuration: 0.15
+  wallBonusDamage: 0
+  wallStunDuration: 0.2

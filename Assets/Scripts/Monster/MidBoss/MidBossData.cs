@@ -11,6 +11,9 @@ public class MidBossData : ScriptableObject
     public float detectRange = 8f;
     public float chaseRange = 12f;
 
+    [Header("추적 반응 지연")]
+    public float positionUpdateDelay = 0.15f;
+
     [Header("패턴 시작 대기")]
     public float patternStartDelay = 5f;
 
