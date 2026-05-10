@@ -1,7 +1,8 @@
 using UnityEngine;
 
-// 인벤토리 칸 선택/이동 전용 컨트롤러
-// 사용자 지정 이동 규칙(장비 5칸 + 인벤토리 12칸)에 맞춘 네비게이션
+// [인벤토리 네비게이션 컨트롤러]
+// - 장비 슬롯(5칸) + 인벤토리 슬롯(12칸)의 선택 이동 규칙 담당
+// - 실제 장착/해제 로직은 InventoryUI가 처리
 public class InventoryNavigationController : MonoBehaviour
 {
     private enum SelectionArea
@@ -11,22 +12,30 @@ public class InventoryNavigationController : MonoBehaviour
         Inventory
     }
 
+    // 슬롯 확인(Z 입력) 시 InventoryUI에서 구독하는 콜백
     public System.Action<InventorySlotUI> onConfirmSlot;
+
     [Header("장비 슬롯(5)")]
+    [Tooltip("순서: 0=머리, 1=몸통, 2=장갑, 3=신발, 4=무기")]
     public InventorySlotUI[] equipmentSlots = new InventorySlotUI[5];
 
     [Header("인벤토리 슬롯(12)")]
+    [Tooltip("4x3 그리드(0~11)")]
     public InventorySlotUI[] inventorySlots = new InventorySlotUI[12];
 
-    [Header("표시 색")]
-    public Color normalColor = Color.white;
-    public Color selectedColor = new Color(1f, 0.9f, 0.3f);
+    [Header("선택 색상")]
+    [Tooltip("기본 슬롯 색상")] public Color normalColor = Color.white;
+    [Tooltip("선택된 슬롯 색상")] public Color selectedColor = new Color(1f, 0.9f, 0.3f);
 
     [Header("입력 반복 지연")]
+    [Tooltip("연속 입력 사이의 최소 간격(초)")]
     public float moveRepeatDelay = 0.16f;
 
+    [Header("디버그")]
+    [Tooltip("선택 이동 디버그 로그 출력")]
+    [SerializeField] private bool showDebugLog = false;
+
     // 장비 슬롯 인덱스 규약
-    // 0: 머리, 1: 몸통, 2: 장갑, 3: 신발, 4: 무기
     private const int EQ_HEAD = 0;
     private const int EQ_BODY = 1;
     private const int EQ_GLOVES = 2;
@@ -38,15 +47,16 @@ public class InventoryNavigationController : MonoBehaviour
     private int inventoryIndex = 0;
     private float lastMoveTime;
 
+    // 인벤토리 UI 오픈 시 선택 상태 초기화
     public void ResetNavigation()
     {
-        // 1) 인벤토리 오픈 시 아무것도 선택되지 않음
         selectionArea = SelectionArea.None;
         equipmentIndex = Mathf.Clamp(equipmentIndex, 0, Mathf.Max(0, equipmentSlots.Length - 1));
         inventoryIndex = Mathf.Clamp(inventoryIndex, 0, Mathf.Max(0, inventorySlots.Length - 1));
         RefreshSelectionVisual();
     }
 
+    // Move 입력 기반 선택 이동
     public void Navigate(Vector2 moveInput)
     {
         if (Mathf.Abs(moveInput.x) < 0.5f && Mathf.Abs(moveInput.y) < 0.5f) return;
@@ -62,13 +72,13 @@ public class InventoryNavigationController : MonoBehaviour
         else
             dy = moveInput.y > 0 ? 1 : -1;
 
-        // 2) 첫 입력 규칙
+        // 첫 입력: 위는 장비(머리), 그 외는 인벤토리 0번
         if (selectionArea == SelectionArea.None)
         {
             if (dy > 0)
-                SelectEquipment(EQ_HEAD);   // 위: 머리
+                SelectEquipment(EQ_HEAD);
             else
-                SelectInventory(0);         // 좌/우/아래: 인벤토리 0번
+                SelectInventory(0);
 
             RefreshSelectionVisual();
             return;
@@ -79,18 +89,41 @@ public class InventoryNavigationController : MonoBehaviour
         else if (selectionArea == SelectionArea.Inventory)
             MoveInInventory(dx, dy);
 
+        if (showDebugLog)
+            Debug.Log($"[InventoryNav] area={selectionArea}, eqIndex={equipmentIndex}, invIndex={inventoryIndex}");
+
         RefreshSelectionVisual();
     }
 
+    // 현재 선택 슬롯 반환
+    public InventorySlotUI GetSelectedSlot()
+    {
+        if (selectionArea == SelectionArea.Equipment)
+        {
+            if (equipmentSlots != null && equipmentIndex >= 0 && equipmentIndex < equipmentSlots.Length)
+                return equipmentSlots[equipmentIndex];
+        }
+        else if (selectionArea == SelectionArea.Inventory)
+        {
+            if (inventorySlots != null && inventoryIndex >= 0 && inventoryIndex < inventorySlots.Length)
+                return inventorySlots[inventoryIndex];
+        }
+
+        return null;
+    }
+
+    // 현재 선택 슬롯에 대해 InventoryUI에 확정 콜백 호출
+    public void ConfirmCurrentSelection()
+    {
+        InventorySlotUI slot = GetSelectedSlot();
+        if (slot == null) return;
+
+        onConfirmSlot?.Invoke(slot);
+    }
+
+    // 장비 슬롯 내 이동 규칙(머리-몸통-신발 세로축, 장갑-몸통-무기 가로축)
     private void MoveInEquipment(int dx, int dy)
     {
-        // 9) 머리 <-> 몸통
-        // 10) 몸통 <-> 신발
-        // 11) 몸통 <-> 무기(좌우 일부)
-        // 12) 몸통 <-> 장갑(좌우 일부)
-        // 13) 신발 아래 -> 인벤토리 0
-        // 14) 장갑/무기 위 -> 머리, 아래 -> 신발
-
         switch (equipmentIndex)
         {
             case EQ_HEAD:
@@ -127,52 +160,36 @@ public class InventoryNavigationController : MonoBehaviour
         }
     }
 
+    // 인벤토리 슬롯(4x3) 이동 규칙
     private void MoveInInventory(int dx, int dy)
     {
-        // 인벤토리 인덱스 0~11, 4열 고정
-        // 3) 0~3 아래 -> 4~7
-        // 4) 0~3 위 -> 신발
-        // 5) 4~7 아래 -> 8~11
-        // 6) 4~7 위 -> 0~3
-        // 7) 8~11 아래 -> 반응 없음
-        // 8) 8~11 위 -> 4~7
-
         if (inventorySlots == null || inventorySlots.Length <= 0) return;
 
         int maxIndex = Mathf.Min(12, inventorySlots.Length) - 1;
         if (maxIndex < 0) return;
 
         inventoryIndex = Mathf.Clamp(inventoryIndex, 0, maxIndex);
+        int row = inventoryIndex / 4;
 
-        int row = inventoryIndex / 4; // 0,1,2
-
-        // 좌우 이동(0~11 전체 연속 이동)
-        // 예: 3에서 오른쪽 -> 4, 8에서 왼쪽 -> 7
         if (dx > 0 && inventoryIndex < maxIndex)
         {
             SelectInventory(inventoryIndex + 1);
             return;
         }
+
         if (dx < 0 && inventoryIndex > 0)
         {
             SelectInventory(inventoryIndex - 1);
             return;
         }
 
-        // 상하 이동(요구 규칙 적용)
         if (dy < 0)
         {
-            if (row == 0)
+            if (row == 0 || row == 1)
             {
                 int target = inventoryIndex + 4;
                 if (target <= maxIndex) SelectInventory(target);
             }
-            else if (row == 1)
-            {
-                int target = inventoryIndex + 4;
-                if (target <= maxIndex) SelectInventory(target);
-            }
-            // row == 2 이면 반응 없음
         }
         else if (dy > 0)
         {
@@ -202,29 +219,7 @@ public class InventoryNavigationController : MonoBehaviour
         selectionArea = SelectionArea.Inventory;
     }
 
-    public InventorySlotUI GetSelectedSlot()
-    {
-        if (selectionArea == SelectionArea.Equipment)
-        {
-            if (equipmentSlots != null && equipmentIndex >= 0 && equipmentIndex < equipmentSlots.Length)
-                return equipmentSlots[equipmentIndex];
-        }
-        else if (selectionArea == SelectionArea.Inventory)
-        {
-            if (inventorySlots != null && inventoryIndex >= 0 && inventoryIndex < inventorySlots.Length)
-                return inventorySlots[inventoryIndex];
-        }
-
-        return null;
-    }
-
-    public void ConfirmCurrentSelection()
-    {
-        InventorySlotUI slot = GetSelectedSlot();
-        if (slot == null) return;
-        onConfirmSlot?.Invoke(slot);
-    }
-
+    // 선택 색상 시각화 갱신(모든 슬롯 normal로 초기화 후 현재 선택 슬롯만 selected)
     private void RefreshSelectionVisual()
     {
         if (equipmentSlots != null)
@@ -255,6 +250,5 @@ public class InventoryNavigationController : MonoBehaviour
             if (inventorySlots != null && inventoryIndex >= 0 && inventoryIndex < inventorySlots.Length && inventorySlots[inventoryIndex] != null)
                 inventorySlots[inventoryIndex].SetSelected(true, normalColor, selectedColor);
         }
-        // SelectionArea.None이면 아무 슬롯도 선택하지 않음
     }
 }

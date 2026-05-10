@@ -5,7 +5,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
-// [플레이어] 이동/점프/대쉬/공격/피격/인벤토리/포션을 담당하는 플레이어 컨트롤러
+// [플레이어]
+// - 이동/점프/대쉬/하향점프/강화하강/공격/피격/인벤토리/포션을 담당하는 플레이어 컨트롤러
+// - 일반 몹/중간보스/메인보스 모두에게 공격 적용 가능, 보스 검기 등 특수 패턴은 무적 무시 데미지 처리
+
+// 플레이어가 장착 가능한 무기 종류
 public enum WeaponType
 {
     Sword,
@@ -18,13 +22,11 @@ public enum WeaponType
 public class PlayerController : MonoBehaviour
 {
     // -------------------- 컴포넌트/입력 --------------------
-    private Rigidbody2D rb;      // 플레이어 물리 제어
-    private Vector2 moveInput;   // 입력 시스템에서 받은 이동 입력
+    private Rigidbody2D rb;        // 플레이어 물리 제어
+    private Vector2 moveInput;     // Input System에서 받은 이동 입력
 
     // -------------------- 이동/점프 --------------------
     [Header("이동 및 점프 설정")]
-    private int currentJumpCount;  // 남은 점프 횟수
-
     [Tooltip("타일 1칸의 월드 높이(기본 1유닛)")]
     public float tileHeight = 1f;
     [Tooltip("목표 점프 높이(타일 개수)")]
@@ -39,29 +41,34 @@ public class PlayerController : MonoBehaviour
     [Tooltip("점프 유지 중 중력을 얼마나 약하게 할지(낮을수록 더 높이 점프)")]
     [Range(0.1f, 1f)] public float jumpHoldGravityMultiplier = 0.6f;
 
+    private int currentJumpCount;  // 남은 점프 횟수
+    private bool isJumpHeld;       // 점프 버튼 유지 상태
+    private float jumpHoldTimer;   // 점프 유지 타이머
+
     [Header("가속/감속 및 에어 컨트롤")]
-    [Tooltip("저속/고속에서의 지상 가속도")]
+    [Tooltip("저속에서의 지상 가속도")]
     public float groundAccelAtLowSpeed = 60f;
+    [Tooltip("고속에서의 지상 가속도")]
     public float groundAccelAtHighSpeed = 25f;
-    [Tooltip("저속/고속에서의 지상 감속도")]
+    [Tooltip("저속에서의 지상 감속도")]
     public float groundDecelAtLowSpeed = 70f;
+    [Tooltip("고속에서의 지상 감속도")]
     public float groundDecelAtHighSpeed = 15f;
-
-    [Tooltip("저속/고속에서의 공중 가속도")]
+    [Tooltip("저속에서의 공중 가속도")]
     public float airAccelAtLowSpeed = 30f;
+    [Tooltip("고속에서의 공중 가속도")]
     public float airAccelAtHighSpeed = 12f;
-    [Tooltip("저속/고속에서의 공중 감속도")]
+    [Tooltip("저속에서의 공중 감속도")]
     public float airDecelAtLowSpeed = 20f;
+    [Tooltip("고속에서의 공중 감속도")]
     public float airDecelAtHighSpeed = 8f;
-
-    private bool isJumpHeld;            // 점프 버튼 유지 상태
-    private float jumpHoldTimer;        // 점프 유지 타이머
 
     [Header("점프 판정 보정")]
     [Tooltip("발판에서 떨어진 직후에도 점프를 허용하는 시간")]
     public float coyoteTime = 0.1f;
     [Tooltip("공중 입력 점프를 착지 직후 실행하기 위해 보관하는 시간")]
     public float jumpBufferTime = 0.12f;
+
     private float coyoteTimer;
     private float jumpBufferTimer;
     private bool hasBurnedGroundJumpAfterCoyote;
@@ -76,6 +83,7 @@ public class PlayerController : MonoBehaviour
     public float cornerCorrectionPushX = 0.12f;
     [Tooltip("모서리 보정 연속 발동 간격")]
     public float cornerCorrectionCooldown = 0.05f;
+
     private float cornerCorrectionTimer;
 
     // -------------------- 대쉬 --------------------
@@ -90,14 +98,15 @@ public class PlayerController : MonoBehaviour
     private bool isDashing;          // 대쉬 중 여부
     private bool canDash = true;     // 대쉬 가능 여부
 
-    // -------------------- 하향 점프 --------------------
+    // -------------------- 하향 점프 / 강화 하강 --------------------
     [Header("하향 점프(Down Jump) 설정")]
-    public LayerMask thinFloorLayer; // 점프스루 발판 레이어(Ground2)
+    [Tooltip("점프스루 발판 레이어(Ground2)")]
+    public LayerMask thinFloorLayer;
     [Tooltip("강화 하강 판정용 연속 입력 허용 시간")]
     public float empoweredDownJumpWindow = 0.5f;
     [Tooltip("강화 하강 착지 충격 범위(사각형)")]
     public Vector2 empoweredDownJumpImpactSize = new Vector2(2.5f, 1.5f);
-    [Tooltip("강화 하강 착지 충격 중심 오프셋(위/아래, 좌/우 조정)")]
+    [Tooltip("강화 하강 착지 충격 중심 오프셋")]
     public Vector2 empoweredDownJumpImpactOffset = Vector2.zero;
     [Tooltip("강화 하강 착지 충격 데미지")]
     public float empoweredDownJumpDamage = 5f;
@@ -107,7 +116,7 @@ public class PlayerController : MonoBehaviour
     public float empoweredDownJumpFallSpeedMultiplier = 1.2f;
     [Tooltip("강화 하강 착지 후 이동 불가 시간")]
     public float empoweredDownJumpMoveDelay = 0.5f;
-    [Tooltip("강화 하강 디버그 로그 출력")]
+    [Tooltip("강화 하강/낙하 디버그 로그 출력")]
     public bool debugEmpoweredDownJump = true;
 
     [Header("낙하 데미지/스턴 설정")]
@@ -118,38 +127,47 @@ public class PlayerController : MonoBehaviour
     [Tooltip("낙하 데미지 시 스턴(이동 지연) 시간")]
     public float fallDamageStunDelay = 0.5f;
 
-    private bool isDownJumping;      // 하향 점프 진행 중 여부
-    private bool isEmpoweredDownJump;// 강화 하향 점프 여부
+    private bool isDownJumping;       // 하향 점프 진행 중 여부
+    private bool isEmpoweredDownJump; // 강화 하향 점프 여부
     private float downJumpStartTime = -999f;
-    private bool empowerWindowActive;
-    private bool wasDownInputHeld;
-    private Collider2D ignoredThinFloorCollider;
-    private bool isMoveDelayed;
+    private bool empowerWindowActive; // 강화 하강 입력 허용 창 활성 여부
+    private bool wasDownInputHeld;    // 직전 프레임에 아래 입력이 유지되었는지
+    private Collider2D ignoredThinFloorCollider; // 하향 점프 중 일시적으로 무시 중인 발판
+    private bool isMoveDelayed;       // 강화 하강/낙하 데미지 후 이동 지연 상태
     private float moveDelayEndTime;
-    private bool isTrackingFall;
-    private float fallStartY;
-    private bool ignoreFallDamageOnNextLanding;
+    private bool isTrackingFall;      // 낙하 거리 추적 중 여부
+    private float fallStartY;         // 낙하 시작 시 Y 좌표
+    private bool ignoreFallDamageOnNextLanding; // 다음 착지에서 낙하 데미지 1회 무시
 
     // -------------------- 지면 체크 --------------------
     [Header("지면 체크(Ground Check)")]
-    public Transform groundCheck;        // 발밑 체크 기준점
-    public float groundCheckRadius = 0.25f; // 체크 반지름
-    public LayerMask groundLayer;        // 일반 지면 레이어
-    private bool isGrounded;             // 지면 접지 여부
-    private int currentGroundOrder;      // 현재 밟고 있는 지면의 sortingOrder
+    [Tooltip("발밑 체크 기준점 Transform")]
+    public Transform groundCheck;
+    [Tooltip("발밑 원형 체크 반지름")]
+    public float groundCheckRadius = 0.25f;
+    [Tooltip("일반 지면 레이어")]
+    public LayerMask groundLayer;
+
+    private bool isGrounded;          // 지면 접지 여부
+    private int currentGroundOrder;   // 현재 밟고 있는 지면의 sortingOrder
 
     // -------------------- 전투 --------------------
     [Header("전투 설정")]
-    public LayerMask enemyLayer;           // 공격 판정 대상 레이어
-    public WeaponType currentWeapon = WeaponType.Sword; // 현재 무기 타입
-    public float currentHp;                // 현재 체력
-    private bool isKnockback;              // 넉백 상태 여부
+    [Tooltip("공격 판정 대상 레이어")]
+    public LayerMask enemyLayer;
+    [Tooltip("현재 장착 무기 타입")]
+    public WeaponType currentWeapon = WeaponType.Sword;
+    [Tooltip("현재 체력(런타임 디버그용)")]
+    public float currentHp;
+
+    private bool isKnockback;         // 넉백 상태 여부
 
     [Header("타격 연출")]
     [Tooltip("공격 적중 시 적용할 히트 스탑 시간")]
     public float hitStopDuration = 0.03f;
     [Tooltip("히트 스탑 시 느려지는 배율(0에 가까울수록 강함)")]
     [Range(0f, 1f)] public float hitStopTimeScale = 0.05f;
+
     private bool isHitStopRunning;
 
     [Header("피격 보정")]
@@ -157,14 +175,22 @@ public class PlayerController : MonoBehaviour
     public float damageInvincibleTime = 0.1f;
     [Tooltip("무적 중 깜빡임 간격")]
     public float invincibleBlinkInterval = 0.04f;
+
     private bool isDamageInvincible;
     private Coroutine invincibleRoutine;
     private SpriteRenderer[] hitFlashRenderers;
 
+    // -------------------- 범위 시각화 --------------------
+    [Header("범위 시각화")]
+    [Tooltip("현재 무기의 공격 박스 표시")]
+    public bool showWeaponAttackGizmo = true;
+    [Tooltip("강화 하강 착지 충격 박스 표시")]
+    public bool showEmpoweredImpactGizmo = true;
+
     // -------------------- 인벤토리 --------------------
     [Header("인벤토리 설정")]
-    private bool isInventoryOpen; // 인벤토리 UI 열림 상태
-    private InventoryUI inventoryUI; // 인벤토리 UI 참조
+    private bool isInventoryOpen;     // 인벤토리 UI 열림 상태
+    private InventoryUI inventoryUI;  // 인벤토리 UI 참조
 
     // -------------------- 내부 보조 값 --------------------
     private float lastHorizontalDirection = 1f; // 마지막으로 바라본 좌우 방향
@@ -193,7 +219,6 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // 플레이어 관련 스탯은 GameManager 기준으로 사용
         currentHp = GameManager.Instance.playerMaxHp;
         currentJumpCount = GameManager.Instance.playerMaxJumpCount;
 
@@ -203,32 +228,32 @@ public class PlayerController : MonoBehaviour
         inventoryUI = FindInventoryUIAnyState();
     }
 
-    // 매 프레임 상태 업데이트(지면 체크, 점프 리셋)
+    // 매 프레임 상태 업데이트(지면 체크, 점프/낙하 상태 갱신)
     void Update()
     {
-        // UI 열림 중에는 조작 로직 중지
         if (isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
 
-        // 1) 지면 체크(일반 지면 + 점프스루 발판)
+        // 지면 체크(일반 지면 + 점프스루 발판)
         Collider2D groundCollider = FindGroundCollider();
         isGrounded = groundCollider != null;
 
         if (isGrounded && groundCollider.TryGetComponent<SpriteRenderer>(out SpriteRenderer gSr))
             currentGroundOrder = gSr.sortingOrder;
 
-        // 지면 이탈/착지 전환 감지(낙하 데미지용)
+        // 지면 이탈 시 낙하 추적 시작
         if (wasGrounded && !isGrounded)
         {
             isTrackingFall = true;
             fallStartY = transform.position.y;
         }
 
-        // 2) 하향 점프 상태 리셋 + 강화 입력(아래) 감지
+        // 하향 점프 상태 리셋 + 강화 입력 감지
         if (isDownJumping)
         {
             HandleEmpoweredDownJumpInput();
 
-            if (isGrounded && rb.linearVelocity.y < -0.1f)
+            // Physics2D가 착지 순간 Y 속도를 0으로 만들기 때문에 <= 0f 로 판정
+            if (isGrounded && rb.linearVelocity.y <= 0f)
                 ResetDownJump();
         }
         else
@@ -236,21 +261,20 @@ public class PlayerController : MonoBehaviour
             wasDownInputHeld = moveInput.y < -0.1f;
         }
 
-        // 3) 코요테 타임 & 점프 횟수/버퍼 관리
+        // 코요테 타임 & 점프 횟수/버퍼 관리
         if (isGrounded && rb.linearVelocity.y <= 0.1f && !isDownJumping)
         {
             currentJumpCount = GameManager.Instance.playerMaxJumpCount;
             coyoteTimer = coyoteTime;
             hasBurnedGroundJumpAfterCoyote = false;
 
-            // 착지 직전 점프 입력 버퍼 처리
             TryConsumeBufferedJump();
         }
         else
         {
             coyoteTimer -= Time.deltaTime;
 
-            // 코요테 타임이 끝났는데 아직 '첫 점프'를 안 썼다면, 지상 점프 권한 1회 소모
+            // 코요테 타임이 끝났는데 아직 첫 점프를 안 썼다면 지상 점프 권한 1회 소모
             if (!isGrounded && coyoteTimer <= 0f && !hasBurnedGroundJumpAfterCoyote)
             {
                 int maxJump = GameManager.Instance.playerMaxJumpCount;
@@ -267,7 +291,7 @@ public class PlayerController : MonoBehaviour
             TryConsumeBufferedJump();
         }
 
-        // 4) 가변 점프 높이(버튼 유지 시 상승 보정)
+        // 가변 점프 높이(버튼 유지 시 상승 보정) + 강화 하강 중력
         if (!isDashing)
         {
             if (isDownJumping && isEmpoweredDownJump)
@@ -295,26 +319,24 @@ public class PlayerController : MonoBehaviour
         if (isMoveDelayed && Time.time >= moveDelayEndTime)
             isMoveDelayed = false;
 
-        // 착지 시 낙하 데미지/스턴 처리(강화 하강 제외)
+        // 착지 시 낙하 데미지/스턴 처리
         if (!wasGrounded && isGrounded)
             HandleLandingFallDamage();
 
         wasGrounded = isGrounded;
     }
 
-    // -------------------- 입력 콜백: 이동 --------------------
+    // 입력 콜백: 이동(인벤토리 열림 중에는 인벤토리 커서 이동에 사용)
     public void OnMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
 
-        // 인벤토리 열림 중에는 플레이어 이동 대신 인벤토리 선택 커서 이동에 사용
         if (isInventoryOpen)
         {
             if (inventoryUI != null) inventoryUI.Navigate(moveInput);
             return;
         }
 
-        // 보상 UI 열림 중에는 플레이어 이동 입력 무시
         if (ChestRewardUI.IsAnyOpen) return;
 
         if (isDashing || isKnockback || isMoveDelayed) return;
@@ -322,7 +344,7 @@ public class PlayerController : MonoBehaviour
         if (moveInput.x != 0) UpdateFacingDirection();
     }
 
-    // -------------------- 입력 콜백: 점프/하향 점프 --------------------
+    // 입력 콜백: 점프/하향 점프(점프 버퍼 + 코요테 타임 적용)
     public void OnJump(InputAction.CallbackContext context)
     {
         if (isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
@@ -341,7 +363,7 @@ public class PlayerController : MonoBehaviour
 
         if (!context.started) return;
 
-        // 하강 점프 시작: 아래 + 점프 (Ground2 위)
+        // 하향 점프 시작: 아래 + 점프 (Ground2 위에서만)
         if (moveInput.y < -0.1f && !isDownJumping)
         {
             Collider2D hit = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, thinFloorLayer);
@@ -357,14 +379,12 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // 점프 입력 버퍼 저장(착지 직전 입력 허용)
         jumpBufferTimer = jumpBufferTime;
-
-        // 지금 점프 가능하면 즉시 실행
         TryConsumeBufferedJump();
     }
 
-    // 하향 점프 종료 시 충돌 복구
+    // 하향 점프 종료 시 충돌 복구 + 강화 하강 착지 충격 처리
+    // 일반/강화 모두 낙하 데미지 스턴 제외, 이동 딜레이는 강화 하강 착지에만 적용
     void ResetDownJump()
     {
         bool landedWithEmpowered = isEmpoweredDownJump;
@@ -376,6 +396,9 @@ public class PlayerController : MonoBehaviour
             ignoredThinFloorCollider = null;
         }
 
+        // 하향 점프 착지는 일반/강화 모두 낙하 데미지 제외
+        ignoreFallDamageOnNextLanding = true;
+
         if (landedWithEmpowered)
         {
             if (debugEmpoweredDownJump)
@@ -383,7 +406,6 @@ public class PlayerController : MonoBehaviour
 
             ApplyEmpoweredDownJumpImpact();
             ApplyMoveDelay(empoweredDownJumpMoveDelay);
-            ignoreFallDamageOnNextLanding = true;
         }
 
         isEmpoweredDownJump = false;
@@ -392,7 +414,7 @@ public class PlayerController : MonoBehaviour
         wasDownInputHeld = moveInput.y < -0.1f;
     }
 
-    // Ground2 통과용 하향 점프 루틴(시작 발판만 무시)
+    // Ground2 통과용 하향 점프 루틴(시작 발판만 일시적으로 무시)
     private IEnumerator ThinFloorDownJumpRoutine(Collider2D startThinFloor)
     {
         isDownJumping = true;
@@ -401,7 +423,6 @@ public class PlayerController : MonoBehaviour
         empowerWindowActive = true;
         wasDownInputHeld = moveInput.y < -0.1f;
 
-        // 하강 시작 시점부터 낙하 추적
         isTrackingFall = true;
         fallStartY = transform.position.y;
 
@@ -438,14 +459,14 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // -------------------- 입력 콜백: 대쉬 --------------------
+    // 입력 콜백: 대쉬
     public void OnDash(InputAction.CallbackContext context)
     {
         if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
         if (context.started && canDash && !isDashing) StartCoroutine(DashAction());
     }
 
-    // 대쉬 실행 루틴
+    // 대쉬 실행 루틴(중력 무시 + 일정 거리 직진 후 정지)
     private IEnumerator DashAction()
     {
         canDash = false;
@@ -457,7 +478,6 @@ public class PlayerController : MonoBehaviour
         float dashDir = moveInput.x != 0 ? Mathf.Sign(moveInput.x) : lastHorizontalDirection;
         float moved = 0f;
 
-        // 대쉬 시작 시 관성 제거
         rb.linearVelocity = Vector2.zero;
 
         while (moved < dashDistance)
@@ -472,7 +492,6 @@ public class PlayerController : MonoBehaviour
             yield return new WaitForFixedUpdate();
         }
 
-        // 대쉬 종료 시 즉시 정지(미끄러짐 방지)
         rb.linearVelocity = Vector2.zero;
         rb.gravityScale = prevGravity;
         isDashing = false;
@@ -481,12 +500,11 @@ public class PlayerController : MonoBehaviour
         canDash = true;
     }
 
-    // -------------------- 입력 콜백: 공격 --------------------
+    // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)
     public void OnAttack(InputAction.CallbackContext context)
     {
         if (!context.started || isDashing || isKnockback || ChestRewardUI.IsAnyOpen) return;
 
-        // 인벤토리 열림 중 Attack(Z)는 아이템 장착 확인 키로 사용
         if (isInventoryOpen)
         {
             if (inventoryUI != null) inventoryUI.ConfirmCurrentSelection();
@@ -499,7 +517,7 @@ public class PlayerController : MonoBehaviour
         lastAttackTime = Time.time;
     }
 
-    // -------------------- 입력 콜백: 인벤토리 --------------------
+    // 입력 콜백: 인벤토리 토글
     public void OnInventory(InputAction.CallbackContext context)
     {
         if (!context.started || ChestRewardUI.IsAnyOpen) return;
@@ -517,19 +535,18 @@ public class PlayerController : MonoBehaviour
         OpenInventory();
     }
 
-    // -------------------- 입력 콜백: 포션 --------------------
+    // 입력 콜백: 포션 사용
     public void OnHPPotion(InputAction.CallbackContext context)
     {
         if (!context.started || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
         UsePotion();
     }
 
-    // 실제 공격 판정 처리(무기별 범위/넉백 적용)
+    // 실제 공격 판정 처리(무기별 박스/넉백 + 일반몹/중간보스/메인보스 모두 적용)
     void Attack()
     {
         float dmg = GameManager.Instance.playerAttackDamage;
 
-        // 크리티컬 계산
         if (UnityEngine.Random.value < GameManager.Instance.playerCriticalChance)
             dmg *= GameManager.Instance.playerCriticalMultiplier;
 
@@ -537,22 +554,31 @@ public class PlayerController : MonoBehaviour
         Vector2 size = GetWeaponAttackSize();
         Vector2 pos = (Vector2)transform.position + Vector2.right * dir * GetWeaponOffset();
 
-        bool hitAny = false;
         Collider2D[] hits = Physics2D.OverlapBoxAll(pos, size, 0f, enemyLayer);
+
         foreach (var hit in hits)
         {
             if (hit.TryGetComponent<EnemyController>(out var enemy))
             {
                 enemy.TakeDamage(dmg, GetWeaponKnockbackPower());
-                hitAny = true;
+                continue;
+            }
+
+            if (hit.TryGetComponent<MidBossController>(out var midBoss))
+            {
+                midBoss.TakeDamage(dmg, GetWeaponKnockbackPower());
+                continue;
+            }
+
+            if (hit.TryGetComponent<MainBossController>(out var mainBoss))
+            {
+                mainBoss.TakeDamage(dmg, GetWeaponKnockbackPower());
+                continue;
             }
         }
-
-        if (hitAny)
-            StartCoroutine(HitStopRoutine());
     }
 
-    // 인벤토리 UI 토글 + 타임스케일 제어
+    // 인벤토리 UI 토글 + 게임 일시정지/재개
     private void OpenInventory()
     {
         if (isInventoryOpen)
@@ -569,7 +595,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // 포션 사용 처리
+    // 포션 사용 처리(고정량 + 비율 회복)
     private void UsePotion()
     {
         if (GameManager.Instance.potionCount <= 0)
@@ -588,6 +614,7 @@ public class PlayerController : MonoBehaviour
         Debug.Log("포션 사용! " + totalHeal + "의 HP 회복됨. 남은 포션: " + GameManager.Instance.potionCount + " | 현재 HP: " + currentHp);
     }
 
+    // 인벤토리 아이템 장착 시 호출: 모든 스탯을 GameManager에 합산
     public void ApplyItemStats(ItemStats stats)
     {
         if (GameManager.Instance == null) return;
@@ -598,7 +625,6 @@ public class PlayerController : MonoBehaviour
         GameManager.Instance.playerAttackSpeed += stats.attackSpeed;
         GameManager.Instance.playerCriticalChance += stats.criticalChance;
         GameManager.Instance.playerCriticalMultiplier += stats.criticalDamage;
-
         GameManager.Instance.playerMoveSpeed += stats.moveSpeed;
 
         // 최대 체력 증가 시 현재 체력도 함께 보정
@@ -607,6 +633,7 @@ public class PlayerController : MonoBehaviour
         Debug.Log($"아이템 스탯 적용: HP+{stats.hp}, 방어+{stats.defense}, 이동속도+{stats.moveSpeed}, 공격력+{stats.attack}, 공격속도+{stats.attackSpeed}, 치확+{stats.criticalChance}, 치피+{stats.criticalDamage}");
     }
 
+    // 인벤토리 아이템 해제 시 호출: 모든 스탯을 GameManager에서 차감
     public void RemoveItemStats(ItemStats stats)
     {
         if (GameManager.Instance == null) return;
@@ -617,7 +644,6 @@ public class PlayerController : MonoBehaviour
         GameManager.Instance.playerAttackSpeed -= stats.attackSpeed;
         GameManager.Instance.playerCriticalChance -= stats.criticalChance;
         GameManager.Instance.playerCriticalMultiplier -= stats.criticalDamage;
-
         GameManager.Instance.playerMoveSpeed -= stats.moveSpeed;
 
         // 최대 체력이 줄어들면 현재 체력도 최대치 이내로 보정
@@ -626,6 +652,7 @@ public class PlayerController : MonoBehaviour
         Debug.Log($"아이템 스탯 제거: HP-{stats.hp}, 방어-{stats.defense}, 이동속도-{stats.moveSpeed}, 공격력-{stats.attack}, 공격속도-{stats.attackSpeed}, 치확-{stats.criticalChance}, 치피-{stats.criticalDamage}");
     }
 
+    // 인벤토리 무기 타입을 플레이어 무기 타입으로 변환해 적용
     public void SetCurrentWeaponFromInventoryType(InventoryWeaponType inventoryWeaponType)
     {
         switch (inventoryWeaponType)
@@ -652,24 +679,30 @@ public class PlayerController : MonoBehaviour
         Debug.Log($"현재 무기 타입 변경: {currentWeapon}");
     }
 
-    // 피격 처리(방어력 적용 + 넉백 + 게임오버 체크)
+    // 일반 피격 처리(무적 프레임 적용)
     public void TakeDamage(float damage, Vector2 enemyPos)
     {
         TakeDamageInternal(damage, enemyPos, true);
     }
 
-    // 보스/특수 패턴용: 피격 무적 프레임 없이 데미지 처리
+    // 보스 검기/특수 패턴용: 무적 프레임 무시 데미지 처리
     public void TakeDamageNoIFrame(float damage, Vector2 enemyPos)
     {
         TakeDamageInternal(damage, enemyPos, false);
     }
 
+    // 적 위치를 모를 때 사용하는 오버로드(전방에서 들어온 것으로 가정)
+    public void TakeDamage(float damage)
+    {
+        float dir = (transform.localScale.x > 0) ? -1f : 1f;
+        Vector2 enemyPos = (Vector2)transform.position + new Vector2(-dir * 2f, 0);
+        TakeDamageInternal(damage, enemyPos, true);
+    }
+
+    // 실제 피격 처리(방어력 적용 + 넉백 + 무적 + 게임오버 체크)
     private void TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame)
     {
-        // 대쉬 중에는 무적 처리
         if (isDashing) return;
-
-        // 일반 몬스터 공격에만 무적 프레임 적용
         if (applyIFrame && isDamageInvincible) return;
 
         float defenseRate = GameManager.Instance.playerDefense / (GameManager.Instance.playerDefense + 100f);
@@ -697,14 +730,6 @@ public class PlayerController : MonoBehaviour
         }
 
         if (currentHp <= 0) GameOver();
-    }
-
-    // 오버로드: 적 위치 없이 들어온 데미지 처리용(일반 몬스터 규칙: 무적 프레임 적용)
-    public void TakeDamage(float damage)
-    {
-        float dir = (transform.localScale.x > 0) ? -1f : 1f;
-        Vector2 enemyPos = (Vector2)transform.position + new Vector2(-dir * 2f, 0);
-        TakeDamageInternal(damage, enemyPos, true);
     }
 
     // 넉백 상태 해제 루틴
@@ -750,7 +775,7 @@ public class PlayerController : MonoBehaviour
         invincibleRoutine = null;
     }
 
-    // 공격 적중 시 짧은 히트 스탑
+    // 공격 적중 시 짧은 히트 스탑(타격감 강화)
     private IEnumerator HitStopRoutine()
     {
         if (isHitStopRunning) yield break;
@@ -784,8 +809,6 @@ public class PlayerController : MonoBehaviour
             Physics2D.IgnoreLayerCollision(pL, eL, false);
         }
     }
-
-    // -------------------- 무기 보조 함수 --------------------
 
     // 바라보는 방향 갱신(입력 기준)
     private void UpdateFacingDirection()
@@ -845,11 +868,9 @@ public class PlayerController : MonoBehaviour
     // 비활성 오브젝트까지 포함해서 InventoryUI 탐색
     private InventoryUI FindInventoryUIAnyState()
     {
-        // 우선 활성 오브젝트에서 탐색
         InventoryUI found = FindFirstObjectByType<InventoryUI>();
         if (found != null) return found;
 
-        // 비활성 오브젝트까지 포함 탐색
         var all = Resources.FindObjectsOfTypeAll<InventoryUI>();
         foreach (var ui in all)
         {
@@ -875,9 +896,7 @@ public class PlayerController : MonoBehaviour
     private bool CanJumpNow()
     {
         if (currentJumpCount <= 0) return false;
-
         if (isGrounded) return true;
-
         if (coyoteTimer > 0f) return true;
 
         // 공중 추가 점프는 첫 점프를 소모했을 때만 허용
@@ -897,7 +916,6 @@ public class PlayerController : MonoBehaviour
         jumpHoldTimer = 0f;
         jumpBufferTimer = 0f;
 
-        // 코요테 타임으로 점프했다면 즉시 소진
         if (!isGrounded)
         {
             coyoteTimer = 0f;
@@ -951,7 +969,7 @@ public class PlayerController : MonoBehaviour
         return Mathf.Lerp(airDecelAtLowSpeed, airDecelAtHighSpeed, speed01);
     }
 
-    // 하강 시작 후 0.5초 내 "아래" 신규 입력을 받으면 강화 하강 전환
+    // 하강 시작 후 일정 시간 내 "아래" 신규 입력을 받으면 강화 하강 전환
     private void HandleEmpoweredDownJumpInput()
     {
         if (!empowerWindowActive || isEmpoweredDownJump)
@@ -979,7 +997,7 @@ public class PlayerController : MonoBehaviour
             isEmpoweredDownJump = true;
             empowerWindowActive = false;
 
-            // 강화 하강 전환 즉시 하강 속도를 보정해서 체감이 바로 나게 함
+            // 강화 하강 전환 즉시 하강 속도 보정(체감 즉시 반영)
             if (rb.linearVelocity.y < 0f)
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * empoweredDownJumpFallSpeedMultiplier);
 
@@ -990,7 +1008,7 @@ public class PlayerController : MonoBehaviour
         wasDownInputHeld = isDownHeld;
     }
 
-    // 하향 점프 중 시작 발판(무시 중 콜라이더)은 지면 판정에서 제외
+    // 하향 점프 중 시작 발판은 지면 판정에서 제외하고 첫 번째 유효 콜라이더 반환
     private Collider2D FindGroundCollider()
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius, groundLayer | thinFloorLayer);
@@ -1004,7 +1022,7 @@ public class PlayerController : MonoBehaviour
         return null;
     }
 
-    // 강화 하향 점프 착지 충격
+    // 강화 하향 점프 착지 충격(범위 내 일반몹/중간보스 모두 데미지+넉백)
     private void ApplyEmpoweredDownJumpImpact()
     {
         Vector2 center = (Vector2)transform.position + empoweredDownJumpImpactOffset;
@@ -1067,7 +1085,7 @@ public class PlayerController : MonoBehaviour
         moveDelayEndTime = Mathf.Max(moveDelayEndTime, targetEnd);
     }
 
-    // 착지 시 낙하 데미지/스턴 처리(강화 하강 착지는 제외)
+    // 착지 시 낙하 데미지/스턴 처리(강화 하강 착지는 1회 무시)
     private void HandleLandingFallDamage()
     {
         if (!isTrackingFall)
@@ -1103,33 +1121,39 @@ public class PlayerController : MonoBehaviour
         isTrackingFall = false;
     }
 
-    // 디버그 시각화: 현재 무기 공격 박스
+    // 디버그 시각화: 무기 공격 박스 + 강화하강 충격 박스(인스펙터 토글)
     private void OnDrawGizmos()
     {
-        // 에디터(플레이 전)에서도 보이도록 Rigidbody2D null 체크로 막지 않음
         float facing = transform.localScale.x;
         if (Mathf.Approximately(facing, 0f)) facing = 1f;
 
         float dir = Mathf.Sign(facing);
-        Vector2 size = GetWeaponAttackSize();
-        Vector3 pos = transform.position + Vector3.right * dir * GetWeaponOffset();
 
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(pos, new Vector3(size.x, size.y, 0));
+        if (showWeaponAttackGizmo)
+        {
+            Vector2 size = GetWeaponAttackSize();
+            Vector3 pos = transform.position + Vector3.right * dir * GetWeaponOffset();
 
-        Gizmos.color = new Color(1f, 0.4f, 0.1f, 0.8f);
-        Vector3 impactCenter = transform.position + (Vector3)empoweredDownJumpImpactOffset;
-        Gizmos.DrawWireCube(impactCenter, new Vector3(empoweredDownJumpImpactSize.x, empoweredDownJumpImpactSize.y, 0f));
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireCube(pos, new Vector3(size.x, size.y, 0));
+        }
+
+        if (showEmpoweredImpactGizmo)
+        {
+            Gizmos.color = new Color(1f, 0.4f, 0.1f, 0.8f);
+            Vector3 impactCenter = transform.position + (Vector3)empoweredDownJumpImpactOffset;
+            Gizmos.DrawWireCube(impactCenter, new Vector3(empoweredDownJumpImpactSize.x, empoweredDownJumpImpactSize.y, 0f));
+        }
     }
 
-    // 물리 프레임 이동 처리
+    // 물리 프레임 이동 처리(관성/미끄러짐 제거 + 모서리 보정)
     void FixedUpdate()
     {
         if (isDashing || isKnockback) return;
 
         if (isDownJumping)
         {
-            // 하향 점프 중 확장 포인트
+            // 하향 점프 중 확장 포인트(현재는 별도 처리 없음)
             return;
         }
 
@@ -1139,7 +1163,6 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // 넉백 중/해제 직후 관성 제거 목적(수평 속도 잔여 방지)
         if (!isKnockback && Mathf.Abs(moveInput.x) <= 0.01f && !isDownJumping)
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
 

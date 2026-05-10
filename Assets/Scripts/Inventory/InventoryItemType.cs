@@ -1,8 +1,8 @@
-// 인벤토리 아이템 대분류
-// 주의: 기존 에셋 직렬화 호환을 위해 값 고정
+// [인벤토리 아이템 분류]
+// - 에셋 직렬화 호환을 위해 enum 값 순서/숫자는 변경하지 않음
 public enum InventoryItemType
 {
-    Equipment = 0, // 머리/몸통/장갑/신발
+    Equipment = 0,
     Misc = 1,
-    Weapon = 2     // 칼/둔기/창/도끼/낫
+    Weapon = 2
 }

@@ -1,4 +1,5 @@
-// 장비 착용 부위 타입 (방어구 전용)
+// [장비 슬롯 타입]
+// - 인벤토리 장비 슬롯의 허용 타입과 아이템 장착 가능 여부 판정에 사용
 public enum EquipmentType
 {
     None,
@@ -6,16 +7,17 @@ public enum EquipmentType
     Body,
     Gloves,
     Boots,
-    Weapon // 기존 슬롯 호환용 (무기 슬롯)
+    Weapon
 }
 
-// 인벤토리 무기 종류 (PlayerController의 WeaponType과 이름 충돌 방지)
+// [인벤토리 무기 타입]
+// - PlayerController.WeaponType과 분리하여 인벤토리 데이터 직렬화 안정성 유지
 public enum InventoryWeaponType
 {
     None,
-    Sword,   // 칼
-    Blunt,   // 둔기
-    Spear,   // 창
-    Axe,     // 도끼
-    Scythe   // 낫
+    Sword,
+    Blunt,
+    Spear,
+    Axe,
+    Scythe
 }
