@@ -17,7 +17,7 @@ public class MenuCursor : MonoBehaviour
 
     public GameObject mainMenu;
     public GameObject optionPanel;
-    public GameObject loadPanel;      // 🔥 추가
+    public GameObject loadPanel;
 
     public OptionCursor optionCursor;
 
@@ -32,6 +32,7 @@ public class MenuCursor : MonoBehaviour
         optionPanel.SetActive(false);
         loadPanel.SetActive(false);
         mainMenu.SetActive(true);
+        UpdateLoadSlots();
 
         yield return null;
         UpdateSelection();
@@ -113,6 +114,34 @@ public class MenuCursor : MonoBehaviour
         }
 
         isSelecting = false;
+    }
+
+    void UpdateLoadSlots()
+    {
+        for (int i = 0; i < loadSlots.Length; i++)
+        {
+            int slot = i + 1;
+
+            if (PlayerPrefs.HasKey($"SaveSlot{slot}_Level"))
+            {
+                int level =
+                    PlayerPrefs.GetInt($"SaveSlot{slot}_Level");
+
+                float hp =
+                    PlayerPrefs.GetFloat($"SaveSlot{slot}_HP");
+
+                loadSlots[i].text =
+                    $"SLOT {slot}\n" +
+                    $"LV {level}\n" +
+                    $"HP {hp}";
+            }
+            else
+            {
+                loadSlots[i].text =
+                    $"SLOT {slot}\n" +
+                    $"EMPTY";
+            }
+        }
     }
 
     // 🔥 OPTION
