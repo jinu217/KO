@@ -123,8 +123,26 @@ public class RangedEnemy : EnemyController
             return;
         }
 
-        // 1) 절벽 감지
-        RaycastHit2D groundInfo = Physics2D.Raycast(groundCheck.position, Vector2.down, data.checkDistance, groundLayer);
+        if (ledgeIgnoreTimer > 0f)
+            ledgeIgnoreTimer -= Time.fixedDeltaTime;
+
+        // 1) 절벽/내리막 감지 (접지 상태 + 방향 전환 유예 종료 후 검사)
+        bool isGrounded = IsGroundedNow();
+        bool canLedgeCheck = ledgeIgnoreTimer <= 0f;
+        bool hasGroundAhead = true;
+
+        if (isGrounded && canLedgeCheck)
+        {
+            hasGroundAhead = HasGroundAhead();
+
+            if (showLedgeDebugLog && !hasGroundAhead)
+                Debug.Log($"[LedgeCheck-Ranged] {name} no-ground frames={ledgeNoGroundFrameCount}, pos={transform.position}, dir={walkDirection}");
+        }
+        else
+        {
+            ledgeNoGroundFrameCount = 0;
+            edgeTurnLock = false;
+        }
 
         // 2) 거리 및 범위 체크
         float distanceToPlayer = playerTransform != null ? Vector2.Distance(transform.position, playerTransform.position) : float.MaxValue;
@@ -145,7 +163,7 @@ public class RangedEnemy : EnemyController
         }
 
         // 3) 절벽 처리: 상태와 무관하게 즉시 정지 + 방향 전환
-        if (groundInfo.collider == null)
+        if (isGrounded && canLedgeCheck && !hasGroundAhead)
         {
             isWandering = true;
             wanderTimer = Mathf.Max(wanderTimer, 0.2f);

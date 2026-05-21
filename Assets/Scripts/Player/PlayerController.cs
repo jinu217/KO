@@ -108,8 +108,10 @@ public class PlayerController : MonoBehaviour
     public Vector2 empoweredDownJumpImpactSize = new Vector2(2.5f, 1.5f);
     [Tooltip("강화 하강 착지 충격 중심 오프셋")]
     public Vector2 empoweredDownJumpImpactOffset = Vector2.zero;
-    [Tooltip("강화 하강 착지 충격 데미지")]
+    [Tooltip("강화 하강 착지 충격 기본 데미지")]
     public float empoweredDownJumpDamage = 5f;
+    [Tooltip("강화 하강 착지 거리 비례 데미지 계수(유닛당 추가 데미지)")]
+    public float empoweredDownJumpDamagePerUnit = 1.5f;
     [Tooltip("강화 하강 착지 넉백 파워")]
     public float empoweredDownJumpKnockbackPower = 6f;
     [Tooltip("강화 하강 중 하강 속도 배율(일반 하강 대비)")]
@@ -122,8 +124,10 @@ public class PlayerController : MonoBehaviour
     [Header("낙하 데미지/스턴 설정")]
     [Tooltip("이 높이 이상 떨어지면 낙하 데미지 적용")]
     public float fallDamageMinHeight = 3f;
-    [Tooltip("낙하 데미지 값")]
+    [Tooltip("낙하 데미지 기본값")]
     public float fallDamageAmount = 5f;
+    [Tooltip("낙하 거리 비례 데미지 계수(유닛당 추가 데미지)")]
+    public float fallDamagePerUnit = 1f;
     [Tooltip("낙하 데미지 시 스턴(이동 지연) 시간")]
     public float fallDamageStunDelay = 0.5f;
 
@@ -161,6 +165,16 @@ public class PlayerController : MonoBehaviour
     public float currentHp;
 
     private bool isKnockback;         // 넉백 상태 여부
+
+    // -------------------- 넉백 --------------------
+
+    [Header("피격 넉백 설정")]
+    [Tooltip("피격 시 좌우 넉백 힘")]
+    [SerializeField] private float knockbackForceX = 3f;
+    [Tooltip("피격 시 위쪽 넉백 힘")]
+    [SerializeField] private float knockbackForceY = 5f;
+    [Tooltip("넉백으로 조작이 막히는 시간")]
+    [SerializeField] private float knockbackDuration = 0.2f;
 
     [Header("타격 연출")]
     [Tooltip("공격 적중 시 적용할 히트 스탑 시간")]
@@ -231,7 +245,7 @@ public class PlayerController : MonoBehaviour
     // 매 프레임 상태 업데이트(지면 체크, 점프/낙하 상태 갱신)
     void Update()
     {
-        if (isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
+        if (isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
 
         // 지면 체크(일반 지면 + 점프스루 발판)
         Collider2D groundCollider = FindGroundCollider();
@@ -337,7 +351,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (ChestRewardUI.IsAnyOpen) return;
+        if (ChestRewardPanel.IsAnyOpen) return;
 
         if (isDashing || isKnockback || isMoveDelayed) return;
 
@@ -347,7 +361,7 @@ public class PlayerController : MonoBehaviour
     // 입력 콜백: 점프/하향 점프(점프 버퍼 + 코요테 타임 적용)
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
+        if (isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
 
         // 버튼을 뗐을 때: 상승 속도 컷(짧은 점프)
         if (context.canceled)
@@ -404,7 +418,9 @@ public class PlayerController : MonoBehaviour
             if (debugEmpoweredDownJump)
                 Debug.Log($"[DownJump] Empowered landing impact t={Time.time:F3}");
 
-            ApplyEmpoweredDownJumpImpact();
+            // 낙하 거리: ResetDownJump 호출 시점의 isGrounded가 true이므로 transform.position.y가 착지 Y
+            float fallenDist = Mathf.Max(0f, fallStartY - transform.position.y);
+            ApplyEmpoweredDownJumpImpact(fallenDist);
             ApplyMoveDelay(empoweredDownJumpMoveDelay);
         }
 
@@ -462,7 +478,7 @@ public class PlayerController : MonoBehaviour
     // 입력 콜백: 대쉬
     public void OnDash(InputAction.CallbackContext context)
     {
-        if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
+        if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
         if (context.started && canDash && !isDashing) StartCoroutine(DashAction());
     }
 
@@ -503,7 +519,7 @@ public class PlayerController : MonoBehaviour
     // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if (!context.started || isDashing || isKnockback || ChestRewardUI.IsAnyOpen) return;
+        if (!context.started || isDashing || isKnockback || ChestRewardPanel.IsAnyOpen) return;
 
         if (isInventoryOpen)
         {
@@ -520,7 +536,7 @@ public class PlayerController : MonoBehaviour
     // 입력 콜백: 인벤토리 토글
     public void OnInventory(InputAction.CallbackContext context)
     {
-        if (!context.started || ChestRewardUI.IsAnyOpen) return;
+        if (!context.started || ChestRewardPanel.IsAnyOpen) return;
 
         if (inventoryUI == null)
             inventoryUI = FindInventoryUIAnyState();
@@ -538,7 +554,7 @@ public class PlayerController : MonoBehaviour
     // 입력 콜백: 포션 사용
     public void OnHPPotion(InputAction.CallbackContext context)
     {
-        if (!context.started || isInventoryOpen || ChestRewardUI.IsAnyOpen) return;
+        if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
         UsePotion();
     }
 
@@ -575,6 +591,18 @@ public class PlayerController : MonoBehaviour
                 mainBoss.TakeDamage(dmg, GetWeaponKnockbackPower());
                 continue;
             }
+
+        }
+
+        // 파괴 가능 오브젝트: 레이어 무관 전체 탐색 (인스펙터 설정 불필요)
+        // ~0 = 모든 레이어, GetComponentInParent로 계층 구조 대응
+        Collider2D[] breakableHits = Physics2D.OverlapBoxAll(pos, size, 0f, ~0);
+        foreach (var bHit in breakableHits)
+        {
+            if (bHit == null) continue;
+            BreakableObject breakable = bHit.GetComponentInParent<BreakableObject>();
+            if (breakable != null)
+                breakable.TakeDamage();
         }
     }
 
@@ -691,6 +719,15 @@ public class PlayerController : MonoBehaviour
         TakeDamageInternal(damage, enemyPos, false);
     }
 
+    // 환경 피해(함정 등): iFrame 무시 + 넉백 없음 + 깜빡임 효과는 적용
+    public void TakeDamageEnvironmental(float damage)
+    {
+        if (isDamageInvincible)
+            return;
+
+        TakeDamageInternal(damage, transform.position, true, false);
+    }
+
     // 적 위치를 모를 때 사용하는 오버로드(전방에서 들어온 것으로 가정)
     public void TakeDamage(float damage)
     {
@@ -700,7 +737,7 @@ public class PlayerController : MonoBehaviour
     }
 
     // 실제 피격 처리(방어력 적용 + 넉백 + 무적 + 게임오버 체크)
-    private void TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame)
+    private void TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame, bool applyKnockback = true)
     {
         if (isDashing) return;
         if (applyIFrame && isDamageInvincible) return;
@@ -711,17 +748,20 @@ public class PlayerController : MonoBehaviour
         currentHp -= finalDamage;
         Debug.Log(gameObject.name + " 피격! 원래 데미지: " + damage + " -> 최종 데미지: " + finalDamage + " | 남은 HP: " + currentHp);
 
-        isKnockback = true;
-        rb.linearVelocity = Vector2.zero;
+        if (applyKnockback)
+        {
+            isKnockback = true;
+            rb.linearVelocity = Vector2.zero;
 
-        float knockbackDirX = (enemyPos.x > transform.position.x) ? -1f : 1f;
-        if (Mathf.Approximately(enemyPos.x, transform.position.x)) knockbackDirX = 1f;
+            float knockbackDirX = (enemyPos.x > transform.position.x) ? -1f : 1f;
+            if (Mathf.Approximately(enemyPos.x, transform.position.x)) knockbackDirX = 1f;
 
-        Vector2 knockbackForce = new Vector2(knockbackDirX * 3f, 5f);
-        rb.AddForce(knockbackForce, ForceMode2D.Impulse);
+            Vector2 knockbackForce = new Vector2(knockbackDirX * knockbackForceX, knockbackForceY);
+            rb.AddForce(knockbackForce, ForceMode2D.Impulse);
 
-        StartCoroutine(KnockbackRoutine());
-        StartCoroutine(IgnoreEnemyCollisionRoutine());
+            StartCoroutine(KnockbackRoutine());
+            StartCoroutine(IgnoreEnemyCollisionRoutine());
+        }
 
         if (applyIFrame)
         {
@@ -735,19 +775,30 @@ public class PlayerController : MonoBehaviour
     // 넉백 상태 해제 루틴
     private IEnumerator KnockbackRoutine()
     {
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(knockbackDuration);
         isKnockback = false;
     }
 
     // 피격 직후 무적 + 깜빡임 처리
+    // iFrame + 깜빡임(일반 피격)
     private IEnumerator DamageInvincibleRoutine()
     {
         isDamageInvincible = true;
 
+        yield return StartCoroutine(HitBlinkRoutine(damageInvincibleTime));
+
+        isDamageInvincible = false;
+        invincibleRoutine = null;
+    }
+
+    // 깜빡임 전용 (iFrame 없이 시각 효과만 - 함정 등 환경 피해에 사용)
+    private Coroutine blinkRoutine;
+    private IEnumerator HitBlinkRoutine(float duration)
+    {
         float timer = 0f;
         bool visible = true;
 
-        while (timer < damageInvincibleTime)
+        while (timer < duration)
         {
             timer += Time.deltaTime;
 
@@ -770,9 +821,13 @@ public class PlayerController : MonoBehaviour
                 if (sr != null) sr.enabled = true;
             }
         }
+    }
 
-        isDamageInvincible = false;
-        invincibleRoutine = null;
+    // 깜빡임 효과만 단독 실행 (iFrame/넉백 없는 피격에서 호출)
+    private void StartHitBlink()
+    {
+        if (blinkRoutine != null) StopCoroutine(blinkRoutine);
+        blinkRoutine = StartCoroutine(HitBlinkRoutine(damageInvincibleTime));
     }
 
     // 공격 적중 시 짧은 히트 스탑(타격감 강화)
@@ -916,11 +971,10 @@ public class PlayerController : MonoBehaviour
         jumpHoldTimer = 0f;
         jumpBufferTimer = 0f;
 
-        if (!isGrounded)
-        {
-            coyoteTimer = 0f;
-            hasBurnedGroundJumpAfterCoyote = true;
-        }
+        // 착지 직후 버퍼 점프 시에도 coyoteTimer를 소진해야 함
+        // (isGrounded 여부와 무관하게 점프 성공 시 항상 초기화)
+        coyoteTimer = 0f;
+        hasBurnedGroundJumpAfterCoyote = true;
 
         return true;
     }
@@ -1023,8 +1077,11 @@ public class PlayerController : MonoBehaviour
     }
 
     // 강화 하향 점프 착지 충격(범위 내 일반몹/중간보스 모두 데미지+넉백)
-    private void ApplyEmpoweredDownJumpImpact()
+    // 강화 하강 착지 충격: 기본 데미지 + 낙하 거리 비례 데미지(유닛당 empoweredDownJumpDamagePerUnit)
+    private void ApplyEmpoweredDownJumpImpact(float fallenDistance)
     {
+        float totalDamage = empoweredDownJumpDamage + fallenDistance * empoweredDownJumpDamagePerUnit;
+
         Vector2 center = (Vector2)transform.position + empoweredDownJumpImpactOffset;
         Collider2D[] hits = Physics2D.OverlapBoxAll(center, empoweredDownJumpImpactSize, 0f, enemyLayer);
 
@@ -1041,11 +1098,11 @@ public class PlayerController : MonoBehaviour
                 int rootId = enemy.gameObject.GetInstanceID();
                 if (damagedRootIds.Add(rootId))
                 {
-                    enemy.TakeDamage(empoweredDownJumpDamage, empoweredDownJumpKnockbackPower);
+                    enemy.TakeDamage(totalDamage, empoweredDownJumpKnockbackPower);
                     damagedCount++;
 
                     if (debugEmpoweredDownJump)
-                        Debug.Log($"[DownJump] Hit Enemy: {enemy.gameObject.name}, dmg={empoweredDownJumpDamage}, kb={empoweredDownJumpKnockbackPower}");
+                        Debug.Log($"[DownJump] Hit Enemy: {enemy.gameObject.name}, dmg={totalDamage:F1}(base={empoweredDownJumpDamage}+dist={fallenDistance:F1}*{empoweredDownJumpDamagePerUnit}), kb={empoweredDownJumpKnockbackPower}");
                 }
                 continue;
             }
@@ -1056,17 +1113,17 @@ public class PlayerController : MonoBehaviour
                 int rootId = midBoss.gameObject.GetInstanceID();
                 if (damagedRootIds.Add(rootId))
                 {
-                    midBoss.TakeDamage(empoweredDownJumpDamage, empoweredDownJumpKnockbackPower);
+                    midBoss.TakeDamage(totalDamage, empoweredDownJumpKnockbackPower);
                     damagedCount++;
 
                     if (debugEmpoweredDownJump)
-                        Debug.Log($"[DownJump] Hit MidBoss: {midBoss.gameObject.name}, dmg={empoweredDownJumpDamage}, kb={empoweredDownJumpKnockbackPower}");
+                        Debug.Log($"[DownJump] Hit MidBoss: {midBoss.gameObject.name}, dmg={totalDamage:F1}, kb={empoweredDownJumpKnockbackPower}");
                 }
             }
         }
 
         if (debugEmpoweredDownJump)
-            Debug.Log($"[DownJump] Impact summary: colliders={hits.Length}, targetsDamaged={damagedCount}, center={center}, size={empoweredDownJumpImpactSize}");
+            Debug.Log($"[DownJump] Impact summary: colliders={hits.Length}, targetsDamaged={damagedCount}, totalDmg={totalDamage:F1}, dist={fallenDistance:F1}");
     }
 
     // 이동 지연 적용(중복 시 더 긴 시간 유지)
@@ -1108,11 +1165,15 @@ public class PlayerController : MonoBehaviour
 
         if (!isDownJumping && fallenHeight >= fallDamageMinHeight)
         {
-            currentHp -= fallDamageAmount;
+            // 낙하 거리 비례 데미지: 기본 데미지 + (초과 낙하 거리 × 거리 계수)
+            float excessHeight = fallenHeight - fallDamageMinHeight;
+            float totalFallDamage = fallDamageAmount + excessHeight * fallDamagePerUnit;
+
+            currentHp -= totalFallDamage;
             ApplyMoveDelay(fallDamageStunDelay);
 
             if (debugEmpoweredDownJump)
-                Debug.Log($"[Fall] damage applied: fallen={fallenHeight:F2}, dmg={fallDamageAmount}, stun={fallDamageStunDelay}, hp={currentHp:F1}");
+                Debug.Log($"[Fall] damage applied: fallen={fallenHeight:F2}, dmg={totalFallDamage:F1}(base={fallDamageAmount}+excess={excessHeight:F1}*{fallDamagePerUnit}), stun={fallDamageStunDelay}, hp={currentHp:F1}");
 
             if (currentHp <= 0f)
                 GameOver();
@@ -1175,6 +1236,15 @@ public class PlayerController : MonoBehaviour
         if (Mathf.Abs(moveInput.x) <= 0.01f)
             targetSpeedX = 0f;
 
-        rb.linearVelocity = new Vector2(targetSpeedX, rb.linearVelocity.y);
+        // 지면 위 + 이동 입력 없음: gravityScale=0으로 중력 자체를 차단
+        // velocity=0만으로는 Physics 스텝에서 중력이 재적용되어 경사 미끄러짐 발생
+        bool isStationary = isGrounded
+            && Mathf.Abs(targetSpeedX) <= 0.01f
+            && !isDownJumping;
+
+        rb.gravityScale = isStationary ? 0f : originalGravity;
+
+        float finalY = isStationary ? 0f : rb.linearVelocity.y;
+        rb.linearVelocity = new Vector2(targetSpeedX, finalY);
     }
 }

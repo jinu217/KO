@@ -42,8 +42,8 @@ public class EnemyData : ScriptableObject
     [Tooltip("원거리 발사 사거리(0 이하면 attackRange 사용)")] public float rangedAttackRange = 0f;
 
     [Header("피격 반응")]
-    [Tooltip("넉백 저항(0=가벼움, 1=매우 무거움)")]
-    [Range(0f, 1f)] public float knockbackResistance = 0.2f;
+    [Tooltip("몸무게(1=기준. 낮을수록 가벼워 넉백이 강하고 이동이 빠름, 높을수록 무거워 넉백이 약하고 이동이 느림)")]
+    [Range(0.1f, 10f)] public float weight = 1f;
     [Tooltip("피격 시 행동 정지 시간")] public float hitStunDuration = 0.15f;
 
     [Header("벽 충돌 보정")]

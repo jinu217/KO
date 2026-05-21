@@ -17,8 +17,10 @@ public abstract class EnemyController : MonoBehaviour
     public LayerMask groundLayer;
 
     [Header("감지 위치")]
-    [Tooltip("절벽 감지용 Ray 시작 위치")]
+    [Tooltip("절벽 감지용 시작 위치")]
     public Transform groundCheck;
+    [Tooltip("groundCheck의 전방 X 오프셋(인스펙터에서 조정)")]
+    [SerializeField] protected float groundCheckForwardOffset = 0.5f;
     [Tooltip("벽 감지용 기준점(선택)")]
     public Transform wallCheck;
     [Tooltip("벽 감지 거리")]
@@ -28,13 +30,41 @@ public abstract class EnemyController : MonoBehaviour
     [Tooltip("(확장용) 최대 망설임 횟수")]
     public int maxHesitation = 5;
 
+    [Header("절벽 감지(BoxCast)")]
+    [Tooltip("전방 발판 감지 박스 크기(X=너비, Y=높이)")]
+    [SerializeField] protected Vector2 ledgeProbeSize = new Vector2(0.18f, 0.12f);
+    [Tooltip("groundCheck에서 추가로 전방으로 밀어 검사할 오프셋(기본 0 = groundCheck 위치 그대로)")]
+    [SerializeField] protected float ledgeProbeForwardOffset = 0f;
+    [Tooltip("보조(먼) 감지를 위해 추가로 더 전방에 둘 오프셋")]
+    [SerializeField] protected float ledgeProbeFarOffset = 0.2f;
+    [Tooltip("이 거리 이내에 지면이 없으면 절벽으로 판단")]
+    [SerializeField] protected float ledgeProbeMaxDrop = 0.85f;
+    [Tooltip("연속 N 프레임 지면 미검출 시에만 절벽으로 확정(1=즉시)")]
+    [SerializeField] protected int ledgeNoGroundFramesToTrigger = 2;
+    [Tooltip("방향 전환 직후 절벽 감지를 잠시 무시하는 시간(초)")]
+    [SerializeField] protected float ledgeIgnoreAfterTurnTime = 0.1f;
+    [Tooltip("절벽 판단 디버그 로그 출력")]
+    [SerializeField] protected bool showLedgeDebugLog = false;
+    [Tooltip("Wander 종료 직후 stuckTimer 누적을 막는 유예 시간(초)\n경사 정상부 물리 걸림으로 인한 오판 방지. 0.3~0.6 권장")]
+    [SerializeField] protected float wanderEndGraceTime = 0.5f;
+    [Tooltip("STUCK_RECOVERY 발동까지 제자리 허용 시간(초). 경사가 있는 맵은 0.4~0.6 권장")]
+    [SerializeField] protected float stuckRecoveryTime = 0.4f;
+    [Tooltip("경사→평지 미세 단차 탈출 시 위로 직접 이동할 거리\n경사 top Y와 평지 Y의 차이보다 크게 설정. 기본 0.1 권장")]
+    [SerializeField] protected float microStepEscapeHeight = 0.1f;
+    [Tooltip("Wander 종료 직후 STUCK_RECOVERY가 방향을 바꾸지 않고 현재 방향을 유지하는 시간(초)\n경사 내려온 방향으로 재추락하는 문제 방지")]
+    [SerializeField] protected float postWanderStuckIgnoreTime = 0.8f;
+
     [Header("순찰 Idle 설정")]
     [Tooltip("순찰 중 랜덤 멈춤 사용 여부")]
     public bool enablePatrolIdle = true;
+    [Tooltip("순찰 Idle는 지면에 안정적으로 붙어있을 때만 시작")]
+    public bool patrolIdleOnlyWhenGrounded = true;
     [Tooltip("순찰 Idle 기본 최소 간격")]
     public float patrolIdleMinInterval = 3.0f;
     [Tooltip("순찰 Idle 기본 최대 간격")]
     public float patrolIdleMaxInterval = 6.0f;
+    [Tooltip("방향 전환 직후 순찰 Idle 진입을 막는 시간")]
+    public float patrolIdleBlockAfterTurn = 1.0f;
     [Tooltip("예약 시점 도달 시 실제 Idle 진입 확률")]
     [Range(0f, 1f)] public float patrolIdleChance = 0.6f;
 
@@ -55,6 +85,20 @@ public abstract class EnemyController : MonoBehaviour
     [Tooltip("두 번째 두리번 실행 시점(Idle 진행률)")]
     [Range(0f, 1f)] public float secondLookNormalizedTime = 0.66f;
 
+    [Header("순찰 정지 설정 (두리번 없이 제자리 멈춤)")]
+    [Tooltip("순찰 중 랜덤 정지 기능 사용 여부")]
+    public bool enablePatrolPause = true;
+    [Tooltip("순찰 정지 최소 간격(초)")]
+    public float patrolPauseMinInterval = 4.0f;
+    [Tooltip("순찰 정지 최대 간격(초)")]
+    public float patrolPauseMaxInterval = 8.0f;
+    [Tooltip("정지 지속 최소 시간(초)")]
+    public float patrolPauseDurationMin = 2.0f;
+    [Tooltip("정지 지속 최대 시간(초)")]
+    public float patrolPauseDurationMax = 3.0f;
+    [Tooltip("예약 시점 도달 시 실제 정지 진입 확률")]
+    [Range(0f, 1f)] public float patrolPauseChance = 0.5f;
+
     [Header("범위 시각화")]
     [Tooltip("최초 인식 범위(노란 원)")]
     [SerializeField] protected bool showDetectRangeGizmo = true;
@@ -67,6 +111,10 @@ public abstract class EnemyController : MonoBehaviour
     [Tooltip("벽 감지 Ray(흰색)")]
     [SerializeField] protected bool showWallCheckGizmo = true;
 
+    [Header("상태 디버그")]
+    [Tooltip("현재 AI 동작 상태를 콘솔 로그로 출력")]
+    [SerializeField] protected bool showStateDebugLog = false;
+
     [Header("실시간 상태")]
     [Tooltip("현재 체력(디버그 확인용)")]
     [SerializeField] protected float currentHp;
@@ -75,6 +123,7 @@ public abstract class EnemyController : MonoBehaviour
     protected Rigidbody2D rb;
     protected SpriteRenderer spriteRenderer;
     protected Transform playerTransform;
+    protected Collider2D bodyCollider;
 
     // -------------------- 이동/방향 --------------------
     protected int walkDirection = 1;     // 이동 방향(-1:왼쪽, 1:오른쪽)
@@ -87,6 +136,7 @@ public abstract class EnemyController : MonoBehaviour
     protected bool isIdle;               // 경직/대기 상태
     protected bool isWandering;          // 절벽 회피 등 강제 배회 상태
     protected bool edgeTurnLock;         // 절벽에서 1회만 방향 전환하기 위한 락
+    protected bool isPatrolPausing;      // 순찰 정지(두리번 없이 멈춤) 중 여부
 
     // -------------------- 순찰 두리번 상태 --------------------
     protected bool isPatrolIdleActive;       // 현재 Idle이 순찰 두리번 Idle인지 여부
@@ -109,6 +159,14 @@ public abstract class EnemyController : MonoBehaviour
 
     protected float nextPatrolIdleTime;       // 다음 순찰 Idle 시작 시각
     protected float patrolIdleTotalDuration;  // 이번 순찰 Idle 총 길이
+    protected float patrolPauseTimer;         // 순찰 정지 잔여 시간
+    protected float nextPatrolPauseTime;      // 다음 순찰 정지 예약 시각
+    protected int ledgeNoGroundFrameCount;    // 연속 지면 미검출 프레임 누적
+    protected float ledgeIgnoreTimer;         // 방향 전환 직후 절벽 검사 유예 타이머
+    protected float stuckTimer;               // 순찰 중 제자리 정지 누적 시간
+    protected Vector2 patrolLastPos;          // 순찰 stuck 판단용 이전 위치
+    private float wanderEndGraceTimer;        // wander 종료 후 stuckTimer 유예 타이머
+    private float postWanderStuckIgnoreTimer; // wander 종료 후 STUCK_RECOVERY 방향전환 금지 타이머
 
     // -------------------- 벽 충돌 보정(넉백 관련) --------------------
     protected bool hasWallImpactPending;
@@ -116,6 +174,8 @@ public abstract class EnemyController : MonoBehaviour
     protected float pendingWallStunDuration;
 
     private float wallCheckLocalOffsetX;
+    private float originalGravity;  // 초기 gravityScale 저장 (경사 정지 시 복구용)
+    private int lastFacingDirection = 1;
 
     // 읽기 전용 상태 프로퍼티
     protected bool isKnockback => knockbackTimer > 0;
@@ -127,11 +187,15 @@ public abstract class EnemyController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        bodyCollider = GetComponent<Collider2D>();
 
         walkDirection = (Random.value < 0.5f) ? -1 : 1;
         delayedDirection = walkDirection;
+        lastFacingDirection = walkDirection;
 
         rb.mass = 10f;
+        originalGravity = rb.gravityScale;
+        patrolLastPos = rb.position;
 
         if (wallCheck != null)
             wallCheckLocalOffsetX = Mathf.Abs(wallCheck.localPosition.x);
@@ -157,6 +221,7 @@ public abstract class EnemyController : MonoBehaviour
             Physics2D.IgnoreLayerCollision(enemyLayerIndex, enemyLayerIndex, true);
 
         ScheduleNextPatrolIdle();
+        ScheduleNextPatrolPause();
     }
 
     // 프레임 로직: 상태 차단 → 플레이어 감지 → 타이머 처리
@@ -169,6 +234,13 @@ public abstract class EnemyController : MonoBehaviour
         }
 
         // Idle 중에도 플레이어 감지는 수행(눈 마주치면 즉시 인식/반응)
+        if (isPatrolPausing)
+        {
+            CheckPlayerDetection();
+            HandleTimers();
+            return;
+        }
+
         if (isIdle)
         {
             CheckPlayerDetection();
@@ -207,11 +279,25 @@ public abstract class EnemyController : MonoBehaviour
             return;
         }
 
-        if (isIdle || isReacting || isAttacking)
+        // 경사 미끄러짐 방지: 모든 early return 이전에 적용
+        // "정지 의도" 상태(pause/idle/react/attack)이거나 velocity.x가 거의 0이면 중력 차단
+        // → 정지 진입 첫 프레임에도 즉시 중력을 끊어 순간 미끄러짐 방지
         {
-            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+            bool intendingToStop = isPatrolPausing || isIdle || isReacting || isAttacking;
+            bool groundedAndStill = IsGroundedNow()
+                && (intendingToStop || Mathf.Abs(rb.linearVelocity.x) <= 0.05f)
+                && !isKnockback;
+            rb.gravityScale = groundedAndStill ? 0f : originalGravity;
+        }
+
+        if (isPatrolPausing || isIdle || isReacting || isAttacking)
+        {
+            // 정지: 경사 법선 방향으로 X=0 투영 → 미끄러짐 없음
+            ApplySlopeAwareVelocity(0f);
             return;
         }
+
+        // Y 속도는 ApplySlopeAwareVelocity에서 경사 방향으로 처리
 
         // 피격 어그로 중에는 강제로 플레이어 참조를 유지 시도
         if (forcedAggroTimer > 0f && playerTransform == null)
@@ -220,8 +306,26 @@ public abstract class EnemyController : MonoBehaviour
             if (playerObj != null) playerTransform = playerObj.transform;
         }
 
-        // 1) 절벽 감지
-        RaycastHit2D groundInfo = Physics2D.Raycast(groundCheck.position, Vector2.down, data.checkDistance, groundLayer);
+        if (ledgeIgnoreTimer > 0f)
+            ledgeIgnoreTimer -= Time.fixedDeltaTime;
+
+        // 1) 절벽/내리막 감지 (접지 상태 + 방향 전환 유예 종료 후 검사)
+        bool isGrounded = IsGroundedNow();
+        bool canLedgeCheck = ledgeIgnoreTimer <= 0f;
+        bool hasGroundAhead = true;
+
+        if (isGrounded && canLedgeCheck)
+        {
+            hasGroundAhead = HasGroundAhead();
+
+            if (showLedgeDebugLog && !hasGroundAhead)
+                Debug.Log($"[LedgeCheck] {name} no-ground frames={ledgeNoGroundFrameCount}, pos={transform.position}, dir={walkDirection}");
+        }
+        else
+        {
+            ledgeNoGroundFrameCount = 0;
+            edgeTurnLock = false;
+        }
 
         // 2) 거리/범위 체크
         float distanceToPlayer = playerTransform != null ? Vector2.Distance(transform.position, playerTransform.position) : float.MaxValue;
@@ -229,7 +333,7 @@ public abstract class EnemyController : MonoBehaviour
         bool isInChaseRange = distanceToPlayer <= data.chaseRange;
 
         // 절벽 감지: 상태와 무관하게 즉시 정지 + 방향 전환 처리
-        if (groundInfo.collider == null)
+        if (isGrounded && canLedgeCheck && !hasGroundAhead)
         {
             isWandering = true;
             wanderTimer = Mathf.Max(wanderTimer, 0.2f);
@@ -273,7 +377,7 @@ public abstract class EnemyController : MonoBehaviour
             else
             {
                 // 이미 반전한 뒤에도 센서가 절벽을 보고 있으면 반대 방향으로 뒤로 물러남
-                rb.linearVelocity = new Vector2(walkDirection * data.moveSpeed, rb.linearVelocity.y);
+                ApplySlopeAwareVelocity(walkDirection * GetEffectiveMoveSpeed(data.moveSpeed));
                 Flip(walkDirection);
             }
 
@@ -295,11 +399,30 @@ public abstract class EnemyController : MonoBehaviour
             unreachableTimer = 0f;
         }
 
-        // 3) 이동 상태 분기
+        // 3) 벽 감지: 진행 방향에 ground/ground2가 있으면 절벽 감지와 동일하게 방향 전환
+        if (wallCheck != null)
+        {
+            float wallDir = walkDirection == 0 ? 1f : Mathf.Sign(walkDirection);
+            RaycastHit2D wallHit = Physics2D.Raycast(
+                wallCheck.position, Vector2.right * wallDir, wallCheckDistance, groundLayer);
+
+            if (wallHit.collider != null)
+            {
+                walkDirection *= -1;
+                delayedDirection = walkDirection;
+                Flip(walkDirection);
+                ApplySlopeAwareVelocity(0f);
+                return;
+            }
+        }
+
+        // 4) 이동 상태 분기
         if (isWandering)
         {
-            rb.linearVelocity = new Vector2(walkDirection * data.moveSpeed, rb.linearVelocity.y);
+            ApplySlopeAwareVelocity(walkDirection * GetEffectiveMoveSpeed(data.moveSpeed));
             Flip(walkDirection);
+            stuckTimer = 0f;
+            patrolLastPos = rb.position;
         }
         else if (isChasing)
         {
@@ -308,11 +431,52 @@ public abstract class EnemyController : MonoBehaviour
                 rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
             else
                 MoveTowardsPlayer();
+
+            stuckTimer = 0f;
+            patrolLastPos = rb.position;
         }
         else
         {
-            ApplyMovement(data.moveSpeed);
+            float moveSpeed = GetEffectiveMoveSpeed(data.moveSpeed);
+            Vector2 currentPos = rb.position;
+            float movedDist = Vector2.Distance(currentPos, patrolLastPos);
+
+            ApplyMovement(moveSpeed);
+
+            // 실제 위치 변화 기반으로 stuck 판단 (velocity set 직후 값 의존 X)
+            // wanderEndGraceTimer 중엔 누적 금지 (경사 정상부 물리 걸림 오판 방지)
+            if (wanderEndGraceTimer > 0f)
+            {
+                wanderEndGraceTimer -= Time.fixedDeltaTime;
+                stuckTimer = 0f;
+            }
+            else if (movedDist <= 0.0025f)
+                stuckTimer += Time.fixedDeltaTime;
+            else
+                stuckTimer = 0f;
+
+            patrolLastPos = currentPos;
+
+            // postWanderStuckIgnoreTimer 감소
+            if (postWanderStuckIgnoreTimer > 0f)
+                postWanderStuckIgnoreTimer -= Time.fixedDeltaTime;
+
+            if (stuckTimer >= stuckRecoveryTime)
+            {
+                // 경사→평지 전환부 미세 단차(약 0.04유닛)에 박스 콜라이더가 맞닿아
+                // linearVelocity/AddForce가 반력으로 상쇄됨 → rb.position 직접 조정
+                // AddForce는 Physics2D가 완전히 상쇄하므로 효과 없음
+                rb.position += new Vector2(0f, microStepEscapeHeight);
+                rb.linearVelocity = new Vector2(walkDirection * moveSpeed, rb.linearVelocity.y);
+
+                if (showStateDebugLog)
+                    Debug.Log($"[EnemyState] {name} MICRO_STEP_ESCAPE pos:{transform.position}");
+
+                stuckTimer = 0f;
+                patrolLastPos = rb.position;
+            }
         }
+
     }
 
     // 플레이어 탐지 + 공격 시도 판단(피격 어그로 중에는 시야/등뒤 무시)
@@ -465,7 +629,7 @@ public abstract class EnemyController : MonoBehaviour
             delayedDirection = (walkDirection == 0) ? 1 : walkDirection;
 
         walkDirection = delayedDirection;
-        rb.linearVelocity = new Vector2(walkDirection * data.chaseSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(walkDirection * GetEffectiveMoveSpeed(data.chaseSpeed), rb.linearVelocity.y);
         Flip(walkDirection);
     }
 
@@ -515,10 +679,140 @@ public abstract class EnemyController : MonoBehaviour
         idleTimer = patrolIdleTotalDuration;
     }
 
+    // 전방 지면 존재 여부 확인 (BoxCast 기반)
+    protected bool HasGroundAhead(float forwardOffset = -1f, float maxDrop = -1f, bool stabilize = true)
+    {
+        float dir = (walkDirection == 0) ? 1f : Mathf.Sign(walkDirection);
+        return HasGroundAheadForDirection(dir, forwardOffset, maxDrop, stabilize);
+    }
+
+    protected bool HasGroundAheadForDirection(float direction, float forwardOffset = -1f, float maxDrop = -1f, bool stabilize = true)
+    {
+        if (data == null) return true;
+
+        float dir = Mathf.Approximately(direction, 0f) ? 1f : Mathf.Sign(direction);
+        float probeForward = (forwardOffset >= 0f) ? forwardOffset : Mathf.Max(0f, ledgeProbeForwardOffset);
+        float farForward = probeForward + Mathf.Max(0f, ledgeProbeFarOffset);
+        float probeDrop = (maxDrop >= 0f)
+            ? maxDrop
+            : Mathf.Max(Mathf.Max(0.1f, data.checkDistance), ledgeProbeMaxDrop);
+
+        Vector2 size = new Vector2(Mathf.Max(0.05f, ledgeProbeSize.x), Mathf.Max(0.05f, ledgeProbeSize.y));
+
+        // groundCheck seam 이슈를 줄이기 위해, 가능하면 실제 콜라이더 발끝 기준으로 감지 원점을 계산
+        Vector2 nearOrigin;
+        Vector2 farOrigin;
+
+        if (bodyCollider != null)
+        {
+            Bounds b = bodyCollider.bounds;
+            float footY = b.min.y + (size.y * 0.5f) + 0.01f;
+            float frontX = b.center.x + dir * (b.extents.x + probeForward);
+            nearOrigin = new Vector2(frontX, footY);
+            farOrigin = new Vector2(frontX + dir * Mathf.Max(0f, ledgeProbeFarOffset), footY);
+        }
+        else if (groundCheck != null)
+        {
+            nearOrigin = (Vector2)groundCheck.position + new Vector2(dir * probeForward, 0f);
+            farOrigin = (Vector2)groundCheck.position + new Vector2(dir * farForward, 0f);
+        }
+        else
+        {
+            nearOrigin = (Vector2)transform.position;
+            farOrigin = nearOrigin + new Vector2(dir * Mathf.Max(0.05f, farForward), 0f);
+        }
+
+        RaycastHit2D nearHit = Physics2D.BoxCast(nearOrigin, size, 0f, Vector2.down, probeDrop, groundLayer);
+        RaycastHit2D farHit = Physics2D.BoxCast(farOrigin, size, 0f, Vector2.down, probeDrop, groundLayer);
+        bool hasGroundNow = nearHit.collider != null || farHit.collider != null;
+
+        if (!stabilize)
+            return hasGroundNow;
+
+        if (hasGroundNow)
+        {
+            ledgeNoGroundFrameCount = 0;
+            return true;
+        }
+
+        ledgeNoGroundFrameCount++;
+        int needFrames = Mathf.Max(1, ledgeNoGroundFramesToTrigger);
+        return ledgeNoGroundFrameCount < needFrames;
+    }
+
+    // 현재 지면 접지 여부(발밑) 확인
+    protected bool IsGroundedNow()
+    {
+        if (bodyCollider == null) return true;
+
+        Bounds b = bodyCollider.bounds;
+        float probeH = 0.08f;
+        Vector2 size = new Vector2(Mathf.Max(0.06f, b.size.x * 0.7f), probeH);
+        Vector2 center = new Vector2(b.center.x, b.min.y - (probeH * 0.5f) - 0.02f);
+
+        return Physics2D.OverlapBox(center, size, 0f, groundLayer) != null;
+    }
+
     // 단순 이동 적용
+    // 몸무게 기반 이동속도 보정(weight=1 기준, 클수록 느림, 작을수록 빠름)
+    protected float GetEffectiveMoveSpeed(float baseSpeed)
+    {
+        float weight = (data != null) ? Mathf.Max(data.weight, 0.1f) : 1f;
+        return baseSpeed / Mathf.Sqrt(weight);
+    }
+
+    // 경사면 법선 기반 속도 투영:
+    // - 지면 위: Raycast로 법선 감지 → xSpeed를 경사 방향으로 투영
+    //   → 내리막에서 콜라이더가 붙어서 이동 / 오르막도 동일 slope 속도 유지
+    //   → xSpeed=0 이면 투영 결과 0 → 정지 시 미끄러짐 없음
+    // - 공중: Y 보존 (자연스러운 낙하)
+    protected void ApplySlopeAwareVelocity(float xSpeed)
+    {
+        if (!IsGroundedNow())
+        {
+            rb.linearVelocity = new Vector2(xSpeed, rb.linearVelocity.y);
+            return;
+        }
+
+        // Raycast 시작점: 콜라이더 바닥(bodyCollider.bounds.min.y)에서 조금 위
+        // rb.position(중앙)에서 쏘면 캡슐 콜라이더 높이만큼 짧아 경사면 미감지
+        Vector2 origin;
+        float probeLen;
+        if (bodyCollider != null)
+        {
+            origin = new Vector2(rb.position.x, bodyCollider.bounds.min.y + 0.05f);
+            probeLen = 0.35f; // 바닥에서 0.35f 아래까지 탐색
+        }
+        else
+        {
+            origin = (Vector2)rb.position;
+            probeLen = 1.0f;
+        }
+
+        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, probeLen, groundLayer);
+
+        if (hit.collider != null)
+        {
+            Vector2 normal = hit.normal;
+
+            // 경사 법선 90도 회전 → 경사면 접선(tangent)
+            Vector2 tangent = new Vector2(normal.y, -normal.x);
+            if (tangent.x < 0f) tangent = -tangent; // +X 방향 보장
+
+            float speed = Mathf.Abs(xSpeed);
+            Vector2 dir = xSpeed >= 0f ? tangent : -tangent;
+            rb.linearVelocity = dir * speed;
+        }
+        else
+        {
+            // 경사면 미감지(평지 이음새 등): Y=0
+            rb.linearVelocity = new Vector2(xSpeed, 0f);
+        }
+    }
+
     protected void ApplyMovement(float speed)
     {
-        rb.linearVelocity = new Vector2(walkDirection * speed, rb.linearVelocity.y);
+        ApplySlopeAwareVelocity(walkDirection * speed);
         Flip(walkDirection);
     }
 
@@ -526,10 +820,22 @@ public abstract class EnemyController : MonoBehaviour
     protected void Flip(float dir)
     {
         if (Mathf.Approximately(dir, 0)) return;
+
+        int facing = dir < 0f ? -1 : 1;
+        if (facing != lastFacingDirection)
+        {
+            ledgeNoGroundFrameCount = 0;
+            edgeTurnLock = false;
+            ledgeIgnoreTimer = Mathf.Max(0f, ledgeIgnoreAfterTurnTime);
+            nextPatrolIdleTime = Mathf.Max(nextPatrolIdleTime, Time.time + Mathf.Max(0f, patrolIdleBlockAfterTurn));
+            nextPatrolPauseTime = Mathf.Max(nextPatrolPauseTime, Time.time + Mathf.Max(0f, patrolIdleBlockAfterTurn));
+            lastFacingDirection = facing;
+        }
+
         spriteRenderer.flipX = (dir < 0);
 
         if (groundCheck != null)
-            groundCheck.localPosition = new Vector3(data.groundCheckOffset * Mathf.Sign(dir), groundCheck.localPosition.y, 0);
+            groundCheck.localPosition = new Vector3(Mathf.Abs(groundCheckForwardOffset) * Mathf.Sign(dir), groundCheck.localPosition.y, 0);
 
         if (wallCheck != null)
         {
@@ -542,6 +848,25 @@ public abstract class EnemyController : MonoBehaviour
     }
 
     // 다음 순찰 Idle 시작 시각 예약(기본 간격)
+    // 순찰 정지(두리번 없이 멈춤) 시작
+    protected void StartPatrolPause()
+    {
+        if (isChasing || isWandering || isIdle) return;
+
+        isPatrolPausing = true;
+        patrolPauseTimer = Random.Range(
+            Mathf.Max(0.1f, patrolPauseDurationMin),
+            Mathf.Max(patrolPauseDurationMin, patrolPauseDurationMax));
+    }
+
+    // 다음 순찰 정지 시각 예약
+    protected void ScheduleNextPatrolPause()
+    {
+        float min = Mathf.Max(0.1f, patrolPauseMinInterval);
+        float max = Mathf.Max(min, patrolPauseMaxInterval);
+        nextPatrolPauseTime = Time.time + Random.Range(min, max);
+    }
+
     protected void ScheduleNextPatrolIdle()
     {
         float min = Mathf.Max(0.1f, patrolIdleMinInterval);
@@ -593,7 +918,19 @@ public abstract class EnemyController : MonoBehaviour
         if (wanderTimer > 0)
         {
             wanderTimer -= Time.deltaTime;
-            if (wanderTimer <= 0) isWandering = false;
+            if (wanderTimer <= 0)
+            {
+                isWandering = false;
+                // wander 종료 후 유예 타이머 시작:
+                //  - 경사 정상부 물리 걸림으로 stuckTimer 오발동 방지
+                //  - ledgeNoGroundFrameCount 리셋으로 절벽 오감지 방지
+                wanderEndGraceTimer = wanderEndGraceTime;
+                postWanderStuckIgnoreTimer = postWanderStuckIgnoreTime;
+                ledgeNoGroundFrameCount = 0;
+                stuckTimer = 0f;
+                patrolLastPos = rb != null ? rb.position : (Vector2)transform.position;
+                ScheduleNextPatrolIdle();
+            }
         }
 
         if (isIdle) UpdatePatrolIdleLook();
@@ -601,21 +938,49 @@ public abstract class EnemyController : MonoBehaviour
         if (forcedAggroTimer > 0f)
             forcedAggroTimer -= Time.deltaTime;
 
-        // 순찰 중 일정 확률로 두리번 Idle 진입
-        if (enablePatrolIdle
-            && !isIdle
-            && !isChasing
-            && !isWandering
-            && !isReacting
-            && !isAttacking
-            && !isKnockback
-            && forcedAggroTimer <= 0f
-            && Time.time >= nextPatrolIdleTime)
+        // 순찰 정지 타이머 갱신
+        if (isPatrolPausing)
+        {
+            patrolPauseTimer -= Time.deltaTime;
+            if (patrolPauseTimer <= 0f)
+            {
+                isPatrolPausing = false;
+                ScheduleNextPatrolPause();
+                // 정지 끝난 뒤 두리번이 즉시 발동되지 않도록 Idle 타이머도 재예약
+                ScheduleNextPatrolIdle();
+            }
+        }
+
+        // ── 순찰 행동(두리번 / 정지) 공통 진입 조건 ──────────────────────
+        bool canStartByGround = !patrolIdleOnlyWhenGrounded || IsGroundedNow();
+        bool canStartByVelocity = rb == null || Mathf.Abs(rb.linearVelocity.x) > 0.05f;
+        bool baseCondition = canStartByGround
+                                && canStartByVelocity
+                                && !isIdle
+                                && !isPatrolPausing
+                                && !isChasing
+                                && !isWandering
+                                && !isReacting
+                                && !isAttacking
+                                && !isKnockback
+                                && forcedAggroTimer <= 0f;
+
+        // 두리번
+        if (enablePatrolIdle && baseCondition && Time.time >= nextPatrolIdleTime)
         {
             if (Random.value <= Mathf.Clamp01(patrolIdleChance))
                 StartIdle();
             else
                 ScheduleNextPatrolIdleRetry();
+        }
+
+        // 정지 (두리번과 동일한 baseCondition 적용)
+        if (enablePatrolPause && baseCondition && Time.time >= nextPatrolPauseTime)
+        {
+            if (Random.value <= Mathf.Clamp01(patrolPauseChance))
+                StartPatrolPause();
+            else
+                ScheduleNextPatrolPause();
         }
     }
 
@@ -660,6 +1025,7 @@ public abstract class EnemyController : MonoBehaviour
 
             isPatrolIdleActive = false;
             ScheduleNextPatrolIdle();
+            ScheduleNextPatrolPause(); // 두리번 중 만료된 정지 타이머 재예약
         }
     }
 
@@ -683,6 +1049,7 @@ public abstract class EnemyController : MonoBehaviour
         isChasing = true;
         isReacting = false;
         isWandering = false;
+        isPatrolPausing = false; // 순찰 정지 중 피격 시 즉시 해제
 
         if (playerTransform == null)
         {
@@ -702,8 +1069,12 @@ public abstract class EnemyController : MonoBehaviour
             }
         }
 
-        float resistance = (data != null) ? Mathf.Clamp01(data.knockbackResistance) : 0f;
-        float effectiveKnockback = Mathf.Max(0f, kPower * (1f - resistance));
+        // 몸무게 기반 넉백 계산: 무게가 클수록 넉백 힘이 줄어듦
+        float weight = (data != null) ? Mathf.Max(data.weight, 0.1f) : 1f;
+        float effectiveKnockback = Mathf.Max(0f, kPower / weight);
+
+        // 무거울수록 위로 덜 뜨도록 knockbackY도 가중치 적용
+        float knockbackY = Mathf.Lerp(5f, 2.5f, Mathf.Clamp01((weight - 0.1f) / 9.9f));
 
         knockbackTimer = Mathf.Max(0.05f, 0.12f + effectiveKnockback * 0.02f);
         hitStunTimer = Mathf.Max(hitStunTimer, data != null ? data.hitStunDuration : 0.15f);
@@ -711,7 +1082,6 @@ public abstract class EnemyController : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
 
         float dir = playerTransform != null ? Mathf.Sign(transform.position.x - playerTransform.position.x) : -walkDirection;
-        float knockbackY = Mathf.Lerp(2.5f, 5f, 1f - resistance);
         rb.linearVelocity = new Vector2(dir * effectiveKnockback, knockbackY);
 
         hasWallImpactPending = true;
@@ -728,10 +1098,9 @@ public abstract class EnemyController : MonoBehaviour
         if (Mathf.Approximately(rb.linearVelocity.x, 0f)) return;
 
         float movingDir = Mathf.Sign(rb.linearVelocity.x);
-        Vector2 rayOrigin = (Vector2)transform.position + new Vector2(data.groundCheckOffset * movingDir, groundCheck.localPosition.y);
-        RaycastHit2D groundInfo = Physics2D.Raycast(rayOrigin, Vector2.down, data.checkDistance, groundLayer);
+        bool hasGroundAhead = HasGroundAheadForDirection(movingDir, forwardOffset: 0f, maxDrop: Mathf.Max(data.checkDistance, ledgeProbeMaxDrop), stabilize: false);
 
-        if (groundInfo.collider == null)
+        if (!hasGroundAhead)
         {
             // 수직 넉백은 유지하고 수평만 차단해 낙사 방지
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
@@ -755,9 +1124,13 @@ public abstract class EnemyController : MonoBehaviour
         hasWallImpactPending = false;
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
 
-        if (pendingWallImpactDamage > 0f)
+        // 벽 충돌 데미지: 기본 데미지 + 몸무게의 10%
+        float weightBonus = (data != null) ? data.weight * 0.1f : 0f;
+        float totalWallDamage = pendingWallImpactDamage + weightBonus;
+
+        if (totalWallDamage > 0f)
         {
-            currentHp -= pendingWallImpactDamage;
+            currentHp -= totalWallDamage;
             if (currentHp <= 0f)
             {
                 gameObject.SetActive(false);
@@ -767,6 +1140,35 @@ public abstract class EnemyController : MonoBehaviour
 
         if (pendingWallStunDuration > 0f)
             hitStunTimer = Mathf.Max(hitStunTimer, pendingWallStunDuration);
+    }
+
+    protected virtual string GetDebugStateText()
+    {
+        if (isKnockback) return "KNOCKBACK";
+        if (isHitStunned) return "HIT_STUN";
+        if (isAttacking) return "ATTACK";
+        if (isReacting) return "REACT";
+        if (isPatrolPausing) return "PAUSE";
+        if (isIdle) return isPatrolIdleActive ? "IDLE(LOOK)" : "IDLE";
+        if (isWandering) return "WANDER";
+        if (isChasing) return "CHASE";
+        return "PATROL";
+    }
+
+    private string lastDebugStateText;
+
+    protected virtual void LateUpdate()
+    {
+        if (!Application.isPlaying) return;
+        if (!showStateDebugLog) return;
+
+        string state = GetDebugStateText();
+        if (state == lastDebugStateText) return;
+
+        lastDebugStateText = state;
+        float vx = (rb != null) ? rb.linearVelocity.x : 0f;
+        bool grounded = IsGroundedNow();
+        Debug.Log($"[EnemyState] {name} -> {state} | dir:{walkDirection} | vx:{vx:F2} | grounded:{grounded} | pos:{transform.position}");
     }
 
     // 디버그 시각화: 인스펙터의 [범위 시각화] 토글로 각 항목 개별 제어
@@ -793,11 +1195,45 @@ public abstract class EnemyController : MonoBehaviour
             Gizmos.DrawWireCube(attackCenter, new Vector3(data.attackRange, data.attackHeight, 0));
         }
 
-        if (showGroundCheckGizmo && groundCheck != null)
+        if (showGroundCheckGizmo)
         {
+            float dir = (walkDirection == 0) ? 1f : Mathf.Sign(walkDirection);
+            float probeForward = Mathf.Max(0f, ledgeProbeForwardOffset);
+            float probeDrop = Mathf.Max(Mathf.Max(0.1f, data.checkDistance), ledgeProbeMaxDrop);
+            Vector2 size = new Vector2(Mathf.Max(0.05f, ledgeProbeSize.x), Mathf.Max(0.05f, ledgeProbeSize.y));
+
+            Vector2 nearOrigin;
+            Vector2 farOrigin;
+
+            if (bodyCollider != null)
+            {
+                Bounds b = bodyCollider.bounds;
+                float footY = b.min.y + (size.y * 0.5f) + 0.01f;
+                float frontX = b.center.x + dir * (b.extents.x + probeForward);
+                nearOrigin = new Vector2(frontX, footY);
+                farOrigin = new Vector2(frontX + dir * Mathf.Max(0f, ledgeProbeFarOffset), footY);
+            }
+            else if (groundCheck != null)
+            {
+                float farForward = probeForward + Mathf.Max(0f, ledgeProbeFarOffset);
+                nearOrigin = (Vector2)groundCheck.position + new Vector2(dir * probeForward, 0f);
+                farOrigin = (Vector2)groundCheck.position + new Vector2(dir * farForward, 0f);
+            }
+            else
+            {
+                nearOrigin = transform.position;
+                farOrigin = nearOrigin + new Vector2(dir * 0.2f, 0f);
+            }
+
+            Vector3 nearCenter = nearOrigin + Vector2.down * probeDrop;
+            Vector3 farCenter = farOrigin + Vector2.down * probeDrop;
+
             Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(groundCheck.position, 0.05f);
-            Gizmos.DrawRay(groundCheck.position, Vector2.down * data.checkDistance);
+            if (groundCheck != null) Gizmos.DrawWireSphere(groundCheck.position, 0.05f);
+            Gizmos.DrawWireCube(nearCenter, new Vector3(size.x, size.y, 0f));
+
+            Gizmos.color = new Color(0.2f, 0.8f, 1f, 1f);
+            Gizmos.DrawWireCube(farCenter, new Vector3(size.x, size.y, 0f));
         }
 
         if (showWallCheckGizmo && wallCheck != null)
