@@ -1,7 +1,11 @@
 public enum EquipmentType
 {
-    Weapon, Head, Body,
-    LeftShoulder, RightShoulder,
-    LeftHand, RightHand,
-    LeftFoot, RightFoot
+    Weapon,
+
+    Head,
+    Body,
+
+    ShoulderSet,
+    HandSet,
+    FootSet
 }
