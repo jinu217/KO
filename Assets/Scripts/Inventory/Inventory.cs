@@ -21,5 +21,7 @@ public class Inventory : MonoBehaviour
         items.Add(
             new InventorySlot(item,1)
         );
+
+        Debug.Log("인벤 추가: " + item.itemName);
     }
 }
