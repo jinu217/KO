@@ -1238,9 +1238,17 @@ public class PlayerController : MonoBehaviour
 
         // 지면 위 + 이동 입력 없음: gravityScale=0으로 중력 자체를 차단
         // velocity=0만으로는 Physics 스텝에서 중력이 재적용되어 경사 미끄러짐 발생
+        // Ground2(얇은 발판) 위에서는 gravityScale=0 금지:
+        //   Platform Effector 2D가 중력 방향 기준으로 일방통행을 계산하므로
+        //   중력이 꺼지면 플레이어가 발판 안으로 빠지는 문제 발생
+        bool isOnThinFloor = Physics2D.OverlapCircle(
+            groundCheck.position, groundCheckRadius, thinFloorLayer) != null;
+
         bool isStationary = isGrounded
             && Mathf.Abs(targetSpeedX) <= 0.01f
-            && !isDownJumping;
+            && !isDownJumping
+            && !isOnThinFloor
+            && rb.linearVelocity.y <= 0f;
 
         rb.gravityScale = isStationary ? 0f : originalGravity;
 

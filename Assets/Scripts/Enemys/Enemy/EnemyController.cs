@@ -15,6 +15,8 @@ public abstract class EnemyController : MonoBehaviour
     public LayerMask playerLayer;
     [Tooltip("지면 감지 레이어")]
     public LayerMask groundLayer;
+    [Tooltip("파괴 가능 오브젝트 레이어 (이 레이어가 앞에 있으면 뒤돌아감)")]
+    public LayerMask breakableLayer;
 
     [Header("감지 위치")]
     [Tooltip("절벽 감지용 시작 위치")]
@@ -399,14 +401,21 @@ public abstract class EnemyController : MonoBehaviour
             unreachableTimer = 0f;
         }
 
-        // 3) 벽 감지: 진행 방향에 ground/ground2가 있으면 절벽 감지와 동일하게 방향 전환
+        // 3) 벽 감지: ground/ground2 또는 Breakable 오브젝트가 앞에 있으면 뒤돌아감
         if (wallCheck != null)
         {
             float wallDir = walkDirection == 0 ? 1f : Mathf.Sign(walkDirection);
+
+            // 지형 벽 감지
             RaycastHit2D wallHit = Physics2D.Raycast(
                 wallCheck.position, Vector2.right * wallDir, wallCheckDistance, groundLayer);
 
-            if (wallHit.collider != null)
+            // Breakable 오브젝트 감지 (breakableLayer가 지정된 경우)
+            RaycastHit2D breakableHit = breakableLayer != 0
+                ? Physics2D.Raycast(wallCheck.position, Vector2.right * wallDir, wallCheckDistance, breakableLayer)
+                : default;
+
+            if (wallHit.collider != null || breakableHit.collider != null)
             {
                 walkDirection *= -1;
                 delayedDirection = walkDirection;
