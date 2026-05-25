@@ -8,20 +8,34 @@ public class ItemTooltipUI : MonoBehaviour
     public TMP_Text itemName;
     public TMP_Text statText;
 
-    public void Show(ItemData item, Transform slot)
+    public RectTransform tooltipTransform;
+
+    public void Show(ItemData item, RectTransform slotRect)
     {
+        if (item == null)
+        {
+            Hide();
+            return;
+        }
+
         tooltip.SetActive(true);
 
         itemName.text = item.itemName;
 
         statText.text =
-        "공격력 : " + item.attack +
-        "\n방어력 : " + item.defense +
-        "\n체력 : " + item.hp;
+            "공격력 : " + item.attack +
+            "\n방어력 : " + item.defense +
+            "\n체력 : " + item.hp;
 
-        // 슬롯 아래 위치
-        tooltip.transform.position =
-            slot.position + new Vector3(0,-100,0);
+        tooltip.SetActive(true);
+
+        Canvas.ForceUpdateCanvases();
+
+        Vector2 slotPos = slotRect.anchoredPosition;
+
+        // 슬롯 아래 + 약간 오른쪽
+        tooltipTransform.anchoredPosition =
+            slotPos + new Vector2(140f, -185f);
     }
 
     public void Hide()

@@ -1,11 +1,6 @@
-public enum EquipmentType
+public enum ItemType
 {
-    Weapon,
-
-    Head,
-    Body,
-
-    ShoulderSet,
-    HandSet,
-    FootSet
+    Equipment, // 장비
+    Consumable, // 소모품
+    Material // 재료
 }

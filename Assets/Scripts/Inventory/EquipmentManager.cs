@@ -2,50 +2,68 @@ using UnityEngine;
 
 public class EquipmentManager : MonoBehaviour
 {
-    public ItemData weapon;
+    public Inventory inventory;
 
-    public ItemData head;
-    public ItemData body;
-
-    public ItemData leftShoulder;
-    public ItemData rightShoulder;
-
-    public ItemData leftHand;
-    public ItemData rightHand;
-
-    public ItemData leftFoot;
-    public ItemData rightFoot;
+    public EquipmentSlot weaponSlot;
+    public EquipmentSlot handSlot;
+    public EquipmentSlot headSlot;
+    public EquipmentSlot bodySlot;
+    public EquipmentSlot footSlot;
 
     public void Equip(ItemData item)
     {
-        switch(item.equipType)
+        if (item == null) return;
+        Debug.Log("장착 시도: " + item.itemName);
+
+        switch (item.equipType)
         {
             case EquipmentType.Weapon:
-                weapon = item;
+                Debug.Log("무기 슬롯");
+                weaponSlot.SetItem(item);
+                break;
+
+            case EquipmentType.Hand:
+                ReplaceIfDifferent(handSlot, item);
                 break;
 
             case EquipmentType.Head:
-                head = item;
+                ReplaceIfDifferent(headSlot, item);
                 break;
 
             case EquipmentType.Body:
-                body = item;
+                ReplaceIfDifferent(bodySlot, item);
                 break;
 
-            case EquipmentType.ShoulderSet:
-                leftShoulder = item;
-                rightShoulder = item;
-                break;
-
-            case EquipmentType.HandSet:
-                leftHand = item;
-                rightHand = item;
-                break;
-
-            case EquipmentType.FootSet:
-                leftFoot = item;
-                rightFoot = item;
+            case EquipmentType.Foot:
+                ReplaceIfDifferent(footSlot, item);
                 break;
         }
+    }
+
+    void ReplaceIfDifferent(EquipmentSlot slot, ItemData newItem)
+    {
+        ItemData current = slot.GetItem();
+
+        if (current == newItem)
+            return;
+
+        slot.SetItem(newItem);
+    }
+
+    public void Unequip(int index)
+    {
+        ItemData item = null;
+
+        switch (index)
+        {
+            case 0: item = weaponSlot.GetItem(); weaponSlot.SetItem(null); break;
+            case 1: item = handSlot.GetItem(); handSlot.SetItem(null); break;
+            case 2: item = headSlot.GetItem(); headSlot.SetItem(null); break;
+            case 3: item = bodySlot.GetItem(); bodySlot.SetItem(null); break;
+            case 4: item = footSlot.GetItem(); footSlot.SetItem(null); break;
+        }
+
+        if (item != null)
+            inventory.AddItem(item);
     }
 }
