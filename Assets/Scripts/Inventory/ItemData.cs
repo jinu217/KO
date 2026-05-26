@@ -15,6 +15,31 @@ public class ItemData : ScriptableObject
 
     [Header("능력치")]
     public int attack;
+    public float attackSpeed;
+
+    public float critChance;
+    public float critDamage;
+
+    public float moveSpeed;
+
     public int defense;
     public int hp;
+
+    [Header("캐릭터 미리보기 이미지")]
+
+    // 무기/머리
+    public Sprite previewSprite;
+
+    // 몸통 + 어깨
+    public Sprite bodySprite;
+    public Sprite shoulderLeftSprite;
+    public Sprite shoulderRightSprite;
+
+    // 손 좌/우
+    public Sprite handLeftSprite;
+    public Sprite handRightSprite;
+
+    // 발 좌/우
+    public Sprite footLeftSprite;
+    public Sprite footRightSprite;
 }

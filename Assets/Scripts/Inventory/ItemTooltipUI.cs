@@ -4,10 +4,8 @@ using UnityEngine;
 public class ItemTooltipUI : MonoBehaviour
 {
     public GameObject tooltip;
-
     public TMP_Text itemName;
     public TMP_Text statText;
-
     public RectTransform tooltipTransform;
 
     public void Show(ItemData item, RectTransform slotRect)
@@ -22,20 +20,35 @@ public class ItemTooltipUI : MonoBehaviour
 
         itemName.text = item.itemName;
 
-        statText.text =
-            "공격력 : " + item.attack +
-            "\n방어력 : " + item.defense +
-            "\n체력 : " + item.hp;
+        string text = "";
 
-        tooltip.SetActive(true);
+        if (item.attack != 0)
+            text += "공격력 +" + item.attack + "\n";
+
+        if (item.attackSpeed != 0)
+            text += "공격속도 +" + item.attackSpeed + "\n";
+
+        if (item.critChance != 0)
+            text += "크리확률 +" + item.critChance + "%\n";
+
+        if (item.critDamage != 0)
+            text += "크리데미지 +" + item.critDamage + "%\n";
+
+        if (item.moveSpeed != 0)
+            text += "이동속도 +" + item.moveSpeed + "\n";
+
+        if (item.defense != 0)
+            text += "방어력 +" + item.defense + "\n";
+
+        if (item.hp != 0)
+            text += "체력 +" + item.hp + "\n";
+
+        statText.text = text;
 
         Canvas.ForceUpdateCanvases();
 
-        Vector2 slotPos = slotRect.anchoredPosition;
-
-        // 슬롯 아래 + 약간 오른쪽
         tooltipTransform.anchoredPosition =
-            slotPos + new Vector2(140f, -185f);
+            slotRect.anchoredPosition + new Vector2(140f, -185f);
     }
 
     public void Hide()

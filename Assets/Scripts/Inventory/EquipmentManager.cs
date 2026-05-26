@@ -3,15 +3,29 @@ using UnityEngine;
 public class EquipmentManager : MonoBehaviour
 {
     public Inventory inventory;
-
     public EquipmentSlot weaponSlot;
     public EquipmentSlot handSlot;
     public EquipmentSlot headSlot;
     public EquipmentSlot bodySlot;
     public EquipmentSlot footSlot;
-
-    // 시작 장비
     public ItemData[] startEquipItems;
+    public CharacterPreviewUI previewUI;
+    public PlayerStats stats = new PlayerStats();
+    public System.Action onStatsChanged;
+    public PlayerStats baseStats;
+
+    void Awake()
+    {
+        baseStats = new PlayerStats();
+
+        baseStats.attack = 10;
+        baseStats.attackSpeed = 1f;
+        baseStats.critChance = 5f;
+        baseStats.critDamage = 150f;
+        baseStats.moveSpeed = 5f;
+        baseStats.defense = 3;
+        baseStats.hp = 100;
+    }
 
     void Start()
     {
@@ -25,7 +39,6 @@ public class EquipmentManager : MonoBehaviour
     public void Equip(ItemData item)
     {
         if (item == null) return;
-        Debug.Log("장착 시도: " + item.itemName);
 
         switch (item.equipType)
         {
@@ -49,6 +62,8 @@ public class EquipmentManager : MonoBehaviour
                 ReplaceIfDifferent(footSlot, item);
                 break;
         }
+        previewUI.Refresh();
+        RefreshStats();
     }
 
     void ReplaceIfDifferent(EquipmentSlot slot, ItemData newItem)
@@ -78,5 +93,43 @@ public class EquipmentManager : MonoBehaviour
 
         if (item != null)
             inventory.AddItem(item);
+        
+        previewUI.Refresh();
+    }
+
+    public void RefreshStats()
+    {
+        stats.Clear();
+
+        stats.attack = baseStats.attack;
+        stats.attackSpeed = baseStats.attackSpeed;
+        stats.critChance = baseStats.critChance;
+        stats.critDamage = baseStats.critDamage;
+        stats.moveSpeed = baseStats.moveSpeed;
+        stats.defense = baseStats.defense;
+        stats.hp = baseStats.hp;
+
+        Add(weaponSlot);
+        Add(headSlot);
+        Add(bodySlot);
+        Add(handSlot);
+        Add(footSlot);
+
+        onStatsChanged?.Invoke();
+    }
+
+    void Add(EquipmentSlot slot)
+    {
+        ItemData item = slot.GetItem();
+
+        if (item == null)
+        {
+            Debug.Log(slot.name + " = EMPTY");
+            return;
+        }
+
+        Debug.Log(slot.name + " = " + item.itemName);
+
+        stats.Add(item);
     }
 }

@@ -4,6 +4,7 @@ public class InventoryUI : MonoBehaviour
 {
     public GameObject inventoryPanel;
     public GameObject equipmentPanel;
+    public GameObject characterPreview;
     public InventoryDisplay inventoryDisplay;
 
     private int selectedIndex = 0;
@@ -12,6 +13,7 @@ public class InventoryUI : MonoBehaviour
     {
         inventoryPanel.SetActive(false);
         equipmentPanel.SetActive(false);
+        characterPreview.SetActive(false);
     }
 
     void Update()
@@ -23,6 +25,7 @@ public class InventoryUI : MonoBehaviour
 
             inventoryPanel.SetActive(isOpen);
             equipmentPanel.SetActive(isOpen);
+            characterPreview.SetActive(isOpen);
 
             selectedIndex = 0;
             inventoryDisplay.SetSelectedIndex(selectedIndex);
