@@ -15,12 +15,20 @@ public class EquipmentSlot : MonoBehaviour
         if (item != null)
         {
             icon.sprite = item.icon;
-            icon.enabled = true;
+
+            // 항상 보이게
+            Color c = icon.color;
+            c.a = 1f;
+            icon.color = c;
         }
         else
         {
             icon.sprite = null;
-            icon.enabled = false;
+
+            // 빈 슬롯일 때 투명하게
+            Color c = icon.color;
+            c.a = 0f;
+            icon.color = c;
         }
     }
 

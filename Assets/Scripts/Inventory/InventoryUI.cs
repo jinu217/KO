@@ -3,6 +3,7 @@ using UnityEngine;
 public class InventoryUI : MonoBehaviour
 {
     public GameObject inventoryPanel;
+    public GameObject equipmentPanel;
     public InventoryDisplay inventoryDisplay;
 
     private int selectedIndex = 0;
@@ -10,6 +11,7 @@ public class InventoryUI : MonoBehaviour
     void Start()
     {
         inventoryPanel.SetActive(false);
+        equipmentPanel.SetActive(false);
     }
 
     void Update()
@@ -17,7 +19,10 @@ public class InventoryUI : MonoBehaviour
         // 열기/닫기
         if (Input.GetKeyDown(KeyCode.Tab))
         {
-            inventoryPanel.SetActive(!inventoryPanel.activeSelf);
+            bool isOpen = !inventoryPanel.activeSelf;
+
+            inventoryPanel.SetActive(isOpen);
+            equipmentPanel.SetActive(isOpen);
 
             selectedIndex = 0;
             inventoryDisplay.SetSelectedIndex(selectedIndex);
@@ -47,19 +52,11 @@ public class InventoryUI : MonoBehaviour
 
         inventoryDisplay.SetSelectedIndex(selectedIndex);
 
-        // ======================
-        // 기능은 Display로 위임
-        // ======================
-
+        //교체(장착)
         if (Input.GetKeyDown(KeyCode.Z))
             inventoryDisplay.EquipSelected(selectedIndex);
-
+        //버리기
         if (Input.GetKeyDown(KeyCode.X))
-        {
-            // 나중에 장비창 선택 추가 예정
-        }
-
-        if (Input.GetKeyDown(KeyCode.C))
             inventoryDisplay.DropSelected(selectedIndex);
     }
 }

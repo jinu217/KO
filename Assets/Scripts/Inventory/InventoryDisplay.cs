@@ -124,12 +124,6 @@ public class InventoryDisplay : MonoBehaviour
         inventory.RemoveItem(index);
     }
 
-    public void UnequipSelected(int index)
-    {
-        inventory.equipmentManager.Unequip(index);
-        UpdateInventory();
-    }
-
     public void DropSelected(int index)
     {
         inventory.RemoveItem(index);

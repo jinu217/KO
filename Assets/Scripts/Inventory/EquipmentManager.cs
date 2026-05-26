@@ -10,6 +10,18 @@ public class EquipmentManager : MonoBehaviour
     public EquipmentSlot bodySlot;
     public EquipmentSlot footSlot;
 
+    // 시작 장비
+    public ItemData[] startEquipItems;
+
+    void Start()
+    {
+        foreach(ItemData item in startEquipItems)
+        {
+            if(item != null)
+                Equip(item);
+        }
+    }
+
     public void Equip(ItemData item)
     {
         if (item == null) return;
@@ -18,8 +30,7 @@ public class EquipmentManager : MonoBehaviour
         switch (item.equipType)
         {
             case EquipmentType.Weapon:
-                Debug.Log("무기 슬롯");
-                weaponSlot.SetItem(item);
+                ReplaceIfDifferent(weaponSlot, item);
                 break;
 
             case EquipmentType.Hand:
@@ -44,8 +55,10 @@ public class EquipmentManager : MonoBehaviour
     {
         ItemData current = slot.GetItem();
 
-        if (current == newItem)
-            return;
+        if (current != null)
+        {
+            inventory.AddItem(current);
+        }
 
         slot.SetItem(newItem);
     }
