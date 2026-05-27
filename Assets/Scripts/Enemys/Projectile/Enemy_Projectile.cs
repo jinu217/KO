@@ -85,19 +85,17 @@ public class Enemy_Projectile : MonoBehaviour
     {
         if (collision.CompareTag("Player"))
         {
-            if (collision.TryGetComponent<PlayerController>(out var player))
-            {
-                player.TakeDamage(damage, (Vector2)transform.position);
+            IDamageable target = collision.GetComponentInParent<IDamageable>();
+            target?.TakeDamage(damage, (Vector2)transform.position, true, true);
 
-                if (showDebugLog)
-                    Debug.Log($"[Projectile] hit player dmg={damage}");
-            }
+            if (showDebugLog)
+                Debug.Log($"[Projectile] hit player dmg={damage}");
 
             Destroy(gameObject);
             return;
         }
 
-        int ground = LayerMask.NameToLayer("Ground");
+        int ground  = LayerMask.NameToLayer("Ground");
         int ground2 = LayerMask.NameToLayer("Ground2");
 
         if (collision.gameObject.layer == ground || collision.gameObject.layer == ground2)

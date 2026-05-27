@@ -19,7 +19,7 @@ public enum WeaponType
     Scythe
 }
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IDamageable
 {
     // -------------------- 컴포넌트/입력 --------------------
     private Rigidbody2D rb;        // 플레이어 물리 제어
@@ -147,8 +147,8 @@ public class PlayerController : MonoBehaviour
     [Header("지면 체크(Ground Check)")]
     [Tooltip("발밑 체크 기준점 Transform")]
     public Transform groundCheck;
-    [Tooltip("발밑 원형 체크 반지름")]
-    public float groundCheckRadius = 0.25f;
+    [Tooltip("발밑 지면 체크 박스 크기 (OverlapBox 너비/높이)")]
+    public Vector2 groundCheckSize = new Vector2(0.4f, 0.1f);
     [Tooltip("일반 지면 레이어")]
     public LayerMask groundLayer;
 
@@ -187,12 +187,10 @@ public class PlayerController : MonoBehaviour
     [Header("피격 보정")]
     [Tooltip("피격 직후 추가 피해를 무시하는 무적 시간")]
     public float damageInvincibleTime = 0.1f;
-    [Tooltip("무적 중 깜빡임 간격")]
-    public float invincibleBlinkInterval = 0.04f;
 
     private bool isDamageInvincible;
     private Coroutine invincibleRoutine;
-    private SpriteRenderer[] hitFlashRenderers;
+    private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
 
     // -------------------- 범위 시각화 --------------------
     [Header("범위 시각화")]
@@ -200,6 +198,8 @@ public class PlayerController : MonoBehaviour
     public bool showWeaponAttackGizmo = true;
     [Tooltip("강화 하강 착지 충격 박스 표시")]
     public bool showEmpoweredImpactGizmo = true;
+    [Tooltip("발밑 지면 체크 박스 표시 (파란색=일반지면 / 초록색=Ground2)")]
+    public bool showGroundCheckGizmo = true;
 
     // -------------------- 인벤토리 --------------------
     [Header("인벤토리 설정")]
@@ -217,7 +217,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         if (bodyCollider == null) bodyCollider = GetComponent<Collider2D>();
 
-        hitFlashRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        hitFlash = GetComponent<HitFlashEffect>();
 
         originalGravity = rb.gravityScale;
         lastAttackTime = -999f;
@@ -380,7 +380,7 @@ public class PlayerController : MonoBehaviour
         // 하향 점프 시작: 아래 + 점프 (Ground2 위에서만)
         if (moveInput.y < -0.1f && !isDownJumping)
         {
-            Collider2D hit = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, thinFloorLayer);
+            Collider2D hit = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0f, thinFloorLayer);
             if (hit != null)
             {
                 isEmpoweredDownJump = false;
@@ -570,39 +570,30 @@ public class PlayerController : MonoBehaviour
         Vector2 size = GetWeaponAttackSize();
         Vector2 pos = (Vector2)transform.position + Vector2.right * dir * GetWeaponOffset();
 
+        // IDamageable 구현 오브젝트에 데미지 전달 (적/보스 통합)
         Collider2D[] hits = Physics2D.OverlapBoxAll(pos, size, 0f, enemyLayer);
+        HashSet<int> damagedIds = new HashSet<int>();
 
         foreach (var hit in hits)
         {
-            if (hit.TryGetComponent<EnemyController>(out var enemy))
-            {
-                enemy.TakeDamage(dmg, GetWeaponKnockbackPower());
-                continue;
-            }
-
-            if (hit.TryGetComponent<MidBossController>(out var midBoss))
-            {
-                midBoss.TakeDamage(dmg, GetWeaponKnockbackPower());
-                continue;
-            }
-
-            if (hit.TryGetComponent<MainBossController>(out var mainBoss))
-            {
-                mainBoss.TakeDamage(dmg, GetWeaponKnockbackPower());
-                continue;
-            }
-
+            if (hit == null) continue;
+            IDamageable target = hit.GetComponentInParent<IDamageable>();
+            if (target == null) continue;
+            int id = (target as UnityEngine.Object)?.GetInstanceID() ?? 0;
+            if (!damagedIds.Add(id)) continue;
+            // 적에게 무기별 넉백 파워 전달 후 데미지 적용
+            EnemyController enemy = (target as MonoBehaviour)?.GetComponent<EnemyController>();
+            if (enemy != null) enemy.SetNextKnockbackPower(GetWeaponKnockbackPower());
+            target.TakeDamage(dmg, (Vector2)transform.position);
         }
 
-        // 파괴 가능 오브젝트: 레이어 무관 전체 탐색 (인스펙터 설정 불필요)
-        // ~0 = 모든 레이어, GetComponentInParent로 계층 구조 대응
+        // 파괴 가능 오브젝트(모든 레이어 탐색)
         Collider2D[] breakableHits = Physics2D.OverlapBoxAll(pos, size, 0f, ~0);
         foreach (var bHit in breakableHits)
         {
             if (bHit == null) continue;
             BreakableObject breakable = bHit.GetComponentInParent<BreakableObject>();
-            if (breakable != null)
-                breakable.TakeDamage();
+            if (breakable != null) breakable.TakeDamage();
         }
     }
 
@@ -708,35 +699,30 @@ public class PlayerController : MonoBehaviour
     }
 
     // 일반 피격 처리(무적 프레임 적용)
-    public void TakeDamage(float damage, Vector2 enemyPos)
+    // IDamageable 구현 — applyKnockback/applyIFrame으로 동작 제어
+    public void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = true, bool applyIFrame = true)
     {
-        TakeDamageInternal(damage, enemyPos, true);
+        TakeDamageInternal(damage, sourcePos, applyIFrame, applyKnockback);
+        // iFrame 여부와 무관하게 항상 깜빡임 실행
+        // (applyIFrame=true면 DamageInvincibleRoutine에서도 호출되지만 중복 호출 안전)
+        StartHitBlink();
     }
 
-    // 보스 검기/특수 패턴용: 무적 프레임 무시 데미지 처리
-    public void TakeDamageNoIFrame(float damage, Vector2 enemyPos)
-    {
-        TakeDamageInternal(damage, enemyPos, false);
-    }
-
-    // 환경 피해(함정 등): iFrame 무시 + 넉백 없음 + 깜빡임 효과는 적용
-    public void TakeDamageEnvironmental(float damage)
-    {
-        if (isDamageInvincible)
-            return;
-
-        TakeDamageInternal(damage, transform.position, true, false);
-    }
-
-    // 적 위치를 모를 때 사용하는 오버로드(전방에서 들어온 것으로 가정)
+    // 방향 자동 계산 버전
     public void TakeDamage(float damage)
     {
         float dir = (transform.localScale.x > 0) ? -1f : 1f;
-        Vector2 enemyPos = (Vector2)transform.position + new Vector2(-dir * 2f, 0);
-        TakeDamageInternal(damage, enemyPos, true);
+        Vector2 auto = (Vector2)transform.position + new Vector2(-dir * 2f, 0);
+        TakeDamage(damage, auto);
     }
 
-    // 실제 피격 처리(방어력 적용 + 넉백 + 무적 + 게임오버 체크)
+    // 환경 피해(함정 등): iFrame/넉백 없음
+    public void TakeDamageEnvironmental(float damage)
+        => TakeDamage(damage, transform.position, false, false);
+
+    // 하위 호환 — 기존 NoIFrame 호출 대체
+    public void TakeDamageNoIFrame(float damage, Vector2 sourcePos)
+        => TakeDamage(damage, sourcePos, true, false);
     private void TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame, bool applyKnockback = true)
     {
         if (isDashing) return;
@@ -779,55 +765,19 @@ public class PlayerController : MonoBehaviour
         isKnockback = false;
     }
 
-    // 피격 직후 무적 + 깜빡임 처리
-    // iFrame + 깜빡임(일반 피격)
+    // 피격 무적 + 깜빡임: HitFlashEffect 컴포넌트에 시각 효과 위임
     private IEnumerator DamageInvincibleRoutine()
     {
         isDamageInvincible = true;
-
-        yield return StartCoroutine(HitBlinkRoutine(damageInvincibleTime));
-
+        yield return new WaitForSeconds(damageInvincibleTime);
         isDamageInvincible = false;
         invincibleRoutine = null;
     }
 
-    // 깜빡임 전용 (iFrame 없이 시각 효과만 - 함정 등 환경 피해에 사용)
-    private Coroutine blinkRoutine;
-    private IEnumerator HitBlinkRoutine(float duration)
-    {
-        float timer = 0f;
-        bool visible = true;
-
-        while (timer < duration)
-        {
-            timer += Time.deltaTime;
-
-            if (hitFlashRenderers != null && hitFlashRenderers.Length > 0)
-            {
-                visible = !visible;
-                foreach (var sr in hitFlashRenderers)
-                {
-                    if (sr != null) sr.enabled = visible;
-                }
-            }
-
-            yield return new WaitForSeconds(invincibleBlinkInterval);
-        }
-
-        if (hitFlashRenderers != null)
-        {
-            foreach (var sr in hitFlashRenderers)
-            {
-                if (sr != null) sr.enabled = true;
-            }
-        }
-    }
-
-    // 깜빡임 효과만 단독 실행 (iFrame/넉백 없는 피격에서 호출)
+    // 환경 피해(함정 등) 깜빡임: iFrame 없이 시각 효과만
     private void StartHitBlink()
     {
-        if (blinkRoutine != null) StopCoroutine(blinkRoutine);
-        blinkRoutine = StartCoroutine(HitBlinkRoutine(damageInvincibleTime));
+        hitFlash?.Play(damageInvincibleTime);
     }
 
     // 공격 적중 시 짧은 히트 스탑(타격감 강화)
@@ -901,13 +851,13 @@ public class PlayerController : MonoBehaviour
     }
 
     // 무기별 넉백 수치 반환
-    private float GetWeaponKnockbackPower()
+    public float GetWeaponKnockbackPower()
     {
         switch (currentWeapon)
         {
             case WeaponType.Sword: return 5f;
             case WeaponType.Blunt: return 10f;
-            case WeaponType.Spear: return 100f;
+            case WeaponType.Spear: return 10f;
             case WeaponType.Axe: return 8f;
             case WeaponType.Scythe: return 6f;
             default: return 5f;
@@ -1062,10 +1012,11 @@ public class PlayerController : MonoBehaviour
         wasDownInputHeld = isDownHeld;
     }
 
-    // 하향 점프 중 시작 발판은 지면 판정에서 제외하고 첫 번째 유효 콜라이더 반환
+    // 발밑 사각형 범위로 지면 접촉 여부 확인 (하향 점프 중 무시 발판 제외)
+    // groundCheckSize: 인스펙터에서 설정한 너비/높이로 OverlapBox 수행
     private Collider2D FindGroundCollider()
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius, groundLayer | thinFloorLayer);
+        Collider2D[] hits = Physics2D.OverlapBoxAll(groundCheck.position, groundCheckSize, 0f, groundLayer | thinFloorLayer);
         foreach (var hit in hits)
         {
             if (hit == null) continue;
@@ -1091,35 +1042,14 @@ public class PlayerController : MonoBehaviour
         foreach (var hit in hits)
         {
             if (hit == null) continue;
-
-            EnemyController enemy = hit.GetComponentInParent<EnemyController>();
-            if (enemy != null)
-            {
-                int rootId = enemy.gameObject.GetInstanceID();
-                if (damagedRootIds.Add(rootId))
-                {
-                    enemy.TakeDamage(totalDamage, empoweredDownJumpKnockbackPower);
-                    damagedCount++;
-
-                    if (debugEmpoweredDownJump)
-                        Debug.Log($"[DownJump] Hit Enemy: {enemy.gameObject.name}, dmg={totalDamage:F1}(base={empoweredDownJumpDamage}+dist={fallenDistance:F1}*{empoweredDownJumpDamagePerUnit}), kb={empoweredDownJumpKnockbackPower}");
-                }
-                continue;
-            }
-
-            MidBossController midBoss = hit.GetComponentInParent<MidBossController>();
-            if (midBoss != null)
-            {
-                int rootId = midBoss.gameObject.GetInstanceID();
-                if (damagedRootIds.Add(rootId))
-                {
-                    midBoss.TakeDamage(totalDamage, empoweredDownJumpKnockbackPower);
-                    damagedCount++;
-
-                    if (debugEmpoweredDownJump)
-                        Debug.Log($"[DownJump] Hit MidBoss: {midBoss.gameObject.name}, dmg={totalDamage:F1}, kb={empoweredDownJumpKnockbackPower}");
-                }
-            }
+            IDamageable target = hit.GetComponentInParent<IDamageable>();
+            if (target == null) continue;
+            int rootId = (target as UnityEngine.Object)?.GetInstanceID() ?? 0;
+            if (!damagedRootIds.Add(rootId)) continue;
+            target.TakeDamage(totalDamage, (Vector2)transform.position);
+            damagedCount++;
+            if (debugEmpoweredDownJump)
+                Debug.Log($"[DownJump] Hit {(target as MonoBehaviour)?.name}, dmg={totalDamage:F1}");
         }
 
         if (debugEmpoweredDownJump)
@@ -1205,6 +1135,17 @@ public class PlayerController : MonoBehaviour
             Vector3 impactCenter = transform.position + (Vector3)empoweredDownJumpImpactOffset;
             Gizmos.DrawWireCube(impactCenter, new Vector3(empoweredDownJumpImpactSize.x, empoweredDownJumpImpactSize.y, 0f));
         }
+
+        if (showGroundCheckGizmo && groundCheck != null)
+        {
+            // 파란색: 일반 지면(groundLayer) 감지 박스
+            Gizmos.color = Color.blue;
+            Gizmos.DrawWireCube(groundCheck.position, new Vector3(groundCheckSize.x, groundCheckSize.y, 0f));
+            // 초록색: Ground2(thinFloorLayer) 감지 박스 — 동일 크기
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireCube(groundCheck.position + Vector3.down * 0.02f,
+                new Vector3(groundCheckSize.x * 0.9f, groundCheckSize.y, 0f));
+        }
     }
 
     // 물리 프레임 이동 처리(관성/미끄러짐 제거 + 모서리 보정)
@@ -1241,8 +1182,7 @@ public class PlayerController : MonoBehaviour
         // Ground2(얇은 발판) 위에서는 gravityScale=0 금지:
         //   Platform Effector 2D가 중력 방향 기준으로 일방통행을 계산하므로
         //   중력이 꺼지면 플레이어가 발판 안으로 빠지는 문제 발생
-        bool isOnThinFloor = Physics2D.OverlapCircle(
-            groundCheck.position, groundCheckRadius, thinFloorLayer) != null;
+        bool isOnThinFloor = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0f, thinFloorLayer) != null;
 
         bool isStationary = isGrounded
             && Mathf.Abs(targetSpeedX) <= 0.01f

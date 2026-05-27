@@ -273,7 +273,7 @@ public class Stage1_MainBoss : MainBossController
 
         if (hit.TryGetComponent<PlayerController>(out var player))
         {
-            player.TakeDamageNoIFrame(damage, (Vector2)transform.position);
+            player.TakeDamage(damage, (Vector2)transform.position, false, false);
 
             if (knockback)
                 ApplyKnockbackToPlayer(player, knockbackPower);
@@ -354,7 +354,7 @@ public class Stage1_MainBoss : MainBossController
 
                 if (hit != null && hit.TryGetComponent<PlayerController>(out var player))
                 {
-                    player.TakeDamageNoIFrame(data.skill4Damage, (Vector2)transform.position);
+                    player.TakeDamage(data.skill4Damage, (Vector2)transform.position);
                     hasHit = true;
                 }
             }

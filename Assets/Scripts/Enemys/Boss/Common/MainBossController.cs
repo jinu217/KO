@@ -4,7 +4,7 @@ using UnityEngine;
 // [메인보스 공통 AI]
 // - 인식/추적/페이즈 전환/스킬 선택/쿨다운/버프 상태를 공통으로 관리
 // - 자식 클래스(Stage1_MainBoss 등)에서 BasicAttackAction/Skill1/2/4/Desire의 실제 연출 구현
-public abstract class MainBossController : MonoBehaviour
+public abstract class MainBossController : MonoBehaviour, IDamageable
 {
     // 보스가 다음에 사용할 공격 종류
     protected enum BossAttackKind
@@ -587,12 +587,12 @@ public abstract class MainBossController : MonoBehaviour
 
         if (hit == null) return;
 
-        if (hit.TryGetComponent<PlayerController>(out var player))
+        IDamageable target = hit.GetComponentInParent<IDamageable>();
+        if (target != null)
         {
-            player.TakeDamageNoIFrame(damage, (Vector2)transform.position);
-
-            if (knockback)
-                ApplyKnockbackToPlayer(player, knockbackPower);
+            target.TakeDamage(damage, (Vector2)transform.position, knockback, false);
+            if (knockback && hit.TryGetComponent<PlayerController>(out var pc))
+                ApplyKnockbackToPlayer(pc, knockbackPower);
         }
     }
 
@@ -830,7 +830,8 @@ public abstract class MainBossController : MonoBehaviour
     }
 
     // 외부에서 보스에게 피해 적용(체력 0 이하 시 사망 처리)
-    public virtual void TakeDamage(float damage, float knockbackPower)
+    // IDamageable 구현 — 보스는 넉백 없음, applyKnockback 무시
+    public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = false, bool applyIFrame = false)
     {
         if (isDead) return;
 

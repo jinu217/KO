@@ -119,10 +119,7 @@ public class Stage1_MidBoss : MidBossController
 
                 if (hit != null && hit.TryGetComponent<PlayerController>(out var player))
                 {
-                    player.TakeDamageNoIFrame(
-                        GetFinalDamage(data.pattern1Damage),
-                        (Vector2)transform.position
-                    );
+                    player.TakeDamage(GetFinalDamage(data.pattern1Damage), (Vector2)transform.position, true, false);
 
                     hasHitPlayer = true;
                 }
@@ -181,7 +178,7 @@ public class Stage1_MidBoss : MidBossController
         {
             float damage = GetFinalDamage(data.pattern2Damage * pattern2ThirdHitDamageMultiplier);
 
-            player.TakeDamageNoIFrame(damage, (Vector2)transform.position);
+            player.TakeDamage(damage, (Vector2)transform.position, true, false);
 
             // 3타 적중 시 강제 넉백 적용
             Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();

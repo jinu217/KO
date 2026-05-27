@@ -59,10 +59,11 @@ public class Stage1_BossSwordWave : MonoBehaviour
         if (((1 << other.gameObject.layer) & playerLayer) == 0)
             return;
 
-        if (other.TryGetComponent<PlayerController>(out var player))
+        IDamageable target = other.GetComponentInParent<IDamageable>();
+        if (target != null)
         {
             hasHit = true;
-            player.TakeDamageNoIFrame(damage, (Vector2)transform.position);
+            target.TakeDamage(damage, (Vector2)transform.position, true, false);
 
             if (showDebugLog)
                 Debug.Log($"[BossSwordWave] hit player dmg={damage}");

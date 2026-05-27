@@ -4,7 +4,7 @@ using UnityEngine;
 // [중간 보스 공통 AI]
 // - 인식/추적/공격 선택/쿨다운/공통 판정 처리 담당
 // - 자식 클래스에서 Pattern1/2/3Action()을 구현해 실제 동작을 정의
-public abstract class MidBossController : MonoBehaviour
+public abstract class MidBossController : MonoBehaviour, IDamageable
 {
     // 직전에 사용한 공격 종류(연속 패턴 사이의 전환 딜레이 판정에 사용)
     protected enum BossAttackKind
@@ -549,7 +549,8 @@ public abstract class MidBossController : MonoBehaviour
     }
 
     // 보스 피격 처리(체력 감소/추적 유지/사망 체크)
-    public virtual void TakeDamage(float damage, float knockbackPower)
+    // IDamageable 구현 — 보스는 넉백 없음, applyKnockback 무시
+    public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = false, bool applyIFrame = false)
     {
         if (isDead) return;
 

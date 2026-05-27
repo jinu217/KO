@@ -113,159 +113,28 @@ public class RangedEnemy : EnemyController
         HandleTimers();
     }
 
-    // 물리 프레임 로직: 절벽 회피 + 원거리 전용 이동(사거리 내 정지, 밖에서 추적)
+    // 물리 프레임 로직: 부모의 절벽감지/이동 로직을 그대로 사용하고
+    // 원거리 전용 동작(사거리 내 정지)만 부모 호출 전에 처리
     protected override void FixedUpdate()
     {
-        if (isKnockback) return;
-        if (isIdle || isReacting || isAttacking)
+        // 사거리 안이면 이동 없이 제자리 정지 (부모 FixedUpdate 호출 전 처리)
+        if (!isKnockback && isChasing && playerTransform != null && !isIdle && !isReacting && !isAttacking)
         {
-            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-            return;
-        }
-
-        if (ledgeIgnoreTimer > 0f)
-            ledgeIgnoreTimer -= Time.fixedDeltaTime;
-
-        // 1) 절벽/내리막 감지 (접지 상태 + 방향 전환 유예 종료 후 검사)
-        bool isGrounded = IsGroundedNow();
-        bool canLedgeCheck = ledgeIgnoreTimer <= 0f;
-        bool hasGroundAhead = true;
-
-        if (isGrounded && canLedgeCheck)
-        {
-            hasGroundAhead = HasGroundAhead();
-
-            if (showLedgeDebugLog && !hasGroundAhead)
-                Debug.Log($"[LedgeCheck-Ranged] {name} no-ground frames={ledgeNoGroundFrameCount}, pos={transform.position}, dir={walkDirection}");
-        }
-        else
-        {
-            ledgeNoGroundFrameCount = 0;
-            edgeTurnLock = false;
-        }
-
-        // 2) 거리 및 범위 체크
-        float distanceToPlayer = playerTransform != null ? Vector2.Distance(transform.position, playerTransform.position) : float.MaxValue;
-        bool isInDetectRange = distanceToPlayer <= data.detectRange;
-        bool isInChaseRange = distanceToPlayer <= data.chaseRange;
-
-        // 사거리 안이면 우선 정지(절벽 회피로 인한 사거리 내 접근 반복 방지)
-        if (isChasing && playerTransform != null)
-        {
-            float attackDistToPlayer = Vector2.Distance(transform.position, playerTransform.position);
-            if (attackDistToPlayer <= EffectiveRangedAttackRange)
+            float dist = Vector2.Distance(transform.position, playerTransform.position);
+            if (dist <= EffectiveRangedAttackRange)
             {
                 isWandering = false;
                 unreachableTimer = 0f;
-                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+                ApplySlopeAwareVelocity(0f);
                 return;
             }
         }
 
-        // 3) 절벽 처리: 상태와 무관하게 즉시 정지 + 방향 전환
-        if (isGrounded && canLedgeCheck && !hasGroundAhead)
-        {
-            isWandering = true;
-            wanderTimer = Mathf.Max(wanderTimer, 0.2f);
-
-            if (!edgeTurnLock)
-            {
-                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-
-                if (isInDetectRange)
-                {
-                    isWandering = true;
-                    wanderTimer = 0.6f;
-                    walkDirection *= -1;
-                    delayedDirection = walkDirection;
-                    Flip(walkDirection);
-                    unreachableTimer = 0f;
-                }
-                else if (isInChaseRange)
-                {
-                    unreachableTimer += Time.fixedDeltaTime;
-                    if (unreachableTimer < 5.0f)
-                    {
-                        isWandering = true;
-                        wanderTimer = 0.6f;
-                        walkDirection *= -1;
-                        delayedDirection = walkDirection;
-                        Flip(walkDirection);
-                    }
-                    else
-                    {
-                        StopChasingForcedForRanged();
-                    }
-                }
-                else
-                {
-                    StopChasingForcedForRanged();
-                }
-
-                edgeTurnLock = true;
-            }
-            else
-            {
-                rb.linearVelocity = new Vector2(walkDirection * data.moveSpeed, rb.linearVelocity.y);
-                Flip(walkDirection);
-            }
-
-            return;
-        }
-        else
-        {
-            edgeTurnLock = false;
-        }
-
-        // 4) 평지 추적 실패 타이머
-        if (!isInDetectRange && isInChaseRange && isChasing)
-        {
-            unreachableTimer += Time.fixedDeltaTime;
-            if (unreachableTimer >= 5.0f) StopChasingForcedForRanged();
-        }
-        else
-        {
-            unreachableTimer = 0f;
-        }
-
-        // 5) 원거리 이동 분기
-        if (isWandering)
-        {
-            rb.linearVelocity = new Vector2(walkDirection * data.moveSpeed, rb.linearVelocity.y);
-            Flip(walkDirection);
-        }
-        else if (isChasing)
-        {
-            // 사거리 밖이면 추적, 안이면 정지
-            float attackDistToPlayer = Vector2.Distance(transform.position, playerTransform.position);
-            if (attackDistToPlayer > EffectiveRangedAttackRange)
-                MoveTowardsPlayer();
-            else
-                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-        }
-        else
-        {
-            ApplyMovement(data.moveSpeed);
-        }
+        // 절벽감지/이동 분기는 부모(EnemyController.FixedUpdate) 그대로 사용
+        base.FixedUpdate();
     }
 
-    // 원거리용 추적 강제 종료 처리
-    private void StopChasingForcedForRanged()
-    {
-        isWandering = true;
-        wanderTimer = 2.0f;
 
-        if (playerTransform != null)
-            walkDirection = transform.position.x > playerTransform.position.x ? 1 : -1;
-        else
-            walkDirection *= -1;
-
-        delayedDirection = walkDirection;
-        isChasing = false;
-        playerTransform = null;
-        unreachableTimer = 0f;
-        nextUpdateTimer = Time.time + 1.0f;
-    }
 
     // 원거리 공격 시작: 공격 상태 시간 설정 + 공격 시퀀스 실행(중복 실행 방지)
     protected override void Attack()

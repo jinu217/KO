@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2673088325904739842
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7091645816951076849}
+  m_Layer: 8
+  m_Name: KnockbackCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7091645816951076849
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2673088325904739842}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.3, y: -0.8, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1756117263892283272}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4196881363146405425
 GameObject:
   m_ObjectHideFlags: 0
@@ -35,6 +66,7 @@ Transform:
   m_Children:
   - {fileID: 3228055168137781608}
   - {fileID: 9133239407048182343}
+  - {fileID: 7091645816951076849}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3046384067877955756
@@ -133,7 +165,7 @@ CapsuleCollider2D:
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 1d5ccde8d1d52a747966df53f16ee042, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -157,8 +189,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.020127296, y: -0.2513905}
-  m_Size: {x: 0.40244102, y: 0.5418815}
+  m_Offset: {x: 0.013645172, y: -0.257873}
+  m_Size: {x: 0.3816967, y: 0.5289165}
   m_Direction: 0
 --- !u!114 &2486274900373757063
 MonoBehaviour:
@@ -183,17 +215,14 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8192
   groundCheck: {fileID: 3228055168137781608}
-  groundCheckForwardOffset: 0
   wallCheck: {fileID: 9133239407048182343}
-  wallCheckDistance: 0.2
+  wallCheckDistance: 0.1
+  knockbackCheck: {fileID: 7091645816951076849}
+  knockbackProbeSize: {x: 0.2, y: 0.5}
+  knockbackXPower: 4
+  knockbackCliffYPower: 3
   maxHesitation: 5
-  ledgeProbeSize: {x: 0.2, y: 0.1}
-  ledgeProbeForwardOffset: 0.1
-  ledgeProbeFarOffset: 0.1
-  ledgeProbeMaxDrop: 1
-  ledgeNoGroundFramesToTrigger: 2
-  ledgeIgnoreAfterTurnTime: 0.1
-  showLedgeDebugLog: 1
+  ledgeProbeSize: {x: 0.2, y: 0.15}
   wanderEndGraceTime: 0.5
   stuckRecoveryTime: 0.4
   microStepEscapeHeight: 0.1
@@ -222,7 +251,7 @@ MonoBehaviour:
   showMeleeAttackGizmo: 1
   showGroundCheckGizmo: 1
   showWallCheckGizmo: 1
-  showStateDebugLog: 1
+  showKnockbackCheckGizmo: 1
   currentHp: 0
   showAttackLog: 0
 --- !u!1 &7738030062326856143
@@ -250,7 +279,7 @@ Transform:
   m_GameObject: {fileID: 7738030062326856143}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.25, y: -0.8, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -281,7 +310,7 @@ Transform:
   m_GameObject: {fileID: 9164218825349333276}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.2, y: -0.3, z: 0}
+  m_LocalPosition: {x: 0.2, y: -0.25, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
