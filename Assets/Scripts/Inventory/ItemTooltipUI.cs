@@ -48,7 +48,7 @@ public class ItemTooltipUI : MonoBehaviour
         Canvas.ForceUpdateCanvases();
 
         tooltipTransform.anchoredPosition =
-            slotRect.anchoredPosition + new Vector2(140f, -185f);
+            slotRect.anchoredPosition + new Vector2(280f, -600f);
     }
 
     public void Hide()
