@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class HeartBeatUI : MonoBehaviour
 {
@@ -8,7 +9,7 @@ public class HeartBeatUI : MonoBehaviour
 
     Vector3 defaultScale;
 
-    float timer;
+    bool isBeating = false;
 
     void Start()
     {
@@ -22,38 +23,140 @@ public class HeartBeatUI : MonoBehaviour
         if (statusUI == null)
             return;
 
-        float beatSpeed = 1f;
-        float beatPower = 1f;
+        // D단계 흔들림
+        if (statusUI.GetBPMRank() == "D")
+        {
+            float shake = Mathf.Sin(Time.time * 45f) * 8f;
 
-        // BPM 단계별 설정
+            rect.localRotation =
+                Quaternion.Euler(0, 0, shake);
+        }
+        else
+        {
+            rect.localRotation = Quaternion.identity;
+        }
+
+        if (!isBeating)
+        {
+            StartCoroutine(Heartbeat());
+        }
+    }
+
+    IEnumerator Heartbeat()
+    {
+        isBeating = true;
+
+        float power = 1f;
+        float delay = 1f;
+
         switch (statusUI.GetBPMRank())
         {
+            // 안정
             case "A":
-                beatSpeed = 1.5f;
-                beatPower = 0.05f;
+                power = 0.12f;
+                delay = 0.85f;
                 break;
 
+            // 긴장
             case "B":
-                beatSpeed = 2.5f;
-                beatPower = 0.08f;
+                power = 0.20f;
+                delay = 0.55f;
                 break;
 
+            // 위험
             case "C":
-                beatSpeed = 4f;
-                beatPower = 0.12f;
+                power = 0.32f;
+                delay = 0.32f;
                 break;
 
+            // 폭주
             case "D":
-                beatSpeed = 6f;
-                beatPower = 0.18f;
+                power = 0.50f;
+                delay = 0.16f;
                 break;
         }
 
-        // 심장 박동
-        timer += Time.deltaTime * beatSpeed;
+        // 강한 첫 박동
+        yield return Beat(power, 0.05f);
 
-        float scale = 1 + Mathf.Sin(timer) * beatPower;
+        // 짧은 텀
+        yield return new WaitForSeconds(0.03f);
 
-        rect.localScale = defaultScale * scale;
+        // 두 번째 박동
+        yield return Beat(power * 0.7f, 0.04f);
+
+        // D단계는 불규칙 박동 추가
+        if (statusUI.GetBPMRank() == "D")
+        {
+            if (Random.value > 0.5f)
+            {
+                yield return new WaitForSeconds(0.02f);
+
+                yield return Beat(power * 0.9f, 0.03f);
+            }
+        }
+
+        yield return new WaitForSeconds(delay);
+
+        isBeating = false;
+    }
+
+    IEnumerator Beat(float power, float duration)
+    {
+        Vector3 big =
+            defaultScale * (1f + power);
+
+        Vector3 compress =
+            defaultScale * (1f - power * 0.15f);
+
+        float timer = 0f;
+
+        // 순간 팽창
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+
+            rect.localScale = Vector3.Lerp(
+                defaultScale,
+                big,
+                timer / duration
+            );
+
+            yield return null;
+        }
+
+        timer = 0f;
+
+        // 순간 압축
+        while (timer < duration * 0.6f)
+        {
+            timer += Time.deltaTime;
+
+            rect.localScale = Vector3.Lerp(
+                big,
+                compress,
+                timer / (duration * 0.6f)
+            );
+
+            yield return null;
+        }
+
+        timer = 0f;
+
+        // 원상복귀
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+
+            rect.localScale = Vector3.Lerp(
+                compress,
+                defaultScale,
+                timer / duration
+            );
+
+            yield return null;
+        }
+
+        rect.localScale = defaultScale;
     }
 }

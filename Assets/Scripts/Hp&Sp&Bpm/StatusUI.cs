@@ -7,6 +7,11 @@ public class StatusUI : MonoBehaviour
     public float currentHp = 70f;
     public float maxHp = 100f;
 
+    [Header("HP 부드러운 감소")]
+    public float displayHp = 1f;
+
+    public float hpSmoothSpeed = 5f;
+
     [Header("SP")]
     public float currentSp = 100f;
     public float maxSp = 100f;
@@ -28,15 +33,17 @@ public class StatusUI : MonoBehaviour
     public float dashBpmGain = 12f;
 
     [Header("BPM 감소")]
-    public float bpmDecreaseSpeed = 5f;
+    public float bpmDecreaseSpeed = 2f;
 
     [Header("명상")]
     public bool isMeditating = false;
-    public float meditateDecreaseSpeed = 30f;
+    public float meditateDecreaseSpeed = 15f;
 
     [Header("UI")]
+    
     // HP
     public Image HP;
+
     // HpWave
     public RectTransform hpWaveRect;
 
@@ -46,17 +53,23 @@ public class StatusUI : MonoBehaviour
     // BPM
     public Image BPM;
 
+    void Start()
+    {
+        // 시작 시 현재 HP로 초기화
+        displayHp = currentHp / maxHp;
+    }
+
     void Update()
     {
         // ===== 테스트 =====
 
         // HP 감소
         if (Input.GetKeyDown(KeyCode.A))
-            Damage(1);
+            Damage(10);
 
         // HP 회복
         if (Input.GetKeyDown(KeyCode.S))
-            Heal(1);
+            Heal(10);
 
         // 공격
         if (Input.GetKeyDown(KeyCode.Mouse0))
@@ -71,8 +84,10 @@ public class StatusUI : MonoBehaviour
 
         // BPM 감소 처리
         HandleBPMDecrease();
+
         // SP 회복
         RecoverSP();
+
         // UI 갱신
         UpdateUI();
     }
@@ -83,39 +98,85 @@ public class StatusUI : MonoBehaviour
 
     void UpdateUI()
     {
+        // =========================
         // HP
-        float hpPercent = (float)currentHp / maxHp;
+        // =========================
 
-        // HP 기본 게이지
+        float hpPercent = currentHp / maxHp;
+
+        // 부드럽게 HP 따라가기
+        displayHp = Mathf.Lerp(
+            displayHp,
+            hpPercent,
+            Time.deltaTime * hpSmoothSpeed
+        );
+
+        // HP 게이지 적용
         if (HP != null)
-            HP.fillAmount = hpPercent;
+        {
+            HP.fillAmount = displayHp;
+        }
 
-         // 웨이브 위치 이동
+        // =========================
+        // HP 웨이브
+        // =========================
+
         if (hpWaveRect != null)
         {
-            // HP바 전체 길이
-            float width = HP.rectTransform.rect.width;
-            // 현재 위치
+            // HP바 세로 길이
+            float height = HP.rectTransform.rect.height;
+
             Vector2 pos = hpWaveRect.anchoredPosition;
+
             // HP 끝 위치 계산
-            pos.y = (width * hpPercent) - (width / 2f) -7f;
-            // 살짝 흔들림 추가
-            pos.x = Mathf.Sin(Time.time * 5f) * 3f;
+            pos.y =
+                (height * displayHp)
+                - (height / 2f)
+                - 8f;
+
+            // =========================
+            // 자연스러운 물결
+            // =========================
+
+            // 큰 흐름
+            float mainWave =
+                Mathf.Sin(Time.time * 1.2f) * 6f;
+
+            // 잔물결
+            float smallWave =
+                Mathf.Sin(Time.time * 4.5f) * 2.5f;
+
+            // 흔들림 합치기
+            pos.x = mainWave + smallWave;
+
+            // 아주 살짝 위아래 출렁임
+            pos.y += Mathf.Sin(Time.time * 2f) * 0.5f;
+
             // 적용
             hpWaveRect.anchoredPosition = pos;
         }
 
+        // =========================
         // SP
+        // =========================
+
         float spPercent = currentSp / maxSp;
 
         if (SP != null)
+        {
             SP.fillAmount = spPercent;
+        }
 
+        // =========================
         // BPM
+        // =========================
+
         float bpmPercent = currentBpm / 220f;
 
         if (BPM != null)
+        {
             BPM.fillAmount = bpmPercent;
+        }
     }
 
     // =========================
@@ -155,6 +216,17 @@ public class StatusUI : MonoBehaviour
         Debug.Log("대쉬 사용");
     }
 
+    void RecoverSP()
+    {
+        if (currentSp < maxSp)
+        {
+            currentSp += spRecoverySpeed * Time.deltaTime;
+
+            if (currentSp > maxSp)
+                currentSp = maxSp;
+        }
+    }
+
     // =========================
     // BPM
     // =========================
@@ -176,21 +248,20 @@ public class StatusUI : MonoBehaviour
 
     void HandleBPMDecrease()
     {
-        // B단계 이상부터 자연 감소
-        if (currentBpm >= 131)
-        {
-            currentBpm -= bpmDecreaseSpeed * Time.deltaTime;
-        }
+        // 항상 자연 감소
+        currentBpm -= bpmDecreaseSpeed * Time.deltaTime;
 
-        // 명상 중 강제 감소
+        // 명상 중이면 추가 감소
         if (isMeditating)
         {
             currentBpm -= meditateDecreaseSpeed * Time.deltaTime;
         }
 
-        // 최소 BPM 제한
-        if (currentBpm < 91)
-            currentBpm = 91;
+        // 최소 BPM
+        if (currentBpm < 60f)
+        {
+            currentBpm = 60f;
+        }
     }
 
     // =========================
@@ -209,16 +280,5 @@ public class StatusUI : MonoBehaviour
             return "C";
 
         return "D";
-    }
-
-    void RecoverSP()
-    {
-        if (currentSp < maxSp)
-        {
-            currentSp += spRecoverySpeed * Time.deltaTime;
-
-            if (currentSp > maxSp)
-                currentSp = maxSp;
-        }
     }
 }
