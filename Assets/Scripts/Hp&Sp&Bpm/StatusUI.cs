@@ -132,7 +132,7 @@ public class StatusUI : MonoBehaviour
             pos.y =
                 (height * displayHp)
                 - (height / 2f)
-                - 8f;
+                - 16f;
 
             // =========================
             // 자연스러운 물결
