@@ -39,6 +39,11 @@ public class StatusUI : MonoBehaviour
     public bool isMeditating = false;
     public float meditateDecreaseSpeed = 15f;
 
+    [Header("BPM 고정 포션")]
+    public bool bpmLocked = false;
+    public float bpmLockTimer = 0f;
+    public float lockedBpm = 91f;
+
     [Header("UI")]
     
     // HP
@@ -211,7 +216,10 @@ public class StatusUI : MonoBehaviour
 
         currentSp -= dashCost;
 
-        AddBPM(dashBpmGain);
+        if (!bpmLocked)
+        {
+            AddBPM(dashBpmGain);
+        }
 
         Debug.Log("대쉬 사용");
     }
@@ -233,7 +241,10 @@ public class StatusUI : MonoBehaviour
 
     public void Attack()
     {
-        AddBPM(attackBpmGain);
+        if (!bpmLocked)
+        {
+            AddBPM(attackBpmGain);
+        }
 
         Debug.Log("공격");
     }
@@ -248,6 +259,21 @@ public class StatusUI : MonoBehaviour
 
     void HandleBPMDecrease()
     {
+        // BPM 고정 포션 효과
+        if (bpmLocked)
+        {
+            currentBpm = lockedBpm;
+
+            bpmLockTimer -= Time.deltaTime;
+
+            if (bpmLockTimer <= 0)
+            {
+                bpmLocked = false;
+            }
+
+            return;
+        }
+
         // 항상 자연 감소
         currentBpm -= bpmDecreaseSpeed * Time.deltaTime;
 

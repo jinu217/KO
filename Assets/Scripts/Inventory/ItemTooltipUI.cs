@@ -8,6 +8,9 @@ public class ItemTooltipUI : MonoBehaviour
     public TMP_Text statText;
     public RectTransform tooltipTransform;
 
+    // 툴팁 고정 위치
+    public Vector2 fixedPosition = new Vector2(500f, 0f);
+
     public void Show(ItemData item, RectTransform slotRect)
     {
         if (item == null)
@@ -47,8 +50,12 @@ public class ItemTooltipUI : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
 
-        tooltipTransform.anchoredPosition =
-            slotRect.anchoredPosition + new Vector2(280f, -600f);
+        // 기존 슬롯 위치 따라가기 비활성화
+        // tooltipTransform.anchoredPosition =
+        //     slotRect.anchoredPosition + new Vector2(280f, -600f);
+
+        // 고정 위치
+        tooltipTransform.anchoredPosition = new Vector2(-150f, -305f);
     }
 
     public void Hide()

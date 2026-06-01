@@ -2570,6 +2570,8 @@ MonoBehaviour:
   healPotionCount: 0
   bpmPotionCount: 0
   statusUI: {fileID: 781662559}
+  healPotionData: {fileID: 11400000, guid: aa9c4ba3916f89d4ea9411e0e909a9d2, type: 2}
+  bpmPotionData: {fileID: 11400000, guid: 7d536ef0418033249b59580f401248d8, type: 2}
 --- !u!114 &781662558
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5969,11 +5971,11 @@ RectTransform:
   - {fileID: 266635683}
   m_Father: {fileID: 1247470737}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 295, y: -611.32}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -150, y: -305}
   m_SizeDelta: {x: 215, y: 307}
-  m_Pivot: {x: 0.6, y: 1}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1760770154
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6028,6 +6030,7 @@ MonoBehaviour:
   itemName: {fileID: 1197949309}
   statText: {fileID: 1491454801}
   tooltipTransform: {fileID: 1760770153}
+  fixedPosition: {x: 500, y: 0}
 --- !u!1 &1780586497
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,7 +11,6 @@ public class PotionUI : MonoBehaviour
     void Update()
     {
         healText.text = bag.healPotionCount.ToString();
-
         bpmText.text = bag.bpmPotionCount.ToString();
     }
 }

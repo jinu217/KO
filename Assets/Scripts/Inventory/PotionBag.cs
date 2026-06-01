@@ -3,10 +3,13 @@ using UnityEngine;
 public class PotionBag : MonoBehaviour
 {
     public int healPotionCount;
-
     public int bpmPotionCount;
 
     public StatusUI statusUI;
+
+    // 포션 데이터 연결
+    public ItemData healPotionData;
+    public ItemData bpmPotionData;
 
     public void AddPotion(ItemData item)
     {
@@ -23,38 +26,55 @@ public class PotionBag : MonoBehaviour
         }
     }
 
-    // 체력 포션 사용
-    public void UseHealPotion(ItemData item)
+    // 체력 포션 사용 (Q)
+    public void UseHealPotion()
     {
         if (healPotionCount <= 0)
             return;
 
         healPotionCount--;
 
-        statusUI.Heal(item.healAmount);
+        statusUI.Heal(healPotionData.healAmount);
     }
 
-    // BPM 포션 사용
-    public void UseBPMPotion(ItemData item)
+    // BPM 포션 사용 (R)
+    public void UseBPMPotion()
     {
         if (bpmPotionCount <= 0)
             return;
 
         bpmPotionCount--;
 
-        statusUI.currentBpm -= item.bpmReduceAmount;
+        statusUI.bpmLocked = true;
+        statusUI.bpmLockTimer = 15f;
 
-        if (statusUI.currentBpm < 91)
-            statusUI.currentBpm = 91;
+        statusUI.lockedBpm = statusUI.currentBpm;
+        statusUI.bpmLocked = true;
+        statusUI.bpmLockTimer = 15f;
     }
-    //테스트용 코드
+
+    // 테스트용 코드
     void Update()
     {
+        // 체력 포션 사용
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            UseHealPotion();
+        }
+
+        // BPM 포션 사용
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            UseBPMPotion();
+        }
+
+        // 체력 포션 추가 테스트
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             healPotionCount++;
         }
 
+        // BPM 포션 추가 테스트
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
             bpmPotionCount++;
