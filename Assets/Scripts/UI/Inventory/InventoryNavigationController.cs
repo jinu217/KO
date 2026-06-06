@@ -3,6 +3,7 @@ using UnityEngine;
 // [인벤토리 네비게이션 컨트롤러]
 // - 장비 슬롯(5칸) + 인벤토리 슬롯(12칸)의 선택 이동 규칙 담당
 // - 실제 장착/해제 로직은 InventoryUI가 처리
+/*
 public class InventoryNavigationController : MonoBehaviour
 {
     private enum SelectionArea
@@ -252,3 +253,4 @@ public class InventoryNavigationController : MonoBehaviour
         }
     }
 }
+*/

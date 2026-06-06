@@ -19,7 +19,7 @@ public class TreasureChest : MonoBehaviour
 
     [Header("드롭 풀")]
     [Tooltip("보상 후보 아이템 목록")]
-    [SerializeField] private List<InventoryItemData> possibleItems = new List<InventoryItemData>();
+    [SerializeField] private List<ItemData> possibleItems = new List<ItemData>();
     [Tooltip("오픈 시 랜덤으로 뽑는 보상 개수")]
     [SerializeField] private int rollCount = 3;
     [Tooltip("true면 동일 아이템 중복 선택 허용")]
@@ -110,7 +110,7 @@ public class TreasureChest : MonoBehaviour
             }
         }
 
-        List<InventoryItemData> rewards = RollItems();
+        List<ItemData> rewards = RollItems();
 
         if (rewards.Count == 0)
         {
@@ -140,9 +140,9 @@ public class TreasureChest : MonoBehaviour
     }
 
     // possibleItems에서 rollCount개를 랜덤 추출(allowDuplicate에 따라 중복 허용 여부 결정)
-    private List<InventoryItemData> RollItems()
+    private List<ItemData> RollItems()
     {
-        List<InventoryItemData> result = new List<InventoryItemData>();
+        List<ItemData> result = new List<ItemData>();
         if (possibleItems == null || possibleItems.Count == 0) return result;
 
         int targetCount = Mathf.Max(0, rollCount);

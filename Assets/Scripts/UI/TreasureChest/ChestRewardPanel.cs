@@ -53,7 +53,7 @@ public class ChestRewardPanel : MonoBehaviour
     [SerializeField] private float rewardPanelCenterGizmoRadius = 0.2f;
 
     // 현재 열린 보상 목록 및 연결 참조
-    private List<InventoryItemData> currentRewards;
+    private List<ItemData> currentRewards;
     private TreasureChest currentChest;
     private InventoryUI inventoryUI;
 
@@ -114,7 +114,7 @@ public class ChestRewardPanel : MonoBehaviour
     }
 
     // 보상 목록과 참조를 받아 패널 열기 + 타임스케일 0 설정
-    public void Open(List<InventoryItemData> rewards, TreasureChest ownerChest, InventoryUI targetInventory)
+    public void Open(List<ItemData> rewards, TreasureChest ownerChest, InventoryUI targetInventory)
     {
         InitializeIfNeeded();
 
@@ -249,13 +249,13 @@ public class ChestRewardPanel : MonoBehaviour
             }
 
             int captured = i;
-            InventoryItemData item = currentRewards[captured];
+            ItemData item = currentRewards[captured];
 
             if (rewardTexts != null && captured < rewardTexts.Length && rewardTexts[captured] != null)
                 rewardTexts[captured].text = item.itemName;
 
             if (rewardIcons != null && captured < rewardIcons.Length && rewardIcons[captured] != null)
-                SetRewardIcon(rewardIcons[captured], item.itemSprite);
+                SetRewardIcon(rewardIcons[captured], item.icon/*itemSprite*/);
 
             btn.onClick.AddListener(() => OnSelectReward(captured));
         }
@@ -340,7 +340,7 @@ public class ChestRewardPanel : MonoBehaviour
     {
         if (currentRewards == null || index < 0 || index >= currentRewards.Count) return;
 
-        InventoryItemData selected = currentRewards[index];
+        ItemData selected = currentRewards[index];
         if (selected == null) return;
 
         if (inventoryUI == null)
