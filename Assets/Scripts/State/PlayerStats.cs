@@ -31,8 +31,8 @@ public class PlayerStats
         attack += item.attack;
         attackSpeed += item.attackSpeed;
 
-        critChance += item.critChance;
-        critDamage += item.critDamage;
+        critChance += item.criticalChance;
+        critDamage += item.criticalDamage;
 
         moveSpeed += item.moveSpeed;
 

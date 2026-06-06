@@ -634,41 +634,41 @@ public class PlayerController : MonoBehaviour, IDamageable
     }
 
     // 인벤토리 아이템 장착 시 호출: 모든 스탯을 GameManager에 합산
-    public void ApplyItemStats(ItemStats stats)
+    public void ApplyItemStats(ItemData item)
     {
         if (GameManager.Instance == null) return;
 
-        GameManager.Instance.playerMaxHp += stats.hp;
-        GameManager.Instance.playerDefense += stats.defense;
-        GameManager.Instance.playerAttackDamage += stats.attack;
-        GameManager.Instance.playerAttackSpeed += stats.attackSpeed;
-        GameManager.Instance.playerCriticalChance += stats.criticalChance;
-        GameManager.Instance.playerCriticalMultiplier += stats.criticalDamage;
-        GameManager.Instance.playerMoveSpeed += stats.moveSpeed;
+        GameManager.Instance.playerMaxHp += item.hp;
+        GameManager.Instance.playerDefense += item.defense;
+        GameManager.Instance.playerAttackDamage += item.attack;
+        GameManager.Instance.playerAttackSpeed += item.attackSpeed;
+        GameManager.Instance.playerCriticalChance += item.criticalChance;
+        GameManager.Instance.playerCriticalMultiplier += item.criticalDamage;
+        GameManager.Instance.playerMoveSpeed += item.moveSpeed;
 
         // 최대 체력 증가 시 현재 체력도 함께 보정
-        currentHp += stats.hp;
+        currentHp += item.hp;
 
-        Debug.Log($"아이템 스탯 적용: HP+{stats.hp}, 방어+{stats.defense}, 이동속도+{stats.moveSpeed}, 공격력+{stats.attack}, 공격속도+{stats.attackSpeed}, 치확+{stats.criticalChance}, 치피+{stats.criticalDamage}");
+        Debug.Log($"아이템 스탯 적용: HP+{item.hp}, 방어+{item.defense}, 이동속도+{item.moveSpeed}, 공격력+{item.attack}, 공격속도+{item.attackSpeed}, 치확+{item.criticalChance}, 치피+{item.criticalDamage}");
     }
 
     // 인벤토리 아이템 해제 시 호출: 모든 스탯을 GameManager에서 차감
-    public void RemoveItemStats(ItemStats stats)
+    public void RemoveItemStats(ItemData item)
     {
         if (GameManager.Instance == null) return;
 
-        GameManager.Instance.playerMaxHp -= stats.hp;
-        GameManager.Instance.playerDefense -= stats.defense;
-        GameManager.Instance.playerAttackDamage -= stats.attack;
-        GameManager.Instance.playerAttackSpeed -= stats.attackSpeed;
-        GameManager.Instance.playerCriticalChance -= stats.criticalChance;
-        GameManager.Instance.playerCriticalMultiplier -= stats.criticalDamage;
-        GameManager.Instance.playerMoveSpeed -= stats.moveSpeed;
+        GameManager.Instance.playerMaxHp -= item.hp;
+        GameManager.Instance.playerDefense -= item.defense;
+        GameManager.Instance.playerAttackDamage -= item.attack;
+        GameManager.Instance.playerAttackSpeed -= item.attackSpeed;
+        GameManager.Instance.playerCriticalChance -= item.criticalChance;
+        GameManager.Instance.playerCriticalMultiplier -= item.criticalDamage;
+        GameManager.Instance.playerMoveSpeed -= item.moveSpeed;
 
         // 최대 체력이 줄어들면 현재 체력도 최대치 이내로 보정
         currentHp = Mathf.Min(currentHp, GameManager.Instance.playerMaxHp);
 
-        Debug.Log($"아이템 스탯 제거: HP-{stats.hp}, 방어-{stats.defense}, 이동속도-{stats.moveSpeed}, 공격력-{stats.attack}, 공격속도-{stats.attackSpeed}, 치확-{stats.criticalChance}, 치피-{stats.criticalDamage}");
+        Debug.Log($"아이템 스탯 제거: HP-{item.hp}, 방어-{item.defense}, 이동속도-{item.moveSpeed}, 공격력-{item.attack}, 공격속도-{item.attackSpeed}, 치확-{item.criticalChance}, 치피-{item.criticalDamage}");
     }
 
     // 인벤토리 무기 타입을 플레이어 무기 타입으로 변환해 적용

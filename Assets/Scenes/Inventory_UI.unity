@@ -2613,6 +2613,9 @@ MonoBehaviour:
   bpmDecreaseSpeed: 5
   isMeditating: 0
   meditateDecreaseSpeed: 30
+  bpmLocked: 0
+  bpmLockTimer: 0
+  lockedBpm: 91
   HP: {fileID: 1740078555}
   hpWaveRect: {fileID: 150567258}
   SP: {fileID: 1268650737}
@@ -4111,7 +4114,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -2928897648484290260, guid: cd09e83ac93a98741b31f59177f5038c, type: 3}
+  m_Sprite: {fileID: -7592597453507591344, guid: 0714d741b32abda45b8b9d18bce44bec, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -8113,8 +8116,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 146.13693, y: -306.87595}
-  m_SizeDelta: {x: 329.298, y: 256.898}
+  m_AnchoredPosition: {x: 150, y: -306.87595}
+  m_SizeDelta: {x: 319, y: 257}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2140996023
 MonoBehaviour:
@@ -8137,7 +8140,7 @@ MonoBehaviour:
   m_StartCorner: 0
   m_StartAxis: 0
   m_CellSize: {x: 40, y: 40}
-  m_Spacing: {x: 78, y: 48}
+  m_Spacing: {x: 76, y: 48}
   m_Constraint: 0
   m_ConstraintCount: 2
 --- !u!114 &2140996024

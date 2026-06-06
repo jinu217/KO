@@ -31,11 +31,11 @@ public class ItemTooltipUI : MonoBehaviour
         if (item.attackSpeed != 0)
             text += "공격속도 +" + item.attackSpeed + "\n";
 
-        if (item.critChance != 0)
-            text += "크리확률 +" + item.critChance + "%\n";
+        if (item.criticalChance != 0)
+            text += "크리확률 +" + item.criticalChance + "%\n";
 
-        if (item.critDamage != 0)
-            text += "크리데미지 +" + item.critDamage + "%\n";
+        if (item.criticalDamage != 0)
+            text += "크리데미지 +" + item.criticalDamage + "%\n";
 
         if (item.moveSpeed != 0)
             text += "이동속도 +" + item.moveSpeed + "\n";
