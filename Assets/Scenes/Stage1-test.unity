@@ -1106,6 +1106,8 @@ GameObject:
   - component: {fileID: 142957974}
   - component: {fileID: 142957978}
   - component: {fileID: 142957979}
+  - component: {fileID: 142957980}
+  - component: {fileID: 142957981}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -1149,7 +1151,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2061765741}
-  - {fileID: 1720215050}
   - {fileID: 232261547}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1290,6 +1291,42 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: f56ba06b-3912-4a03-93fb-9458077816f4
     m_ActionName: 'Player/HPpotion[/Keyboard/p]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 142957978}
+        m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
+        m_MethodName: OnBPMPotion
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: a233f844-e3fe-4678-a012-cc6908332655
+    m_ActionName: 'Player/BPMPotion[/Keyboard/o]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 142957978}
+        m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
+        m_MethodName: OnInventoryDrop
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 6f34604d-b4e4-4be0-a2ad-9b2258ab35ec
+    m_ActionName: 'Player/InventoryDrop[/Keyboard/k]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 197faca5-1a7c-4a74-9fe9-a1fbb5b90094
+    m_ActionName: 'Player/isMeditating[/Keyboard/f]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player
@@ -1410,7 +1447,7 @@ MonoBehaviour:
   fallDamageAmount: 5
   fallDamagePerUnit: 1
   fallDamageStunDelay: 0.5
-  groundCheck: {fileID: 1720215050}
+  groundCheck: {fileID: 1957490703}
   groundCheckSize: {x: 0.4, y: 0.1}
   groundLayer:
     serializedVersion: 2
@@ -1429,6 +1466,7 @@ MonoBehaviour:
   showWeaponAttackGizmo: 1
   showEmpoweredImpactGizmo: 1
   showGroundCheckGizmo: 1
+  playerStatus: {fileID: 142957981}
 --- !u!114 &142957979
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1443,6 +1481,53 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HitFlashEffect
   flashDuration: 0.2
   blinkInterval: 0.04
+--- !u!114 &142957980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 142957970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c058282cee80244bac4a6647d487f22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAppearance
+  headRenderer: {fileID: 973947874}
+  bodyRenderer: {fileID: 2061765742}
+  shoulderLeftRenderer: {fileID: 1018801598}
+  shoulderRightRenderer: {fileID: 2037272620}
+  handLeftRenderer: {fileID: 2039372162}
+  handRightRenderer: {fileID: 648543902}
+  footLeftRenderer: {fileID: 1236584127}
+  footRightRenderer: {fileID: 883639831}
+--- !u!114 &142957981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 142957970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8cd12d9281bbfd4e9fe08ac1635bc9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStatus
+  currentHp: 70
+  maxHp: 100
+  currentSp: 100
+  maxSp: 100
+  dashCost: 20
+  spRecoverySpeed: 1
+  currentBpm: 91
+  attackBpmGain: 8
+  dashBpmGain: 12
+  bpmDecreaseSpeed: 2
+  isMeditating: 0
+  meditateDecreaseSpeed: 15
+  bpmLocked: 0
+  bpmLockTimer: 0
+  lockedBpm: 91
 --- !u!4 &147217573 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4662094924868184978, guid: 2e16188cf60c0824faa73ff88e3025c4, type: 3}
@@ -2209,7 +2294,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PotionBag
   healPotionCount: 0
   bpmPotionCount: 0
-  statusUI: {fileID: 232261544}
+  playerStatus: {fileID: 142957981}
   healPotionData: {fileID: 11400000, guid: aa9c4ba3916f89d4ea9411e0e909a9d2, type: 2}
   bpmPotionData: {fileID: 11400000, guid: 7d536ef0418033249b59580f401248d8, type: 2}
 --- !u!114 &232261544
@@ -2224,27 +2309,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd4f759234ecab047b3d7cbb570845d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StatusUI
-  currentHp: 70
-  maxHp: 100
-  displayHp: 1
-  hpSmoothSpeed: 5
-  currentSp: 100
-  maxSp: 100
-  dashCost: 20
-  spRecoverySpeed: 1
-  currentBpm: 91
-  attackBpmGain: 8
-  dashBpmGain: 12
-  bpmDecreaseSpeed: 5
-  isMeditating: 0
-  meditateDecreaseSpeed: 30
-  bpmLocked: 0
-  bpmLockTimer: 0
-  lockedBpm: 91
+  status: {fileID: 142957981}
   HP: {fileID: 228693134}
   hpWaveRect: {fileID: 2107528718}
   SP: {fileID: 1424054302}
   BPM: {fileID: 2010688000}
+  displayHp: 1
+  hpSmoothSpeed: 5
 --- !u!114 &232261545
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3172,7 +3243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79ec9fcb0e08097448b37679c63c8812, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeartBeatUI
-  statusUI: {fileID: 232261544}
+  playerStatus: {fileID: 0}
 --- !u!114 &391517902
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8380,6 +8451,7 @@ MonoBehaviour:
     moveSpeed: 0
     defense: 0
     hp: 0
+  playerAppearance: {fileID: 142957980}
 --- !u!4 &822757043
 Transform:
   m_ObjectHideFlags: 0
@@ -13173,7 +13245,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   showInitLog: 0
-  playerMaxHp: 11111111
+  playerMaxHp: 11111110
   playerAttackDamage: 1
   playerAttackSpeed: 1
   playerCriticalChance: 0.5
@@ -14435,37 +14507,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2e16188cf60c0824faa73ff88e3025c4, type: 3}
---- !u!1 &1720215049
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1720215050}
-  m_Layer: 3
-  m_Name: GameObject
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1720215050
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1720215049}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.7, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 142957972}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1748559134 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4662094924868184978, guid: 2e16188cf60c0824faa73ff88e3025c4, type: 3}

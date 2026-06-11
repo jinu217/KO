@@ -6,7 +6,7 @@ public class InventoryUI : MonoBehaviour
     public GameObject equipmentPanel;
     public GameObject characterPreview;
     public InventoryDisplay inventoryDisplay;
-
+    private bool inputLocked = false;
     private int selectedIndex = 0;
 
     void Start()
@@ -14,53 +14,6 @@ public class InventoryUI : MonoBehaviour
         inventoryPanel.SetActive(false);
         equipmentPanel.SetActive(false);
         characterPreview.SetActive(false);
-    }
-
-    void Update()
-    {
-        // 열기/닫기
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            bool isOpen = !inventoryPanel.activeSelf;
-
-            inventoryPanel.SetActive(isOpen);
-            equipmentPanel.SetActive(isOpen);
-            characterPreview.SetActive(isOpen);
-
-            selectedIndex = 0;
-            inventoryDisplay.SetSelectedIndex(selectedIndex);
-        }
-
-        if (!inventoryPanel.activeSelf)
-            return;
-
-        // 이동
-        if (Input.GetKeyDown(KeyCode.RightArrow))
-            selectedIndex++;
-
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-            selectedIndex--;
-
-        if (Input.GetKeyDown(KeyCode.DownArrow))
-            selectedIndex += 3;
-
-        if (Input.GetKeyDown(KeyCode.UpArrow))
-            selectedIndex -= 3;
-
-        selectedIndex = Mathf.Clamp(
-            selectedIndex,
-            0,
-            inventoryDisplay.GetSlotCount() - 1
-        );
-
-        inventoryDisplay.SetSelectedIndex(selectedIndex);
-
-        //교체(장착)
-        if (Input.GetKeyDown(KeyCode.Z))
-            inventoryDisplay.EquipSelected(selectedIndex);
-        //버리기
-        if (Input.GetKeyDown(KeyCode.X))
-            inventoryDisplay.DropSelected(selectedIndex);
     }
 
 // ===============임의용=============
@@ -113,6 +66,18 @@ public class InventoryUI : MonoBehaviour
         if (!inventoryPanel.activeSelf)
             return;
 
+        if (Mathf.Abs(moveInput.x) < 0.5f &&
+            Mathf.Abs(moveInput.y) < 0.5f)
+        {
+            inputLocked = false;
+            return;
+        }
+
+        if (inputLocked)
+            return;
+
+        inputLocked = true;
+
         if (moveInput.x > 0.5f)
             selectedIndex++;
 
@@ -139,4 +104,9 @@ public class InventoryUI : MonoBehaviour
         inventoryDisplay.EquipSelected(selectedIndex);
     }
 
+    public void DropCurrentSelection()
+    {
+        Debug.Log("DropCurrentSelection 호출");
+        inventoryDisplay.DropSelected(selectedIndex);
+    }
 }

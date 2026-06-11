@@ -3,28 +3,24 @@ using System.Collections;
 
 public class HeartBeatUI : MonoBehaviour
 {
-    public StatusUI statusUI;
-
+    public PlayerStatus playerStatus;
     RectTransform rect;
-
     Vector3 defaultScale;
-
     bool isBeating = false;
 
     void Start()
     {
         rect = GetComponent<RectTransform>();
-
         defaultScale = rect.localScale;
     }
 
     void Update()
     {
-        if (statusUI == null)
+        if (playerStatus == null)
             return;
 
         // D단계 흔들림
-        if (statusUI.GetBPMRank() == "D")
+        if (playerStatus.GetBPMRank() == "D")
         {
             float shake = Mathf.Sin(Time.time * 45f) * 8f;
 
@@ -49,7 +45,7 @@ public class HeartBeatUI : MonoBehaviour
         float power = 1f;
         float delay = 1f;
 
-        switch (statusUI.GetBPMRank())
+        switch (playerStatus.GetBPMRank())
         {
             // 안정
             case "A":
@@ -86,7 +82,7 @@ public class HeartBeatUI : MonoBehaviour
         yield return Beat(power * 0.7f, 0.04f);
 
         // D단계는 불규칙 박동 추가
-        if (statusUI.GetBPMRank() == "D")
+        if (playerStatus.GetBPMRank() == "D")
         {
             if (Random.value > 0.5f)
             {

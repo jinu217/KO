@@ -41,6 +41,7 @@ public class CurrencyManager : MonoBehaviour
         soul = PlayerPrefs.GetInt("SOUL", 0);
     }
     //테스트용 코드
+    /*
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.C))
@@ -52,5 +53,5 @@ public class CurrencyManager : MonoBehaviour
         {
             soul += 1;
         }
-    }
+    }*/
 }

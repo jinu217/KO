@@ -13,6 +13,7 @@ public class EquipmentManager : MonoBehaviour
     public PlayerStats stats = new PlayerStats();
     public System.Action onStatsChanged;
     public PlayerStats baseStats;
+    public PlayerAppearance playerAppearance; //플레이어 외형 장비연결
 
     void Awake()
     {
@@ -62,6 +63,10 @@ public class EquipmentManager : MonoBehaviour
                 ReplaceIfDifferent(footSlot, item);
                 break;
         }
+
+        if (playerAppearance != null){
+            playerAppearance.Equip(item);}
+
         previewUI.Refresh();
         RefreshStats();
     }

@@ -240,6 +240,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             GameManager.Instance.playerJumpForce = CalculateJumpForceFromTiles();
 
         inventoryUI = FindInventoryUIAnyState();
+        Debug.Log(inventoryUI);
     }
 
     // 매 프레임 상태 업데이트(지면 체크, 점프/낙하 상태 갱신)
@@ -478,8 +479,23 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 대쉬
     public void OnDash(InputAction.CallbackContext context)
     {
-        if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
-        if (context.started && canDash && !isDashing) StartCoroutine(DashAction());
+        if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
+            return;
+
+        if (!context.started)
+            return;
+
+        if (playerStatus == null)
+        {
+            Debug.LogError("PlayerStatus not assigned!");
+            return;
+        }
+
+        if (!canDash || isDashing)
+            return;
+
+        playerStatus.OnDash();      // SP 감소 + BPM 증가
+        StartCoroutine(DashAction()); // 실제 이동
     }
 
     // 대쉬 실행 루틴(중력 무시 + 일정 거리 직진 후 정지)
@@ -530,6 +546,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (Time.time < lastAttackTime + (1f / GameManager.Instance.playerAttackSpeed)) return;
 
         Attack();
+        playerStatus.OnAttack(); // PlayerStatus 연결
         lastAttackTime = Time.time;
     }
 
@@ -550,12 +567,36 @@ public class PlayerController : MonoBehaviour, IDamageable
         isInventoryOpen = !isInventoryOpen;
         OpenInventory();
     }
+    // 입력 콜백: 인벤토리 아이템 버리기
+    public void OnInventoryDrop(InputAction.CallbackContext context)
+    {
+        if (!context.started)
+            return;
 
-    // 입력 콜백: 포션 사용
+        if (!isInventoryOpen)
+            return;
+
+        inventoryUI.DropCurrentSelection();
+    }
+    
+    public PlayerStatus playerStatus; //플레이어 현재상태()
+
+    // 입력 콜백: HP포션 사용
     public void OnHPPotion(InputAction.CallbackContext context)
     {
-        if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
-        UsePotion();
+        if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
+            return;
+
+        playerStatus.Heal(30);
+    }
+    
+    // 입력 콜백: BPM포션 사용
+    public void OnBPMPotion(InputAction.CallbackContext context)
+    {
+        if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
+            return;
+
+        playerStatus.AddBPM(-30f);
     }
 
     // 실제 공격 판정 처리(무기별 박스/넉백 + 일반몹/중간보스/메인보스 모두 적용)

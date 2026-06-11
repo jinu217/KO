@@ -126,6 +126,7 @@ public class InventoryDisplay : MonoBehaviour
 
     public void DropSelected(int index)
     {
+        Debug.Log($"DropSelected 호출 : {index}");
         inventory.RemoveItem(index);
 
         selectedIndex = Mathf.Clamp(
