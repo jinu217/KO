@@ -15,6 +15,7 @@ public class AnimationRelativeCopier : EditorWindow
     GameObject sourceRoot;
     GameObject targetRoot;
     string outputPath = "Assets/Animations/Converted.anim";
+    bool mirrorX = false;  // ← 1. 필드로 추가
 
     void OnGUI()
     {
@@ -25,6 +26,7 @@ public class AnimationRelativeCopier : EditorWindow
         sourceRoot = (GameObject)EditorGUILayout.ObjectField("원본 캐릭터 (rest)", sourceRoot, typeof(GameObject), true);
         targetRoot = (GameObject)EditorGUILayout.ObjectField("대상 캐릭터 (rest)", targetRoot, typeof(GameObject), true);
         outputPath = EditorGUILayout.TextField("저장 경로", outputPath);
+        mirrorX = EditorGUILayout.Toggle("Mirror X (좌우 반전)", mirrorX);  // ← 2. GUI에 토글 추가
 
         GUILayout.Space(10);
 
@@ -37,7 +39,7 @@ public class AnimationRelativeCopier : EditorWindow
         EditorGUILayout.HelpBox(
             "원본 Clip의 각 트랜스폼 키에서 원본 캐릭터의 rest pose를 빼서 Δ를 구하고,\n" +
             "그 Δ를 대상 캐릭터의 rest pose에 더한 새 Clip을 만듭니다.\n\n" +
-            "Rotation은 각도가 절대적이므로 동일하게 Δ로 변환됩니다.",
+            "Mirror X: 캐릭터의 보는 방향이 반대일 때 체크 (X 위치, Z 회전 Δ 부호 반전).",
             MessageType.Info);
     }
 
@@ -49,7 +51,6 @@ public class AnimationRelativeCopier : EditorWindow
             return;
         }
 
-        // 새 Clip 생성 (원본 복사)
         AnimationClip newClip = new AnimationClip();
         newClip.frameRate = sourceClip.frameRate;
         newClip.legacy = sourceClip.legacy;
@@ -64,35 +65,41 @@ public class AnimationRelativeCopier : EditorWindow
             var sourceCurve = AnimationUtility.GetEditorCurve(sourceClip, binding);
             if (sourceCurve == null) continue;
 
-            // 해당 트랜스폼 path로 원본/대상 캐릭터에서 본 찾기
             Transform sourceBone = sourceRoot.transform.Find(binding.path);
             Transform targetBone = targetRoot.transform.Find(binding.path);
 
             if (sourceBone == null || targetBone == null)
             {
-                // 본이 없는 트랙은 그대로 복사
                 AnimationUtility.SetEditorCurve(newClip, binding, sourceCurve);
                 copiedAsIs++;
                 continue;
             }
 
-            // 채널 종류 판별
             float sourceRest = GetRestValue(sourceBone, binding.propertyName);
             float targetRest = GetRestValue(targetBone, binding.propertyName);
 
             if (float.IsNaN(sourceRest) || float.IsNaN(targetRest))
             {
-                // 처리 못하는 채널은 그대로
                 AnimationUtility.SetEditorCurve(newClip, binding, sourceCurve);
                 copiedAsIs++;
                 continue;
             }
 
-            // 키값 변환
             var keys = sourceCurve.keys;
             for (int i = 0; i < keys.Length; i++)
             {
                 float delta = keys[i].value - sourceRest;
+
+                // ← 3. Mirror X 처리 추가
+                if (mirrorX && binding.propertyName == "m_LocalPosition.x")
+                {
+                    delta = -delta;
+                }
+                if (mirrorX && binding.propertyName == "localEulerAnglesRaw.z")
+                {
+                    delta = -delta;
+                }
+
                 keys[i].value = targetRest + delta;
             }
 
@@ -101,7 +108,6 @@ public class AnimationRelativeCopier : EditorWindow
             converted++;
         }
 
-        // 저장
         AssetDatabase.CreateAsset(newClip, outputPath);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -119,16 +125,14 @@ public class AnimationRelativeCopier : EditorWindow
             case "m_LocalPosition.y": return bone.localPosition.y;
             case "m_LocalPosition.z": return bone.localPosition.z;
 
-            // Rotation은 Euler 각도로 비교 (애니메이션 보통 Euler 키)
             case "localEulerAnglesRaw.x": return bone.localEulerAngles.x;
             case "localEulerAnglesRaw.y": return bone.localEulerAngles.y;
             case "localEulerAnglesRaw.z": return bone.localEulerAngles.z;
 
-            // Scale은 변환 안 함 (그대로 복사)
             case "m_LocalScale.x":
             case "m_LocalScale.y":
             case "m_LocalScale.z":
-                return float.NaN;  // NaN 반환하면 그대로 복사됨
+                return float.NaN;
         }
         return float.NaN;
     }
