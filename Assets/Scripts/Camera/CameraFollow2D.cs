@@ -3,6 +3,10 @@ using UnityEngine;
 // [2D 카메라 추적]
 // - 매 LateUpdate에서 SmoothDamp로 플레이어를 부드럽게 추적
 // - 축 잠금(lockX/lockY)과 오프셋으로 구도 조정 가능
+
+// [카메라 경계]
+// - 카메라가 지정된 BoxCollider2D 범위를 벗어나지 않도록 제한
+
 public class CameraFollow2D : MonoBehaviour
 {
     [Header("대상")]
@@ -25,6 +29,9 @@ public class CameraFollow2D : MonoBehaviour
     [Header("범위 시각화")]
     [Tooltip("카메라-타겟 연결선 Gizmo 표시(OnDrawGizmosSelected)")]
     public bool showTargetLineGizmo = false;
+
+    [Header("카메라 경계")]
+    public BoxCollider2D cameraBounds;
 
     // SmoothDamp 내부 속도 누적값(프레임 간 가속도 보간에 사용)
     private Vector3 velocity = Vector3.zero;
@@ -49,10 +56,38 @@ public class CameraFollow2D : MonoBehaviour
         if (lockX) desiredPosition.x = transform.position.x;
         if (lockY) desiredPosition.y = transform.position.y;
 
+        // 카메라 경계 제한
+        if (cameraBounds != null)
+        {
+            Bounds bounds = cameraBounds.bounds;
+
+            Camera cam = GetComponent<Camera>();
+
+            float halfHeight = cam.orthographicSize;
+            float halfWidth = halfHeight * cam.aspect;
+
+            desiredPosition.x = Mathf.Clamp(
+                desiredPosition.x,
+                bounds.min.x + halfWidth,
+                bounds.max.x - halfWidth
+            );
+
+            desiredPosition.y = Mathf.Clamp(
+                desiredPosition.y,
+                bounds.min.y + halfHeight,
+                bounds.max.y - halfHeight
+            );
+        }
+
         // smoothTime 0 입력 시 튐 방지
         float safeSmoothTime = Mathf.Max(0.01f, smoothTime);
 
-        Vector3 smoothedPosition = Vector3.SmoothDamp(transform.position, desiredPosition, ref velocity, safeSmoothTime);
+        Vector3 smoothedPosition = Vector3.SmoothDamp(
+            transform.position,
+            desiredPosition,
+            ref velocity,
+            safeSmoothTime
+        );
 
         // 2D 씬에서 카메라 Z는 offset.z로 고정
         smoothedPosition.z = offset.z;
