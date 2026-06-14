@@ -24,6 +24,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     // -------------------- 컴포넌트/입력 --------------------
     private Rigidbody2D rb;        // 플레이어 물리 제어
     private Vector2 moveInput;     // Input System에서 받은 이동 입력
+    private bool isKeyboardControlPaused;
+    private bool isAutoMovingForward;
+    private float autoMoveDirection = 1f;
+    private float autoMoveSpeed = 5f;
 
     // -------------------- 이동/점프 --------------------
     [Header("이동 및 점프 설정")]
@@ -97,6 +101,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     private bool isDashing;          // 대쉬 중 여부
     private bool canDash = true;     // 대쉬 가능 여부
+    private Coroutine dashRoutine;
 
     // -------------------- 하향 점프 / 강화 하강 --------------------
     [Header("하향 점프(Down Jump) 설정")]
@@ -344,6 +349,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 이동(인벤토리 열림 중에는 인벤토리 커서 이동에 사용)
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (isKeyboardControlPaused)
+        {
+            moveInput = Vector2.zero;
+            return;
+        }
+
         moveInput = context.ReadValue<Vector2>();
 
         if (isInventoryOpen)
@@ -362,6 +373,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 점프/하향 점프(점프 버퍼 + 코요테 타임 적용)
     public void OnJump(InputAction.CallbackContext context)
     {
+        if (isKeyboardControlPaused) return;
         if (isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
 
         // 버튼을 뗐을 때: 상승 속도 컷(짧은 점프)
@@ -479,6 +491,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 대쉬
     public void OnDash(InputAction.CallbackContext context)
     {
+        if (isKeyboardControlPaused) return;
         if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
@@ -495,7 +508,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
 
         playerStatus.OnDash();      // SP 감소 + BPM 증가
-        StartCoroutine(DashAction()); // 실제 이동
+        dashRoutine = StartCoroutine(DashAction()); // 실제 이동
     }
 
     // 대쉬 실행 루틴(중력 무시 + 일정 거리 직진 후 정지)
@@ -527,6 +540,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         rb.linearVelocity = Vector2.zero;
         rb.gravityScale = prevGravity;
         isDashing = false;
+        dashRoutine = null;
 
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
@@ -535,6 +549,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)
     public void OnAttack(InputAction.CallbackContext context)
     {
+        if (isKeyboardControlPaused) return;
         if (!context.started || isDashing || isKnockback || ChestRewardPanel.IsAnyOpen) return;
 
         if (isInventoryOpen)
@@ -553,6 +568,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 인벤토리 토글
     public void OnInventory(InputAction.CallbackContext context)
     {
+        if (isKeyboardControlPaused) return;
         if (!context.started || ChestRewardPanel.IsAnyOpen) return;
 
         if (inventoryUI == null)
@@ -570,6 +586,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 인벤토리 아이템 버리기
     public void OnInventoryDrop(InputAction.CallbackContext context)
     {
+        if (isKeyboardControlPaused) return;
         if (!context.started)
             return;
 
@@ -584,6 +601,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: HP포션 사용
     public void OnHPPotion(InputAction.CallbackContext context)
     {
+        if (isKeyboardControlPaused) return;
         if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
@@ -593,10 +611,47 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: BPM포션 사용
     public void OnBPMPotion(InputAction.CallbackContext context)
     {
+        if (isKeyboardControlPaused) return;
         if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
         playerStatus.AddBPM(-30f);
+    }
+
+    public void PauseKeyboardControl()
+    {
+        isKeyboardControlPaused = true;
+        moveInput = Vector2.zero;
+        isJumpHeld = false;
+    }
+
+    public void ResumeKeyboardControl()
+    {
+        isKeyboardControlPaused = false;
+        isAutoMovingForward = false;
+        moveInput = Vector2.zero;
+    }
+
+    public void StartAutoMoveForward(float speed)
+    {
+        PauseKeyboardControl();
+
+        if (dashRoutine != null)
+        {
+            StopCoroutine(dashRoutine);
+            dashRoutine = null;
+        }
+
+        isDashing = false;
+        isKnockback = false;
+        canDash = true;
+        rb.gravityScale = originalGravity;
+
+        autoMoveDirection = lastHorizontalDirection == 0f ? 1f : Mathf.Sign(lastHorizontalDirection);
+        autoMoveSpeed = Mathf.Max(0f, speed);
+        isAutoMovingForward = true;
+
+        transform.localScale = new Vector3(-autoMoveDirection, 1, 1);
     }
 
     // 실제 공격 판정 처리(무기별 박스/넉백 + 일반몹/중간보스/메인보스 모두 적용)
@@ -607,7 +662,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (UnityEngine.Random.value < GameManager.Instance.playerCriticalChance)
             dmg *= GameManager.Instance.playerCriticalMultiplier;
 
-        float dir = Mathf.Sign(transform.localScale.x);
+        float dir = -Mathf.Sign(transform.localScale.x);
         Vector2 size = GetWeaponAttackSize();
         Vector2 pos = (Vector2)transform.position + Vector2.right * dir * GetWeaponOffset();
 
@@ -860,7 +915,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     private void UpdateFacingDirection()
     {
         lastHorizontalDirection = Mathf.Sign(moveInput.x);
-        transform.localScale = new Vector3(Mathf.Sign(moveInput.x), 1, 1);
+        transform.localScale = new Vector3(-Mathf.Sign(moveInput.x), 1, 1);
     }
 
     // 무기별 공격 박스 크기 반환
@@ -1159,7 +1214,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         float facing = transform.localScale.x;
         if (Mathf.Approximately(facing, 0f)) facing = 1f;
 
-        float dir = Mathf.Sign(facing);
+        float dir = -Mathf.Sign(facing);
 
         if (showWeaponAttackGizmo)
         {
@@ -1193,6 +1248,14 @@ public class PlayerController : MonoBehaviour, IDamageable
     void FixedUpdate()
     {
         if (isDashing || isKnockback) return;
+
+        if (isAutoMovingForward)
+        {
+            HandleCornerCorrection();
+            rb.gravityScale = originalGravity;
+            rb.linearVelocity = new Vector2(autoMoveDirection * autoMoveSpeed, rb.linearVelocity.y);
+            return;
+        }
 
         if (isDownJumping)
         {
