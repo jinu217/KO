@@ -13,7 +13,6 @@ public class PlayerAttackCreator
     const string PATH_LEG_F = "Body/LegJoint_F";
     const string PATH_LEG_B = "Body/LegJoint_B";
 
-    // Rest ÁÂÇ¥ (»ç¿ëÀÚ ÃßÃâ °á°ú ±â¹Ý)
     const float BODY_REST_Y = 7f;
     const float LEG_F_REST_X = 0.225f;
     const float LEG_F_REST_Y = -0.475f;
@@ -26,113 +25,111 @@ public class PlayerAttackCreator
         AnimationClip clip = new AnimationClip();
         clip.frameRate = 60f;
 
-        // ============ ShoulderJoint_B (°Ë ÈÖµÎ¸§ ¸ÞÀÎ) ============
+        // ============ ShoulderJoint_B (¿ÞÆÈ, Å©°Ô) ============
         AddRotationCurve(clip, PATH_SHOULDER_B, new KeyVec[] {
             new KeyVec(0,  0, 0, 0),
-            new KeyVec(5,  0, 0, 35),
-            new KeyVec(12, 0, 0, 95),      // peak (°Ë ¸Ó¸® À§ µÚ)
-            new KeyVec(15, 0, 0, 92),      // hold
-            new KeyVec(18, 0, 0, 50),
-            new KeyVec(22, 0, 0, -55),     // impact (¾Õ ¾Æ·¡)
-            new KeyVec(26, 0, 0, -48),
-            new KeyVec(32, 0, 0, -20),
+            new KeyVec(5,  0, 0, -35),
+            new KeyVec(12, 0, 0, -110),
+            new KeyVec(15, 0, 0, -105),
+            new KeyVec(18, 0, 0, -55),
+            new KeyVec(22, 0, 0, 60),
+            new KeyVec(26, 0, 0, 52),
+            new KeyVec(32, 0, 0, 20),
             new KeyVec(40, 0, 0, 0),
         });
 
-        // ============ ArmJoint_B (ÆÈ²ÞÄ¡ ±ÁÈû º¸Á¶) ============
+        // ============ ArmJoint_B (¿Þ ÆÈ²ÞÄ¡, Å©°Ô) ============
         AddRotationCurve(clip, PATH_ARM_B, new KeyVec[] {
             new KeyVec(0,  0, 0, 0),
-            new KeyVec(5,  0, 0, 35),
-            new KeyVec(12, 0, 0, 90),      // peak: ÆÈ²ÞÄ¡ Å©°Ô ±ÁÈû
-            new KeyVec(15, 0, 0, 88),
-            new KeyVec(18, 0, 0, 60),
-            new KeyVec(22, 0, 0, -25),     // impact: ÆìÁü
-            new KeyVec(26, 0, 0, -20),
-            new KeyVec(32, 0, 0, -8),
+            new KeyVec(5,  0, 0, -30),
+            new KeyVec(12, 0, 0, -90),
+            new KeyVec(15, 0, 0, -85),
+            new KeyVec(18, 0, 0, -55),
+            new KeyVec(22, 0, 0, 25),
+            new KeyVec(26, 0, 0, 18),
+            new KeyVec(32, 0, 0, 5),
             new KeyVec(40, 0, 0, 0),
         });
 
-        // ============ ShoulderJoint_F (¾Õ ¾î±ú, ±ÕÇü) ============
+        // ============ ShoulderJoint_F (¿À¸¥ÆÈ, »ìÂ¦¸¸) ============
         AddRotationCurve(clip, PATH_SHOULDER_F, new KeyVec[] {
             new KeyVec(0,  0, 0, 0),
-            new KeyVec(12, 0, 0, 35),      // peak ½Ã ¾Õ¾î±úµµ »ìÂ¦ À§·Î
-            new KeyVec(15, 0, 0, 32),
-            new KeyVec(22, 0, 0, -30),     // impact ½Ã ¹Ý´ë·Î
-            new KeyVec(26, 0, 0, -25),
+            new KeyVec(12, 0, 0, -15),     // peak ½Ã »ìÂ¦ µû¶ó°¨
+            new KeyVec(15, 0, 0, -13),
+            new KeyVec(22, 0, 0, 10),      // impact ½Ã »ìÂ¦ ¹Ý´ë
+            new KeyVec(26, 0, 0, 8),
             new KeyVec(40, 0, 0, 0),
         });
 
-        // ============ ArmJoint_F (¾Õ ÆÈ²ÞÄ¡) ============
+        // ============ ArmJoint_F (¿À¸¥ ÆÈ²ÞÄ¡, »ìÂ¦¸¸) ============
         AddRotationCurve(clip, PATH_ARM_F, new KeyVec[] {
             new KeyVec(0,  0, 0, 0),
-            new KeyVec(12, 0, 0, 55),      // peak: ¾ÕÆÈ °¡½¿ ¾ÕÀ¸·Î ±ÁÈû
-            new KeyVec(15, 0, 0, 52),
-            new KeyVec(22, 0, 0, -35),     // impact: ÆìÁü
-            new KeyVec(26, 0, 0, -28),
-            new KeyVec(40, 0, 0, 0),
-        });
-
-        // ============ Body Rotation (°¡½¿ È°Ã³·³) ============
-        AddRotationCurve(clip, PATH_BODY, new KeyVec[] {
-            new KeyVec(0,  0, 0, 0),
-            new KeyVec(5,  0, 0, 8),
-            new KeyVec(12, 0, 0, 25),      // °¡½¿ µÚ·Î Á¥Èû
-            new KeyVec(15, 0, 0, 25),
-            new KeyVec(18, 0, 0, 12),
-            new KeyVec(22, 0, 0, -30),     // °¡½¿ ¾ÕÀ¸·Î Å©°Ô ¼÷ÀÓ
-            new KeyVec(26, 0, 0, -25),
-            new KeyVec(32, 0, 0, -12),
-            new KeyVec(40, 0, 0, 0),
-        });
-
-        // ============ Body Position (Ã¼Áß ÀÌµ¿, ÁøÇà ¹æÇâ -x) ============
-        AddPositionCurve(clip, PATH_BODY, new KeyVec[] {
-            new KeyVec(0,  0,     BODY_REST_Y,        0),
-            new KeyVec(12, 0.04f, BODY_REST_Y,        0),  // anticipation ½Ã µÚ·Î (+x)
-            new KeyVec(15, 0.04f, BODY_REST_Y,        0),
-            new KeyVec(22, -0.10f, BODY_REST_Y-0.05f, 0),  // impact: ¾Õ(-x) + °¡¶ó¾ÉÀ½
-            new KeyVec(26, -0.08f, BODY_REST_Y-0.05f, 0),
-            new KeyVec(40, 0,     BODY_REST_Y,        0),
-        });
-
-        // ============ LegJoint_F Position (Body.y »ó¼â, ¹ß °íÁ¤) ============
-        AddPositionCurve(clip, PATH_LEG_F, new KeyVec[] {
-            new KeyVec(0,  LEG_F_REST_X, LEG_F_REST_Y,        0),
-            new KeyVec(22, LEG_F_REST_X, LEG_F_REST_Y+0.05f,  0),  // Body.y -0.05 »ó¼â
-            new KeyVec(26, LEG_F_REST_X, LEG_F_REST_Y+0.05f,  0),
-            new KeyVec(40, LEG_F_REST_X, LEG_F_REST_Y,        0),
-        });
-
-        // ============ LegJoint_B Position (¹ß °íÁ¤) ============
-        AddPositionCurve(clip, PATH_LEG_B, new KeyVec[] {
-            new KeyVec(0,  LEG_B_REST_X, LEG_B_REST_Y,        0),
-            new KeyVec(22, LEG_B_REST_X, LEG_B_REST_Y+0.05f,  0),
-            new KeyVec(26, LEG_B_REST_X, LEG_B_REST_Y+0.05f,  0),
-            new KeyVec(40, LEG_B_REST_X, LEG_B_REST_Y,        0),
-        });
-
-        // ============ LegJoint_F Rotation (¾Õ´Ù¸® µðµõ, -x·Î) ============
-        AddRotationCurve(clip, PATH_LEG_F, new KeyVec[] {
-            new KeyVec(0,  0, 0, 0),
-            new KeyVec(12, 0, 0, 0),
-            new KeyVec(22, 0, 0, -20),     // ¾ÕÀ¸·Î µðµõ (-x ¹æÇâ)
-            new KeyVec(26, 0, 0, -15),
-            new KeyVec(40, 0, 0, 0),
-        });
-
-        // ============ LegJoint_B Rotation (µÞ´Ù¸®, »ìÂ¦ µÚ·Î ÁöÁö) ============
-        AddRotationCurve(clip, PATH_LEG_B, new KeyVec[] {
-            new KeyVec(0,  0, 0, 0),
-            new KeyVec(22, 0, 0, 8),       // µÞ´Ù¸® µÚ·Î (+x), ±ÕÇü
+            new KeyVec(12, 0, 0, -15),
+            new KeyVec(15, 0, 0, -13),
+            new KeyVec(22, 0, 0, 8),
             new KeyVec(26, 0, 0, 6),
             new KeyVec(40, 0, 0, 0),
         });
 
-        // ============ Head (½Ã¼± ¾ÈÁ¤È­) ============
+        // ============ Body Rotation (ÀÛÀº °¡½¿ ÈÖµÑ¸²) ============
+        AddRotationCurve(clip, PATH_BODY, new KeyVec[] {
+            new KeyVec(0,  0, 0, 0),
+            new KeyVec(12, 0, 0, 8),
+            new KeyVec(15, 0, 0, 8),
+            new KeyVec(22, 0, 0, -10),
+            new KeyVec(26, 0, 0, -8),
+            new KeyVec(40, 0, 0, 0),
+        });
+
+        // ============ Body Position (Á¦ÀÚ¸®, À§¾Æ·¡ ÀÛ°Ô) ============
+        AddPositionCurve(clip, PATH_BODY, new KeyVec[] {
+            new KeyVec(0,  0, BODY_REST_Y,        0),
+            new KeyVec(22, 0, BODY_REST_Y-0.02f,  0),
+            new KeyVec(26, 0, BODY_REST_Y-0.02f,  0),
+            new KeyVec(40, 0, BODY_REST_Y,        0),
+        });
+
+        // ============ LegJoint_F Position (Body.y »ó¼â·Î ¹ß Àý´ë y °íÁ¤) ============
+        AddPositionCurve(clip, PATH_LEG_F, new KeyVec[] {
+            new KeyVec(0,  LEG_F_REST_X, LEG_F_REST_Y,        0),
+            new KeyVec(22, LEG_F_REST_X, LEG_F_REST_Y+0.02f,  0),
+            new KeyVec(26, LEG_F_REST_X, LEG_F_REST_Y+0.02f,  0),
+            new KeyVec(40, LEG_F_REST_X, LEG_F_REST_Y,        0),
+        });
+
+        // ============ LegJoint_B Position ============
+        AddPositionCurve(clip, PATH_LEG_B, new KeyVec[] {
+            new KeyVec(0,  LEG_B_REST_X, LEG_B_REST_Y,        0),
+            new KeyVec(22, LEG_B_REST_X, LEG_B_REST_Y+0.02f,  0),
+            new KeyVec(26, LEG_B_REST_X, LEG_B_REST_Y+0.02f,  0),
+            new KeyVec(40, LEG_B_REST_X, LEG_B_REST_Y,        0),
+        });
+
+        // ============ LegJoint_F Rotation (-Body.rot.z, ¹ß È¸Àü »ó¼â) ============
+        AddRotationCurve(clip, PATH_LEG_F, new KeyVec[] {
+            new KeyVec(0,  0, 0, 0),
+            new KeyVec(12, 0, 0, -8),       // Body +8 »ó¼â
+            new KeyVec(15, 0, 0, -8),
+            new KeyVec(22, 0, 0, 10),       // Body -10 »ó¼â
+            new KeyVec(26, 0, 0, 8),
+            new KeyVec(40, 0, 0, 0),
+        });
+
+        // ============ LegJoint_B Rotation (-Body.rot.z, ¹ß È¸Àü »ó¼â) ============
+        AddRotationCurve(clip, PATH_LEG_B, new KeyVec[] {
+            new KeyVec(0,  0, 0, 0),
+            new KeyVec(12, 0, 0, -8),
+            new KeyVec(15, 0, 0, -8),
+            new KeyVec(22, 0, 0, 10),
+            new KeyVec(26, 0, 0, 8),
+            new KeyVec(40, 0, 0, 0),
+        });
+
+        // ============ Head (½Ã¼± ¾ÈÁ¤È­, ÀÛ°Ô) ============
         AddRotationCurve(clip, PATH_HEAD, new KeyVec[] {
             new KeyVec(0,  0, 0, 0),
-            new KeyVec(12, 0, 0, -12),     // Body +25 »ó¼â
-            new KeyVec(22, 0, 0, 18),      // Body -30 »ó¼â (Àû¿¡ ¶ô¿Â)
+            new KeyVec(12, 0, 0, -4),
+            new KeyVec(22, 0, 0, 6),
             new KeyVec(40, 0, 0, 0),
         });
 
