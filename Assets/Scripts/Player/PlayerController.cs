@@ -166,8 +166,6 @@ public class PlayerController : MonoBehaviour, IDamageable
     public LayerMask enemyLayer;
     [Tooltip("현재 장착 무기 타입")]
     public WeaponType currentWeapon = WeaponType.Sword;
-    [Tooltip("현재 체력(런타임 디버그용)")]
-    public float currentHp;
 
     private bool isKnockback;         // 넉백 상태 여부
 
@@ -238,7 +236,8 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         }
 
-        currentHp = GameManager.Instance.playerMaxHp;
+        playerStatus.maxHp = GameManager.Instance.playerMaxHp;
+        playerStatus.currentHp = playerStatus.maxHp;
         currentJumpCount = GameManager.Instance.playerMaxJumpCount;
 
         if (useCalculatedJumpForce)
@@ -723,10 +722,10 @@ public class PlayerController : MonoBehaviour, IDamageable
         float percentHeal = baseHeal * GameManager.Instance.potionHealPercent;
         float totalHeal = baseHeal + percentHeal;
 
-        currentHp = Mathf.Min(currentHp + totalHeal, GameManager.Instance.playerMaxHp);
+        playerStatus.Heal((int)totalHeal);
         GameManager.Instance.potionCount--;
 
-        Debug.Log("포션 사용! " + totalHeal + "의 HP 회복됨. 남은 포션: " + GameManager.Instance.potionCount + " | 현재 HP: " + currentHp);
+        Debug.Log("포션 사용! " + totalHeal + "의 HP 회복됨. 남은 포션: " + GameManager.Instance.potionCount + " | 현재 HP: " + playerStatus.currentHp);
     }
 
     // 인벤토리 아이템 장착 시 호출: 모든 스탯을 GameManager에 합산
@@ -743,7 +742,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         GameManager.Instance.playerMoveSpeed += item.moveSpeed;
 
         // 최대 체력 증가 시 현재 체력도 함께 보정
-        currentHp += item.hp;
+        playerStatus.maxHp += item.hp;
+        playerStatus.currentHp += item.hp;
 
         Debug.Log($"아이템 스탯 적용: HP+{item.hp}, 방어+{item.defense}, 이동속도+{item.moveSpeed}, 공격력+{item.attack}, 공격속도+{item.attackSpeed}, 치확+{item.criticalChance}, 치피+{item.criticalDamage}");
     }
@@ -762,7 +762,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         GameManager.Instance.playerMoveSpeed -= item.moveSpeed;
 
         // 최대 체력이 줄어들면 현재 체력도 최대치 이내로 보정
-        currentHp = Mathf.Min(currentHp, GameManager.Instance.playerMaxHp);
+        playerStatus.maxHp -= item.hp;
+        playerStatus.currentHp = Mathf.Min(playerStatus.currentHp, playerStatus.maxHp);
 
         Debug.Log($"아이템 스탯 제거: HP-{item.hp}, 방어-{item.defense}, 이동속도-{item.moveSpeed}, 공격력-{item.attack}, 공격속도-{item.attackSpeed}, 치확-{item.criticalChance}, 치피-{item.criticalDamage}");
     }
@@ -827,8 +828,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         float defenseRate = GameManager.Instance.playerDefense / (GameManager.Instance.playerDefense + 100f);
         float finalDamage = Mathf.Max(damage * 0.2f, damage * (1f - defenseRate));
 
-        currentHp -= finalDamage;
-        Debug.Log(gameObject.name + " 피격! 원래 데미지: " + damage + " -> 최종 데미지: " + finalDamage + " | 남은 HP: " + currentHp);
+        playerStatus.TakeDamage(finalDamage, enemyPos);
+        Debug.Log(gameObject.name + " 피격! 원래 데미지: " + damage + " -> 최종 데미지: " + finalDamage + " | 남은 HP: " + playerStatus.currentHp);
 
         if (applyKnockback)
         {
@@ -851,7 +852,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             invincibleRoutine = StartCoroutine(DamageInvincibleRoutine());
         }
 
-        if (currentHp <= 0) GameOver();
+        if (playerStatus.currentHp <= 0) GameOver();
     }
 
     // 넉백 상태 해제 루틴
@@ -1195,13 +1196,13 @@ public class PlayerController : MonoBehaviour, IDamageable
             float excessHeight = fallenHeight - fallDamageMinHeight;
             float totalFallDamage = fallDamageAmount + excessHeight * fallDamagePerUnit;
 
-            currentHp -= totalFallDamage;
+            playerStatus.TakeDamage(totalFallDamage, transform.position);
             ApplyMoveDelay(fallDamageStunDelay);
 
             if (debugEmpoweredDownJump)
-                Debug.Log($"[Fall] damage applied: fallen={fallenHeight:F2}, dmg={totalFallDamage:F1}(base={fallDamageAmount}+excess={excessHeight:F1}*{fallDamagePerUnit}), stun={fallDamageStunDelay}, hp={currentHp:F1}");
+                Debug.Log($"[Fall] damage applied: fallen={fallenHeight:F2}, dmg={totalFallDamage:F1}(base={fallDamageAmount}+excess={excessHeight:F1}*{fallDamagePerUnit}), stun={fallDamageStunDelay}, hp={playerStatus.currentHp:F1}");
 
-            if (currentHp <= 0f)
+            if (playerStatus.currentHp <= 0f)
                 GameOver();
         }
 
