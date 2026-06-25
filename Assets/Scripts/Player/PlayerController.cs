@@ -195,6 +195,11 @@ public class PlayerController : MonoBehaviour, IDamageable
     private Coroutine invincibleRoutine;
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
 
+    [Header("Meditating")]
+    public float meditatingDuration = 5f;
+    private bool isMeditating;
+    private Coroutine meditatingRoutine;
+
     // -------------------- 범위 시각화 --------------------
     [Header("범위 시각화")]
     [Tooltip("현재 무기의 공격 박스 표시")]
@@ -348,7 +353,19 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 이동(인벤토리 열림 중에는 인벤토리 커서 이동에 사용)
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (isMeditating)
+        {
+            moveInput = Vector2.zero;
+            return;
+        }
+
         if (isKeyboardControlPaused)
+        {
+            moveInput = Vector2.zero;
+            return;
+        }
+
+        if (playerStatus != null && !playerStatus.CanMove)
         {
             moveInput = Vector2.zero;
             return;
@@ -372,7 +389,9 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 점프/하향 점프(점프 버퍼 + 코요테 타임 적용)
     public void OnJump(InputAction.CallbackContext context)
     {
+        if (isMeditating) return;
         if (isKeyboardControlPaused) return;
+        if (playerStatus != null && !playerStatus.CanMove) return;
         if (isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
 
         // 버튼을 뗐을 때: 상승 속도 컷(짧은 점프)
@@ -490,7 +509,9 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 대쉬
     public void OnDash(InputAction.CallbackContext context)
     {
+        if (isMeditating) return;
         if (isKeyboardControlPaused) return;
+        if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
         if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
@@ -506,7 +527,12 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (!canDash || isDashing)
             return;
 
-        playerStatus.OnDash();      // SP 감소 + BPM 증가
+        if (!playerStatus.OnDash())
+            return;
+
+        if (!playerStatus.CanAttackOrDash)
+            return;
+
         dashRoutine = StartCoroutine(DashAction()); // 실제 이동
     }
 
@@ -520,14 +546,16 @@ public class PlayerController : MonoBehaviour, IDamageable
         rb.gravityScale = 0f;
 
         float dashDir = moveInput.x != 0 ? Mathf.Sign(moveInput.x) : lastHorizontalDirection;
+        float effectiveDashDistance = dashDistance * (playerStatus != null ? playerStatus.DashDistanceMultiplier : 1f);
+        float effectiveDashSpeed = dashSpeed * (playerStatus != null ? playerStatus.DashSpeedMultiplier : 1f);
         float moved = 0f;
 
         rb.linearVelocity = Vector2.zero;
 
-        while (moved < dashDistance)
+        while (moved < effectiveDashDistance)
         {
-            float step = dashSpeed * Time.fixedDeltaTime;
-            float remain = dashDistance - moved;
+            float step = effectiveDashSpeed * Time.fixedDeltaTime;
+            float remain = effectiveDashDistance - moved;
             if (step > remain) step = remain;
 
             rb.MovePosition(rb.position + new Vector2(dashDir * step, 0f));
@@ -548,7 +576,9 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)
     public void OnAttack(InputAction.CallbackContext context)
     {
+        if (isMeditating) return;
         if (isKeyboardControlPaused) return;
+        if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
         if (!context.started || isDashing || isKnockback || ChestRewardPanel.IsAnyOpen) return;
 
         if (isInventoryOpen)
@@ -557,7 +587,9 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         }
 
-        if (Time.time < lastAttackTime + (1f / GameManager.Instance.playerAttackSpeed)) return;
+        float attackSpeedMultiplier = playerStatus != null ? playerStatus.AttackSpeedMultiplier : 1f;
+        float effectiveAttackSpeed = GameManager.Instance.playerAttackSpeed * attackSpeedMultiplier;
+        if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed)) return;
 
         Attack();
         playerStatus.OnAttack(); // PlayerStatus 연결
@@ -567,6 +599,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 인벤토리 토글
     public void OnInventory(InputAction.CallbackContext context)
     {
+        if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (!context.started || ChestRewardPanel.IsAnyOpen) return;
 
@@ -585,6 +618,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 인벤토리 아이템 버리기
     public void OnInventoryDrop(InputAction.CallbackContext context)
     {
+        if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (!context.started)
             return;
@@ -600,6 +634,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: HP포션 사용
     public void OnHPPotion(InputAction.CallbackContext context)
     {
+        if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
@@ -610,11 +645,83 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: BPM포션 사용
     public void OnBPMPotion(InputAction.CallbackContext context)
     {
+        if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
         playerStatus.AddBPM(-30f);
+    }
+
+    public void OnMeditating(InputAction.CallbackContext context)
+    {
+        if (!context.started) return;
+
+        if (isMeditating)
+        {
+            StopMeditating();
+            return;
+        }
+
+        if (isKeyboardControlPaused || isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
+            return;
+
+        if (meditatingRoutine != null)
+            StopCoroutine(meditatingRoutine);
+
+        meditatingRoutine = StartCoroutine(TryStartMeditatingAfterInteract());
+    }
+
+    private IEnumerator TryStartMeditatingAfterInteract()
+    {
+        int inputFrame = Time.frameCount;
+        yield return new WaitForEndOfFrame();
+
+        if (TreasureChest.LastInteractFrame == inputFrame)
+        {
+            meditatingRoutine = null;
+            yield break;
+        }
+
+        yield return MeditatingRoutine();
+    }
+
+    private IEnumerator MeditatingRoutine()
+    {
+        isMeditating = true;
+        moveInput = Vector2.zero;
+
+        if (rb != null)
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
+        if (playerStatus != null)
+            playerStatus.isMeditating = true;
+
+        float timer = 0f;
+        while (timer < meditatingDuration && isMeditating)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        StopMeditating();
+    }
+
+    private void StopMeditating()
+    {
+        if (!isMeditating && meditatingRoutine == null)
+            return;
+
+        isMeditating = false;
+
+        if (playerStatus != null)
+            playerStatus.isMeditating = false;
+
+        if (meditatingRoutine != null)
+        {
+            StopCoroutine(meditatingRoutine);
+            meditatingRoutine = null;
+        }
     }
 
     public void PauseKeyboardControl()
@@ -657,6 +764,8 @@ public class PlayerController : MonoBehaviour, IDamageable
     void Attack()
     {
         float dmg = GameManager.Instance.playerAttackDamage;
+        if (playerStatus != null)
+            dmg *= playerStatus.AttackDamageMultiplier;
 
         if (UnityEngine.Random.value < GameManager.Instance.playerCriticalChance)
             dmg *= GameManager.Instance.playerCriticalMultiplier;
@@ -668,19 +777,31 @@ public class PlayerController : MonoBehaviour, IDamageable
         // IDamageable 구현 오브젝트에 데미지 전달 (적/보스 통합)
         Collider2D[] hits = Physics2D.OverlapBoxAll(pos, size, 0f, enemyLayer);
         HashSet<int> damagedIds = new HashSet<int>();
+        int damagedMonsterCount = 0;
+        bool damagedBoss = false;
 
         foreach (var hit in hits)
         {
             if (hit == null) continue;
             IDamageable target = hit.GetComponentInParent<IDamageable>();
             if (target == null) continue;
+            MonoBehaviour targetBehaviour = target as MonoBehaviour;
+            if (targetBehaviour == null) continue;
             int id = (target as UnityEngine.Object)?.GetInstanceID() ?? 0;
             if (!damagedIds.Add(id)) continue;
             // 적에게 무기별 넉백 파워 전달 후 데미지 적용
-            EnemyController enemy = (target as MonoBehaviour)?.GetComponent<EnemyController>();
+            EnemyController enemy = targetBehaviour.GetComponent<EnemyController>();
             if (enemy != null) enemy.SetNextKnockbackPower(GetWeaponKnockbackPower());
             target.TakeDamage(dmg, (Vector2)transform.position);
+            damagedMonsterCount++;
+
+            int targetLayer = targetBehaviour.gameObject.layer;
+            int hitLayer = hit.gameObject.layer;
+            if (IsBossLayer(targetLayer) || IsBossLayer(hitLayer))
+                damagedBoss = true;
         }
+
+        playerStatus?.OnAttackHit(damagedMonsterCount, damagedBoss);
 
         // 파괴 가능 오브젝트(모든 레이어 탐색)
         Collider2D[] breakableHits = Physics2D.OverlapBoxAll(pos, size, 0f, ~0);
@@ -690,6 +811,12 @@ public class PlayerController : MonoBehaviour, IDamageable
             BreakableObject breakable = bHit.GetComponentInParent<BreakableObject>();
             if (breakable != null) breakable.TakeDamage();
         }
+    }
+
+    private bool IsBossLayer(int layer)
+    {
+        return layer == LayerMask.NameToLayer("MidBoss")
+            || layer == LayerMask.NameToLayer("MainBoss");
     }
 
     // 인벤토리 UI 토글 + 게임 일시정지/재개
@@ -1248,6 +1375,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 물리 프레임 이동 처리(관성/미끄러짐 제거 + 모서리 보정)
     void FixedUpdate()
     {
+        if (isMeditating)
+        {
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            return;
+        }
+
         if (isDashing || isKnockback) return;
 
         if (isAutoMovingForward)
@@ -1276,6 +1409,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         HandleCornerCorrection();
 
         float maxSpeed = GameManager.Instance.playerMoveSpeed;
+        if (playerStatus != null)
+            maxSpeed *= playerStatus.MoveSpeedMultiplier;
         float targetSpeedX = moveInput.x * maxSpeed;
 
         // 관성/미끄러짐 완전 제거: 항상 즉시 목표 속도로 고정

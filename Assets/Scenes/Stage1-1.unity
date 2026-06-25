@@ -2177,16 +2177,33 @@ MonoBehaviour:
   currentSp: 100
   maxSp: 100
   dashCost: 20
+  feverDashCost: 10
   spRecoverySpeed: 1
+  feverSpRecoveryMultiplier: 1.5
+  meditationSpRecoveryMultiplier: 1.25
+  attackSpGainSingle: 1
+  attackSpGainMultiple: 2
+  attackSpGainBoss: 2.5
   currentBpm: 91
   attackBpmGain: 8
   dashBpmGain: 12
+  feverBpmGainMultiplier: 1.25
   bpmDecreaseSpeed: 2
+  feverBpmDecayMultiplier: 1.1
   isMeditating: 0
   meditateDecreaseSpeed: 15
   bpmLocked: 0
   bpmLockTimer: 0
   lockedBpm: 91
+  tensionAttackDamageMultiplier: 1.1
+  tensionDashSpeedMultiplier: 1.1
+  tensionDashDistanceMultiplier: 1.1
+  feverAttackSpeedMultiplier: 1.1
+  feverMoveSpeedMultiplier: 1.1
+  exhaustedFullStopDuration: 2
+  exhaustedImpairDuration: 4
+  exhaustedResetDelay: 5
+  exhaustedMoveSpeedMultiplier: 0.35
 --- !u!4 &180043608
 Transform:
   m_ObjectHideFlags: 0
@@ -2299,13 +2316,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 11008
   currentWeapon: 2
-  currentHp: 0
   knockbackForceX: 3
   knockbackForceY: 5
   knockbackDuration: 0.2
   hitStopDuration: 0.03
   hitStopTimeScale: 0.05
   damageInvincibleTime: 0.1
+  meditatingDuration: 5
   showWeaponAttackGizmo: 1
   showEmpoweredImpactGizmo: 1
   showGroundCheckGizmo: 1
@@ -2480,7 +2497,19 @@ MonoBehaviour:
     m_ActionId: 6f34604d-b4e4-4be0-a2ad-9b2258ab35ec
     m_ActionName: 'Player/InventoryDrop[/Keyboard/k]'
   - m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 180043611}
+        m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
+        m_MethodName: OnMeditating
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_ActionId: 197faca5-1a7c-4a74-9fe9-a1fbb5b90094
     m_ActionName: 'Player/isMeditating[/Keyboard/f]'
   m_NeverAutoSwitchControlSchemes: 0
@@ -84199,7 +84228,7 @@ Transform:
   m_GameObject: {fileID: 1788410089}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.74, y: -8.97, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

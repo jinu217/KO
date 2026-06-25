@@ -7,6 +7,8 @@ using UnityEngine.InputSystem;
 // - oneTimeChest가 true면 1회 오픈 후 비활성화
 public class TreasureChest : MonoBehaviour
 {
+    public static int LastInteractFrame { get; private set; } = -1;
+
     [Header("상호작용")]
     [Tooltip("플레이어가 상자와 상호작용할 수 있는 반경")]
     [SerializeField] private float interactRange = 2f;
@@ -94,6 +96,8 @@ public class TreasureChest : MonoBehaviour
     // 보상 아이템을 롤한 뒤 ChestRewardUI를 열어 선택 대기 상태로 전환
     private void Interact()
     {
+        LastInteractFrame = Time.frameCount;
+
         if (rewardUI == null)
         {
             Debug.LogWarning($"[{name}] ChestRewardUI가 없어 보상 UI를 띄울 수 없습니다.");
