@@ -195,10 +195,14 @@ public class PlayerController : MonoBehaviour, IDamageable
     private Coroutine invincibleRoutine;
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
 
-    [Header("Meditating")]
-    public float meditatingDuration = 5f;
+    [Header("명상")]
+    [Tooltip("명상 최대 지속 시간")]
+    public float meditatingDuration = 4f;
+    [Tooltip("명상 쿨타임")]
+    public float meditatingCooldown = 10f;
     private bool isMeditating;
     private Coroutine meditatingRoutine;
+    private float nextMeditatingTime;
 
     // -------------------- 범위 시각화 --------------------
     [Header("범위 시각화")]
@@ -666,6 +670,9 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isKeyboardControlPaused || isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
+        if (Time.time < nextMeditatingTime)
+            return;
+
         if (meditatingRoutine != null)
             StopCoroutine(meditatingRoutine);
 
@@ -716,6 +723,8 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (playerStatus != null)
             playerStatus.isMeditating = false;
+
+        nextMeditatingTime = Time.time + meditatingCooldown;
 
         if (meditatingRoutine != null)
         {
@@ -951,6 +960,8 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (isDashing) return;
         if (applyIFrame && isDamageInvincible) return;
+        if (isMeditating)
+            StopMeditating();
 
         float defenseRate = GameManager.Instance.playerDefense / (GameManager.Instance.playerDefense + 100f);
         float finalDamage = Mathf.Max(damage * 0.2f, damage * (1f - defenseRate));

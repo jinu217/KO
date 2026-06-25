@@ -27,23 +27,23 @@ public class PlayerStatus : MonoBehaviour
     [Tooltip("최대 SP")]
     public float maxSp = 100f;
     [Tooltip("대쉬 필요 SP")]
-    public int dashCost = 15;
+    public int dashCost = 12;
     [Tooltip("C 구간 :: 대쉬 필요 SP")]
-    public int feverDashCost = 10;
+    public int feverDashCost = 8;
 
     [Header("SP Recovery")]
     [Tooltip("SP 자연 회복량")]
-    public float spRecoverySpeed = 1.25f;
+    public float spRecoverySpeed = 1.5f;
     [Tooltip("C 구간 :: SP 자연 회복량 추가 배율")]
-    public float feverSpRecoveryMultiplier = 1.5f;
+    public float feverSpRecoveryMultiplier = 1.75f;
     [Tooltip("명상 SP 자연 회복량 추가 배율")]
-    public float meditationSpRecoveryMultiplier = 1.25f;
+    public float meditationSpRecoveryMultiplier = 2.25f;
     [Tooltip("일반 몬스터 1마리 적중 시 회복 SP")]
-    public float attackSpGainSingle = 1f;
+    public float attackSpGainSingle = 1.25f;
     [Tooltip("일반 몬스터 2마리 이상 적중 시 회복 SP")]
-    public float attackSpGainMultiple = 2f;
+    public float attackSpGainMultiple = 1.5f;
     [Tooltip("MidBoss 또는 MainBoss 몬스터 적중 시 회복 SP")]
-    public float attackSpGainBoss = 2.5f;
+    public float attackSpGainBoss = 2f;
 
     [Header("BPM")]
     [Tooltip("BPM")]
@@ -51,23 +51,23 @@ public class PlayerStatus : MonoBehaviour
 
     [Header("BPM Gain")]
     [Tooltip("공격 1회 사용 시 증가하는 BPM")]
-    public float attackBpmGain = 6f;
+    public float attackBpmGain = 8f;
     [Tooltip("대시 1회 사용 시 증가하는 BPM")]
-    public float dashBpmGain = 10f;
+    public float dashBpmGain = 12f;
     [Tooltip("C 구간 :: 공격/대시 BPM 증가량 추가 배율")]
     public float feverBpmGainMultiplier = 1.25f;
 
     [Header("BPM Decay")]
     [Tooltip("BPM 자연 감소량")]
-    public float bpmDecreaseSpeed = 2f;
+    public float bpmDecreaseSpeed = 2.25f;
     [Tooltip("C 구간 :: BPM 자연 감소량 추가 배율")]
-    public float feverBpmDecayMultiplier = 1.1f;
+    public float feverBpmDecayMultiplier = 1.15f;
 
     [Header("Meditation")]
     [Tooltip("현재 명상 중 여부")]
     public bool isMeditating = false;
     [Tooltip("명상 중 추가 BPM 감소량")]
-    public float meditateDecreaseSpeed = 5f;
+    public float meditateDecreaseSpeed = 3f;
 
     [Header("BPM Lock Potion")]
     [Tooltip("true이면 BPM을 lockedBpm 값으로 고정")]
@@ -79,15 +79,15 @@ public class PlayerStatus : MonoBehaviour
 
     [Header("BPM Rank Buffs")]
     [Tooltip("B/C 구간 :: 공격력 추가 배율")]
-    public float tensionAttackDamageMultiplier = 1.1f;
+    public float tensionAttackDamageMultiplier = 1.15f;
     [Tooltip("B/C 구간 :: 대시 속도 추가 배율")]
-    public float tensionDashSpeedMultiplier = 1.1f;
+    public float tensionDashSpeedMultiplier = 1.15f;
     [Tooltip("B/C 구간 :: 대시 거리 추가 배율")]
-    public float tensionDashDistanceMultiplier = 1.1f;
+    public float tensionDashDistanceMultiplier = 1.15f;
     [Tooltip("C 구간 :: 공격속도 추가 배율")]
-    public float feverAttackSpeedMultiplier = 1.1f;
+    public float feverAttackSpeedMultiplier = 1.15f;
     [Tooltip("C 구간 :: 이동속도 추가 배율")]
-    public float feverMoveSpeedMultiplier = 1.1f;
+    public float feverMoveSpeedMultiplier = 1.15f;
 
     [Header("Exhaustion")]
     [Tooltip("탈진 :: 행동 불능 시간")]

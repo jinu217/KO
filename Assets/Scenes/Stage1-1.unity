@@ -2176,30 +2176,30 @@ MonoBehaviour:
   maxHp: 100
   currentSp: 100
   maxSp: 100
-  dashCost: 20
-  feverDashCost: 10
-  spRecoverySpeed: 1
-  feverSpRecoveryMultiplier: 1.5
-  meditationSpRecoveryMultiplier: 1.25
-  attackSpGainSingle: 1
-  attackSpGainMultiple: 2
-  attackSpGainBoss: 2.5
+  dashCost: 12
+  feverDashCost: 8
+  spRecoverySpeed: 1.5
+  feverSpRecoveryMultiplier: 1.75
+  meditationSpRecoveryMultiplier: 2.25
+  attackSpGainSingle: 1.25
+  attackSpGainMultiple: 1.5
+  attackSpGainBoss: 2
   currentBpm: 91
   attackBpmGain: 8
   dashBpmGain: 12
   feverBpmGainMultiplier: 1.25
-  bpmDecreaseSpeed: 2
-  feverBpmDecayMultiplier: 1.1
+  bpmDecreaseSpeed: 2.25
+  feverBpmDecayMultiplier: 1.15
   isMeditating: 0
-  meditateDecreaseSpeed: 15
+  meditateDecreaseSpeed: 3
   bpmLocked: 0
   bpmLockTimer: 0
   lockedBpm: 91
-  tensionAttackDamageMultiplier: 1.1
-  tensionDashSpeedMultiplier: 1.1
-  tensionDashDistanceMultiplier: 1.1
-  feverAttackSpeedMultiplier: 1.1
-  feverMoveSpeedMultiplier: 1.1
+  tensionAttackDamageMultiplier: 1.15
+  tensionDashSpeedMultiplier: 1.15
+  tensionDashDistanceMultiplier: 1.15
+  feverAttackSpeedMultiplier: 1.15
+  feverMoveSpeedMultiplier: 1.15
   exhaustedFullStopDuration: 2
   exhaustedImpairDuration: 4
   exhaustedResetDelay: 5
@@ -2322,7 +2322,8 @@ MonoBehaviour:
   hitStopDuration: 0.03
   hitStopTimeScale: 0.05
   damageInvincibleTime: 0.1
-  meditatingDuration: 5
+  meditatingDuration: 4
+  meditatingCooldown: 10
   showWeaponAttackGizmo: 1
   showEmpoweredImpactGizmo: 1
   showGroundCheckGizmo: 1
