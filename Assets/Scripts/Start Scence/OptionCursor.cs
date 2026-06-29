@@ -12,7 +12,7 @@ public class OptionCursor : MonoBehaviour
     public Slider volumeSlider;
     public TMP_Dropdown resolutionDropdown;
     public OptionManager optionManager;
-    public MenuCursor menuCursor;
+    public TitleMenuController TitleMenuController;
     public GameObject optionPanel;
 
     private int index = 0;
@@ -70,7 +70,7 @@ public class OptionCursor : MonoBehaviour
         // ESC 뒤로가기
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            menuCursor.CloseOption();
+            TitleMenuController.CloseOption();
         }
     }
 
@@ -141,8 +141,8 @@ public class OptionCursor : MonoBehaviour
                 if (optionPanel != null)
                     optionPanel.SetActive(false);
 
-                if (menuCursor != null)
-                    menuCursor.CloseOption();
+                if (TitleMenuController != null)
+                    TitleMenuController.CloseOption();
 
                 break;
         }
