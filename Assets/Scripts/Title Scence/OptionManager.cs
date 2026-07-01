@@ -35,6 +35,7 @@ public class OptionManager : MonoBehaviour
     // 🔊 볼륨 설정
     public void SetVolume(float volume)
     {
+        volume = Mathf.Clamp(volume, 0.0001f, 1f);
         audioMixer.SetFloat("MasterVolume", Mathf.Log10(volume) * 20);
         PlayerPrefs.SetFloat("Volume", volume);
     }
