@@ -9,10 +9,11 @@ using UnityEngine.UI;
 // - 옵션 메뉴, 로드 메뉴 열기/닫기
 // - 저장 슬롯 표시 및 게임 로드
 
-/// [조작키]
-/// ↑ / ↓      : 메뉴 / 슬롯 이동
-/// Enter / Z  : 선택
-/// Esc / X    : 뒤로가기 (로드, 옵션)
+// [조작키]
+// ↑ / ↓      : 메뉴
+// Enter / Z  : 선택
+// Esc / X    : 뒤로가기 (로드, 옵션)
+// ← / →      : 슬롯 이동
 
 public class TitleMenuController : MonoBehaviour
 {
@@ -130,8 +131,12 @@ public class TitleMenuController : MonoBehaviour
                 break;
 
             case 3:     // EXIT
-                Application.Quit();
-                break;
+                #if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+                #else
+                    Application.Quit();
+                #endif
+                    break;
         }
 
         isSelecting = false;
@@ -183,7 +188,7 @@ public class TitleMenuController : MonoBehaviour
     void HandleLoadInput()
     {
         // 로드 메뉴 입력 처리
-        if (Input.GetKeyDown(KeyCode.UpArrow))
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
             index--;
 
@@ -193,7 +198,7 @@ public class TitleMenuController : MonoBehaviour
             UpdateLoadSelection();
         }
 
-        if (Input.GetKeyDown(KeyCode.DownArrow))
+        if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             index++;
 
@@ -274,14 +279,12 @@ public class TitleMenuController : MonoBehaviour
     void LoadGame(int slot)
     {
         // 저장 데이터 불러오기
-        int level = PlayerPrefs.GetInt($"SaveSlot{slot}_Level", 1);
         float hp = PlayerPrefs.GetFloat($"SaveSlot{slot}_HP", 100f);
 
         float x = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosX", 0);
         float y = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosY", 0);
         float z = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosZ", 0);
 
-        GameData.Instance.level = level;
         GameData.Instance.hp = hp;
         GameData.Instance.spawnPosition = new Vector3(x, y, z);
 
