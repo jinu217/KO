@@ -27,7 +27,7 @@ public class TitleMenuController : MonoBehaviour
 
     public FadeManager fadeManager;
     public GameObject mainMenu;
-    public GameObject optionPanel;
+    public GameObject settingPanel;
     public GameObject loadPanel;
 
     public OptionController optionController;
@@ -41,7 +41,7 @@ public class TitleMenuController : MonoBehaviour
     //============== 초기화 ==================
     IEnumerator Start()
     {
-        optionPanel.SetActive(false);
+        settingPanel.SetActive(false);
         loadPanel.SetActive(false);
         mainMenu.SetActive(true);
 
@@ -162,14 +162,14 @@ public class TitleMenuController : MonoBehaviour
                     $"PLAY TIME\n{hour:00}:{minute:00}:{second:00}";
 
                 // 저장 데이터 있음
-                slotOutlines[i].effectColor = Color.yellow;
+                slotOutlines[i].effectColor = Color.blue;
             }
             else
             {
                 loadSlots[i].text = "EMPTY";
 
                 // 저장 데이터 없음
-                slotOutlines[i].effectColor = Color.gray;
+                slotOutlines[i].effectColor = Color.yellow;
             }
         }
     }
@@ -254,7 +254,7 @@ public class TitleMenuController : MonoBehaviour
         isOptionOpen = true;
 
         mainMenu.SetActive(false);
-        optionPanel.SetActive(true);
+        settingPanel.SetActive(true);
 
         if (optionController != null)
             optionController.ResetSelection();
@@ -266,7 +266,7 @@ public class TitleMenuController : MonoBehaviour
     {
         isOptionOpen = false;
 
-        optionPanel.SetActive(false);
+        settingPanel.SetActive(false);
         mainMenu.SetActive(true);
 
         index = 0;
