@@ -515,6 +515,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDash()) return;
         if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
         if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
@@ -591,6 +592,8 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         }
 
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanAttack()) return;
+
         float attackSpeedMultiplier = playerStatus != null ? playerStatus.AttackSpeedMultiplier : 1f;
         float effectiveAttackSpeed = GameManager.Instance.playerAttackSpeed * attackSpeedMultiplier;
         if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed)) return;
@@ -605,6 +608,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanOpenInventory()) return;
         if (!context.started || ChestRewardPanel.IsAnyOpen) return;
 
         if (inventoryUI == null)
@@ -624,6 +628,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanUseExtraAction()) return;
         if (!context.started)
             return;
 
@@ -640,6 +645,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanUseExtraAction()) return;
         if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
@@ -651,6 +657,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanUseExtraAction()) return;
         if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
@@ -660,6 +667,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     public void OnMeditating(InputAction.CallbackContext context)
     {
         if (!context.started) return;
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanUseExtraAction()) return;
 
         if (isMeditating)
         {
@@ -792,6 +800,17 @@ public class PlayerController : MonoBehaviour, IDamageable
         foreach (var hit in hits)
         {
             if (hit == null) continue;
+            TutorialTrainingDummy tutorialDummy = FindTutorialDummy(hit);
+            if (tutorialDummy != null)
+            {
+                if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDamageTarget(tutorialDummy)) continue;
+                int tutorialDummyId = tutorialDummy.GetInstanceID();
+                if (!damagedIds.Add(tutorialDummyId)) continue;
+                tutorialDummy.NotifyDamagedByAttack();
+                damagedMonsterCount++;
+                continue;
+            }
+
             IDamageable target = hit.GetComponentInParent<IDamageable>();
             if (target == null) continue;
             MonoBehaviour targetBehaviour = target as MonoBehaviour;
@@ -966,7 +985,9 @@ public class PlayerController : MonoBehaviour, IDamageable
         float defenseRate = GameManager.Instance.playerDefense / (GameManager.Instance.playerDefense + 100f);
         float finalDamage = Mathf.Max(damage * 0.2f, damage * (1f - defenseRate));
 
-        playerStatus.TakeDamage(finalDamage, enemyPos);
+        bool suppressHpDamage = TutorialManager.Instance != null && TutorialManager.Instance.ShouldSuppressPlayerHpDamage();
+        if (!suppressHpDamage)
+            playerStatus.TakeDamage(finalDamage, enemyPos);
         Debug.Log(gameObject.name + " 피격! 원래 데미지: " + damage + " -> 최종 데미지: " + finalDamage + " | 남은 HP: " + playerStatus.currentHp);
 
         if (applyKnockback)
@@ -1233,6 +1254,12 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (downPressedThisFrame)
         {
+            if (TutorialManager.Instance != null && !TutorialManager.Instance.CanUseEmpoweredDownJump())
+            {
+                wasDownInputHeld = isDownHeld;
+                return;
+            }
+
             isEmpoweredDownJump = true;
             empowerWindowActive = false;
 
@@ -1274,9 +1301,36 @@ public class PlayerController : MonoBehaviour, IDamageable
         HashSet<int> damagedRootIds = new HashSet<int>();
         int damagedCount = 0;
 
+        Collider2D[] tutorialHits = Physics2D.OverlapBoxAll(center, empoweredDownJumpImpactSize, 0f, ~0);
+        foreach (var tutorialHit in tutorialHits)
+        {
+            if (tutorialHit == null) continue;
+
+            TutorialTrainingDummy tutorialDummy = FindTutorialDummy(tutorialHit);
+            if (tutorialDummy == null) continue;
+            if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDamageTarget(tutorialDummy)) continue;
+
+            int tutorialDummyId = tutorialDummy.GetInstanceID();
+            if (!damagedRootIds.Add(tutorialDummyId)) continue;
+
+            tutorialDummy.NotifyDamagedByEmpoweredDownJump();
+            damagedCount++;
+
+            if (debugEmpoweredDownJump)
+                Debug.Log($"[DownJump] Destroy tutorial dummy {tutorialDummy.name}");
+        }
+
         foreach (var hit in hits)
         {
             if (hit == null) continue;
+
+            TutorialTrainingDummy dummy = FindTutorialDummy(hit);
+
+            if (dummy != null)
+            {
+                continue;
+            }
+
             IDamageable target = hit.GetComponentInParent<IDamageable>();
             if (target == null) continue;
             int rootId = (target as UnityEngine.Object)?.GetInstanceID() ?? 0;
@@ -1292,6 +1346,45 @@ public class PlayerController : MonoBehaviour, IDamageable
     }
 
     // 이동 지연 적용(중복 시 더 긴 시간 유지)
+    private int DestroyTutorialDummiesInEmpoweredDownJumpRange(HashSet<int> damagedIds = null)
+    {
+        damagedIds ??= new HashSet<int>();
+
+        Vector2 center = (Vector2)transform.position + empoweredDownJumpImpactOffset;
+        Collider2D[] tutorialHits = Physics2D.OverlapBoxAll(center, empoweredDownJumpImpactSize, 0f, ~0);
+        int destroyedCount = 0;
+
+        foreach (var tutorialHit in tutorialHits)
+        {
+            if (tutorialHit == null) continue;
+
+            TutorialTrainingDummy tutorialDummy = FindTutorialDummy(tutorialHit);
+            if (tutorialDummy == null) continue;
+            if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDamageTarget(tutorialDummy)) continue;
+
+            int tutorialDummyId = tutorialDummy.GetInstanceID();
+            if (damagedIds != null && !damagedIds.Add(tutorialDummyId)) continue;
+
+            tutorialDummy.NotifyDamagedByEmpoweredDownJump();
+            destroyedCount++;
+
+            if (debugEmpoweredDownJump)
+                Debug.Log($"[DownJump] Destroy tutorial dummy {tutorialDummy.name}");
+        }
+
+        return destroyedCount;
+    }
+
+    private TutorialTrainingDummy FindTutorialDummy(Collider2D hit)
+    {
+        if (hit == null) return null;
+
+        TutorialTrainingDummy dummy = hit.GetComponentInParent<TutorialTrainingDummy>();
+        if (dummy != null) return dummy;
+
+        return hit.GetComponentInChildren<TutorialTrainingDummy>(true);
+    }
+
     private void ApplyMoveDelay(float delay)
     {
         float targetEnd = Time.time + Mathf.Max(0f, delay);

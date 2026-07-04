@@ -97,6 +97,7 @@ public class TreasureChest : MonoBehaviour
     private void Interact()
     {
         LastInteractFrame = Time.frameCount;
+        TutorialManager.Instance?.NotifyChestInteracted();
 
         if (rewardUI == null)
         {

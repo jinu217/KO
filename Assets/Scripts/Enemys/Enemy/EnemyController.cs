@@ -996,6 +996,10 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // applyKnockback: 넉백 적용 여부 / applyIFrame: 적에게는 미적용(무적 없음)
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = true, bool applyIFrame = false)
     {
+        TutorialTrainingDummy tutorialDummy = GetComponent<TutorialTrainingDummy>();
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDamageTarget(tutorialDummy))
+            return;
+
         currentHp -= damage;
         hitFlash?.Play();
 
@@ -1059,7 +1063,11 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         pendingWallImpactDamage = data != null ? data.wallBonusDamage : 0f;
         pendingWallStunDuration = data != null ? data.wallStunDuration : 0f;
 
-        if (currentHp <= 0) gameObject.SetActive(false);
+        if (currentHp <= 0)
+        {
+            tutorialDummy?.NotifyDefeated();
+            gameObject.SetActive(false);
+        }
     }
 
     // 넉백 방향에 낭떠러지가 있는지 확인 (groundCheck를 해당 방향으로 임시 이동해 검사)

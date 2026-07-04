@@ -60,7 +60,8 @@ public class TrapDamageTrigger : MonoBehaviour
     {
         while (playerInside)
         {
-            cachedPlayer?.TakeDamage(damage, transform.position, false, false);
+            bool tutorialKnockback = TutorialManager.Instance != null && TutorialManager.Instance.IsActive;
+            cachedPlayer?.TakeDamage(damage, transform.position, tutorialKnockback, false);
 
             yield return new WaitForSeconds(tickInterval);
         }

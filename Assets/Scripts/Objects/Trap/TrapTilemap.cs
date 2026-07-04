@@ -26,7 +26,8 @@ public class TrapTilemap : MonoBehaviour
         if (Time.time < lastDamageTime + tickInterval)
             return;
 
-        player?.TakeDamage(damage, transform.position, false, false);
+        bool tutorialKnockback = TutorialManager.Instance != null && TutorialManager.Instance.IsActive;
+        player?.TakeDamage(damage, transform.position, tutorialKnockback, false);
         lastDamageTime = Time.time;
     }
 
@@ -40,7 +41,8 @@ public class TrapTilemap : MonoBehaviour
 
         if (player != null)
         {
-            player?.TakeDamage(damage, transform.position, false, false);
+            bool tutorialKnockback = TutorialManager.Instance != null && TutorialManager.Instance.IsActive;
+            player?.TakeDamage(damage, transform.position, tutorialKnockback, false);
             lastDamageTime = Time.time;
         }
     }

@@ -38,7 +38,8 @@ public class TrapPrefab : MonoBehaviour
         IDamageable target = hit.GetComponentInParent<IDamageable>();
         if (target == null) return;
 
-        target.TakeDamage(damage, (Vector2)transform.position, false, false);
+        bool tutorialKnockback = TutorialManager.Instance != null && TutorialManager.Instance.IsActive;
+        target.TakeDamage(damage, (Vector2)transform.position, tutorialKnockback, false);
         lastDamageTime = Time.time;
     }
 
