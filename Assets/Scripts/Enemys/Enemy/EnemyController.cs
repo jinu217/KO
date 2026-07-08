@@ -997,6 +997,9 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = true, bool applyIFrame = false)
     {
         currentHp -= damage;
+        // 데미지 텍스트 생성
+        DamageTextManager.Instance?.ShowDamage(Mathf.RoundToInt(damage),transform.position + Vector3.up * 1.5f);
+        
         hitFlash?.Play();
 
         forcedAggroTimer = 2f;
