@@ -4,23 +4,23 @@ using System.IO;
 
 public class Daughter_SkipGenerator
 {
-    const string SAVE_PATH = "Assets/Animations/Daughter";
-    const string CLIP_NAME = "Daughter_Skip";
-    const float FRAME_RATE = 12f;
-    const int TOTAL_FRAMES = 12; // 1초 사이클
-    const float DURATION = TOTAL_FRAMES / FRAME_RATE;
+    const string SAVE_PATH    = "Assets/Animations/Daughter";
+    const string CLIP_NAME    = "Daughter_Skip";
+    const float  FRAME_RATE   = 12f;
+    const int    TOTAL_FRAMES = 12; // 1초 사이클
+    const float  DURATION     = TOTAL_FRAMES / FRAME_RATE;
 
-    const string BODY = "Body";
-    const string HEAD = "Body/Head";
-    const string HEAD_B = "Body/Head/Head_B";
+    const string BODY       = "Body";
+    const string HEAD       = "Body/Head";
+    const string HEAD_B     = "Body/Head/Head_B";
     const string SHOULDER_F = "Body/ShoulderJoint_F";
-    const string ARM_F = "Body/ShoulderJoint_F/Shoulder_F/ArmJoint_F";
+    const string ARM_F      = "Body/ShoulderJoint_F/Shoulder_F/ArmJoint_F";
     const string SHOULDER_B = "Body/ShoulderJoint_B";
-    const string ARM_B = "Body/ShoulderJoint_B/Shoulder_B/ArmJoint_B";
-    const string LEG_F = "Body/LegJoint_F";
-    const string FOOT_F = "Body/LegJoint_F/Foot_F";
-    const string LEG_B = "Body/LegJoint_B";
-    const string FOOT_B = "Body/LegJoint_B/Foot_B";
+    const string ARM_B      = "Body/ShoulderJoint_B/Shoulder_B/ArmJoint_B";
+    const string LEG_F      = "Body/LegJoint_F";
+    const string FOOT_F     = "Body/LegJoint_F/Foot_F";
+    const string LEG_B      = "Body/LegJoint_B";
+    const string FOOT_B     = "Body/LegJoint_B/Foot_B";
 
     // ================================================================
     // REST POSE
@@ -148,7 +148,7 @@ public class Daughter_SkipGenerator
             AnimationCurve c = new AnimationCurve(keys);
             for (int i = 0; i < c.keys.Length; i++)
             {
-                AnimationUtility.SetKeyLeftTangentMode(c, i, AnimationUtility.TangentMode.Auto);
+                AnimationUtility.SetKeyLeftTangentMode(c,  i, AnimationUtility.TangentMode.Auto);
                 AnimationUtility.SetKeyRightTangentMode(c, i, AnimationUtility.TangentMode.Auto);
             }
             clip.SetCurve(path, typeof(Transform), prop, c);
@@ -159,36 +159,36 @@ public class Daughter_SkipGenerator
                 AnimationCurve.Linear(0f, val, DURATION, val));
 
         // Body
-        L(BODY, "localPosition.x", 0f);
-        C(BODY, "localPosition.y", BODY_Y, 0f);
-        L(BODY, "localPosition.z", 0f);
+        L(BODY, "localPosition.x",    0f);
+        C(BODY, "localPosition.y",    BODY_Y,   0f);
+        L(BODY, "localPosition.z",    0f);
         C(BODY, "localEulerAngles.z", BODY_ROT, 0f);
 
         // Head
-        L(HEAD, "localPosition.x", -0.04f);
-        L(HEAD, "localPosition.y", 0.46f);
-        L(HEAD, "localPosition.z", 0f);
+        L(HEAD, "localPosition.x",   -0.04f);
+        L(HEAD, "localPosition.y",    0.46f);
+        L(HEAD, "localPosition.z",    0f);
         C(HEAD, "localEulerAngles.z", HEAD_ROT, 0f);
 
         // Head_B
-        L(HEAD_B, "localPosition.x", -0.085f);
-        C(HEAD_B, "localPosition.y", HEAD_B_Y, 0.17f);
-        L(HEAD_B, "localPosition.z", 0f);
+        L(HEAD_B, "localPosition.x",   -0.085f);
+        C(HEAD_B, "localPosition.y",    HEAD_B_Y,   0.17f);
+        L(HEAD_B, "localPosition.z",    0f);
         C(HEAD_B, "localEulerAngles.z", HEAD_B_ROT, 0f);
 
         // ShoulderJoint_F
-        L(SHOULDER_F, "localPosition.x", -0.29f);
-        C(SHOULDER_F, "localPosition.y", SF_Y, 0.353f);
-        L(SHOULDER_F, "localPosition.z", 0f);
+        L(SHOULDER_F, "localPosition.x",   -0.30f);
+        C(SHOULDER_F, "localPosition.y",    SF_Y,   0.32f);
+        L(SHOULDER_F, "localPosition.z",   0f);
         C(SHOULDER_F, "localEulerAngles.z", SF_ROT, 0f);
-        C(ARM_F, "localEulerAngles.z", AF_ROT, 0f);
+        C(ARM_F,      "localEulerAngles.z", AF_ROT, 0f);
 
         // ShoulderJoint_B
-        L(SHOULDER_B, "localPosition.x", 0.08f);
-        C(SHOULDER_B, "localPosition.y", SB_Y, 0.353f);
-        L(SHOULDER_B, "localPosition.z", 0f);
+        L(SHOULDER_B, "localPosition.x",   0.08f);
+        C(SHOULDER_B, "localPosition.y",    SB_Y,   0.32f);
+        L(SHOULDER_B, "localPosition.z",   0f);
         C(SHOULDER_B, "localEulerAngles.z", SB_ROT, 0f);
-        C(ARM_B, "localEulerAngles.z", AB_ROT, 0f);
+        C(ARM_B,      "localEulerAngles.z", AB_ROT, 0f);
 
         // Legs: Body Y 보정 합산
         float[] lfYFinal = new float[TOTAL_FRAMES];
@@ -199,17 +199,17 @@ public class Daughter_SkipGenerator
             lbYFinal[i] = LB_Y[i] + LEG_Y_COMP[i];
         }
 
-        C(LEG_F, "localPosition.x", LF_X, -0.26f);
-        C(LEG_F, "localPosition.y", lfYFinal, -0.58f);
-        L(LEG_F, "localPosition.z", 0f);
-        C(LEG_F, "localEulerAngles.z", LF_ROT, 0f);
-        C(FOOT_F, "localEulerAngles.z", FF_ROT, 0f);
+        C(LEG_F, "localPosition.x",    LF_X,     -0.26f);
+        C(LEG_F, "localPosition.y",    lfYFinal,  -0.58f);
+        L(LEG_F, "localPosition.z",    0f);
+        C(LEG_F, "localEulerAngles.z", LF_ROT,    0f);
+        C(FOOT_F,"localEulerAngles.z", FF_ROT,    0f);
 
-        C(LEG_B, "localPosition.x", LB_X, 0.05f);
-        C(LEG_B, "localPosition.y", lbYFinal, -0.58f);
-        L(LEG_B, "localPosition.z", 0f);
-        C(LEG_B, "localEulerAngles.z", LB_ROT, 0f);
-        C(FOOT_B, "localEulerAngles.z", FB_ROT, 0f);
+        C(LEG_B, "localPosition.x",    LB_X,      0.05f);
+        C(LEG_B, "localPosition.y",    lbYFinal,  -0.58f);
+        L(LEG_B, "localPosition.z",    0f);
+        C(LEG_B, "localEulerAngles.z", LB_ROT,    0f);
+        C(FOOT_B,"localEulerAngles.z", FB_ROT,    0f);
 
         string assetPath = $"{SAVE_PATH}/{CLIP_NAME}.anim";
         AnimationClip existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);

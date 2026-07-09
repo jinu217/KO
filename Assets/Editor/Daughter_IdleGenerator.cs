@@ -149,15 +149,15 @@ public class Daughter_IdleGenerator
         C(HEAD_B, "localEulerAngles.z", HEAD_B_ROT, 0f);
 
         // ShoulderJoint_F
-        L(SHOULDER_F, "localPosition.x",   -0.29f);
-        C(SHOULDER_F, "localPosition.y",    SF_Y,   0.353f);
+        L(SHOULDER_F, "localPosition.x",   -0.30f);
+        C(SHOULDER_F, "localPosition.y",    SF_Y,   0.32f);
         L(SHOULDER_F, "localPosition.z",   0f);
         C(SHOULDER_F, "localEulerAngles.z", SF_ROT, 0f);
         C(ARM_F,      "localEulerAngles.z", AF_ROT, 0f);
 
         // ShoulderJoint_B
         L(SHOULDER_B, "localPosition.x",   0.08f);
-        C(SHOULDER_B, "localPosition.y",    SB_Y,   0.353f);
+        C(SHOULDER_B, "localPosition.y",    SB_Y,   0.32f);
         L(SHOULDER_B, "localPosition.z",   0f);
         C(SHOULDER_B, "localEulerAngles.z", SB_ROT, 0f);
         C(ARM_B,      "localEulerAngles.z", AB_ROT, 0f);
