@@ -25,10 +25,14 @@ public class TitleMenuController : MonoBehaviour
 
     public Outline[] slotOutlines;
 
+    [Header("Panels")]
     public FadeManager fadeManager;
     public GameObject mainMenu;
     public GameObject settingPanel;
     public GameObject loadPanel;
+
+    [Header("Title")]
+    public GameObject Titletext;
 
     public OptionController optionController;
 
@@ -145,7 +149,7 @@ public class TitleMenuController : MonoBehaviour
     //============== 로드 메뉴 ==================
     void UpdateLoadSlots()
     {
-        // 저장 슬롯 정보 표시
+        // 로드창 표시
         for (int i = 0; i < loadSlots.Length; i++)
         {
             int slot = i + 1;
@@ -178,7 +182,10 @@ public class TitleMenuController : MonoBehaviour
     {
         isLoadOpen = true;
 
+        // 다른 패널 숨기기 (투구, 타이틀제목)
         mainMenu.SetActive(false);
+        Titletext.SetActive(false);
+        
         loadPanel.SetActive(true);
 
         index = 0;
@@ -242,6 +249,9 @@ public class TitleMenuController : MonoBehaviour
         isLoadOpen = false;
 
         loadPanel.SetActive(false);
+        
+        // 숨긴 패널 표시 (투구, 타이틀제목)
+        Titletext.SetActive(true);
         mainMenu.SetActive(true);
 
         index = 0;
