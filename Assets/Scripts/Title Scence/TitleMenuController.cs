@@ -20,10 +20,12 @@ public class TitleMenuController : MonoBehaviour
     [Header("Main Menu Choice")]
     public GameObject[] menuChoices;     // Start, Load, Setting, Exit의 선택 이미지
 
-    [Header("Load Menu")]
-    public TMP_Text[] loadSlots;         // 로드 슬롯 텍스트
+    [Header("Load Slot Text")]
+    public TMP_Text[] playTimeTexts;
+    public TMP_Text[] deathTexts;
 
-    public Outline[] slotOutlines;
+    [Header("Save Slot UI")]
+    public SaveSlotUI[] saveSlotUI;
 
     [Header("Panels")]
     public FadeManager fadeManager;
@@ -34,7 +36,7 @@ public class TitleMenuController : MonoBehaviour
     [Header("Title")]
     public GameObject Titletext;
 
-    public OptionController optionController;
+    public SettingController optionController;
 
     private int index = 0;
 
@@ -149,32 +151,35 @@ public class TitleMenuController : MonoBehaviour
     //============== 로드 메뉴 ==================
     void UpdateLoadSlots()
     {
-        // 로드창 표시
-        for (int i = 0; i < loadSlots.Length; i++)
+        for (int i = 0; i < playTimeTexts.Length; i++)
         {
             int slot = i + 1;
 
             if (PlayerPrefs.HasKey($"SaveSlot{slot}_PlayTime"))
             {
                 float playTime = PlayerPrefs.GetFloat($"SaveSlot{slot}_PlayTime");
+                int deaths = PlayerPrefs.GetInt($"SaveSlot{slot}_Deaths", 0);
 
                 int hour = (int)(playTime / 3600);
                 int minute = (int)((playTime % 3600) / 60);
                 int second = (int)(playTime % 60);
 
-                loadSlots[i].text =
-                    $"PLAY TIME\n{hour:00}:{minute:00}:{second:00}";
-
-                // 저장 데이터 있음
-                slotOutlines[i].effectColor = Color.blue;
+                playTimeTexts[i].text = $"PLAY TIME\n{hour:00}:{minute:00}:{second:00}";
+                deathTexts[i].text = $"DEATHS\n{deaths}";
             }
             else
             {
-                loadSlots[i].text = "EMPTY";
-
-                // 저장 데이터 없음
-                slotOutlines[i].effectColor = Color.yellow;
+                playTimeTexts[i].text = "";
+                deathTexts[i].text = "EMPTY";
             }
+        }
+    }
+
+    void UpdateLoadSelection()
+    {
+        for (int i = 0; i < saveSlotUI.Length; i++)
+        {
+            saveSlotUI[i].SetSelected(i == index);
         }
     }
 
@@ -200,7 +205,7 @@ public class TitleMenuController : MonoBehaviour
             index--;
 
             if (index < 0)
-                index = loadSlots.Length - 1;
+                index = deathTexts.Length - 1;
 
             UpdateLoadSelection();
         }
@@ -209,7 +214,7 @@ public class TitleMenuController : MonoBehaviour
         {
             index++;
 
-            if (index >= loadSlots.Length)
+            if (index >= deathTexts.Length)
                 index = 0;
 
             UpdateLoadSelection();
@@ -226,24 +231,6 @@ public class TitleMenuController : MonoBehaviour
         }
     }
 
-    void UpdateLoadSelection()
-    {
-        // 선택된 슬롯 강조
-        for (int i = 0; i < loadSlots.Length; i++)
-        {
-            bool selected = (i == index);
-
-            if (selected)
-            {
-                slotOutlines[i].effectDistance = new Vector2(4, -4);
-            }
-            else
-            {
-                slotOutlines[i].effectDistance = new Vector2(2, -2);
-            }
-        }
-    }
-
     void CloseLoadMenu()
     {
         isLoadOpen = false;
@@ -255,6 +242,7 @@ public class TitleMenuController : MonoBehaviour
         mainMenu.SetActive(true);
 
         index = 0;
+        UpdateLoadSelection();
         UpdateSelection();
     }
 

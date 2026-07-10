@@ -9,7 +9,7 @@ using UnityEngine.UI;
 // - SettingManager와 연결하여 값 변경 요청
 // =====================================================
 
-public class OptionController : MonoBehaviour
+public class SettingController : MonoBehaviour
 {
     //====================================================
     // UI REFERENCES
@@ -245,30 +245,6 @@ public class OptionController : MonoBehaviour
 
     void UpdateSelection()
     {
-        // 카테고리 하이라이트
-        for (int i = 0; i < categoryTexts.Length; i++)
-        {
-            bool selected = (currentState == MenuState.Category) && i == categoryIndex;
-            SetHighlight(categoryTexts[i], selected);
-        }
-
-        // 현재 패널의 컨텐츠 하이라이트
-        TMP_Text[] activeTexts = categoryIndex switch
-        {
-            0 => audioTexts,
-            1 => displayTexts,
-            _ => null
-        };
-
-        if (activeTexts != null)
-        {
-            for (int i = 0; i < activeTexts.Length; i++)
-            {
-                bool selected = (currentState == MenuState.Content) && i == contentIndex;
-                SetHighlight(activeTexts[i], selected);
-            }
-        }
-
         UpdateDisplayArrows();
     }
 
@@ -306,13 +282,6 @@ public class OptionController : MonoBehaviour
             1 => displayModeDropdown.value < 2,
             _ => false
         };
-    }
-
-    void SetHighlight(TMP_Text text, bool selected)
-    {
-        if (text == null) return;
-        text.color = selected ? Color.yellow : Color.white;
-        text.outlineWidth = selected ? 0.3f : 0f;
     }
 
     int GetContentCount()
