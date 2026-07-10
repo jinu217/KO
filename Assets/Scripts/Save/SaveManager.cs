@@ -21,22 +21,28 @@ public class SaveManager : MonoBehaviour
         }
     }
 
+    //============== 저장 데이터 존재 여부 확인 ==================
+    public bool HasSave(int slot)
+    {
+        return PlayerPrefs.HasKey($"SaveSlot{slot}_PlayTime");
+    }
+
     //============== 저장 ==================
     public void Save(int slot)
     {
-        PlayerPrefs.SetFloat($"SaveSlot{slot}_PlayTime", GameData.Instance.playTime);
+        PlayerPrefs.SetFloat($"SaveSlot{slot}_PlayTime", SaveData.Instance.playTime);
 
-        PlayerPrefs.SetFloat($"SaveSlot{slot}_HP", GameData.Instance.hp);
-        PlayerPrefs.SetFloat($"SaveSlot{slot}_SP", GameData.Instance.sp);
-        PlayerPrefs.SetFloat($"SaveSlot{slot}_BPM", GameData.Instance.bpm);
+        PlayerPrefs.SetFloat($"SaveSlot{slot}_HP", SaveData.Instance.hp);
+        PlayerPrefs.SetFloat($"SaveSlot{slot}_SP", SaveData.Instance.sp);
+        PlayerPrefs.SetFloat($"SaveSlot{slot}_BPM", SaveData.Instance.bpm);
 
-        PlayerPrefs.SetString($"SaveSlot{slot}_Stage", GameData.Instance.currentStage);
+        PlayerPrefs.SetString($"SaveSlot{slot}_Stage", SaveData.Instance.currentStage);
 
-        PlayerPrefs.SetFloat($"SaveSlot{slot}_PosX", GameData.Instance.spawnPosition.x);
-        PlayerPrefs.SetFloat($"SaveSlot{slot}_PosY", GameData.Instance.spawnPosition.y);
-        PlayerPrefs.SetFloat($"SaveSlot{slot}_PosZ", GameData.Instance.spawnPosition.z);
+        PlayerPrefs.SetFloat($"SaveSlot{slot}_PosX", SaveData.Instance.spawnPosition.x);
+        PlayerPrefs.SetFloat($"SaveSlot{slot}_PosY", SaveData.Instance.spawnPosition.y);
+        PlayerPrefs.SetFloat($"SaveSlot{slot}_PosZ", SaveData.Instance.spawnPosition.z);
 
-        PlayerPrefs.SetInt($"SaveSlot{slot}_Potion", GameData.Instance.potionCount);
+        PlayerPrefs.SetInt($"SaveSlot{slot}_Potion", SaveData.Instance.potionCount);
 
         PlayerPrefs.Save();
 
@@ -46,34 +52,34 @@ public class SaveManager : MonoBehaviour
     //============== 불러오기 ==================
     public void Load(int slot)
     {
-        if (!PlayerPrefs.HasKey($"SaveSlot{slot}_PlayTime"))
+        if (!HasSave(slot))
         {
             Debug.Log("저장 데이터가 없습니다.");
             return;
         }
 
-        GameData.Instance.playTime =
+        SaveData.Instance.playTime =
             PlayerPrefs.GetFloat($"SaveSlot{slot}_PlayTime");
 
-        GameData.Instance.hp =
+        SaveData.Instance.hp =
             PlayerPrefs.GetFloat($"SaveSlot{slot}_HP");
 
-        GameData.Instance.sp =
+        SaveData.Instance.sp =
             PlayerPrefs.GetFloat($"SaveSlot{slot}_SP");
 
-        GameData.Instance.bpm =
+        SaveData.Instance.bpm =
             PlayerPrefs.GetFloat($"SaveSlot{slot}_BPM");
 
-        GameData.Instance.currentStage =
+        SaveData.Instance.currentStage =
             PlayerPrefs.GetString($"SaveSlot{slot}_Stage");
 
         float x = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosX");
         float y = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosY");
         float z = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosZ");
 
-        GameData.Instance.spawnPosition = new Vector3(x, y, z);
+        SaveData.Instance.spawnPosition = new Vector3(x, y, z);
 
-        GameData.Instance.potionCount =
+        SaveData.Instance.potionCount =
             PlayerPrefs.GetInt($"SaveSlot{slot}_Potion");
 
         Debug.Log($"슬롯 {slot} 불러오기 완료");

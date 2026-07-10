@@ -237,13 +237,30 @@ public class PlayerController : MonoBehaviour, IDamageable
         }
 
         playerStatus.maxHp = GameManager.Instance.playerMaxHp;
-        playerStatus.currentHp = playerStatus.maxHp;
         currentJumpCount = GameManager.Instance.playerMaxJumpCount;
 
         if (useCalculatedJumpForce)
             GameManager.Instance.playerJumpForce = CalculateJumpForceFromTiles();
 
         inventoryUI = FindInventoryUIAnyState();
+
+        // 저장 데이터 적용
+        if (!string.IsNullOrEmpty(SaveData.Instance.currentStage))
+        {
+            playerStatus.currentHp = SaveData.Instance.hp;
+            playerStatus.currentSp = SaveData.Instance.sp;
+            playerStatus.currentBpm = SaveData.Instance.bpm;
+
+            transform.position = SaveData.Instance.spawnPosition;
+        }
+        else
+        {
+            // 새 게임 시작
+            playerStatus.currentHp = playerStatus.maxHp;
+            playerStatus.currentSp = playerStatus.maxSp;
+            playerStatus.currentBpm = 91f;
+        }
+
         Debug.Log(inventoryUI);
     }
 

@@ -2,9 +2,12 @@ using UnityEngine;
 
 // - 저장할 게임 데이터 관리
 
-public class GameData : MonoBehaviour
+public class SaveData : MonoBehaviour
 {
-    public static GameData Instance;
+    public static SaveData Instance;
+
+    // New 게임과 Load 게임 판별
+    public bool isLoaded = false;
 
     // 플레이 정보
     public float playTime;

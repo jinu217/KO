@@ -155,7 +155,7 @@ public class TitleMenuController : MonoBehaviour
         {
             int slot = i + 1;
 
-            if (PlayerPrefs.HasKey($"SaveSlot{slot}_PlayTime"))
+            if (SaveManager.Instance.HasSave(slot))
             {
                 float playTime = PlayerPrefs.GetFloat($"SaveSlot{slot}_PlayTime");
                 int deaths = PlayerPrefs.GetInt($"SaveSlot{slot}_Deaths", 0);
@@ -276,15 +276,13 @@ public class TitleMenuController : MonoBehaviour
     //============== 게임 로드 ==================
     void LoadGame(int slot)
     {
-        // 저장 데이터 불러오기
-        float hp = PlayerPrefs.GetFloat($"SaveSlot{slot}_HP", 100f);
+        if (!SaveManager.Instance.HasSave(slot))
+        {
+            Debug.Log("저장 데이터가 없습니다.");
+            return;
+        }
 
-        float x = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosX", 0);
-        float y = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosY", 0);
-        float z = PlayerPrefs.GetFloat($"SaveSlot{slot}_PosZ", 0);
-
-        GameData.Instance.hp = hp;
-        GameData.Instance.spawnPosition = new Vector3(x, y, z);
+        SaveManager.Instance.Load(slot);
 
         StartCoroutine(LoadScene());
     }
@@ -292,6 +290,6 @@ public class TitleMenuController : MonoBehaviour
     IEnumerator LoadScene()
     {
         yield return fadeManager.FadeOut();
-        SceneManager.LoadScene("Stage1-1");
+        SceneManager.LoadScene(SaveData.Instance.currentStage);
     }
 }
