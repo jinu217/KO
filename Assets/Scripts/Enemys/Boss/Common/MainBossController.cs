@@ -114,7 +114,7 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
         bossCollider = GetComponent<Collider2D>();
     }
 
-    // 데이터 검증, 플레이어 탐색, 충돌 무시 설정, 모든 스킬 쿨타임 시작, hp바 표시 및 초기 체력 설정
+    // 데이터 검증, 플레이어 탐색, 충돌 무시 설정, 모든 스킬 쿨타임 시작, 시작시 체력 초기화
     protected virtual void Start()
     {
         if (data == null)
@@ -124,8 +124,9 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
             return;
         }
 
+        // hp바 표시 및 초기 체력 설정
         currentHp = data.maxHp;
-        BossHealthUI.Instance?.Show(gameObject.name,currentHp,data.maxHp);
+        MainBossHealthUI.Instance?.Show(gameObject.name,currentHp,data.maxHp);
 
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
@@ -837,7 +838,7 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
         if (isDead) return;
 
         currentHp -= damage;
-        BossHealthUI.Instance?.UpdateHP(currentHp);
+        MainBossHealthUI.Instance?.UpdateHP(currentHp);
         isChasing = true;
 
         if (currentHp <= 0f)
@@ -848,7 +849,7 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
     protected virtual void Die()
     {
         isDead = true;
-        BossHealthUI.Instance?.Hide();
+        MainBossHealthUI.Instance?.Hide();
         StopMove();
         StopAllCoroutines();
         gameObject.SetActive(false);

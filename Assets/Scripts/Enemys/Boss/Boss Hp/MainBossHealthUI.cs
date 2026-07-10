@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class BossHealthUI : MonoBehaviour
+public class MainBossHealthUI : MonoBehaviour
 {
-    public static BossHealthUI Instance;
+    public static MainBossHealthUI Instance;
 
     [SerializeField] private GameObject root;
     [SerializeField] private Image hpFill;
@@ -14,7 +14,17 @@ public class BossHealthUI : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
+
+        if (root == null)
+            root = gameObject;
+
         root.SetActive(false);
     }
 
@@ -24,15 +34,16 @@ public class BossHealthUI : MonoBehaviour
         root.SetActive(true);
 
         this.maxHp = maxHp;
-
         bossName.text = name;
-        hpFill.fillAmount = currentHp / maxHp;
+        hpFill.fillAmount = Mathf.Clamp01(currentHp / maxHp);
     }
 
     // HP 갱신
     public void UpdateHP(float currentHp)
     {
-        hpFill.fillAmount = currentHp / maxHp;
+        if (maxHp <= 0) return;
+
+        hpFill.fillAmount = Mathf.Clamp01(currentHp / maxHp);
     }
 
     // HP바 숨김
