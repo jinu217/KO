@@ -50,6 +50,7 @@ public class SettingController : MonoBehaviour
     [Header("Managers")]
     public SettingManager settingManager;
     public TitleMenuController titleMenuController;
+    public PauseManager pauseManager;
 
     //====================================================
     // STATE
@@ -89,6 +90,8 @@ public class SettingController : MonoBehaviour
 
     void UpdatePanel()
     {
+        bool inContent = currentState == MenuState.Content;
+
         audioPanel.SetActive(categoryIndex == 0);
         displayPanel.SetActive(categoryIndex == 1);
         controlsPanel.SetActive(categoryIndex == 2);
@@ -118,7 +121,6 @@ public class SettingController : MonoBehaviour
         {
             case MenuState.Category:
                 categoryIndex = Mathf.Clamp(categoryIndex + dir, 0, 2);
-                UpdatePanel();          // 카테고리 이동 시 패널도 즉시 전환
                 break;
 
             case MenuState.Content:
@@ -201,17 +203,21 @@ public class SettingController : MonoBehaviour
 
     void Confirm()
     {
-        if (currentState == MenuState.Category)
-        {
-            // Controls처럼 내용이 없는 카테고리는 진입 막기
-            if (GetContentCount() == 0)
-                return;
+        Debug.Log($"Confirm - State : {currentState}, Category : {categoryIndex}");
 
-            currentState = MenuState.Content;
-            contentIndex = 0;
-            UpdateSelection();
-        }
-        // Content 상태에서 Confirm은 슬라이더/드롭다운 조작이라 별도 처리 없음
+        // 이미 Content 상태면 무시
+        if (currentState != MenuState.Category)
+            return;
+
+        // Controls처럼 내용이 없는 카테고리는 진입하지 않음
+        if (GetContentCount() == 0)
+            return;
+
+        currentState = MenuState.Content;
+        contentIndex = 0;
+
+        UpdatePanel();
+        UpdateSelection();
     }
 
     //====================================================
@@ -225,18 +231,33 @@ public class SettingController : MonoBehaviour
             // 패널 안에 있었으면 카테고리 선택으로만 되돌아감
             currentState = MenuState.Category;
             contentIndex = 0;
+            UpdatePanel();
             UpdateSelection();
             return;
         }
 
         // 카테고리 단계였으면 옵션창 전체 닫기
         PlayerPrefs.Save();
-        titleMenuController.CloseOption();
 
-        categoryIndex = 0;
-        contentIndex = 0;
-        UpdatePanel();
-        UpdateSelection();
+        if (pauseManager != null && pauseManager.IsPaused)
+        {
+            pauseManager.CloseOption();
+        }
+        else if (titleMenuController != null)
+        {
+            titleMenuController.CloseOption();
+        }
+
+        ResetSelection();
+    }
+
+    // ============= 하이라이트 표시 =======================
+    void SetHighlight(TMP_Text text, bool selected)
+    {
+        if (text == null) return;
+
+        text.color = selected ? Color.yellow : Color.white;
+        text.fontStyle = selected ? FontStyles.Bold : FontStyles.Normal;
     }
 
     //====================================================
@@ -245,6 +266,32 @@ public class SettingController : MonoBehaviour
 
     void UpdateSelection()
     {
+        // 카테고리
+        for (int i = 0; i < categoryTexts.Length; i++)
+        {
+            SetHighlight(categoryTexts[i],
+                currentState == MenuState.Category &&
+                categoryIndex == i);
+        }
+
+        // Audio
+        for (int i = 0; i < audioTexts.Length; i++)
+        {
+            SetHighlight(audioTexts[i],
+                currentState == MenuState.Content &&
+                categoryIndex == 0 &&
+                contentIndex == i);
+        }
+
+        // Display
+        for (int i = 0; i < displayTexts.Length; i++)
+        {
+            SetHighlight(displayTexts[i],
+                currentState == MenuState.Content &&
+                categoryIndex == 1 &&
+                contentIndex == i);
+        }
+
         UpdateDisplayArrows();
     }
 

@@ -18,7 +18,7 @@ using UnityEngine.UI;
 public class TitleMenuController : MonoBehaviour
 {
     [Header("Main Menu Choice")]
-    public GameObject[] menuChoices;     // Start, Load, Setting, Exit의 선택 이미지
+    public GameObject[] menuChoices;     // Start, Load, Setting, Quit의 선택 이미지
 
     [Header("Load Slot Text")]
     public TMP_Text[] playTimeTexts;
@@ -136,7 +136,7 @@ public class TitleMenuController : MonoBehaviour
                 OpenOption();
                 break;
 
-            case 3:     // EXIT
+            case 3:     // QUIT
                 #if UNITY_EDITOR
                     UnityEditor.EditorApplication.isPlaying = false;
                 #else

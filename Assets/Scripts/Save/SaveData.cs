@@ -15,6 +15,10 @@ public class SaveData : MonoBehaviour
     public float sp;
     public float bpm;
 
+    // 죽은 횟수
+    public int deathCount;
+
+
     // 현재 진행 정보
     public string currentStage;
 
