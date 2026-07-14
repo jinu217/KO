@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System.Collections;
 
 // =====================================================
 // OptionController
@@ -15,14 +16,18 @@ public class SettingController : MonoBehaviour
     // UI REFERENCES
     //====================================================
 
-    [Header("Category Texts")]
-    public TMP_Text[] categoryTexts;      // 카테고리 3개 (Audio, Display, Controls)
+    [Header("Category Select Images")]
+    public GameObject[] categorySelectImages;    // 카테고리 3개 (Audio, Display, Controls)
 
-    [Header("Audio Panel Texts")]
-    public TMP_Text[] audioTexts;         // Master, BGM, SFX (3개)
+    [Header("Panel Select Cursor")]
+    public RectTransform selectCursor;
+    [Header("Cursor Offset")]
+    public Vector2 cursorOffset;
 
-    [Header("Display Panel Texts")]
-    public TMP_Text[] displayTexts;       // Resolution, DisplayMode (2개)
+    [Header("Audio Cursor Target")]
+    public RectTransform[] audioCursorTargets;
+    [Header("Display Cursor Target")]
+    public RectTransform[] displayCursorTargets;
 
     [Header("Panels")]
     public GameObject audioPanel;
@@ -37,15 +42,6 @@ public class SettingController : MonoBehaviour
 
     public TMP_Dropdown resolutionDropdown;
     public TMP_Dropdown displayModeDropdown;
-
-    [Header("Volume Percent Texts")]
-    public TMP_Text masterPercentText;
-    public TMP_Text bgmPercentText;
-    public TMP_Text sfxPercentText;
-
-    [Header("Display Arrow Indicators")]
-    public GameObject[] displayLeftArrows;   // 0: Resolution, 1: DisplayMode
-    public GameObject[] displayRightArrows;  // 0: Resolution, 1: DisplayMode
 
     [Header("Managers")]
     public SettingManager settingManager;
@@ -62,18 +58,26 @@ public class SettingController : MonoBehaviour
     private enum MenuState { Category, Content }
     private MenuState currentState = MenuState.Category;
 
+    //=================== 설정창 슬라이드로 열고 닫기 ======================
+    [Header("Slide Animation")]
+    [SerializeField] private RectTransform panelRect;
+    [SerializeField] private Vector2 openPosition = Vector2.zero;
+    [SerializeField] private Vector2 closedPosition = new Vector2(1200f, 0f);
+    [SerializeField] private float slideSpeed = 12f;
+    private Vector2 targetPosition;
+
     //====================================================
     // INIT
     //====================================================
 
     void Start()
     {
+        // 설정창 열고 닫기
+        panelRect.anchoredPosition = closedPosition;
+        targetPosition = closedPosition;
+
         UpdatePanel();
         UpdateSelection();
-
-        UpdateVolumeText(masterPercentText, masterSlider.value);
-        UpdateVolumeText(bgmPercentText, bgmSlider.value);
-        UpdateVolumeText(sfxPercentText, sfxSlider.value);
     }
 
     void Update()
@@ -82,6 +86,43 @@ public class SettingController : MonoBehaviour
             return;
 
         HandleInput();
+
+        // 설정창 열고 닫기
+        panelRect.anchoredPosition = Vector2.Lerp(
+            panelRect.anchoredPosition,
+            targetPosition,
+            slideSpeed * Time.unscaledDeltaTime
+        );
+        if (settingPanel.activeSelf &&
+            Vector2.Distance(panelRect.anchoredPosition, closedPosition) < 5f &&
+            targetPosition == closedPosition)
+        {
+            settingPanel.SetActive(false);
+        }
+    }
+    // ==== 설정창 열기 ====
+    public void OpenPanel()
+    {
+        settingPanel.SetActive(true);
+
+        // 항상 오른쪽에서 시작
+        panelRect.anchoredPosition = closedPosition;
+
+        // 가운데를 목표로 이동
+        targetPosition = openPosition;
+    }
+
+    // ==== 설정창 닫기 ====
+    public void ClosePanel()
+    {
+        targetPosition = closedPosition;
+    }
+
+    IEnumerator CloseAfterSlide()
+    {
+        yield return new WaitForSecondsRealtime(0.25f);
+
+        settingPanel.SetActive(false);
     }
 
     //====================================================
@@ -120,8 +161,10 @@ public class SettingController : MonoBehaviour
         switch (currentState)
         {
             case MenuState.Category:
-                categoryIndex = Mathf.Clamp(categoryIndex + dir, 0, 2);
-                break;
+            categoryIndex = Mathf.Clamp(categoryIndex + dir, 0, 2);
+            UpdatePanel();      // 카테고리 이동 시 패널 미리보기
+            contentIndex = 0;       // 패널이면 Content 선택 초기화
+            break;
 
             case MenuState.Content:
                 int count = GetContentCount();
@@ -155,27 +198,18 @@ public class SettingController : MonoBehaviour
             case 0:
                 masterSlider.value = Adjust(masterSlider.value, dir);
                 settingManager.SetMaster(masterSlider.value);
-                UpdateVolumeText(masterPercentText, masterSlider.value);
                 break;
 
             case 1:
                 bgmSlider.value = Adjust(bgmSlider.value, dir);
                 settingManager.SetBGM(bgmSlider.value);
-                UpdateVolumeText(bgmPercentText, bgmSlider.value);
                 break;
 
             case 2:
                 sfxSlider.value = Adjust(sfxSlider.value, dir);
                 settingManager.SetSFX(sfxSlider.value);
-                UpdateVolumeText(sfxPercentText, sfxSlider.value);
                 break;
         }
-    }
-
-    void UpdateVolumeText(TMP_Text text, float value)
-    {
-        if (text == null) return;
-        text.text = Mathf.RoundToInt(value * 100f) + "%";
     }
 
     void ChangeDisplay(int dir)
@@ -191,8 +225,6 @@ public class SettingController : MonoBehaviour
                 settingManager.SetDisplayMode(displayModeDropdown.value);
                 break;
         }
-
-        UpdateDisplayArrows();
     }
 
     float Adjust(float value, int dir) => Mathf.Clamp01(value + dir * 0.1f);
@@ -203,21 +235,14 @@ public class SettingController : MonoBehaviour
 
     void Confirm()
     {
-        Debug.Log($"Confirm - State : {currentState}, Category : {categoryIndex}");
+        if(currentState == MenuState.Category)
+        {
+            // 이미 미리보기 상태라 바로 조작 상태로 변경
+            currentState = MenuState.Content;
+            contentIndex = 0;
 
-        // 이미 Content 상태면 무시
-        if (currentState != MenuState.Category)
-            return;
-
-        // Controls처럼 내용이 없는 카테고리는 진입하지 않음
-        if (GetContentCount() == 0)
-            return;
-
-        currentState = MenuState.Content;
-        contentIndex = 0;
-
-        UpdatePanel();
-        UpdateSelection();
+            UpdateSelection();
+        }
     }
 
     //====================================================
@@ -251,13 +276,14 @@ public class SettingController : MonoBehaviour
         ResetSelection();
     }
 
-    // ============= 하이라이트 표시 =======================
-    void SetHighlight(TMP_Text text, bool selected)
+    // ============= 선택 표시 =======================
+    void MoveSelectCursor(RectTransform target)
     {
-        if (text == null) return;
+        if(selectCursor == null || target == null)
+            return;
 
-        text.color = selected ? Color.yellow : Color.white;
-        text.fontStyle = selected ? FontStyles.Bold : FontStyles.Normal;
+        selectCursor.position = target.position + 
+            new Vector3(cursorOffset.x, cursorOffset.y, 0);
     }
 
     //====================================================
@@ -266,78 +292,47 @@ public class SettingController : MonoBehaviour
 
     void UpdateSelection()
     {
-        // 카테고리
-        for (int i = 0; i < categoryTexts.Length; i++)
+        // 패널 안에서만 손가락 표시
+        if(selectCursor != null)
         {
-            SetHighlight(categoryTexts[i],
-                currentState == MenuState.Category &&
-                categoryIndex == i);
-        }
-
-        // Audio
-        for (int i = 0; i < audioTexts.Length; i++)
-        {
-            SetHighlight(audioTexts[i],
+            bool showCursor =
                 currentState == MenuState.Content &&
-                categoryIndex == 0 &&
-                contentIndex == i);
+                categoryIndex != 2;         //컨트롤패널에선 숨기기
+
+            selectCursor.gameObject.SetActive(showCursor);
         }
 
-        // Display
-        for (int i = 0; i < displayTexts.Length; i++)
+        // 카테고리 선택 이미지
+        for(int i = 0; i < categorySelectImages.Length; i++)
         {
-            SetHighlight(displayTexts[i],
-                currentState == MenuState.Content &&
-                categoryIndex == 1 &&
-                contentIndex == i);
+            categorySelectImages[i].SetActive(
+                categoryIndex == i
+            );
         }
 
-        UpdateDisplayArrows();
-    }
-
-    void UpdateDisplayArrows()
-    {
-        bool inDisplayContent = (categoryIndex == 1) && (currentState == MenuState.Content);
-
-        for (int i = 0; i < displayLeftArrows.Length; i++)
+        // 패널 내부 선택
+        if(currentState == MenuState.Content)
         {
-            bool show = inDisplayContent && i == contentIndex;
+            switch(categoryIndex)
+            {
+                case 0:
+                    MoveSelectCursor(audioCursorTargets[contentIndex]);
+                    break;
 
-            if (displayLeftArrows[i] != null)
-                displayLeftArrows[i].SetActive(show && CanDecrease(i));
-
-            if (displayRightArrows[i] != null)
-                displayRightArrows[i].SetActive(show && CanIncrease(i));
+                case 1:
+                    MoveSelectCursor(displayCursorTargets[contentIndex]);
+                    break;
+            }
         }
-    }
-
-    bool CanDecrease(int index)
-    {
-        return index switch
-        {
-            0 => resolutionDropdown.value > 0,
-            1 => displayModeDropdown.value > 0,
-            _ => false
-        };
-    }
-
-    bool CanIncrease(int index)
-    {
-        return index switch
-        {
-            0 => resolutionDropdown.value < resolutionDropdown.options.Count - 1,
-            1 => displayModeDropdown.value < 2,
-            _ => false
-        };
     }
 
     int GetContentCount()
     {
         return categoryIndex switch
         {
-            0 => audioTexts.Length,
-            1 => displayTexts.Length,
-            2 => 0,
+            0 => audioCursorTargets.Length,
+            1 => displayCursorTargets.Length,
+            2 => 1,
             _ => 0
         };
     }

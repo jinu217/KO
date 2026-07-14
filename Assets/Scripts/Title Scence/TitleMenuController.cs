@@ -252,16 +252,18 @@ public class TitleMenuController : MonoBehaviour
         UpdateSelection();
     }
 
-    //============== 옵션 메뉴 ==================
+    //============== 설정 메뉴 ==================
     void OpenOption()
     {
         isOptionOpen = true;
 
         mainMenu.SetActive(false);
-        settingPanel.SetActive(true);
 
         if (optionController != null)
+        {
+            optionController.OpenPanel();
             optionController.ResetSelection();
+        }
 
         isSelecting = false;
     }
@@ -270,7 +272,9 @@ public class TitleMenuController : MonoBehaviour
     {
         isOptionOpen = false;
 
-        settingPanel.SetActive(false);
+        if (optionController != null)
+            optionController.ClosePanel();
+
         mainMenu.SetActive(true);
 
         index = 0;
