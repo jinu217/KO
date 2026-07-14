@@ -5,9 +5,13 @@ using UnityEngine;
 public class SaveData : MonoBehaviour
 {
     public static SaveData Instance;
+    
+    public PersistentData persistent = new PersistentData();
+    public RunData run = new RunData();
 
     // New 게임과 Load 게임 판별
     public bool isLoaded = false;
+    public int currentSlot;
 
     // 플레이 정보
     public float playTime;

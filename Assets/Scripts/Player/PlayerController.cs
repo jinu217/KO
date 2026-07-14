@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 // [플레이어]
 // - 이동/점프/대쉬/하향점프/강화하강/공격/피격/인벤토리/포션을 담당하는 플레이어 컨트롤러
 // - 일반 몹/중간보스/메인보스 모두에게 공격 적용 가능, 보스 검기 등 특수 패턴은 무적 무시 데미지 처리
+// - 세이브시 플레이어 정보를 세이브데이터에 넘김
 
 // 플레이어가 장착 가능한 무기 종류
 public enum WeaponType
@@ -249,18 +250,14 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         inventoryUI = FindInventoryUIAnyState();
 
-        // 저장 데이터 적용
-        if (!string.IsNullOrEmpty(SaveData.Instance.currentStage))
+        // 저장 데이터를 불러온 경우
+        if (SaveData.Instance.isLoaded)
         {
-            playerStatus.currentHp = SaveData.Instance.hp;
-            playerStatus.currentSp = SaveData.Instance.sp;
-            playerStatus.currentBpm = SaveData.Instance.bpm;
-
-            transform.position = SaveData.Instance.spawnPosition;
+            LoadSaveData();
         }
+        // 새 게임
         else
         {
-            // 새 게임 시작
             playerStatus.currentHp = playerStatus.maxHp;
             playerStatus.currentSp = playerStatus.maxSp;
             playerStatus.currentBpm = 91f;
@@ -1353,5 +1350,22 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         float finalY = isStationary ? 0f : rb.linearVelocity.y;
         rb.linearVelocity = new Vector2(targetSpeedX, finalY);
+    }
+
+    // ------------------ 세이브 ------------------------
+    // 현재 플레이어 상태를 SaveData에 저장
+    public void UpdateSaveData()
+    {
+        SaveData.Instance.run.hp = playerStatus.currentHp;
+        SaveData.Instance.run.sp = playerStatus.currentSp;
+        SaveData.Instance.run.bpm = playerStatus.currentBpm;
+    }
+
+    // 저장된 플레이어 상태 적용
+    public void LoadSaveData()
+    {
+        playerStatus.currentHp = SaveData.Instance.run.hp;
+        playerStatus.currentSp = SaveData.Instance.run.sp;
+        playerStatus.currentBpm = SaveData.Instance.run.bpm;
     }
 }

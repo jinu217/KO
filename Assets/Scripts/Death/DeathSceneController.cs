@@ -22,7 +22,7 @@ public class DeathSceneController : MonoBehaviour
     {
         if (SaveData.Instance != null)
         {
-            deathCount = SaveData.Instance.deathCount;
+            deathCount = SaveData.Instance.persistent.deathCount;
             Debug.Log("DeathScene에서 deathCount = " + deathCount);
         }
         else
@@ -60,6 +60,26 @@ public class DeathSceneController : MonoBehaviour
         yield return titleFade;
         yield return countFade;
 
+        // --------------------
+        // 사망 처리
+        // --------------------
+
+        // 사망 횟수 증가
+        SaveData.Instance.persistent.deathCount++;
+
+        // TODO : 이번 회차에서 획득한 소울 추가
+        // SaveData.Instance.persistent.soul += rewardSoul;
+
+        // 이번 회차 데이터 초기화
+        //SaveData.Instance.ResetRunData();
+
+        // 다음 이어하기 시작 위치를 Stage1로 변경
+        SaveData.Instance.persistent.nextStage = "Stage1-1";
+
+        // 사망 후 자동 저장
+        SaveManager.Instance.Save(SaveData.Instance.currentSlot);
+
+        // 새 게임 시작
         SceneManager.LoadScene("Stage1-1");
     }
 

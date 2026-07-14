@@ -94832,6 +94832,7 @@ GameObject:
   - component: {fileID: 1960051066}
   - component: {fileID: 1960051065}
   - component: {fileID: 1960051064}
+  - component: {fileID: 1960051070}
   m_Layer: 14
   m_Name: WayPoint
   m_TagString: Untagged
@@ -94869,6 +94870,7 @@ MonoBehaviour:
   targetSceneName: Stage1-2
   delayBeforeSceneLoad: 1
   autoMoveSpeed: 3
+  isMovingScene: 0
 --- !u!66 &1960051065
 CompositeCollider2D:
   m_ObjectHideFlags: 0
@@ -95107,6 +95109,21 @@ Tilemap:
     e31: 0
     e32: 0
     e33: 1
+--- !u!114 &1960051070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1960051062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe9cdce8c5a3e76418d6f4f4daef858f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Waypoint
+  targetSceneName: 
+  delayBeforeSceneLoad: 2
+  autoMoveSpeed: 5
 --- !u!1001 &1960498934
 PrefabInstance:
   m_ObjectHideFlags: 0

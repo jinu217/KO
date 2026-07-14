@@ -124,6 +124,11 @@ public class TitleMenuController : MonoBehaviour
         switch (index)
         {
             case 0:     // START
+                SaveData.Instance.isLoaded = false;
+                // 새 회차 시작
+                SaveData.Instance.run = new RunData();
+                // 이어하기 시작 스테이지 초기화
+                SaveData.Instance.persistent.nextStage = "Stage1-1";
                 yield return StartCoroutine(fadeManager.FadeOut());
                 SceneManager.LoadScene("Stage1-1");
                 break;
@@ -154,11 +159,12 @@ public class TitleMenuController : MonoBehaviour
         for (int i = 0; i < playTimeTexts.Length; i++)
         {
             int slot = i + 1;
+            SaveFile file = SaveSystem.Load(slot);
 
-            if (SaveManager.Instance.HasSave(slot))
+            if (file != null)
             {
-                float playTime = PlayerPrefs.GetFloat($"SaveSlot{slot}_PlayTime");
-                int deaths = PlayerPrefs.GetInt($"SaveSlot{slot}_Deaths", 0);
+                float playTime = file.persistent.playTime;
+                int deaths = file.persistent.deathCount;
 
                 int hour = (int)(playTime / 3600);
                 int minute = (int)((playTime % 3600) / 60);
@@ -282,6 +288,8 @@ public class TitleMenuController : MonoBehaviour
             return;
         }
 
+        SaveData.Instance.currentSlot = slot;
+
         SaveManager.Instance.Load(slot);
 
         StartCoroutine(LoadScene());
@@ -290,6 +298,6 @@ public class TitleMenuController : MonoBehaviour
     IEnumerator LoadScene()
     {
         yield return fadeManager.FadeOut();
-        SceneManager.LoadScene(SaveData.Instance.currentStage);
+        SceneManager.LoadScene(SaveData.Instance.persistent.nextStage);
     }
 }
