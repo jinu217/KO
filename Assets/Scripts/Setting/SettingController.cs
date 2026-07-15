@@ -57,6 +57,7 @@ public class SettingController : MonoBehaviour
 
     private enum MenuState { Category, Content }
     private MenuState currentState = MenuState.Category;
+    private bool ignoreInput;
 
     //=================== 설정창 슬라이드로 열고 닫기 ======================
     [Header("Slide Animation")]
@@ -85,6 +86,12 @@ public class SettingController : MonoBehaviour
         if (!settingPanel.activeSelf)
             return;
 
+        if (ignoreInput)
+        {
+            ignoreInput = false;
+            return;
+        }
+
         HandleInput();
 
         // 설정창 열고 닫기
@@ -107,6 +114,8 @@ public class SettingController : MonoBehaviour
 
         panelRect.anchoredPosition = closedPosition;
         targetPosition = openPosition;
+
+        ignoreInput = true;
     }
 
     // ==== 설정창 닫기 ====
@@ -235,6 +244,7 @@ public class SettingController : MonoBehaviour
 
     void Confirm()
     {
+        Debug.Log("Confirm 호출");
         if(currentState == MenuState.Category)
         {
             // 이미 미리보기 상태라 바로 조작 상태로 변경
