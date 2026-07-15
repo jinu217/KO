@@ -54,7 +54,6 @@ public class PauseManager : MonoBehaviour
     public void Resume()
     {
         IsPaused = false;
-
         pausePanel.SetActive(false);
 
         if (settingPanel != null)
@@ -66,21 +65,14 @@ public class PauseManager : MonoBehaviour
     public void OpenSetting()
     {
         pausePanel.SetActive(false);
-
-        if (settingPanel != null)
-            settingPanel.SetActive(true);
-
-        // 항상 처음 상태로 초기화
+        settingController.OpenPanel();
         settingController.ResetSelection();
     }
 
-    public void CloseOption()
+    public void CloseSetting()
     {
-        if (settingPanel != null)
-            settingPanel.SetActive(false);
-
+        settingController.ClosePanel();
         pausePanel.SetActive(true);
-
         pauseController?.ResetSelection();
     }
 }

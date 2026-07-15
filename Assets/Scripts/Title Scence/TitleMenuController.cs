@@ -138,7 +138,7 @@ public class TitleMenuController : MonoBehaviour
                 break;
 
             case 2:     // OPTION
-                OpenOption();
+                OpenSetting();
                 break;
 
             case 3:     // QUIT
@@ -253,7 +253,7 @@ public class TitleMenuController : MonoBehaviour
     }
 
     //============== 설정 메뉴 ==================
-    void OpenOption()
+    void OpenSetting()
     {
         isOptionOpen = true;
 
@@ -268,7 +268,7 @@ public class TitleMenuController : MonoBehaviour
         isSelecting = false;
     }
 
-    public void CloseOption()
+    public void CloseSetting()
     {
         isOptionOpen = false;
 

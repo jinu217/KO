@@ -105,10 +105,7 @@ public class SettingController : MonoBehaviour
     {
         settingPanel.SetActive(true);
 
-        // 항상 오른쪽에서 시작
         panelRect.anchoredPosition = closedPosition;
-
-        // 가운데를 목표로 이동
         targetPosition = openPosition;
     }
 
@@ -116,6 +113,9 @@ public class SettingController : MonoBehaviour
     public void ClosePanel()
     {
         targetPosition = closedPosition;
+
+        StopAllCoroutines();
+        StartCoroutine(CloseAfterSlide());
     }
 
     IEnumerator CloseAfterSlide()
@@ -266,11 +266,11 @@ public class SettingController : MonoBehaviour
 
         if (pauseManager != null && pauseManager.IsPaused)
         {
-            pauseManager.CloseOption();
+            pauseManager.CloseSetting();
         }
         else if (titleMenuController != null)
         {
-            titleMenuController.CloseOption();
+            titleMenuController.CloseSetting();
         }
 
         ResetSelection();
