@@ -32,11 +32,15 @@ public class ChestRewardPanel : MonoBehaviour
     [Tooltip("아이콘 최대 높이(px)")]
     [SerializeField] private float iconMaxHeight = 80f;
 
-    [Header("선택 색상")]
-    [Tooltip("비선택 슬롯 버튼 배경 색상")]
-    [SerializeField] private Color normalColor = Color.white;
-    [Tooltip("선택 중인 슬롯 버튼 배경 색상")]
-    [SerializeField] private Color selectedColor = new Color(1f, 0.9f, 0.3f);
+    [Header("선택 틀 이미지")]
+    [Tooltip("버튼 번호별 선택 틀 이미지 RectTransform. 0=왼쪽, 1=가운데, 2=오른쪽")]
+    [SerializeField] private RectTransform[] selectionFrames = new RectTransform[3];
+    [Tooltip("켜면 선택 틀 이미지를 선택된 버튼 위치로 이동시킴. 끄면 인스펙터에서 배치한 위치 그대로 켜고 끔")]
+    [SerializeField] private bool moveSelectionFrameToButton = false;
+    [Tooltip("선택 틀 이미지가 버튼 위치에서 얼마나 떨어져 보일지 조정")]
+    [SerializeField] private Vector2 selectionFrameOffset = Vector2.zero;
+    [Tooltip("켜면 선택 틀 이미지 크기를 선택된 버튼 크기와 같게 맞춤")]
+    [SerializeField] private bool matchSelectionFrameSize = true;
 
     [Header("입력")]
     [Tooltip("방향키 연속 입력 간격(초)")]
@@ -60,7 +64,7 @@ public class ChestRewardPanel : MonoBehaviour
     // 입력 액션 캐시
     private PlayerInput playerInput;
     private InputAction moveAction;
-    private InputAction attackAction;
+    private InputAction selectAction;
 
     // 선택 상태
     private int selectedIndex = -1;
@@ -82,7 +86,7 @@ public class ChestRewardPanel : MonoBehaviour
         InitializeIfNeeded();
     }
 
-    // PlayerInput 컴포넌트에서 Move/Attack 액션 참조 캐시(중복 호출 방지)
+    // PlayerInput 컴포넌트에서 Move/Select 액션 참조 캐시(중복 호출 방지)
     private void InitializeIfNeeded()
     {
         if (isInitialized) return;
@@ -102,7 +106,7 @@ public class ChestRewardPanel : MonoBehaviour
         }
 
         moveAction = playerInput.actions["Move"];
-        attackAction = playerInput.actions["Attack"];
+        selectAction = playerInput.actions["Select"];
         isInitialized = true;
     }
 
@@ -146,11 +150,15 @@ public class ChestRewardPanel : MonoBehaviour
         inventoryUI = null;
 
         selectedIndex = -1;
+        HideSelectionFrames();
+
         IsAnyOpen = false;
         Time.timeScale = 1f;
+
+        TutorialManager.Instance?.NotifyChestInteracted();
     }
 
-    // 방향키로 선택 이동, Attack 버튼으로 현재 선택 아이템 지급(비동기 타임 기준)
+    // 좌우 방향키로 선택 이동, Select 버튼으로 현재 선택 아이템 지급(비동기 타임 기준)
     private void HandleKeyboardInput()
     {
         if (!isInitialized)
@@ -162,8 +170,8 @@ public class ChestRewardPanel : MonoBehaviour
             if (Time.unscaledTime >= lastMoveTime + moveRepeatDelay)
             {
                 int direction = 0;
-                if (move.x > 0.5f || move.y < -0.5f) direction = 1;
-                else if (move.x < -0.5f || move.y > 0.5f) direction = -1;
+                if (move.x > 0.5f) direction = 1;
+                else if (move.x < -0.5f) direction = -1;
 
                 if (direction != 0)
                 {
@@ -173,11 +181,11 @@ public class ChestRewardPanel : MonoBehaviour
             }
         }
 
-        if (attackAction != null && attackAction.WasPressedThisFrame() && selectedIndex >= 0)
+        if (selectAction != null && selectAction.WasPressedThisFrame() && selectedIndex >= 0)
             OnSelectReward(selectedIndex);
     }
 
-    // direction 방향으로 유효한 다음 슬롯으로 선택 이동
+    // direction 방향으로 유효한 다음 슬롯으로 선택 이동. 끝에서는 반대편으로 넘어가지 않음.
     private void MoveSelection(int direction)
     {
         if (currentRewards == null || currentRewards.Count == 0) return;
@@ -187,16 +195,17 @@ public class ChestRewardPanel : MonoBehaviour
 
         if (selectedIndex < 0) return;
 
-        int next = selectedIndex;
-        for (int i = 0; i < rewardButtons.Length; i++)
+        int next = selectedIndex + direction;
+        while (next >= 0 && next < rewardButtons.Length)
         {
-            next = (next + direction + rewardButtons.Length) % rewardButtons.Length;
             if (IsValidRewardIndex(next))
             {
                 selectedIndex = next;
                 RefreshSelectionVisual();
                 return;
             }
+
+            next += direction;
         }
     }
 
@@ -309,17 +318,54 @@ public class ChestRewardPanel : MonoBehaviour
             Destroy(fitter);
     }
 
-    // selectedIndex 기준으로 선택/비선택 색상 갱신
+    // selectedIndex 기준으로 선택 틀 이미지를 선택된 버튼 위치로 이동
     private void RefreshSelectionVisual()
     {
-        for (int i = 0; i < rewardButtons.Length; i++)
+        HideSelectionFrames();
+
+        if (selectionFrames == null)
+            return;
+
+        if (selectedIndex < 0 || selectedIndex >= selectionFrames.Length)
+            return;
+
+        RectTransform selectionFrame = selectionFrames[selectedIndex];
+        if (selectionFrame == null)
+            return;
+
+        selectionFrame.gameObject.SetActive(true);
+
+        if (!moveSelectionFrameToButton)
+            return;
+
+        if (rewardButtons == null || selectedIndex >= rewardButtons.Length)
+            return;
+
+        Button selectedButton = rewardButtons[selectedIndex];
+        if (selectedButton == null || !selectedButton.gameObject.activeSelf)
+            return;
+
+        RectTransform target = selectedButton.GetComponent<RectTransform>();
+        if (target == null)
+            return;
+
+        selectionFrame.SetParent(target.parent, false);
+        selectionFrame.SetAsLastSibling();
+        selectionFrame.anchoredPosition = target.anchoredPosition + selectionFrameOffset;
+
+        if (matchSelectionFrameSize)
+            selectionFrame.sizeDelta = target.sizeDelta;
+    }
+
+    private void HideSelectionFrames()
+    {
+        if (selectionFrames == null)
+            return;
+
+        for (int i = 0; i < selectionFrames.Length; i++)
         {
-            if (rewardButtons[i] == null) continue;
-
-            Image btnImage = rewardButtons[i].GetComponent<Image>();
-            if (btnImage == null) continue;
-
-            btnImage.color = (i == selectedIndex) ? selectedColor : normalColor;
+            if (selectionFrames[i] != null)
+                selectionFrames[i].gameObject.SetActive(false);
         }
     }
 

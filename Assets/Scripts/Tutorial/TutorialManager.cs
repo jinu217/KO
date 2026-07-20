@@ -84,17 +84,17 @@ public class TutorialManager : MonoBehaviour
 
     public bool CanAttack()
     {
-        return !tutorialActive || currentStep >= TutorialStep.WeaponEquipConfirmed;
+        return !tutorialActive || (currentStep != TutorialStep.ChestInteractionGuide && currentStep >= TutorialStep.WeaponEquipConfirmed);
     }
 
     public bool CanOpenInventory()
     {
-        return !tutorialActive || currentStep >= TutorialStep.InventoryEquipGuide;
+        return !tutorialActive || (currentStep != TutorialStep.ChestInteractionGuide && currentStep >= TutorialStep.InventoryEquipGuide);
     }
 
     public bool CanUseExtraAction()
     {
-        return !tutorialActive || currentStep >= TutorialStep.WeaponEquipConfirmed;
+        return !tutorialActive || (currentStep != TutorialStep.ChestInteractionGuide && currentStep >= TutorialStep.WeaponEquipConfirmed);
     }
 
     public bool ShouldSuppressPlayerHpDamage()
@@ -124,12 +124,16 @@ public class TutorialManager : MonoBehaviour
 
     public void NotifyChestInteracted()
     {
-        AdvanceIfCurrent(TutorialStep.ChestInteractGuide, TutorialStep.InventoryEquipGuide);
+        AdvanceIfCurrent(TutorialStep.ChestInteractionGuide, TutorialStep.InventoryEquipGuide);
+    }
+
+    public void NotifyInventoryClosed()
+    {
+        AdvanceIfCurrent(TutorialStep.InventoryEquipGuide, TutorialStep.WeaponEquipConfirmed);
     }
 
     public void NotifyWeaponEquipped()
     {
-        AdvanceIfCurrent(TutorialStep.InventoryEquipGuide, TutorialStep.WeaponEquipConfirmed);
     }
 
     public void NotifyEmpoweredDownJumpHit(TutorialTrainingDummy dummy)

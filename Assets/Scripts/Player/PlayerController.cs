@@ -609,6 +609,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanOpenInventory()) return;
+        if (TutorialBookUI.IsAnyOpen) return;
         if (!context.started || ChestRewardPanel.IsAnyOpen) return;
 
         if (inventoryUI == null)

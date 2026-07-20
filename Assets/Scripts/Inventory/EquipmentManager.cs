@@ -45,7 +45,6 @@ public class EquipmentManager : MonoBehaviour
         {
             case EquipmentType.Weapon:
                 ReplaceIfDifferent(weaponSlot, item);
-                TutorialManager.Instance?.NotifyWeaponEquipped();
                 break;
 
             case EquipmentType.Hand:

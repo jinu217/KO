@@ -85,6 +85,7 @@ public class TreasureChest : MonoBehaviour
     {
         if (isOpened && oneTimeChest) return;
         if (waitingRewardSelect) return;
+        if (TutorialBookUI.IsAnyOpen) return;
         if (playerTransform == null || interactAction == null) return;
 
         float distance = Vector2.Distance(transform.position, playerTransform.position);
@@ -97,7 +98,6 @@ public class TreasureChest : MonoBehaviour
     private void Interact()
     {
         LastInteractFrame = Time.frameCount;
-        TutorialManager.Instance?.NotifyChestInteracted();
 
         if (rewardUI == null)
         {

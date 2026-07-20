@@ -9,6 +9,8 @@ public class InventoryUI : MonoBehaviour
     private bool inputLocked = false;
     private int selectedIndex = 0;
 
+    public bool IsOpen => inventoryPanel != null && inventoryPanel.activeSelf;
+
     void Start()
     {
         inventoryPanel.SetActive(false);
@@ -60,6 +62,8 @@ public class InventoryUI : MonoBehaviour
 
         if (characterPreview != null)
             characterPreview.SetActive(false);
+
+        TutorialManager.Instance?.NotifyInventoryClosed();
     }
     public void Navigate(Vector2 moveInput)
     {

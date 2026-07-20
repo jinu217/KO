@@ -8,7 +8,7 @@ public enum TutorialStep
     UseEmpoweredDownJumpOnFirstDummy = 5,
     DashUnlocked = 6,
     DashPositionGuide = 7,
-    ChestInteractGuide = 8,
+    ChestInteractionGuide = 8,
     InventoryEquipGuide = 9,
     WeaponEquipConfirmed = 10,
     FirstDummyAttackable = 11,

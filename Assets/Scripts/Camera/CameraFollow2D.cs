@@ -96,6 +96,28 @@ public class CameraFollow2D : MonoBehaviour
     }
 
     // 카메라-타겟 목표 위치 연결선 Gizmo 표시(showTargetLineGizmo 켤 때만)
+    public Vector3 ClampToBounds(Vector3 position, float orthographicSize)
+    {
+        if (cameraBounds == null)
+            return position;
+
+        Camera cam = GetComponent<Camera>();
+        if (cam == null)
+            return position;
+
+        Bounds bounds = cameraBounds.bounds;
+        float halfHeight = orthographicSize > 0f ? orthographicSize : cam.orthographicSize;
+        float halfWidth = halfHeight * cam.aspect;
+
+        if (bounds.size.x >= halfWidth * 2f)
+            position.x = Mathf.Clamp(position.x, bounds.min.x + halfWidth, bounds.max.x - halfWidth);
+
+        if (bounds.size.y >= halfHeight * 2f)
+            position.y = Mathf.Clamp(position.y, bounds.min.y + halfHeight, bounds.max.y - halfHeight);
+
+        return position;
+    }
+
     private void OnDrawGizmosSelected()
     {
         if (!showTargetLineGizmo || target == null) return;

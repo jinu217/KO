@@ -1,9 +1,15 @@
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
 public class TutorialStepTrigger : MonoBehaviour
 {
+    private enum FloatingTextHideMode
+    {
+        HideWhenTriggered,
+        HideWhenNextStepLeaves
+    }
+
     [SerializeField] private TutorialStep requiredStep;
     [SerializeField] private TutorialStep nextStep;
     [SerializeField] private bool requireExactStep = true;
@@ -17,11 +23,15 @@ public class TutorialStepTrigger : MonoBehaviour
     [SerializeField] private float floatingTextFontSize = 4f;
     [SerializeField] private Color floatingTextColor = Color.white;
     [SerializeField] private bool showOnlyOnRequiredStep = true;
+    [SerializeField] private FloatingTextHideMode floatingTextHideMode = FloatingTextHideMode.HideWhenTriggered;
     [SerializeField] private float bobAmplitude = 0.15f;
     [SerializeField] private float bobSpeed = 2f;
     [SerializeField] private bool faceCamera = true;
+    [SerializeField] private string floatingTextSortingLayer = "Default";
+    [SerializeField] private int floatingTextSortingOrder = 100;
 
     private bool used;
+    private bool triggered;
     private TMP_Text floatingTextInstance;
     private Vector3 floatingTextBaseLocalPosition;
 
@@ -53,6 +63,7 @@ public class TutorialStepTrigger : MonoBehaviour
         if (requireExactStep && manager.CurrentStep != requiredStep)
             return;
 
+        triggered = true;
         manager.SetStep(nextStep);
 
         if (oneShot)
@@ -81,7 +92,29 @@ public class TutorialStepTrigger : MonoBehaviour
         floatingTextInstance.fontSize = floatingTextFontSize;
         floatingTextInstance.color = floatingTextColor;
         floatingTextInstance.alignment = TextAlignmentOptions.Center;
+        ApplyFloatingTextSorting();
         floatingTextInstance.gameObject.SetActive(ShouldShowFloatingText());
+    }
+
+    private void ApplyFloatingTextSorting()
+    {
+        if (floatingTextInstance == null)
+            return;
+
+        Renderer[] renderers = floatingTextInstance.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].sortingLayerName = floatingTextSortingLayer;
+            renderers[i].sortingOrder = floatingTextSortingOrder;
+        }
+
+        Canvas[] canvases = floatingTextInstance.GetComponentsInChildren<Canvas>(true);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            canvases[i].overrideSorting = true;
+            canvases[i].sortingLayerName = floatingTextSortingLayer;
+            canvases[i].sortingOrder = floatingTextSortingOrder;
+        }
     }
 
     private void UpdateFloatingText()
@@ -102,10 +135,17 @@ public class TutorialStepTrigger : MonoBehaviour
 
     private bool ShouldShowFloatingText()
     {
-        if (!showFloatingText || used || string.IsNullOrWhiteSpace(floatingText))
+        if (!showFloatingText || string.IsNullOrWhiteSpace(floatingText))
             return false;
 
         TutorialManager manager = TutorialManager.Instance;
+
+        if (triggered && floatingTextHideMode == FloatingTextHideMode.HideWhenNextStepLeaves)
+            return manager != null && manager.IsActive && manager.CurrentStep == nextStep;
+
+        if (used)
+            return false;
+
         if (!showOnlyOnRequiredStep)
             return manager == null || manager.IsActive;
 

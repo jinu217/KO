@@ -13,6 +13,8 @@ public class TutorialTrainingDummy : MonoBehaviour
     [SerializeField] private bool destroyOnEmpoweredDownJump = true;
     [SerializeField] private bool destroyOnAttack = true;
     [SerializeField] private GameObject objectToDisable;
+    [SerializeField] private PlayerStatus playerStatus;
+    [SerializeField] private float attackBpmMultiplier = 1.5f;
 
     public TutorialDummyKind DummyKind => dummyKind;
 
@@ -29,6 +31,30 @@ public class TutorialTrainingDummy : MonoBehaviour
         return step >= TutorialStep.NextDummyAttackable && step <= TutorialStep.NextDummyDefeated;
     }
 
+    private void Awake()
+    {
+        CachePlayerStatus();
+    }
+
+    private void Update()
+    {
+        if (dummyKind != TutorialDummyKind.Next)
+            return;
+
+        TutorialManager manager = TutorialManager.Instance;
+        if (manager == null || !manager.IsActive)
+            return;
+
+        if (manager.CurrentStep < TutorialStep.NextDummyAttackable || manager.CurrentStep > TutorialStep.NextDummyDefeated)
+            return;
+
+        if (playerStatus == null)
+            CachePlayerStatus();
+
+        if (playerStatus != null && (playerStatus.CurrentBpmRank == BpmRank.D || playerStatus.IsExhausted))
+            DestroyDummy();
+    }
+
     public void NotifyDamagedByEmpoweredDownJump()
     {
         TutorialManager.Instance?.NotifyEmpoweredDownJumpHit(this);
@@ -39,6 +65,11 @@ public class TutorialTrainingDummy : MonoBehaviour
 
     public void NotifyDamagedByAttack()
     {
+        AddAttackBpmBonus();
+
+        if (dummyKind == TutorialDummyKind.Next)
+            return;
+
         if (destroyOnAttack)
             DestroyDummy();
     }
@@ -66,5 +97,27 @@ public class TutorialTrainingDummy : MonoBehaviour
         }
 
         targetObject.SetActive(false);
+    }
+
+    private void CachePlayerStatus()
+    {
+        if (playerStatus != null)
+            return;
+
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player != null)
+            playerStatus = player.GetComponent<PlayerStatus>();
+    }
+
+    private void AddAttackBpmBonus()
+    {
+        if (playerStatus == null)
+            CachePlayerStatus();
+
+        if (playerStatus == null)
+            return;
+
+        float bonusMultiplier = Mathf.Max(0f, attackBpmMultiplier - 1f);
+        playerStatus.AddBPM(playerStatus.attackBpmGain * bonusMultiplier);
     }
 }
