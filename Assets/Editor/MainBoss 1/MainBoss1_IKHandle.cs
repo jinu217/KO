@@ -8,7 +8,6 @@ public class MainBoss1_IKHandle
     static GameObject _cachedRoot = null;
     static GUIStyle _labelStyle = null;
 
-    // IK 체인만 — 개별 관절 핸들 제거해서 부하 줄임
     static readonly (string root, string mid, string tip, Color color, string label)[] CHAINS =
     {
         ("Body/Shoulder_F",
@@ -103,17 +102,25 @@ public class MainBoss1_IKHandle
         float cosB = (lenA * lenA + lenB * lenB - dist * dist) / (2f * lenA * lenB);
         float angleB = Mathf.Acos(Mathf.Clamp(cosB, -1f, 1f)) * Mathf.Rad2Deg;
 
-        // root 세그먼트 기준각
         var rsd = new Vector2(tMid.localPosition.x, tMid.localPosition.y).normalized;
         float rsa = Mathf.Atan2(rsd.y, rsd.x) * Mathf.Rad2Deg;
         float rpz = WorldRotZ(tRoot.parent);
-        tRoot.localEulerAngles = new Vector3(0, 0, (angleToTarget - offsetA) - rpz - rsa);
 
-        // mid 세그먼트 기준각
         var msd = new Vector2(tTip.localPosition.x, tTip.localPosition.y).normalized;
         float msa = Mathf.Atan2(msd.y, msd.x) * Mathf.Rad2Deg;
         float mpz = WorldRotZ(tMid.parent);
-        tMid.localEulerAngles = new Vector3(0, 0, (angleToTarget - offsetA + 180f - angleB) - mpz - msa);
+
+        bool isLeg = tRoot.name.StartsWith("Thigh");
+        if (isLeg)
+        {
+            tRoot.localEulerAngles = new Vector3(0, 0, (angleToTarget + offsetA) - rpz - rsa);
+            tMid.localEulerAngles = new Vector3(0, 0, (angleToTarget + offsetA) - (180f - angleB) - mpz - msa);
+        }
+        else
+        {
+            tRoot.localEulerAngles = new Vector3(0, 0, (angleToTarget - offsetA) - rpz - rsa);
+            tMid.localEulerAngles = new Vector3(0, 0, (angleToTarget - offsetA) + (180f - angleB) - mpz - msa);
+        }
     }
 
     static float WorldRotZ(Transform t)
