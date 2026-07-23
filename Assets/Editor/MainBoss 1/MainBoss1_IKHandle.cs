@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 
 [InitializeOnLoad]
@@ -30,6 +30,9 @@ public class MainBoss1_IKHandle
          "Body/Bottom/Thigh_B/Calf_B/Foot_B",
          new Color(1f,0.5f,0f), "Foot_B"),
     };
+
+    // GripPoint IK: Hand_F를 GripPoint 위치로 자동 맞추기
+    const string GRIP_POINT_PATH = "Body/Shoulder_B/Forearm_B/Hand_B/Weapon/GripPoint";
 
     static MainBoss1_IKHandle()
     {
@@ -79,6 +82,45 @@ public class MainBoss1_IKHandle
                 Undo.RecordObject(tMid, "IK");
                 SolveIK(tRoot, tMid, tTip, newPos);
             }
+        }
+
+        // ── GripPoint 스냅 버튼 ─────────────────────────────────────
+        Transform tGrip = _cachedRoot.transform.Find(GRIP_POINT_PATH);
+        if (tGrip != null)
+        {
+            Transform tSF = _cachedRoot.transform.Find("Body/Shoulder_F");
+            Transform tFF = _cachedRoot.transform.Find("Body/Shoulder_F/Forearm_F");
+            Transform tHF = _cachedRoot.transform.Find("Body/Shoulder_F/Forearm_F/Hand_F");
+
+            Vector3 gripWorld = tGrip.position;
+            gripWorld.z = 0f;
+
+            // GripPoint 위치에 마젠타 마커 표시
+            Handles.color = Color.magenta;
+            Handles.DotHandleCap(0, gripWorld, Quaternion.identity, 0.04f, EventType.Repaint);
+            Handles.Label(gripWorld + Vector3.up * 0.14f, "GripPoint", _labelStyle);
+
+            // 버튼: Hand_F를 GripPoint로 스냅 (첫 클릭에 바로 실행)
+            float snapSize = 0.06f;
+            Rect snapRect = new Rect(
+                HandleUtility.WorldToGUIPoint(gripWorld + Vector3.right * 0.18f) - Vector2.one * 20,
+                Vector2.one * 40);
+
+            Handles.color = new Color(1f, 0.2f, 0.8f, 0.8f);
+            Handles.DrawSolidDisc(gripWorld + Vector3.right * 0.18f, Vector3.forward, snapSize);
+
+            if (Event.current.type == EventType.MouseDown &&
+                snapRect.Contains(Event.current.mousePosition))
+            {
+                if (tSF != null && tFF != null && tHF != null)
+                {
+                    Undo.RecordObject(tSF, "Snap Hand_F to GripPoint");
+                    Undo.RecordObject(tFF, "Snap Hand_F to GripPoint");
+                    SolveIK(tSF, tFF, tHF, gripWorld);
+                    Event.current.Use();
+                }
+            }
+            Handles.Label(gripWorld + Vector3.right * 0.14f + Vector3.up * 0.08f, "Snap HF→", _labelStyle);
         }
     }
 
