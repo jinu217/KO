@@ -8,6 +8,11 @@ public class MainBoss1_IKHandle
     static GameObject _cachedRoot = null;
     static GUIStyle _labelStyle = null;
 
+    // Weapon/GripPoint = 왼손 검 손잡이 위치
+    // Hand_F/GripPoint_H (0,-0.2) = 오른손 피봇 기준점
+    const string WEAPON_GRIP_PATH = "Body/Shoulder_B/Forearm_B/Hand_B/Weapon/GripPoint";
+    const string HAND_GRIP_H_PATH = "Body/Shoulder_F/Forearm_F/Hand_F/GripPoint_H";
+
     static readonly (string root, string mid, string tip, Color color, string label)[] CHAINS =
     {
         ("Body/Shoulder_F",
@@ -30,9 +35,6 @@ public class MainBoss1_IKHandle
          "Body/Bottom/Thigh_B/Calf_B/Foot_B",
          new Color(1f,0.5f,0f), "Foot_B"),
     };
-
-    // GripPoint IK: Hand_F를 GripPoint 위치로 자동 맞추기
-    const string GRIP_POINT_PATH = "Body/Shoulder_B/Forearm_B/Hand_B/Weapon/GripPoint";
 
     static MainBoss1_IKHandle()
     {
@@ -58,6 +60,7 @@ public class MainBoss1_IKHandle
             _cachedRoot = GameObject.Find("MainBoss 1");
         if (_cachedRoot == null) return;
 
+        // ── IK 체인 핸들 ────────────────────────────────────────────
         foreach (var c in CHAINS)
         {
             Transform tRoot = _cachedRoot.transform.Find(c.root);
@@ -84,43 +87,60 @@ public class MainBoss1_IKHandle
             }
         }
 
-        // ── GripPoint 스냅 버튼 ─────────────────────────────────────
-        Transform tGrip = _cachedRoot.transform.Find(GRIP_POINT_PATH);
-        if (tGrip != null)
+        // ── GripPoint 스냅 ───────────────────────────────────────────
+        Transform tWeaponGrip = _cachedRoot.transform.Find(WEAPON_GRIP_PATH);
+        Transform tHandGripH = _cachedRoot.transform.Find(HAND_GRIP_H_PATH);
+        Transform tSF = _cachedRoot.transform.Find("Body/Shoulder_F");
+        Transform tFF = _cachedRoot.transform.Find("Body/Shoulder_F/Forearm_F");
+        Transform tHF = _cachedRoot.transform.Find("Body/Shoulder_F/Forearm_F/Hand_F");
+
+        if (tWeaponGrip != null && tHandGripH != null && tSF != null && tFF != null && tHF != null)
         {
-            Transform tSF = _cachedRoot.transform.Find("Body/Shoulder_F");
-            Transform tFF = _cachedRoot.transform.Find("Body/Shoulder_F/Forearm_F");
-            Transform tHF = _cachedRoot.transform.Find("Body/Shoulder_F/Forearm_F/Hand_F");
+            Vector3 weaponGripWorld = tWeaponGrip.position;
+            weaponGripWorld.z = 0f;
 
-            Vector3 gripWorld = tGrip.position;
-            gripWorld.z = 0f;
-
-            // GripPoint 위치에 마젠타 마커 표시
+            // Weapon/GripPoint 위치 표시 (마젠타)
             Handles.color = Color.magenta;
-            Handles.DotHandleCap(0, gripWorld, Quaternion.identity, 0.04f, EventType.Repaint);
-            Handles.Label(gripWorld + Vector3.up * 0.14f, "GripPoint", _labelStyle);
+            Handles.DotHandleCap(0, weaponGripWorld, Quaternion.identity, 0.04f, EventType.Repaint);
+            Handles.Label(weaponGripWorld + Vector3.up * 0.14f, "WGrip", _labelStyle);
 
-            // 버튼: Hand_F를 GripPoint로 스냅 (첫 클릭에 바로 실행)
-            float snapSize = 0.06f;
-            Rect snapRect = new Rect(
-                HandleUtility.WorldToGUIPoint(gripWorld + Vector3.right * 0.18f) - Vector2.one * 20,
-                Vector2.one * 40);
+            // Snap 버튼: GripPoint_H가 Weapon/GripPoint에 닿도록 SF/FF IK
+            // 목표 = Weapon/GripPoint 위치에서 GripPoint_H 오프셋 역보정
+            // GripPoint_H는 Hand_F 하위 (0,-0.2) → Hand_F 피봇 위치 계산
+            // Hand_F pivot → GripPoint_H 오프셋을 역산해서 실제 Hand_F 목표 위치 구함
+            Vector3 gripHLocal = tHandGripH.localPosition; // (0, -0.2, 0)
+            // Hand_F world rot 고려해서 역오프셋
+            // 목표 Hand_F 위치 = weaponGrip - (GripPoint_H 월드 오프셋)
+            // GripPoint_H 월드 오프셋 = Hand_F rot으로 회전된 localPos
+            // 이를 역산: targetHF = weaponGrip - R(HF_worldRot) * gripHLocal
+            float hfWorldRotZ = WorldRotZ(tHF);
+            float rad = hfWorldRotZ * Mathf.Deg2Rad;
+            Vector3 gripOffset = new Vector3(
+                gripHLocal.x * Mathf.Cos(rad) - gripHLocal.y * Mathf.Sin(rad),
+                gripHLocal.x * Mathf.Sin(rad) + gripHLocal.y * Mathf.Cos(rad),
+                0f);
+            Vector3 targetHF = weaponGripWorld - gripOffset;
 
-            Handles.color = new Color(1f, 0.2f, 0.8f, 0.8f);
-            Handles.DrawSolidDisc(gripWorld + Vector3.right * 0.18f, Vector3.forward, snapSize);
+            // 버튼 위치
+            Vector3 btnPos = weaponGripWorld + Vector3.right * 0.20f;
 
-            if (Event.current.type == EventType.MouseDown &&
-                snapRect.Contains(Event.current.mousePosition))
+            Handles.color = new Color(1f, 0.2f, 0.8f, 0.9f);
+            Handles.DotHandleCap(0, btnPos, Quaternion.identity, 0.04f, EventType.Repaint);
+            Handles.Label(btnPos + Vector3.up * 0.08f, "Snap HF", _labelStyle);
+
+            // 클릭 감지
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
             {
-                if (tSF != null && tFF != null && tHF != null)
+                Vector2 guiPos = HandleUtility.WorldToGUIPoint(btnPos);
+                if (Vector2.Distance(guiPos, Event.current.mousePosition) < 20f)
                 {
-                    Undo.RecordObject(tSF, "Snap Hand_F to GripPoint");
-                    Undo.RecordObject(tFF, "Snap Hand_F to GripPoint");
-                    SolveIK(tSF, tFF, tHF, gripWorld);
+                    Undo.RecordObject(tSF, "Snap GripPoint_H to WeaponGrip");
+                    Undo.RecordObject(tFF, "Snap GripPoint_H to WeaponGrip");
+                    SolveIK(tSF, tFF, tHF, targetHF);
                     Event.current.Use();
+                    SceneView.RepaintAll();
                 }
             }
-            Handles.Label(gripWorld + Vector3.right * 0.14f + Vector3.up * 0.08f, "Snap HF→", _labelStyle);
         }
     }
 
@@ -140,7 +160,6 @@ public class MainBoss1_IKHandle
 
         float cosA = (lenA * lenA + dist * dist - lenB * lenB) / (2f * lenA * dist);
         float offsetA = Mathf.Acos(Mathf.Clamp(cosA, -1f, 1f)) * Mathf.Rad2Deg;
-
         float cosB = (lenA * lenA + lenB * lenB - dist * dist) / (2f * lenA * lenB);
         float angleB = Mathf.Acos(Mathf.Clamp(cosB, -1f, 1f)) * Mathf.Rad2Deg;
 
