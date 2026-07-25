@@ -90,12 +90,11 @@ public class MainBoss1_Attack3BCGenerator
         (18, 0.05f), (19, 0.05f), (20, 0f), (21, 0f), (22, 0f));
 
     static readonly float[] SF_ROT = F(0f,
-        (0, 175f), (1, 170f), (2, -167.27f),
-        (3, -167.27f), (4, -167.27f), (5, -165f), (6, -167.27f), (7, -165f),
-        (8, -162f), (9, -158f), (10, -155f),
+        (0, 175f), (1, 170f), (2, 192.73f), (3, 192.73f), (4, 192.73f), (5, 195f), (6, 192.73f), (7, 195f),
+        (8, 198f), (9, 202f), (10, 205f),
         (11, 104.601f),
-        (12, -4.22f), (13, -4.22f), (14, -4.22f), (15, -4.22f), (16, -4.22f), (17, -4.22f),
-        (18, -4.22f), (19, -4.22f), (20, 25.56f), (21, 25.56f), (22, 25.56f));
+        (12, -4.22f), (13, -4.22f), (14, -4.22f), (15, -4.22f),
+        (16, -4.22f), (17, -4.22f), (18, 25.56f), (19, 25.56f));
 
     static readonly float[] FF_ROT = F(0f,
         (0, 10f), (1, 2f), (2, -4.24f),
@@ -106,12 +105,11 @@ public class MainBoss1_Attack3BCGenerator
         (18, 48.30f), (19, 48.30f), (20, 7.39f), (21, 7.39f), (22, 7.39f));
 
     static readonly float[] SB_ROT = F(0f,
-        (0, 170f), (1, 158f), (2, -150.73f),
-        (3, -150.73f), (4, -150.73f), (5, -148f), (6, -150.73f), (7, -148f),
-        (8, -145f), (9, -142f), (10, -138f),
+        (0, 170f), (1, 158f), (2, 209.27f), (3, 209.27f), (4, 209.27f), (5, 212f), (6, 209.27f), (7, 212f),
+        (8, 215f), (9, 218f), (10, 222f),
         (11, 13.372f),
-        (12, -10.97f), (13, -10.97f), (14, -10.97f), (15, -10.97f), (16, -10.97f), (17, -10.97f),
-        (18, -10.97f), (19, -10.97f), (20, 0f), (21, 0f), (22, 0f));
+        (12, -10.97f), (13, -10.97f), (14, -10.97f), (15, -10.97f),
+        (16, -10.97f), (17, -10.97f), (18, 0f), (19, 0f));
 
     static readonly float[] FB_ROT = F(0f,
         (0, 60f), (1, 45f), (2, 30.32f),
@@ -135,12 +133,14 @@ public class MainBoss1_Attack3BCGenerator
         (12, -90f), (13, -90f), (14, -90f), (15, -90f), (16, -90f), (17, -90f), (21, -90f), (22, -90f));
 
     static readonly float[] WP_SCALE_X = F(1f,
+        (0, 1f), (1, 1f), (2, 1f),
         (3, 0.92f), (4, 1f), (5, 0.92f), (6, 1f), (7, 0.92f),
         (10, 2.5f), (11, 2.5f),
         (12, 2.2f), (13, 2.2f), (14, 2.2f), (15, 1.8f),
         (16, 1.0f), (21, 1.0f), (22, 1.0f));
 
     static readonly float[] WP_SCALE_Y = F(1f,
+        (0, 1f), (1, 1f), (2, 1f),
         (3, 0.92f), (4, 1f), (5, 0.92f), (6, 1f), (7, 0.92f),
         (10, 2.5f), (11, 2.5f),
         (12, 2.0f), (13, 2.0f), (14, 2.0f), (15, 1.6f),
@@ -201,25 +201,39 @@ public class MainBoss1_Attack3BCGenerator
             }
             clip.SetCurve(path, typeof(Transform), prop, curve);
         }
+
+        // WP_ROT 전용: 전구간 Linear (오버슈트 방지)
+        void CLinear(string path, string prop, float[] vals)
+        {
+            var keys = new Keyframe[TOTAL_FRAMES];
+            for (int i = 0; i < TOTAL_FRAMES; i++) keys[i] = new Keyframe(i / FRAME_RATE, vals[i]);
+            var curve = new AnimationCurve(keys);
+            for (int i = 0; i < curve.keys.Length; i++)
+            {
+                AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Linear);
+                AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Linear);
+            }
+            clip.SetCurve(path, typeof(Transform), prop, curve);
+        }
         void L(string path, string prop, float val) =>
             clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR, val));
 
         L(BODY, "localPosition.x", 0f); C(BODY, "localPosition.y", BODY_Y); L(BODY, "localPosition.z", 0f);
-        C(BODY, "localEulerAngles.z", bodyRot);
+        CLinear(BODY, "localEulerAngles.z", bodyRot);
         L(HEAD, "localPosition.x", 0f); L(HEAD, "localPosition.y", 0.70f); L(HEAD, "localPosition.z", 0f);
         C(HEAD, "localEulerAngles.z", HEAD_ROT);
         L(BOTTOM, "localPosition.x", -0.20f); L(BOTTOM, "localPosition.y", -0.30f); L(BOTTOM, "localPosition.z", 0f);
-        C(BOTTOM, "localEulerAngles.z", botRot);
+        CLinear(BOTTOM, "localEulerAngles.z", botRot);
         L(SF, "localPosition.x", -0.38f); L(SF, "localPosition.y", 0.34f); L(SF, "localPosition.z", 0f);
-        C(SF, "localEulerAngles.z", SF_ROT); C(FF, "localEulerAngles.z", FF_ROT);
+        CLinear(SF, "localEulerAngles.z", SF_ROT); CLinear(FF, "localEulerAngles.z", FF_ROT);
         L(SB, "localPosition.x", 0.26f); L(SB, "localPosition.y", 0.55f); L(SB, "localPosition.z", 0f);
-        C(SB, "localEulerAngles.z", SB_ROT); C(FB, "localEulerAngles.z", FB_ROT); C(HB, "localEulerAngles.z", HB_ROT);
-        C(WP, "localEulerAngles.z", WP_ROT); C(WP, "localScale.x", WP_SCALE_X); C(WP, "localScale.y", WP_SCALE_Y);
+        CLinear(SB, "localEulerAngles.z", SB_ROT); CLinear(FB, "localEulerAngles.z", FB_ROT); CLinear(HB, "localEulerAngles.z", HB_ROT);
+        CLinear(WP, "localEulerAngles.z", WP_ROT); CLinear(WP, "localScale.x", WP_SCALE_X); CLinear(WP, "localScale.y", WP_SCALE_Y);
         L(WP, "localScale.z", 1f);
-        C(THIGH_F, "localEulerAngles.z", TF_ROT); C(CALF_F, "localEulerAngles.z", CF_ROT);
-        C(FOOT_F, "localEulerAngles.z", FOOT_F_ROT);
-        C(THIGH_B, "localEulerAngles.z", TB_ROT); C(CALF_B, "localEulerAngles.z", CB_ROT);
-        C(FOOT_B, "localEulerAngles.z", FOOT_B_ROT);
+        CLinear(THIGH_F, "localEulerAngles.z", TF_ROT); CLinear(CALF_F, "localEulerAngles.z", CF_ROT);
+        CLinear(FOOT_F, "localEulerAngles.z", FOOT_F_ROT);
+        CLinear(THIGH_B, "localEulerAngles.z", TB_ROT); CLinear(CALF_B, "localEulerAngles.z", CB_ROT);
+        CLinear(FOOT_B, "localEulerAngles.z", FOOT_B_ROT);
 
         string assetPath = $"{SAVE_PATH}/{clipName}.anim";
         var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
