@@ -15,6 +15,7 @@ public class SettingController : MonoBehaviour
     //====================================================
     // UI REFERENCES
     //====================================================
+    [SerializeField] private GameObject settingBackground;
 
     [Header("Category Select Images")]
     public GameObject[] categorySelectImages;    // 카테고리 3개 (Audio, Display, Controls)
@@ -110,8 +111,13 @@ public class SettingController : MonoBehaviour
     // ==== 설정창 열기 ====
     public void OpenPanel()
     {
+        // 검은 뒷배경은 즉시 표시
+        settingBackground.SetActive(true);
+
+        // 설정창 활성화
         settingPanel.SetActive(true);
 
+        // 설정창은 오른쪽에서 시작
         panelRect.anchoredPosition = closedPosition;
         targetPosition = openPosition;
 
@@ -131,7 +137,11 @@ public class SettingController : MonoBehaviour
     {
         yield return new WaitForSecondsRealtime(0.25f);
 
+        // 설정창 닫기
         settingPanel.SetActive(false);
+
+        // 검은 뒷배경도 닫기
+        settingBackground.SetActive(false);
     }
 
     //====================================================

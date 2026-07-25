@@ -10,6 +10,7 @@ public class MidBossHealthUI : MonoBehaviour
     [SerializeField] private GameObject root;
     [SerializeField] private Image hpFill;
     [SerializeField] private TMP_Text bossName;
+    [SerializeField] private TMP_Text hpText;
 
     [Header("Armor UI")]
     [SerializeField] private BossArmorUI armorUI;
@@ -45,6 +46,9 @@ public class MidBossHealthUI : MonoBehaviour
 
         hpFill.fillAmount = hpPercent;
 
+        // HP 텍스트 갱신
+        UpdateHPText(currentHp);
+
         // 갑옷 초기화
         if (armorUI != null)
         {
@@ -63,10 +67,23 @@ public class MidBossHealthUI : MonoBehaviour
 
         hpFill.fillAmount = hpPercent;
 
+        // HP 텍스트 갱신
+        UpdateHPText(currentHp);
+
         // 갑옷 상태 갱신
         if (armorUI != null)
             armorUI.UpdateArmor(hpPercent);
     }
+
+    // HP 텍스트 표시
+    private void UpdateHPText(float currentHp)
+    {
+        if (hpText == null)
+            return;
+
+        hpText.text = $"{Mathf.CeilToInt(currentHp)} / {Mathf.CeilToInt(maxHp)}";
+    }
+
 
     // HP바 숨김
     public void Hide()
