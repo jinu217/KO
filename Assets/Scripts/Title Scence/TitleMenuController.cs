@@ -125,12 +125,10 @@ public class TitleMenuController : MonoBehaviour
         {
             case 0:     // START
                 SaveData.Instance.isLoaded = false;
-                // 새 회차 시작
-                SaveData.Instance.run = new RunData();
-                // 이어하기 시작 스테이지 초기화
-                SaveData.Instance.persistent.nextStage = "Stage1-1";
-                yield return StartCoroutine(fadeManager.FadeOut());
-                SceneManager.LoadScene("Stage1-1");
+                SaveData.Instance.run = new RunData();    // 새 회차 시작
+                SaveData.Instance.persistent.nextStage = "Stage1-1";    // 이어하기 시작 스테이지 초기화
+                yield return StartCoroutine(fadeManager.FadeOut());     // 화면 페이드 아웃
+                SceneManager.LoadScene("Prologue");     // 프롤로그 시작
                 break;
 
             case 1:     // LOAD
