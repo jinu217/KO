@@ -18,7 +18,7 @@ public class PrefabCoordinateExtractor : EditorWindow
     bool includeScale = false;
     bool includeSpriteInfo = true;
     bool relativePathFromRoot = true;
-    int decimalPlaces = 4;
+    int decimalPlaces = 3;
     Vector2 scrollPos;
     string lastResult = "";
 
