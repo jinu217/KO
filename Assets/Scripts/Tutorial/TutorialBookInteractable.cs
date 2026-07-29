@@ -64,8 +64,26 @@ public class TutorialBookInteractable : MonoBehaviour
 
     private void Update()
     {
+        if (IsOutsideTutorial())
+        {
+            HandleFreeTutorialBookToggle();
+            return;
+        }
+
         HandleTutorialBookToggle();
         HandleInitialBookInteraction();
+    }
+
+    private void HandleFreeTutorialBookToggle()
+    {
+        if (!WasTutorialBookPressed())
+            return;
+
+        bool bookIsOpen = bookUI != null ? bookUI.IsOpen : isReading;
+        if (bookIsOpen)
+            return;
+
+        OpenBook();
     }
 
     public void CompleteReading()
@@ -86,7 +104,7 @@ public class TutorialBookInteractable : MonoBehaviour
         if (Vector2.Distance(transform.position, player.position) > interactRange)
             return;
 
-        if (!tutorialBookAction.WasPressedThisFrame())
+        if (!WasTutorialBookPressed())
             return;
 
         if (ShouldBlockTutorialBookOpen())
@@ -100,7 +118,7 @@ public class TutorialBookInteractable : MonoBehaviour
         if (isReading || !allowToggleAfterFirstClose || !completedFirstRead || tutorialBookAction == null)
             return;
 
-        if (!tutorialBookAction.WasPressedThisFrame())
+        if (!WasTutorialBookPressed())
             return;
 
         if (ShouldBlockTutorialBookOpen())
@@ -155,6 +173,17 @@ public class TutorialBookInteractable : MonoBehaviour
             inventoryUI = FindInventoryUIAnyState();
 
         return inventoryUI != null && inventoryUI.IsOpen;
+    }
+
+    private bool IsOutsideTutorial()
+    {
+        TutorialManager manager = TutorialManager.Instance;
+        return manager == null || !manager.IsActive;
+    }
+
+    private bool WasTutorialBookPressed()
+    {
+        return tutorialBookAction != null && tutorialBookAction.WasPressedThisFrame();
     }
 
     private InventoryUI FindInventoryUIAnyState()
