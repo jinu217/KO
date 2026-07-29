@@ -57,11 +57,15 @@ public class TutorialManager : MonoBehaviour
         {
             AdvanceIfCurrent(TutorialStep.FirstDummyDefeated, TutorialStep.NextDummyAttackable);
         }
+        else if (currentStep == TutorialStep.NextDummyDefeated)
+        {
+            AdvanceIfCurrent(TutorialStep.NextDummyDefeated, TutorialStep.GoTown);
+        }
     }
 
     public void SetStepByIndex(int stepIndex)
     {
-        SetStep((TutorialStep)Mathf.Clamp(stepIndex, 0, (int)TutorialStep.NextDummyDefeated));
+        SetStep((TutorialStep)Mathf.Clamp(stepIndex, 0, (int)TutorialStep.GoTown));
     }
 
     public void AdvanceIfCurrent(TutorialStep expectedStep, TutorialStep nextStep)

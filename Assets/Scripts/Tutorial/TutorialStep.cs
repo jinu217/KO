@@ -14,5 +14,6 @@ public enum TutorialStep
     FirstDummyAttackable = 11,
     FirstDummyDefeated = 12,
     NextDummyAttackable = 13,
-    NextDummyDefeated = 14
+    NextDummyDefeated = 14,
+    GoTown = 15
 }

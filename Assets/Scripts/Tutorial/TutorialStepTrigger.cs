@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Collider2D))]
 public class TutorialStepTrigger : MonoBehaviour
@@ -14,6 +15,9 @@ public class TutorialStepTrigger : MonoBehaviour
     [SerializeField] private TutorialStep nextStep;
     [SerializeField] private bool requireExactStep = true;
     [SerializeField] private bool oneShot = true;
+
+    [Header("Go Town")]
+    [SerializeField] private string townSceneName = "Town";
 
     [Header("Floating Text")]
     [SerializeField] private bool showFloatingText;
@@ -64,6 +68,16 @@ public class TutorialStepTrigger : MonoBehaviour
             return;
 
         triggered = true;
+
+        if (manager.CurrentStep == TutorialStep.GoTown)
+        {
+            if (oneShot)
+                used = true;
+
+            SceneManager.LoadScene(townSceneName);
+            return;
+        }
+
         manager.SetStep(nextStep);
 
         if (oneShot)
