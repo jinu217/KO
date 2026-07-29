@@ -637,10 +637,15 @@ public class PrologueManager : MonoBehaviour
             typingCoroutine = null;
         }
 
-
-        dialogueText.text =
-            currentFullText;
-
+        // 현재 데이터가 컷씬인지 확인
+        if (dialogues[currentDialogueIndex].type == "Cutscene")
+        {
+            cutsceneText.text = currentFullText;
+        }
+        else
+        {
+            dialogueText.text = currentFullText;
+        }
 
         isTyping = false;
     }
