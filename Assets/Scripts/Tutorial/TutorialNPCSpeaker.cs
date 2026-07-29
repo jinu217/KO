@@ -69,9 +69,48 @@ public class TutorialNPCSpeaker : MonoBehaviour
     [Tooltip("BasicControls 단계의 시작 대사가 Start Delay 0으로 되어 있을 때 대신 적용할 기본 지연 시간입니다.")]
     [SerializeField] private float basicControlsFallbackStartDelay = 1f;
 
+    [Header("Player Intro Before First NPC Speech")]
+    [Tooltip("첫 NPC 대사를 시작하기 전에 플레이어 포커스/페이드/플레이어 대사 연출을 한 번 실행합니다.")]
+    [SerializeField] private bool playPlayerIntroBeforeFirstSpeech = true;
+
+    [Tooltip("씬 진입 시 검은 화면으로 시작하는 페이드 패널의 CanvasGroup입니다.")]
+    [SerializeField] private CanvasGroup playerIntroFadeGroup;
+
+    [Tooltip("플레이어 말풍선 전체 오브젝트입니다.")]
+    [SerializeField] private GameObject playerSpeechRoot;
+
+    [Tooltip("플레이어 말풍선에 표시할 텍스트입니다.")]
+    [SerializeField] private TMP_Text playerSpeechText;
+
+    [TextArea(2, 4)]
+    [SerializeField] private string playerIntroMessage = "...";
+
+    [Tooltip("씬 진입 후 검은 화면을 유지하는 시간입니다.")]
+    [SerializeField] private float playerIntroBlackHoldDuration = 1f;
+
+    [Tooltip("검은 화면에서 게임 화면으로 밝아지는 시간입니다.")]
+    [SerializeField] private float playerIntroFadeInDuration = 1f;
+
+    [SerializeField] private float playerIntroSpeechDuration = 1.5f;
+
+    [Tooltip("플레이어에게 줌인하는 시간입니다. 말풍선 표시 시간보다 짧게 설정하면 빠르게 줌인한 뒤 화면을 유지합니다.")]
+    [SerializeField] private float playerCameraZoomDuration = 0.35f;
+
+    [Tooltip("검은 화면 동안 카메라가 플레이어를 비출 때 사용하는 위치 보정입니다.")]
+    [SerializeField] private Vector3 playerCameraFocusOffset = new Vector3(0f, 1.2f, -10f);
+
+    [Tooltip("플레이어 말풍선 연출 중 카메라 Orthographic Size입니다.")]
+    [SerializeField] private float playerCameraZoomSize = 3f;
+
     [Header("Movement")]
     [Tooltip("목표 위치에 이 거리 이하로 가까워지면 도착한 것으로 봅니다.")]
     [SerializeField] private float arriveDistance = 0.03f;
+
+    [Tooltip("NPC 카메라 줌이 시작된 후 대사를 표시하기까지의 시간입니다.")]
+    [SerializeField] private float npcSpeechStartDelayAfterFocusBegins = 0.25f;
+
+    [Tooltip("NPC 대사가 화면에 나타난 후 이동을 시작하기까지 제자리에 머무는 시간입니다.")]
+    [SerializeField] private float movementDelayAfterSpeechStarts = 0.3f;
 
     [Header("Camera Focus")]
     [Tooltip("NPC 줌인 연출에 사용할 카메라입니다. 비워두면 Main Camera를 자동으로 찾습니다.")]
@@ -97,6 +136,13 @@ public class TutorialNPCSpeaker : MonoBehaviour
     private Coroutine speechRoutine;
     private Coroutine focusRoutine;
     private Coroutine fadeRoutine;
+    private Coroutine playerIntroRoutine;
+    private bool hasPlayedPlayerIntro;
+    private bool hasPlayerIntroCameraState;
+    private Vector3 playerIntroCameraStartPosition;
+    private float playerIntroCameraStartSize;
+    private bool playerIntroCameraFollowWasEnabled;
+    private SpeechEvent cameraRestoreSpeechEvent;
 
     private bool hasMoveTarget;
     private Vector3 currentMoveTarget;
@@ -120,6 +166,15 @@ public class TutorialNPCSpeaker : MonoBehaviour
         CacheSpeechText();
         CacheReferences();
         SetSpeechVisible(false);
+        SetPlayerSpeechVisible(false);
+
+        if (playerIntroFadeGroup != null)
+        {
+            playerIntroFadeGroup.gameObject.SetActive(playPlayerIntroBeforeFirstSpeech);
+            playerIntroFadeGroup.alpha = playPlayerIntroBeforeFirstSpeech ? 1f : 0f;
+            playerIntroFadeGroup.blocksRaycasts = playPlayerIntroBeforeFirstSpeech;
+            playerIntroFadeGroup.interactable = false;
+        }
     }
 
     private void OnEnable()
@@ -188,6 +243,25 @@ public class TutorialNPCSpeaker : MonoBehaviour
 
     private void PlaySpeechEvent(SpeechEvent speechEvent)
     {
+        if (playerIntroRoutine != null)
+            return;
+
+        if (playPlayerIntroBeforeFirstSpeech && !hasPlayedPlayerIntro)
+        {
+            hasPlayedPlayerIntro = true;
+
+            if (playerIntroRoutine != null)
+                StopCoroutine(playerIntroRoutine);
+
+            playerIntroRoutine = StartCoroutine(PlayerIntroThenSpeechRoutine(speechEvent));
+            return;
+        }
+
+        PlaySpeechEventImmediately(speechEvent);
+    }
+
+    private void PlaySpeechEventImmediately(SpeechEvent speechEvent)
+    {
         int eventIndex = Array.IndexOf(speechEvents, speechEvent);
         if (eventIndex >= 0 && playedEventIndices.Contains(eventIndex))
         {
@@ -200,11 +274,119 @@ public class TutorialNPCSpeaker : MonoBehaviour
         if (eventIndex >= 0)
             playedEventIndices.Add(eventIndex);
 
-        ApplyMoveTarget(speechEvent);
-        StartSpeech(speechEvent);
-
         if (speechEvent.focusCamera)
             StartCameraFocus(speechEvent);
+
+        StartSpeech(speechEvent);
+    }
+
+    private IEnumerator PlayerIntroThenSpeechRoutine(SpeechEvent speechEvent)
+    {
+        CacheReferences();
+        playerController?.PauseKeyboardControl();
+        bool cameraFollowWasEnabled = cameraFollow != null && cameraFollow.enabled;
+
+        if (targetCamera != null)
+        {
+            hasPlayerIntroCameraState = true;
+            playerIntroCameraStartPosition = targetCamera.transform.position;
+            playerIntroCameraStartSize = targetCamera.orthographicSize;
+            playerIntroCameraFollowWasEnabled = cameraFollowWasEnabled;
+        }
+
+        yield return new WaitForSeconds(Mathf.Max(0f, playerIntroBlackHoldDuration));
+
+        yield return FadePlayerIntro(1f, 0f, playerIntroFadeInDuration);
+
+        yield return ZoomToPlayerRoutine(playerCameraZoomDuration);
+
+        if (playerSpeechText != null)
+            playerSpeechText.text = playerIntroMessage;
+
+        SetPlayerSpeechVisible(true);
+        yield return new WaitForSeconds(Mathf.Max(0f, playerIntroSpeechDuration));
+        SetPlayerSpeechVisible(false);
+
+        if (cameraFollow != null)
+            cameraFollow.enabled = cameraFollowWasEnabled;
+
+        playerController?.ResumeKeyboardControl();
+        playerIntroRoutine = null;
+        cameraRestoreSpeechEvent = speechEvent;
+
+        PlaySpeechEventImmediately(speechEvent);
+    }
+
+    private IEnumerator ZoomToPlayerRoutine(float duration)
+    {
+        if (targetCamera == null || playerController == null)
+        {
+            yield return new WaitForSeconds(Mathf.Max(0f, duration));
+            yield break;
+        }
+
+        if (cameraFollow != null)
+            cameraFollow.enabled = false;
+
+        Vector3 startPosition = targetCamera.transform.position;
+        float startSize = targetCamera.orthographicSize;
+        float safeDuration = Mathf.Max(0f, duration);
+
+        if (safeDuration <= 0f)
+        {
+            Vector3 focusPosition = playerController.transform.position + playerCameraFocusOffset;
+            targetCamera.transform.position = ClampCameraToBounds(focusPosition, playerCameraZoomSize);
+            targetCamera.orthographicSize = playerCameraZoomSize;
+            yield break;
+        }
+
+        float timer = 0f;
+        while (timer < safeDuration)
+        {
+            timer += Time.deltaTime;
+            float t = Mathf.Clamp01(timer / safeDuration);
+            Vector3 focusPosition = playerController.transform.position + playerCameraFocusOffset;
+            float currentSize = Mathf.Lerp(startSize, playerCameraZoomSize, t);
+            Vector3 currentPosition = Vector3.Lerp(startPosition, focusPosition, t);
+
+            targetCamera.transform.position = ClampCameraToBounds(currentPosition, currentSize);
+            targetCamera.orthographicSize = currentSize;
+            yield return null;
+        }
+    }
+
+    private IEnumerator FadePlayerIntro(float from, float to, float duration)
+    {
+        if (playerIntroFadeGroup == null)
+            yield break;
+
+        playerIntroFadeGroup.gameObject.SetActive(true);
+        playerIntroFadeGroup.blocksRaycasts = true;
+        playerIntroFadeGroup.alpha = from;
+
+        float safeDuration = Mathf.Max(0f, duration);
+        if (safeDuration <= 0f)
+        {
+            playerIntroFadeGroup.alpha = to;
+        }
+        else
+        {
+            float timer = 0f;
+            while (timer < safeDuration)
+            {
+                timer += Time.deltaTime;
+                playerIntroFadeGroup.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(timer / safeDuration));
+                yield return null;
+            }
+
+            playerIntroFadeGroup.alpha = to;
+        }
+
+        if (to <= 0f)
+        {
+            playerIntroFadeGroup.blocksRaycasts = false;
+            playerIntroFadeGroup.gameObject.SetActive(false);
+        }
     }
 
     private void ApplyMoveTarget(SpeechEvent speechEvent)
@@ -260,9 +442,16 @@ public class TutorialNPCSpeaker : MonoBehaviour
 
     private IEnumerator SpeechRoutine(SpeechEvent speechEvent)
     {
+        if (speechEvent.focusCamera && npcSpeechStartDelayAfterFocusBegins > 0f)
+            yield return new WaitForSeconds(npcSpeechStartDelayAfterFocusBegins);
+
         float delay = speechEvent.startDelay;
-        if (speechEvent.triggerStep == TutorialStep.BasicControls && delay <= 0f)
+        if (!speechEvent.focusCamera &&
+            speechEvent.triggerStep == TutorialStep.BasicControls &&
+            delay <= 0f)
+        {
             delay = basicControlsFallbackStartDelay;
+        }
 
         if (delay > 0f)
             yield return new WaitForSeconds(delay);
@@ -271,9 +460,87 @@ public class TutorialNPCSpeaker : MonoBehaviour
             speechText.text = speechEvent.message;
 
         SetSpeechVisible(true);
-        yield return new WaitForSeconds(Mathf.Max(0f, speechEvent.speechDuration));
+
+        float moveDelay = Mathf.Max(0f, movementDelayAfterSpeechStarts);
+        if (moveDelay > 0f)
+            yield return new WaitForSeconds(moveDelay);
+
+        ApplyMoveTarget(speechEvent);
+
+        float remainingSpeechDuration = Mathf.Max(0f, speechEvent.speechDuration - moveDelay);
+        if (remainingSpeechDuration > 0f)
+            yield return new WaitForSeconds(remainingSpeechDuration);
+
         SetSpeechVisible(false);
+
+        if (speechEvent == cameraRestoreSpeechEvent)
+        {
+            cameraRestoreSpeechEvent = null;
+            yield return RestoreCameraAfterIntroSpeech(speechEvent);
+        }
+
         speechRoutine = null;
+    }
+
+    private IEnumerator RestoreCameraAfterIntroSpeech(SpeechEvent speechEvent)
+    {
+        playerController?.PauseKeyboardControl();
+
+        bool interruptedNpcFocus = focusRoutine != null;
+        if (focusRoutine != null)
+        {
+            StopCoroutine(focusRoutine);
+            focusRoutine = null;
+        }
+
+        if (!hasPlayerIntroCameraState || targetCamera == null)
+        {
+            playerController?.ResumeKeyboardControl();
+            yield break;
+        }
+
+        Vector3 restoreFromPosition = targetCamera.transform.position;
+        float restoreFromSize = targetCamera.orthographicSize;
+        float duration = Mathf.Max(0f, cameraBlendTime);
+        Vector3 restoreTargetPosition = playerIntroCameraStartPosition;
+
+        if (cameraFollow != null && playerController != null)
+            restoreTargetPosition = playerController.transform.position + cameraFollow.offset;
+
+        restoreTargetPosition = ClampCameraToBounds(restoreTargetPosition, playerIntroCameraStartSize);
+
+        if (cameraFollow != null)
+            cameraFollow.enabled = false;
+
+        if (duration <= 0f)
+        {
+            targetCamera.transform.position = restoreTargetPosition;
+            targetCamera.orthographicSize = playerIntroCameraStartSize;
+        }
+        else
+        {
+            float timer = 0f;
+            while (timer < duration)
+            {
+                timer += Time.deltaTime;
+                float t = Mathf.Clamp01(timer / duration);
+                float size = Mathf.Lerp(restoreFromSize, playerIntroCameraStartSize, t);
+                Vector3 position = Vector3.Lerp(restoreFromPosition, restoreTargetPosition, t);
+
+                targetCamera.transform.position = ClampCameraToBounds(position, size);
+                targetCamera.orthographicSize = size;
+                yield return null;
+            }
+        }
+
+        if (cameraFollow != null)
+            cameraFollow.enabled = playerIntroCameraFollowWasEnabled;
+
+        hasPlayerIntroCameraState = false;
+        playerController?.ResumeKeyboardControl();
+
+        if (interruptedNpcFocus)
+            CameraFocusFinished?.Invoke(speechEvent.triggerStep);
     }
 
     private void StartCameraFocus(SpeechEvent speechEvent)
@@ -417,6 +684,14 @@ public class TutorialNPCSpeaker : MonoBehaviour
             speechRoot.SetActive(visible);
         else if (speechText != null)
             speechText.gameObject.SetActive(visible);
+    }
+
+    private void SetPlayerSpeechVisible(bool visible)
+    {
+        if (playerSpeechRoot != null)
+            playerSpeechRoot.SetActive(visible);
+        else if (playerSpeechText != null)
+            playerSpeechText.gameObject.SetActive(visible);
     }
 
     private void CacheSpeechText()
