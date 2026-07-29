@@ -317,7 +317,7 @@ public class PrologueManager : MonoBehaviour
 
     private void SkipPrologue()
     {
-        SceneManager.LoadScene("Stage1-1");
+        SceneManager.LoadScene("Tutorial_0");
     }
 
 
@@ -678,6 +678,6 @@ public class PrologueManager : MonoBehaviour
         // 화면을 검게 페이드 아웃
         yield return StartCoroutine(fadeManager.FadeOut());
         // 다음 씬으로 이동
-        SceneManager.LoadScene("Stage1-1");
+        SceneManager.LoadScene("Tutorial_0");
     }
 }
