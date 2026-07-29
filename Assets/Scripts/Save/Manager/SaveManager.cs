@@ -13,7 +13,7 @@ public class SaveManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            DontDestroyOnLoad(transform.root.gameObject);
         }
         else
         {
@@ -51,8 +51,25 @@ public class SaveManager : MonoBehaviour
 
         // Run
         file.run.hp = SaveData.Instance.run.hp;
+        file.run.maxHp = SaveData.Instance.run.maxHp;
         file.run.sp = SaveData.Instance.run.sp;
         file.run.bpm = SaveData.Instance.run.bpm;
+        file.run.initialized = SaveData.Instance.run.initialized;
+        file.run.inventoryItemIds = SaveData.Instance.run.inventoryItemIds != null
+            ? new System.Collections.Generic.List<int>(SaveData.Instance.run.inventoryItemIds)
+            : new System.Collections.Generic.List<int>();
+        file.run.weaponItemId = SaveData.Instance.run.weaponItemId;
+        file.run.handItemId = SaveData.Instance.run.handItemId;
+        file.run.headItemId = SaveData.Instance.run.headItemId;
+        file.run.bodyItemId = SaveData.Instance.run.bodyItemId;
+        file.run.footItemId = SaveData.Instance.run.footItemId;
+        file.run.healPotionCount = SaveData.Instance.run.healPotionCount;
+        file.run.bpmPotionCount = SaveData.Instance.run.bpmPotionCount;
+        file.run.coin = SaveData.Instance.run.coin;
+        file.run.currentScene = SaveData.Instance.run.currentScene;
+        file.run.spawnId = SaveData.Instance.run.spawnId;
+        file.run.inBossFight = SaveData.Instance.run.inBossFight;
+        file.run.currentBossID = SaveData.Instance.run.currentBossID;
 
         return file;
     }
@@ -83,9 +100,8 @@ public class SaveManager : MonoBehaviour
         SaveData.Instance.persistent.soul = file.persistent.soul;
 
         // Run
-        SaveData.Instance.run.hp = file.run.hp;
-        SaveData.Instance.run.sp = file.run.sp;
-        SaveData.Instance.run.bpm = file.run.bpm;
+        SaveData.Instance.run = file.run ?? new RunData();
+        SaveData.Instance.run.inventoryItemIds ??= new System.Collections.Generic.List<int>();
     }
 
     //============== 저장 삭제 ==================

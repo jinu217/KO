@@ -14,6 +14,9 @@ public class Inventory : MonoBehaviour
 
     void Awake()
     {
+        if (SaveData.Instance != null && SaveData.Instance.run.initialized)
+            return;
+
         foreach (ItemData item in startItems)
         {
             AddItem(item);
@@ -23,6 +26,22 @@ public class Inventory : MonoBehaviour
     public void AddItem(ItemData item)
     {
         items.Add(new InventorySlot(item, 1));
+        onInventoryChanged?.Invoke();
+    }
+
+    public void ReplaceItems(IEnumerable<ItemData> restoredItems)
+    {
+        items.Clear();
+
+        if (restoredItems != null)
+        {
+            foreach (ItemData item in restoredItems)
+            {
+                if (item != null)
+                    items.Add(new InventorySlot(item, 1));
+            }
+        }
+
         onInventoryChanged?.Invoke();
     }
 

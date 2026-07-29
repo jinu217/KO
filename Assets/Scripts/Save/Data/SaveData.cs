@@ -5,6 +5,9 @@ using UnityEngine;
 public class SaveData : MonoBehaviour
 {
     public static SaveData Instance;
+
+    [Header("Item Restore")]
+    [SerializeField] private ItemDatabase itemDatabase;
     
     public PersistentData persistent = new PersistentData();
     public RunData run = new RunData();
@@ -32,16 +35,57 @@ public class SaveData : MonoBehaviour
     // 인벤토리
     public int potionCount;
 
+    public ItemData GetItemById(int id)
+    {
+        if (id < 0)
+            return null;
+
+        if (itemDatabase != null)
+            return itemDatabase.GetById(id);
+
+        Debug.LogError("[SaveData] ItemDatabase가 연결되지 않아 아이템을 복원할 수 없습니다.");
+        return null;
+    }
+
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            DontDestroyOnLoad(transform.root.gameObject);
         }
         else
         {
             Destroy(gameObject);
         }
+    }
+
+    public void ResetForNewGame(int slot = 1)
+    {
+        currentSlot = Mathf.Max(1, slot);
+        isLoaded = false;
+        playTime = 0f;
+        hp = 0f;
+        sp = 0f;
+        bpm = 0f;
+        deathCount = 0;
+        currentStage = string.Empty;
+        spawnPosition = Vector3.zero;
+        potionCount = 0;
+
+        persistent = new PersistentData
+        {
+            nextStage = "Stage1-1"
+        };
+        run = new RunData();
+
+    }
+
+    public void ResetRun()
+    {
+        isLoaded = false;
+        run = new RunData();
+        spawnPosition = Vector3.zero;
+        potionCount = 0;
     }
 }

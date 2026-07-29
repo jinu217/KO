@@ -68,3 +68,49 @@ public class ItemData : ScriptableObject
     public Sprite footLeftSprite;
     public Sprite footRightSprite;
 }
+
+[CreateAssetMenu(menuName = "Items/Item Database")]
+public class ItemDatabase : ScriptableObject
+{
+    [SerializeField] private System.Collections.Generic.List<ItemData> items = new System.Collections.Generic.List<ItemData>();
+
+    private System.Collections.Generic.Dictionary<int, ItemData> itemsById;
+
+    public ItemData GetById(int id)
+    {
+        if (id < 0)
+            return null;
+
+        BuildLookup();
+        itemsById.TryGetValue(id, out ItemData item);
+        return item;
+    }
+
+    private void BuildLookup()
+    {
+        if (itemsById != null)
+            return;
+
+        itemsById = new System.Collections.Generic.Dictionary<int, ItemData>();
+        foreach (ItemData item in items)
+        {
+            if (item == null)
+                continue;
+
+            if (itemsById.ContainsKey(item.id))
+            {
+                Debug.LogError($"[ItemDatabase] 중복 아이템 ID: {item.id} ({item.name})", this);
+                continue;
+            }
+
+            itemsById.Add(item.id, item);
+        }
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        itemsById = null;
+    }
+#endif
+}

@@ -12,29 +12,60 @@ public class EquipmentManager : MonoBehaviour
     public CharacterPreviewUI previewUI;
     public PlayerStats stats = new PlayerStats();
     public System.Action onStatsChanged;
-    public PlayerStats baseStats;
+    [SerializeField] private PlayerController playerController;
     public PlayerAppearance playerAppearance; //플레이어 외형 장비연결
 
     void Awake()
     {
-        baseStats = new PlayerStats();
-
-        baseStats.attack = 10;
-        baseStats.attackSpeed = 1f;
-        baseStats.critChance = 5f;
-        baseStats.critDamage = 150f;
-        baseStats.moveSpeed = 5f;
-        baseStats.defense = 3;
-        baseStats.hp = 100;
+        if (playerController == null)
+            playerController = GetComponent<PlayerController>();
     }
 
     void Start()
     {
+        if (SaveData.Instance != null && SaveData.Instance.run.initialized)
+        {
+            RefreshStats();
+            return;
+        }
+
         foreach(ItemData item in startEquipItems)
         {
             if(item != null)
                 Equip(item);
         }
+    }
+
+    public void RestoreEquipment(ItemData weapon, ItemData hand, ItemData head, ItemData body, ItemData foot)
+    {
+        SetSlotWithoutInventory(weaponSlot, weapon);
+        SetSlotWithoutInventory(handSlot, hand);
+        SetSlotWithoutInventory(headSlot, head);
+        SetSlotWithoutInventory(bodySlot, body);
+        SetSlotWithoutInventory(footSlot, foot);
+
+        ApplyAppearance(weapon);
+        ApplyAppearance(hand);
+        ApplyAppearance(head);
+        ApplyAppearance(body);
+        ApplyAppearance(foot);
+
+        if (previewUI != null)
+            previewUI.Refresh();
+
+        RefreshStats();
+    }
+
+    private void SetSlotWithoutInventory(EquipmentSlot slot, ItemData item)
+    {
+        if (slot != null)
+            slot.SetItem(item);
+    }
+
+    private void ApplyAppearance(ItemData item)
+    {
+        if (item != null && playerAppearance != null)
+            playerAppearance.Equip(item);
     }
 
     public void Equip(ItemData item)
@@ -67,7 +98,8 @@ public class EquipmentManager : MonoBehaviour
         if (playerAppearance != null){
             playerAppearance.Equip(item);}
 
-        previewUI.Refresh();
+        if (previewUI != null)
+            previewUI.Refresh();
         RefreshStats();
     }
 
@@ -99,32 +131,41 @@ public class EquipmentManager : MonoBehaviour
         if (item != null)
             inventory.AddItem(item);
         
-        previewUI.Refresh();
+        if (previewUI != null)
+            previewUI.Refresh();
+        RefreshStats();
     }
 
     public void RefreshStats()
     {
-        stats.Clear();
+        if (playerController == null)
+            playerController = GetComponent<PlayerController>();
 
-        stats.attack = baseStats.attack;
-        stats.attackSpeed = baseStats.attackSpeed;
-        stats.critChance = baseStats.critChance;
-        stats.critDamage = baseStats.critDamage;
-        stats.moveSpeed = baseStats.moveSpeed;
-        stats.defense = baseStats.defense;
-        stats.hp = baseStats.hp;
+        ItemData weapon = GetItem(weaponSlot);
+        ItemData head = GetItem(headSlot);
+        ItemData body = GetItem(bodySlot);
+        ItemData hand = GetItem(handSlot);
+        ItemData foot = GetItem(footSlot);
 
-        Add(weaponSlot);
-        Add(headSlot);
-        Add(bodySlot);
-        Add(handSlot);
-        Add(footSlot);
+        if (playerController != null)
+        {
+            playerController.RecalculateEquipmentStats(weapon, head, body, hand, foot);
+            stats = playerController.Stats;
+        }
 
         onStatsChanged?.Invoke();
     }
 
+    private ItemData GetItem(EquipmentSlot slot)
+    {
+        return slot != null ? slot.GetItem() : null;
+    }
+
     void Add(EquipmentSlot slot)
     {
+        if (slot == null)
+            return;
+
         ItemData item = slot.GetItem();
 
         if (item == null)

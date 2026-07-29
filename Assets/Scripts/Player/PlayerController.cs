@@ -20,8 +20,164 @@ public enum WeaponType
     Scythe
 }
 
+[DisallowMultipleComponent]
+public class PlayerRuntimeState : MonoBehaviour
+{
+    [Header("Player Components")]
+    [SerializeField] private PlayerStatus status;
+    [SerializeField] private Inventory inventory;
+    [SerializeField] private EquipmentManager equipment;
+    [SerializeField] private PotionBag potionBag;
+    [SerializeField] private CurrencyManager currency;
+
+    private void Awake()
+    {
+        CacheComponents();
+    }
+
+    public void Capture()
+    {
+        if (SaveData.Instance == null)
+            return;
+
+        CacheComponents();
+        RunData run = SaveData.Instance.run;
+
+        if (status != null)
+        {
+            run.hp = status.currentHp;
+            run.maxHp = status.maxHp;
+            run.sp = status.currentSp;
+            run.bpm = status.currentBpm;
+        }
+
+        run.inventoryItemIds ??= new List<int>();
+        run.inventoryItemIds.Clear();
+        if (inventory != null)
+        {
+            foreach (InventorySlot slot in inventory.items)
+            {
+                if (slot?.item != null)
+                    run.inventoryItemIds.Add(slot.item.id);
+            }
+        }
+
+        if (equipment != null)
+        {
+            run.weaponItemId = GetItemId(equipment.weaponSlot);
+            run.handItemId = GetItemId(equipment.handSlot);
+            run.headItemId = GetItemId(equipment.headSlot);
+            run.bodyItemId = GetItemId(equipment.bodySlot);
+            run.footItemId = GetItemId(equipment.footSlot);
+        }
+
+        if (potionBag != null)
+        {
+            run.healPotionCount = potionBag.healPotionCount;
+            run.bpmPotionCount = potionBag.bpmPotionCount;
+        }
+
+        if (currency != null)
+            run.coin = currency.coin;
+
+        run.currentScene = SceneManager.GetActiveScene().name;
+        run.initialized = true;
+        SaveData.Instance.isLoaded = true;
+    }
+
+    public void Restore()
+    {
+        if (SaveData.Instance == null || !SaveData.Instance.run.initialized)
+            return;
+
+        CacheComponents();
+        RunData run = SaveData.Instance.run;
+
+        if (status != null)
+        {
+            status.currentHp = Mathf.Clamp(run.hp, 0f, status.maxHp);
+            status.currentSp = Mathf.Clamp(run.sp, 0f, status.maxSp);
+            status.currentBpm = Mathf.Clamp(run.bpm, 91f, 220f);
+        }
+
+        if (inventory != null)
+        {
+            List<ItemData> restoredItems = new List<ItemData>();
+            foreach (int itemId in run.inventoryItemIds ?? new List<int>())
+            {
+                ItemData item = SaveData.Instance.GetItemById(itemId);
+                if (item != null)
+                    restoredItems.Add(item);
+            }
+            inventory.ReplaceItems(restoredItems);
+        }
+
+        if (equipment != null)
+        {
+            ItemData weapon = SaveData.Instance.GetItemById(run.weaponItemId);
+            ItemData hand = SaveData.Instance.GetItemById(run.handItemId);
+            ItemData head = SaveData.Instance.GetItemById(run.headItemId);
+            ItemData body = SaveData.Instance.GetItemById(run.bodyItemId);
+            ItemData foot = SaveData.Instance.GetItemById(run.footItemId);
+
+            equipment.RestoreEquipment(weapon, hand, head, body, foot);
+
+            if (status != null)
+            {
+                status.currentHp = Mathf.Clamp(run.hp, 0f, status.maxHp);
+            }
+        }
+
+        if (potionBag != null)
+        {
+            potionBag.healPotionCount = run.healPotionCount;
+            potionBag.bpmPotionCount = run.bpmPotionCount;
+        }
+
+        if (currency != null)
+            currency.coin = run.coin;
+    }
+
+    private void CacheComponents()
+    {
+        if (status == null) status = GetComponent<PlayerStatus>();
+        if (inventory == null) inventory = GetComponent<Inventory>();
+        if (equipment == null) equipment = GetComponent<EquipmentManager>();
+        if (potionBag == null) potionBag = GetComponent<PotionBag>();
+        if (currency == null) currency = GetComponent<CurrencyManager>();
+    }
+
+    private static int GetItemId(EquipmentSlot slot)
+    {
+        ItemData item = slot != null ? slot.GetItem() : null;
+        return item != null ? item.id : -1;
+    }
+}
+
 public class PlayerController : MonoBehaviour, IDamageable
 {
+    [Header("Player Stats")]
+    [SerializeField] private PlayerStats baseStats = new PlayerStats();
+    [SerializeField] private PlayerStats stats = new PlayerStats();
+
+    public PlayerStats Stats => stats;
+
+    public void RecalculateEquipmentStats(params ItemData[] equippedItems)
+    {
+        stats.CopyFrom(baseStats);
+
+        if (equippedItems != null)
+        {
+            foreach (ItemData item in equippedItems)
+                stats.Add(item);
+        }
+
+        if (playerStatus != null)
+        {
+            playerStatus.currentHp = Mathf.Min(playerStatus.currentHp, playerStatus.maxHp);
+        }
+    }
+
     // -------------------- 컴포넌트/입력 --------------------
     private Rigidbody2D rb;        // 플레이어 물리 제어
     private Vector2 moveInput;     // Input System에서 받은 이동 입력
@@ -228,14 +384,19 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] private CanvasGroup fadeGroup;
     [SerializeField] private float fadeDuration = 0.8f;
     private bool isGameOver = false;
+    private PlayerRuntimeState runtimeState;
 
     // 컴포넌트 초기화
     void Awake()
     {
+        stats.CopyFrom(baseStats);
         rb = GetComponent<Rigidbody2D>();
         if (bodyCollider == null) bodyCollider = GetComponent<Collider2D>();
 
         hitFlash = GetComponent<HitFlashEffect>();
+        runtimeState = GetComponent<PlayerRuntimeState>();
+        if (runtimeState == null)
+            runtimeState = gameObject.AddComponent<PlayerRuntimeState>();
 
         originalGravity = rb.gravityScale;
         lastAttackTime = -999f;
@@ -251,16 +412,25 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         }
 
-        playerStatus.maxHp = GameManager.Instance.playerMaxHp;
-        currentJumpCount = GameManager.Instance.playerMaxJumpCount;
+        if (playerStatus == null)
+            playerStatus = GetComponent<PlayerStatus>();
+
+        if (playerStatus == null)
+        {
+            Debug.LogError("PlayerStatus가 Player에 없습니다.");
+            enabled = false;
+            return;
+        }
+
+        currentJumpCount = stats.maxJumpCount;
 
         if (useCalculatedJumpForce)
-            GameManager.Instance.playerJumpForce = CalculateJumpForceFromTiles();
+            stats.jumpForce = CalculateJumpForceFromTiles();
 
         inventoryUI = FindInventoryUIAnyState();
 
         // 저장 데이터를 불러온 경우
-        if (SaveData.Instance.isLoaded)
+        if (SaveData.Instance != null && SaveData.Instance.run.initialized)
         {
             LoadSaveData();
         }
@@ -311,7 +481,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         // 코요테 타임 & 점프 횟수/버퍼 관리
         if (isGrounded && rb.linearVelocity.y <= 0.1f && !isDownJumping)
         {
-            currentJumpCount = GameManager.Instance.playerMaxJumpCount;
+            currentJumpCount = stats.maxJumpCount;
             coyoteTimer = coyoteTime;
             hasBurnedGroundJumpAfterCoyote = false;
 
@@ -324,7 +494,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             // 코요테 타임이 끝났는데 아직 첫 점프를 안 썼다면 지상 점프 권한 1회 소모
             if (!isGrounded && coyoteTimer <= 0f && !hasBurnedGroundJumpAfterCoyote)
             {
-                int maxJump = GameManager.Instance.playerMaxJumpCount;
+                int maxJump = stats.maxJumpCount;
                 if (currentJumpCount == maxJump)
                     currentJumpCount = Mathf.Max(0, maxJump - 1);
 
@@ -614,7 +784,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanAttack()) return;
 
         float attackSpeedMultiplier = playerStatus != null ? playerStatus.AttackSpeedMultiplier : 1f;
-        float effectiveAttackSpeed = GameManager.Instance.playerAttackSpeed * attackSpeedMultiplier;
+        float effectiveAttackSpeed = stats.attackSpeed * attackSpeedMultiplier;
         if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed)) return;
 
         Attack();
@@ -669,7 +839,14 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
-        playerStatus.Heal(30);
+        PotionBag bag = GetComponent<PotionBag>();
+        if (bag == null)
+        {
+            Debug.LogWarning("PotionBag이 Player에 없습니다.");
+            return;
+        }
+
+        bag.UseHealPotion();
     }
     
     // 입력 콜백: BPM포션 사용
@@ -681,7 +858,14 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (!context.started || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
-        playerStatus.AddBPM(-30f);
+        PotionBag bag = GetComponent<PotionBag>();
+        if (bag == null)
+        {
+            Debug.LogWarning("PotionBag이 Player에 없습니다.");
+            return;
+        }
+
+        bag.UseBPMPotion();
     }
 
     public void OnMeditating(InputAction.CallbackContext context)
@@ -800,12 +984,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 실제 공격 판정 처리(무기별 박스/넉백 + 일반몹/중간보스/메인보스 모두 적용)
     void Attack()
     {
-        float dmg = GameManager.Instance.playerAttackDamage;
+        float dmg = stats.attackDamage;
         if (playerStatus != null)
             dmg *= playerStatus.AttackDamageMultiplier;
 
-        if (UnityEngine.Random.value < GameManager.Instance.playerCriticalChance)
-            dmg *= GameManager.Instance.playerCriticalMultiplier;
+        if (UnityEngine.Random.value < stats.critChance)
+            dmg *= stats.critDamage;
 
         float dir = -Mathf.Sign(transform.localScale.x);
         Vector2 size = GetWeaponAttackSize();
@@ -887,38 +1071,25 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 포션 사용 처리(고정량 + 비율 회복)
     private void UsePotion()
     {
-        if (GameManager.Instance.potionCount <= 0)
+        PotionBag bag = GetComponent<PotionBag>();
+        if (bag == null || bag.healPotionCount <= 0)
         {
             Debug.Log("포션이 없습니다!");
             return;
         }
 
-        float baseHeal = GameManager.Instance.potionHealAmount;
-        float percentHeal = baseHeal * GameManager.Instance.potionHealPercent;
-        float totalHeal = baseHeal + percentHeal;
-
-        playerStatus.Heal((int)totalHeal);
-        GameManager.Instance.potionCount--;
-
-        Debug.Log("포션 사용! " + totalHeal + "의 HP 회복됨. 남은 포션: " + GameManager.Instance.potionCount + " | 현재 HP: " + playerStatus.currentHp);
+        bag.UseHealPotion();
+        Debug.Log("포션 사용! 남은 포션: " + bag.healPotionCount + " | 현재 HP: " + playerStatus.currentHp);
     }
 
     // 인벤토리 아이템 장착 시 호출: 모든 스탯을 GameManager에 합산
     public void ApplyItemStats(ItemData item)
     {
-        if (GameManager.Instance == null) return;
-
-        GameManager.Instance.playerMaxHp += item.hp;
-        GameManager.Instance.playerDefense += item.defense;
-        GameManager.Instance.playerAttackDamage += item.attack;
-        GameManager.Instance.playerAttackSpeed += item.attackSpeed;
-        GameManager.Instance.playerCriticalChance += item.criticalChance;
-        GameManager.Instance.playerCriticalMultiplier += item.criticalDamage;
-        GameManager.Instance.playerMoveSpeed += item.moveSpeed;
+        if (item == null) return;
+        stats.Add(item);
 
         // 최대 체력 증가 시 현재 체력도 함께 보정
-        playerStatus.maxHp += item.hp;
-        playerStatus.currentHp += item.hp;
+        playerStatus.currentHp = Mathf.Min(playerStatus.currentHp + item.hp, playerStatus.maxHp);
 
         Debug.Log($"아이템 스탯 적용: HP+{item.hp}, 방어+{item.defense}, 이동속도+{item.moveSpeed}, 공격력+{item.attack}, 공격속도+{item.attackSpeed}, 치확+{item.criticalChance}, 치피+{item.criticalDamage}");
     }
@@ -926,18 +1097,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 인벤토리 아이템 해제 시 호출: 모든 스탯을 GameManager에서 차감
     public void RemoveItemStats(ItemData item)
     {
-        if (GameManager.Instance == null) return;
-
-        GameManager.Instance.playerMaxHp -= item.hp;
-        GameManager.Instance.playerDefense -= item.defense;
-        GameManager.Instance.playerAttackDamage -= item.attack;
-        GameManager.Instance.playerAttackSpeed -= item.attackSpeed;
-        GameManager.Instance.playerCriticalChance -= item.criticalChance;
-        GameManager.Instance.playerCriticalMultiplier -= item.criticalDamage;
-        GameManager.Instance.playerMoveSpeed -= item.moveSpeed;
+        if (item == null) return;
+        stats.Remove(item);
 
         // 최대 체력이 줄어들면 현재 체력도 최대치 이내로 보정
-        playerStatus.maxHp -= item.hp;
         playerStatus.currentHp = Mathf.Min(playerStatus.currentHp, playerStatus.maxHp);
 
         Debug.Log($"아이템 스탯 제거: HP-{item.hp}, 방어-{item.defense}, 이동속도-{item.moveSpeed}, 공격력-{item.attack}, 공격속도-{item.attackSpeed}, 치확-{item.criticalChance}, 치피-{item.criticalDamage}");
@@ -1002,7 +1165,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isMeditating)
             StopMeditating();
 
-        float defenseRate = GameManager.Instance.playerDefense / (GameManager.Instance.playerDefense + 100f);
+        float defenseRate = stats.defense / (stats.defense + 100f);
         float finalDamage = Mathf.Max(damage * 0.2f, damage * (1f - defenseRate));
 
         bool suppressHpDamage = TutorialManager.Instance != null && TutorialManager.Instance.ShouldSuppressPlayerHpDamage();
@@ -1151,16 +1314,6 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     private IEnumerator GameOverRoutine()
     {
-        if (SaveData.Instance != null)
-        {
-            SaveData.Instance.deathCount++;
-            Debug.Log("죽음 증가 : " + SaveData.Instance.deathCount);
-        }
-        else
-        {
-            Debug.Log("SaveData가 없습니다.");
-        }
-
         // 플레이어 정지
         rb.linearVelocity = Vector2.zero;
         rb.simulated = false;      // Rigidbody2D 정지
@@ -1199,7 +1352,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     private float CalculateJumpForceFromTiles()
     {
         float gravity = Mathf.Abs(Physics2D.gravity.y * originalGravity);
-        if (gravity <= 0.0001f) return GameManager.Instance.playerJumpForce;
+        if (gravity <= 0.0001f) return stats.jumpForce;
 
         float targetHeight = Mathf.Max(0.1f, tileHeight * jumpHeightInTiles);
         return Mathf.Sqrt(2f * gravity * targetHeight);
@@ -1213,7 +1366,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (coyoteTimer > 0f) return true;
 
         // 공중 추가 점프는 첫 점프를 소모했을 때만 허용
-        return currentJumpCount < GameManager.Instance.playerMaxJumpCount;
+        return currentJumpCount < stats.maxJumpCount;
     }
 
     // 점프 입력 버퍼를 실제 점프로 소비
@@ -1222,7 +1375,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (jumpBufferTimer <= 0f) return false;
         if (!CanJumpNow()) return false;
 
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, GameManager.Instance.playerJumpForce);
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
         currentJumpCount--;
 
         isJumpHeld = true;
@@ -1564,7 +1717,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         HandleCornerCorrection();
 
-        float maxSpeed = GameManager.Instance.playerMoveSpeed;
+        float maxSpeed = stats.moveSpeed;
         if (playerStatus != null)
             maxSpeed *= playerStatus.MoveSpeedMultiplier;
         float targetSpeedX = moveInput.x * maxSpeed;
@@ -1596,16 +1749,18 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 현재 플레이어 상태를 SaveData에 저장
     public void UpdateSaveData()
     {
-        SaveData.Instance.run.hp = playerStatus.currentHp;
-        SaveData.Instance.run.sp = playerStatus.currentSp;
-        SaveData.Instance.run.bpm = playerStatus.currentBpm;
+        if (runtimeState == null)
+            runtimeState = GetComponent<PlayerRuntimeState>();
+
+        runtimeState?.Capture();
     }
 
     // 저장된 플레이어 상태 적용
     public void LoadSaveData()
     {
-        playerStatus.currentHp = SaveData.Instance.run.hp;
-        playerStatus.currentSp = SaveData.Instance.run.sp;
-        playerStatus.currentBpm = SaveData.Instance.run.bpm;
+        if (runtimeState == null)
+            runtimeState = GetComponent<PlayerRuntimeState>();
+
+        runtimeState?.Restore();
     }
 }

@@ -75,6 +75,10 @@ public class DeathSceneController : MonoBehaviour
 
         // 다음 이어하기 시작 위치를 Stage1로 변경
         SaveData.Instance.persistent.nextStage = "Stage1-1";
+        SaveData.Instance.run.hp = SaveData.Instance.run.maxHp > 0f ? SaveData.Instance.run.maxHp : 50f;
+        SaveData.Instance.run.sp = 100f;
+        SaveData.Instance.run.bpm = 91f;
+        SaveData.Instance.run.spawnId = string.Empty;
 
         // 사망 후 자동 저장
         SaveManager.Instance.Save(SaveData.Instance.currentSlot);

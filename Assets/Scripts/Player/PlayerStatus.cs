@@ -10,6 +10,8 @@ public enum BpmRank
 
 public class PlayerStatus : MonoBehaviour
 {
+    [SerializeField] private PlayerController playerController;
+
     private const float MinBpm = 91f;
     private const float BpmRankAUpper = 130f;
     private const float BpmRankBUpper = 170f;
@@ -19,7 +21,7 @@ public class PlayerStatus : MonoBehaviour
     [Tooltip("현재 체력")]
     public float currentHp = 70f;
     [Tooltip("최대 체력 (사용하는지 모름)")]
-    public float maxHp = 100f;
+    public float maxHp => playerController != null ? playerController.Stats.maxHp : 50f;
 
     [Header("SP")]
     [Tooltip("현재 SP")]
@@ -101,6 +103,12 @@ public class PlayerStatus : MonoBehaviour
 
     private bool isExhausted;
     private float exhaustedTimer;
+
+    private void Awake()
+    {
+        if (playerController == null)
+            playerController = GetComponent<PlayerController>();
+    }
 
     public BpmRank CurrentBpmRank
     {

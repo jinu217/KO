@@ -13,6 +13,7 @@ public class Waypoint : MonoBehaviour
 {
     [Header("다음 스테이지")]
     [SerializeField] private string targetSceneName;
+    [SerializeField] private string targetSpawnId;
 
     [Header("연출")]
     [SerializeField] private float delayBeforeSceneLoad = 2f;
@@ -57,6 +58,7 @@ public class Waypoint : MonoBehaviour
 
         // 이어하기 시 시작할 다음 스테이지 저장
         SaveData.Instance.persistent.nextStage = targetSceneName;
+        SaveData.Instance.run.spawnId = targetSpawnId;
 
         // 저장
         SaveManager.Instance.Save(SaveData.Instance.currentSlot);

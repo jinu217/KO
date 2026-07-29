@@ -124,9 +124,9 @@ public class TitleMenuController : MonoBehaviour
         switch (index)
         {
             case 0:     // START
-                SaveData.Instance.isLoaded = false;
-                SaveData.Instance.run = new RunData();    // 새 회차 시작
-                SaveData.Instance.persistent.nextStage = "Stage1-1";    // 이어하기 시작 스테이지 초기화
+                int newGameSlot = Mathf.Max(1, SaveData.Instance.currentSlot);
+                SaveSystem.Delete(newGameSlot);
+                SaveData.Instance.ResetForNewGame(newGameSlot);
                 yield return StartCoroutine(fadeManager.FadeOut());     // 화면 페이드 아웃
                 SceneManager.LoadScene("Prologue");     // 프롤로그 시작
                 break;

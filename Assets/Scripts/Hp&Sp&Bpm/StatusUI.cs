@@ -22,8 +22,8 @@ public class StatusUI : MonoBehaviour
 
     void Start()
     {
-        displayHp = status.currentHp / status.maxHp;
         if (status == null) return;
+        displayHp = status.maxHp > 0f ? status.currentHp / status.maxHp : 0f;
     }
 
     void Update()

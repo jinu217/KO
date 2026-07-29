@@ -35,7 +35,7 @@ public class AudioManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(transform.root.gameObject);
 
         // 저장된 볼륨 적용
         LoadVolume();

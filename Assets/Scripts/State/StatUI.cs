@@ -21,17 +21,20 @@ public class StatUI : MonoBehaviour
 
     public void UpdateUI()
     {
-        var s = equipment.stats;
+        PlayerController playerController = equipment.GetComponent<PlayerController>();
+        PlayerStats s = playerController != null
+            ? playerController.Stats
+            : equipment.stats;
 
-        attack.text = "공격력 : " + s.attack;
+        attack.text = "공격력 : " + s.attackDamage;
         attackSpeed.text = "공격속도 : " + s.attackSpeed;
 
-        critChance.text = "크리확률 : " + s.critChance + "%";
-        critDamage.text = "크리데미지 : " + s.critDamage + "%";
+        critChance.text = "크리확률 : " + (s.critChance * 100f) + "%";
+        critDamage.text = "크리데미지 : " + (s.critDamage * 100f) + "%";
 
         moveSpeed.text = "이동속도 : " + s.moveSpeed;
 
         defense.text = "방어력 : " + s.defense;
-        hp.text = "체력 : " + s.hp;
+        hp.text = "체력 : " + s.maxHp;
     }
 }

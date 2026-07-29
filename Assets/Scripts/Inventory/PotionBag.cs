@@ -32,6 +32,12 @@ public class PotionBag : MonoBehaviour
         if (healPotionCount <= 0)
             return;
 
+        if (playerStatus == null || healPotionData == null)
+        {
+            Debug.LogWarning("PotionBag의 PlayerStatus 또는 Heal Potion Data 연결을 확인해 주세요.", this);
+            return;
+        }
+
         healPotionCount--;
 
         playerStatus.Heal(healPotionData.healAmount);
@@ -43,10 +49,13 @@ public class PotionBag : MonoBehaviour
         if (bpmPotionCount <= 0)
             return;
 
-        bpmPotionCount--;
+        if (playerStatus == null || bpmPotionData == null)
+        {
+            Debug.LogWarning("PotionBag의 PlayerStatus 또는 BPM Potion Data 연결을 확인해 주세요.", this);
+            return;
+        }
 
-        playerStatus.bpmLocked = true;
-        playerStatus.bpmLockTimer = 15f;
+        bpmPotionCount--;
 
         playerStatus.lockedBpm = playerStatus.currentBpm;
         playerStatus.bpmLocked = true;
