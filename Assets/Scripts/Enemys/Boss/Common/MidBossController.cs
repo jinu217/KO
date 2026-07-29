@@ -109,7 +109,9 @@ public abstract class MidBossController : MonoBehaviour, IDamageable
             return;
         }
 
+        // hp바 표시 및 초기 체력 설정
         currentHp = data.maxHp;
+        MidBossHealthUI.Instance?.Show(gameObject.name,currentHp,data.maxHp);
 
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
@@ -548,13 +550,14 @@ public abstract class MidBossController : MonoBehaviour, IDamageable
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }
 
-    // 보스 피격 처리(체력 감소/추적 유지/사망 체크)
+    // 보스 피격 처리(체력 감소/추적 유지/사망 체크), 보스 HP바 연동
     // IDamageable 구현 — 보스는 넉백 없음, applyKnockback 무시
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = false, bool applyIFrame = false)
     {
         if (isDead) return;
 
         currentHp -= damage;
+        MidBossHealthUI.Instance?.UpdateHP(currentHp);
         isChasing = true;
         StopMove();
 
@@ -562,10 +565,11 @@ public abstract class MidBossController : MonoBehaviour, IDamageable
             Die();
     }
 
-    // 보스 사망 처리
+    // 보스 사망 처리, HP바 숨김처리
     protected virtual void Die()
     {
         isDead = true;
+        MidBossHealthUI.Instance?.Hide();
         StopMove();
         gameObject.SetActive(false);
     }

@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 // [플레이어]
 // - 이동/점프/대쉬/하향점프/강화하강/공격/피격/인벤토리/포션을 담당하는 플레이어 컨트롤러
 // - 일반 몹/중간보스/메인보스 모두에게 공격 적용 가능, 보스 검기 등 특수 패턴은 무적 무시 데미지 처리
+// - 세이브시 플레이어 정보를 세이브데이터에 넘김
 
 // 플레이어가 장착 가능한 무기 종류
 public enum WeaponType
@@ -223,6 +224,11 @@ public class PlayerController : MonoBehaviour, IDamageable
     private float lastAttackTime;               // 마지막 공격 시각
     private float originalGravity;              // 초기 중력 값(대쉬 시 복원용)
 
+    // -------------------- 데스시 화면 전환 --------------------
+    [SerializeField] private CanvasGroup fadeGroup;
+    [SerializeField] private float fadeDuration = 0.8f;
+    private bool isGameOver = false;
+
     // 컴포넌트 초기화
     void Awake()
     {
@@ -246,13 +252,26 @@ public class PlayerController : MonoBehaviour, IDamageable
         }
 
         playerStatus.maxHp = GameManager.Instance.playerMaxHp;
-        playerStatus.currentHp = playerStatus.maxHp;
         currentJumpCount = GameManager.Instance.playerMaxJumpCount;
 
         if (useCalculatedJumpForce)
             GameManager.Instance.playerJumpForce = CalculateJumpForceFromTiles();
 
         inventoryUI = FindInventoryUIAnyState();
+
+        // 저장 데이터를 불러온 경우
+        if (SaveData.Instance.isLoaded)
+        {
+            LoadSaveData();
+        }
+        // 새 게임
+        else
+        {
+            playerStatus.currentHp = playerStatus.maxHp;
+            playerStatus.currentSp = playerStatus.maxSp;
+            playerStatus.currentBpm = 91f;
+        }
+
         Debug.Log(inventoryUI);
     }
 
@@ -1121,10 +1140,42 @@ public class PlayerController : MonoBehaviour, IDamageable
         }
     }
 
-    // 플레이어 사망 처리(현재 씬 재시작)
+    // 플레이어 사망 처리(DeathScene으로 이동)
     void GameOver()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        if (isGameOver) return;
+
+        isGameOver = true;
+        StartCoroutine(GameOverRoutine());
+    }
+
+    private IEnumerator GameOverRoutine()
+    {
+        if (SaveData.Instance != null)
+        {
+            SaveData.Instance.deathCount++;
+            Debug.Log("죽음 증가 : " + SaveData.Instance.deathCount);
+        }
+        else
+        {
+            Debug.Log("SaveData가 없습니다.");
+        }
+
+        // 플레이어 정지
+        rb.linearVelocity = Vector2.zero;
+        rb.simulated = false;      // Rigidbody2D 정지
+        enabled = false;           // PlayerController 비활성화 (선택 사항)
+
+        float t = 0f;
+
+        while (t < fadeDuration)
+        {
+            t += Time.deltaTime;
+            fadeGroup.alpha = Mathf.Lerp(0, 1, t / fadeDuration);
+            yield return null;
+        }
+
+        SceneManager.LoadScene("DeathScene");
     }
 
     // 비활성 오브젝트까지 포함해서 InventoryUI 탐색
@@ -1539,5 +1590,22 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         float finalY = isStationary ? 0f : rb.linearVelocity.y;
         rb.linearVelocity = new Vector2(targetSpeedX, finalY);
+    }
+
+    // ------------------ 세이브 ------------------------
+    // 현재 플레이어 상태를 SaveData에 저장
+    public void UpdateSaveData()
+    {
+        SaveData.Instance.run.hp = playerStatus.currentHp;
+        SaveData.Instance.run.sp = playerStatus.currentSp;
+        SaveData.Instance.run.bpm = playerStatus.currentBpm;
+    }
+
+    // 저장된 플레이어 상태 적용
+    public void LoadSaveData()
+    {
+        playerStatus.currentHp = SaveData.Instance.run.hp;
+        playerStatus.currentSp = SaveData.Instance.run.sp;
+        playerStatus.currentBpm = SaveData.Instance.run.bpm;
     }
 }

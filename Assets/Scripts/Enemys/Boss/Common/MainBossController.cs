@@ -114,7 +114,7 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
         bossCollider = GetComponent<Collider2D>();
     }
 
-    // 데이터 검증, 플레이어 탐색, 충돌 무시 설정, 모든 스킬 쿨타임 시작
+    // 데이터 검증, 플레이어 탐색, 충돌 무시 설정, 모든 스킬 쿨타임 시작, 시작시 체력 초기화
     protected virtual void Start()
     {
         if (data == null)
@@ -124,7 +124,9 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
             return;
         }
 
+        // hp바 표시 및 초기 체력 설정
         currentHp = data.maxHp;
+        MainBossHealthUI.Instance?.Show(gameObject.name,currentHp,data.maxHp);
 
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
@@ -829,23 +831,25 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }
 
-    // 외부에서 보스에게 피해 적용(체력 0 이하 시 사망 처리)
+    // 외부에서 보스에게 피해 적용(체력 0 이하 시 사망 처리), 보스 HP바 연동
     // IDamageable 구현 — 보스는 넉백 없음, applyKnockback 무시
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = false, bool applyIFrame = false)
     {
         if (isDead) return;
 
         currentHp -= damage;
+        MainBossHealthUI.Instance?.UpdateHP(currentHp);
         isChasing = true;
 
         if (currentHp <= 0f)
             Die();
     }
 
-    // 사망 처리: 모든 코루틴 중단 + 비활성화
+    // 사망 처리: 모든 코루틴 중단 + 비활성화, HP바 숨김처리
     protected virtual void Die()
     {
         isDead = true;
+        MainBossHealthUI.Instance?.Hide();
         StopMove();
         StopAllCoroutines();
         gameObject.SetActive(false);

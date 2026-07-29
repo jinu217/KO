@@ -4,6 +4,6 @@ public class PlayerSpawn : MonoBehaviour
 {
     void Start()
     {
-        transform.position = GameData.Instance.spawnPosition;
+        transform.position = SaveData.Instance.spawnPosition;
     }
 }
