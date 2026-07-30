@@ -89,7 +89,16 @@ public class PrologueManager : MonoBehaviour
             return;
         }
 
+        StartCoroutine(StartPrologueCoroutine());
+    }
+
+    private IEnumerator StartPrologueCoroutine()
+    {
+        // 첫 번째 대사 UI 세팅
         ShowDialogue(currentDialogueIndex);
+
+        // 검은 화면에서 페이드 인
+        yield return StartCoroutine(fadeManager.FadeIn());
     }
 
     private void Update()
@@ -387,7 +396,7 @@ public class PrologueManager : MonoBehaviour
 
         if (data.type == "Cutscene")
         {
-            ShowCutscene(data);
+            StartCoroutine(ShowCutsceneWithFade(data));
 
             return;
         }
@@ -398,6 +407,24 @@ public class PrologueManager : MonoBehaviour
         //========================================
 
         ShowNormalDialogue(data);
+    }
+
+    //============= 컷씬 시작시 페이드 처리 ================
+    private IEnumerator ShowCutsceneWithFade(
+    PrologueDialogue data)
+    {
+        // 화면을 검게 페이드 아웃
+        yield return StartCoroutine(
+            fadeManager.FadeOut()
+        );
+
+        // 검은 화면에서 컷씬 UI 변경
+        ShowCutscene(data);
+
+        // 검은 화면에서 다시 페이드 인
+        yield return StartCoroutine(
+            fadeManager.FadeIn()
+        );
     }
 
 
