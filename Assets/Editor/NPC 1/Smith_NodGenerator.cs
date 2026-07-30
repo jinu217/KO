@@ -43,13 +43,13 @@ public class Smith_NodGenerators
 
     // Head rot: 아래로 먼저 숙이기
     static readonly float[] HEAD_ROT = F(0f,
-        (0, 0f),
+        (0, -0f),
         // 1차 끄덕: 빠르게 내려갔다 복귀
-        (2, 6f), (3, 12f), (4, 8f),
-        (5, 2f), (6, 0f),
+        (2, -6f), (3, -12f), (4, -8f),
+        (5, -2f), (6, -0f),
         // 2차 끄덕 (살짝 작게)
-        (8, 4f), (9, 8f), (10, 5f),
-        (11, 1f), (12, 0f), (23, 0f));
+        (8, -4f), (9, -8f), (10, -5f),
+        (11, -1f), (12, -0f), (23, -0f));
 
     // Head Y: 끄덕일 때 살짝 내려감
     static readonly float[] HEAD_Y = F(0.710f,
@@ -284,11 +284,7 @@ public class Smith_NodGenerators
     // 숨쉬기 HEAD_Y에 끄덕임 오프셋 추가 (f4~f16)
 
     // Head rot (IdleNod용) - 아래로 먼저
-    static readonly float[] IDLE_NOD_HEAD_ROT = F(0f,
-        (2, 6f), (3, 12f), (4, 8f),
-        (5, 2f), (6, 0f),
-        (8, 4f), (9, 8f), (10, 5f),
-        (11, 1f), (12, 0f));
+    static readonly float[] IDLE_NOD_HEAD_ROT = { 0.0f, 0.0f, -0.0f, -4.59f, -8.49f, -11.09f, -12.0f, -11.09f, -8.49f, -4.59f, -0.0f, -3.83f, -7.07f, -9.24f, -10.0f, -9.24f, -7.07f, -3.83f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
     // Head Y: 숨쉬기 + 끄덕임 합산
     // 숨쉬기 HEAD_Y에 끄덕임 오프셋 추가 (f4~f16)
@@ -327,8 +323,8 @@ public class Smith_NodGenerators
 
         void C(string path, string prop, float[] vals)
         {
-            var keys = new Keyframe[TOTAL_FRAMES];
-            for (int i = 0; i < TOTAL_FRAMES; i++)
+            var keys = new Keyframe[48];
+            for (int i = 0; i < 48; i++)
                 keys[i] = new Keyframe(i / FRAME_RATE, vals[i]);
             var curve = new AnimationCurve(keys);
             for (int i = 0; i < curve.keys.Length; i++)
@@ -339,7 +335,7 @@ public class Smith_NodGenerators
             clip.SetCurve(path, typeof(Transform), prop, curve);
         }
         void L(string path, string prop, float val) =>
-            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR, val));
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 4f, val));
 
         // Body
         L(BODY, "localPosition.x", 0f);

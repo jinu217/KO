@@ -51,8 +51,8 @@ public class Merchant_AnimGenerators
     }
 
     static readonly float[] NOD_HEAD_ROT = FNod(0f,
-        (2, 8f), (3, 18f), (4, 12f), (5, 3f), (6, 0f),
-        (8, 6f), (9, 12f), (10, 7f), (11, 2f), (12, 0f));
+        (2, -8f), (3, -18f), (4, -12f), (5, -3f), (6, -0f),
+        (8, -6f), (9, -12f), (10, -7f), (11, -2f), (12, -0f));
 
     static readonly float[] NOD_HEAD_Y = FNod(0.413f,
         (3, 0.407f), (4, 0.410f), (5, 0.413f),
@@ -297,5 +297,34 @@ public class Merchant_AnimGenerators
         L(FOOT_B, "localEulerAngles.z", 0f);
 
         Save(clip, "Merchant_IdleCoinPose");
+    }
+    [MenuItem("Tools/Merchant/Generate Nod")]
+    public static void GenerateNod()
+    {
+        var clip = MakeClip("Merchant_Nod", 24, false);
+        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 24);
+        void L(string path, string prop, float val) =>
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR_NOD, val));
+
+        L(BODY, "localPosition.x", 0f); L(BODY, "localPosition.y", 0f); L(BODY, "localPosition.z", 0f);
+        L(BODY, "localEulerAngles.z", 0f);
+        L(HEAD, "localPosition.x", -0.091f); C(HEAD, "localPosition.y", NOD_HEAD_Y); L(HEAD, "localPosition.z", 0f);
+        C(HEAD, "localEulerAngles.z", NOD_HEAD_ROT);
+        L(SF, "localPosition.x", -0.308f); L(SF, "localPosition.y", 0.355f); L(SF, "localPosition.z", 0f);
+        L(SF, "localEulerAngles.z", 0f);
+        L(HF, "localPosition.x", -0.079f); L(HF, "localPosition.y", -0.283f); L(HF, "localPosition.z", 0f);
+        L(HF, "localEulerAngles.z", 0f);
+        L(SB, "localPosition.x", 0.160f); L(SB, "localPosition.y", 0.354f); L(SB, "localPosition.z", 0f);
+        L(SB, "localEulerAngles.z", 0f);
+        L(HB, "localPosition.x", 0.015f); L(HB, "localPosition.y", -0.264f); L(HB, "localPosition.z", 0f);
+        L(HB, "localEulerAngles.z", 0f);
+        L(BOTTOM, "localPosition.x", 0f); L(BOTTOM, "localPosition.y", -0.614f); L(BOTTOM, "localPosition.z", 0f);
+        L(BOTTOM, "localEulerAngles.z", 0f);
+        L(FOOT_F, "localPosition.x", -0.145f); L(FOOT_F, "localPosition.y", 0f); L(FOOT_F, "localPosition.z", 0f);
+        L(FOOT_F, "localEulerAngles.z", 0f);
+        L(FOOT_B, "localPosition.x", 0.168f); L(FOOT_B, "localPosition.y", 0f); L(FOOT_B, "localPosition.z", 0f);
+        L(FOOT_B, "localEulerAngles.z", 0f);
+
+        Save(clip, "Merchant_Nod");
     }
 }
