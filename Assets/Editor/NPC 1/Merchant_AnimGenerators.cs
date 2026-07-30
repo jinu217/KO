@@ -234,4 +234,68 @@ public class Merchant_AnimGenerators
 
         Save(clip, "Merchant_Wave");
     }
+
+    // ── Coin Pose 배열 (36프레임) ───────────────────────────────────
+    // 실측: HF=+60(동전), HB=-175(턱), SF=0, SB=0
+    static readonly float[] COIN_HEAD_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4.21f, 7.78f, 10.16f, 11.0f, 10.16f, 7.78f, 4.21f, 0.0f, 4.21f, 7.78f, 10.16f, 11.0f, 10.16f, 7.78f, 4.21f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] COIN_HF_ROT = { 75.0f, 76.81f, 81.75f, 88.5f, 95.25f, 100.19f, 102.0f, 100.19f, 95.25f, 88.5f, 81.75f, 76.81f, 75.0f, 76.81f, 81.75f, 88.5f, 95.25f, 100.19f, 102.0f, 100.19f, 95.25f, 88.5f, 81.75f, 76.81f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f };
+
+    [MenuItem("Tools/Merchant/Generate CoinPose")]
+    public static void GenerateCoinPose()
+    {
+        var clip = MakeClip("Merchant_CoinPose", 48, false);
+        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 48);
+        void L(string path, string prop, float val) =>
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR_IDLE, val));
+
+        L(BODY, "localPosition.x", 0f); L(BODY, "localPosition.y", 0f); L(BODY, "localPosition.z", 0f);
+        L(BODY, "localEulerAngles.z", 0f);
+        L(HEAD, "localPosition.x", -0.091f); L(HEAD, "localPosition.y", 0.413f); L(HEAD, "localPosition.z", 0f);
+        C(HEAD, "localEulerAngles.z", COIN_HEAD_ROT);
+        L(SF, "localPosition.x", -0.308f); L(SF, "localPosition.y", 0.355f); L(SF, "localPosition.z", 0f);
+        L(SF, "localEulerAngles.z", 0f);
+        L(HF, "localPosition.x", -0.079f); L(HF, "localPosition.y", -0.283f); L(HF, "localPosition.z", 0f);
+        C(HF, "localEulerAngles.z", COIN_HF_ROT);
+        L(SB, "localPosition.x", 0.160f); L(SB, "localPosition.y", 0.354f); L(SB, "localPosition.z", 0f);
+        L(SB, "localEulerAngles.z", 0f);
+        L(HB, "localPosition.x", 0.015f); L(HB, "localPosition.y", -0.264f); L(HB, "localPosition.z", 0f);
+        L(HB, "localEulerAngles.z", -175f);
+        L(BOTTOM, "localPosition.x", 0f); L(BOTTOM, "localPosition.y", -0.614f); L(BOTTOM, "localPosition.z", 0f);
+        L(BOTTOM, "localEulerAngles.z", 0f);
+        L(FOOT_F, "localPosition.x", -0.145f); L(FOOT_F, "localPosition.y", 0f); L(FOOT_F, "localPosition.z", 0f);
+        L(FOOT_F, "localEulerAngles.z", 0f);
+        L(FOOT_B, "localPosition.x", 0.168f); L(FOOT_B, "localPosition.y", 0f); L(FOOT_B, "localPosition.z", 0f);
+        L(FOOT_B, "localEulerAngles.z", 0f);
+
+        Save(clip, "Merchant_CoinPose");
+    }
+    [MenuItem("Tools/Merchant/Generate IdleCoinPose")]
+    public static void GenerateIdleCoinPose()
+    {
+        var clip = MakeClip("Merchant_IdleCoinPose", 48, false);
+        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 48);
+        void L(string path, string prop, float val) =>
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR_IDLE, val));
+
+        L(BODY, "localPosition.x", 0f); C(BODY, "localPosition.y", BODY_Y); L(BODY, "localPosition.z", 0f);
+        L(BODY, "localEulerAngles.z", 0f);
+        L(HEAD, "localPosition.x", -0.091f); L(HEAD, "localPosition.y", 0.413f); L(HEAD, "localPosition.z", 0f);
+        C(HEAD, "localEulerAngles.z", COIN_HEAD_ROT);
+        L(SF, "localPosition.x", -0.308f); C(SF, "localPosition.y", SF_Y); L(SF, "localPosition.z", 0f);
+        L(SF, "localEulerAngles.z", 0f);
+        L(HF, "localPosition.x", -0.079f); L(HF, "localPosition.y", -0.283f); L(HF, "localPosition.z", 0f);
+        C(HF, "localEulerAngles.z", COIN_HF_ROT);
+        L(SB, "localPosition.x", 0.160f); C(SB, "localPosition.y", SB_Y); L(SB, "localPosition.z", 0f);
+        L(SB, "localEulerAngles.z", 0f);
+        L(HB, "localPosition.x", 0.015f); L(HB, "localPosition.y", -0.264f); L(HB, "localPosition.z", 0f);
+        L(HB, "localEulerAngles.z", -175f);
+        L(BOTTOM, "localPosition.x", 0f); C(BOTTOM, "localPosition.y", BOTTOM_Y); L(BOTTOM, "localPosition.z", 0f);
+        L(BOTTOM, "localEulerAngles.z", 0f);
+        L(FOOT_F, "localPosition.x", -0.145f); L(FOOT_F, "localPosition.y", 0f); L(FOOT_F, "localPosition.z", 0f);
+        L(FOOT_F, "localEulerAngles.z", 0f);
+        L(FOOT_B, "localPosition.x", 0.168f); L(FOOT_B, "localPosition.y", 0f); L(FOOT_B, "localPosition.z", 0f);
+        L(FOOT_B, "localEulerAngles.z", 0f);
+
+        Save(clip, "Merchant_IdleCoinPose");
+    }
 }
