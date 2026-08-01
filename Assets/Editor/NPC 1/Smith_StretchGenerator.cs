@@ -6,7 +6,7 @@ public class Smith_StretchGenerator
     const string SAVE_PATH = "Assets/Animations/Smith";
     const string CLIP_NAME = "Smith_Stretch";
     const float FRAME_RATE = 12f;
-    const int TOTAL_FRAMES = 60;
+    const int TOTAL_FRAMES = 90;
     const float DUR = TOTAL_FRAMES / (float)FRAME_RATE;
 
     const string BODY = "Body";
@@ -29,10 +29,11 @@ public class Smith_StretchGenerator
     // f36~f47: rest 복귀
     // ================================================================
 
-    static readonly float[] SF_ROT = { 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f };
-    static readonly float[] SB_ROT = { 0.0f, 25.83f, 51.67f, 77.5f, 103.33f, 129.17f, 155.0f, 186.78f, 218.36f, 249.55f, 280.15f, 309.99f, 338.87f, 366.61f, 393.05f, 418.03f, 441.38f, 462.96f, 482.65f, 500.32f, 515.86f, 529.17f, 540.18f, 548.81f, 555.01f, 558.75f, 560.0f, 545.0f, 534.02f, 530.0f, 534.02f, 545.0f, 560.0f, 497.32f, 464.88f, 432.94f, 401.74f, 371.52f, 342.5f, 314.91f, 288.95f, 264.83f, 242.73f, 222.82f, 205.24f, 190.13f, 177.62f, 167.78f, 160.7f, 156.43f, 155.0f, 142.5f, 133.35f, 130.0f, 133.35f, 142.5f, 155.0f, 103.33f, 51.67f, 0.0f };
-    static readonly float[] HF_ROT = { 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f, 60.0f };
-    static readonly float[] HEAD_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.72f, 1.39f, 1.99f, 2.47f, 2.81f, 2.98f, 2.98f, 2.81f, 2.47f, 1.99f, 1.39f, 0.72f, 0.0f, -0.72f, -1.39f, -1.99f, -2.47f, -2.81f, -2.98f, -2.98f, -2.81f, -2.47f, -1.99f, -1.39f, -0.72f, -0.0f, -0.78f, -1.5f, -2.12f, -2.6f, -2.9f, -3.0f, -2.9f, -2.6f, -2.12f, -1.5f, -0.78f, -0.0f, 0.78f, 1.5f, 2.12f, 2.6f, 2.9f, 3.0f, 2.9f, 2.6f, 2.12f, 1.5f, 0.78f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] SF_ROT = { 0.0f, 9.0f, 18.0f, 27.0f, 36.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 36.0f, 27.0f, 18.0f, 9.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] HB_ROT = { -0.0f, -5.0f, -10.0f, -15.0f, -20.0f, -25.0f, -30.0f, -35.0f, -40.0f, -45.0f, -45.0f, -40.7f, -36.4f, -32.1f, -27.9f, -23.6f, -19.3f, -15.0f, -15.0f, -19.3f, -23.6f, -27.9f, -32.1f, -36.4f, -40.7f, -45.0f, -45.0f, -40.7f, -36.4f, -32.1f, -27.9f, -23.6f, -19.3f, -15.0f, -15.0f, -19.3f, -23.6f, -27.9f, -32.1f, -36.4f, -40.7f, -45.0f, -45.0f, -42.0f, -39.0f, -36.0f, -33.0f, -30.0f, -27.0f, -24.0f, -21.0f, -18.0f, -15.0f, -12.0f, -9.0f, -6.0f, -3.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] SB_ROT = { 0.0f, 22.2f, 44.4f, 66.7f, 88.9f, 111.1f, 133.3f, 155.6f, 177.8f, 200.0f, 215.0f, 195.0f, 183.0f, 171.0f, 160.0f, 151.0f, 145.0f, 140.0f, 140.0f, 145.0f, 153.0f, 164.0f, 176.0f, 188.0f, 200.0f, 220.0f, 220.0f, 200.0f, 188.0f, 176.0f, 165.0f, 156.0f, 150.0f, 145.0f, 145.0f, 150.0f, 158.0f, 169.0f, 181.0f, 193.0f, 205.0f, 225.0f, 246.8f, 268.4f, 289.4f, 309.6f, 328.7f, 346.6f, 362.9f, 377.5f, 390.1f, 400.7f, 409.1f, 415.1f, 418.8f, 420.0f, 420.0f, 420.0f, 420.0f, 412.8f, 399.6f, 382.4f, 362.2f, 339.2f, 313.7f, 286.1f, 256.4f, 224.8f, 191.4f, 156.2f, 119.5f, 81.1f, 41.3f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] HF_ROT = { 0.0f, 11.0f, 22.0f, 33.0f, 44.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 44.0f, 33.0f, 22.0f, 11.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] HEAD_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.85f, 1.62f, 2.27f, 2.73f, 2.97f, 2.97f, 2.73f, 2.27f, 1.62f, 0.85f, 0.0f, -0.85f, -1.62f, -2.27f, -2.73f, -2.97f, -2.97f, -2.73f, -2.27f, -1.62f, -0.85f, -0.0f, -0.72f, -1.39f, -1.99f, -2.47f, -2.81f, -2.98f, -2.98f, -2.81f, -2.47f, -1.99f, -1.39f, -0.72f, -0.0f, 0.72f, 1.39f, 1.99f, 2.47f, 2.81f, 2.98f, 2.98f, 2.81f, 2.47f, 1.99f, 1.39f, 0.72f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
     [MenuItem("Tools/Smith/Generate Stretch")]
     public static void Generate()
@@ -82,9 +83,21 @@ public class Smith_StretchGenerator
 
         // Shoulder_B / Hand_B
         L(SB, "localPosition.x", 0.137f); L(SB, "localPosition.y", 0.536f); L(SB, "localPosition.z", 0f);
-        C(SB, "localEulerAngles.z", SB_ROT);
+        // SB: CLinear 탄젠트로 360도 랩 방지
+        {
+            var keys = new Keyframe[TOTAL_FRAMES];
+            for (int i = 0; i < TOTAL_FRAMES; i++)
+                keys[i] = new Keyframe(i / FRAME_RATE, SB_ROT[i]);
+            var curve = new AnimationCurve(keys);
+            for (int i = 0; i < curve.keys.Length; i++)
+            {
+                AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Linear);
+                AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Linear);
+            }
+            clip.SetCurve(SB, typeof(Transform), "localEulerAngles.z", curve);
+        }
         L(HB, "localPosition.x", 0.079f); L(HB, "localPosition.y", -0.300f); L(HB, "localPosition.z", 0f);
-        L(HB, "localEulerAngles.z", 0f);
+        C(HB, "localEulerAngles.z", HB_ROT);
 
         // Bottom / Foot (고정)
         L(BOTTOM, "localPosition.x", 0f); L(BOTTOM, "localPosition.y", -0.300f); L(BOTTOM, "localPosition.z", 0f);
