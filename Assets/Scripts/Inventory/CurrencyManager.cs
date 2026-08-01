@@ -4,15 +4,11 @@ public class CurrencyManager : MonoBehaviour
 {
     public int coin;
 
-    public int soul;
-
-    void Start()
-    {
-        LoadSoul();
-    }
-
     public void AddCurrency(ItemData item)
     {
+        if (item == null)
+            return;
+
         switch (item.currencyType)
         {
             case CurrencyType.Coin:
@@ -23,35 +19,8 @@ public class CurrencyManager : MonoBehaviour
 
             case CurrencyType.Soul:
 
-                soul += item.currencyAmount;
-
-                SaveSoul();
-
+                // Soul은 DeathScene 결과창에서 지급
                 break;
         }
     }
-
-    public void SaveSoul()
-    {
-        PlayerPrefs.SetInt("SOUL", soul);
-    }
-
-    public void LoadSoul()
-    {
-        soul = PlayerPrefs.GetInt("SOUL", 0);
-    }
-    //테스트용 코드
-    /*
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            coin += 100;
-        }
-
-        if (Input.GetKeyDown(KeyCode.V))
-        {
-            soul += 1;
-        }
-    }*/
 }

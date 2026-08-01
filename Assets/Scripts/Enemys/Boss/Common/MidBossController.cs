@@ -569,6 +569,11 @@ public abstract class MidBossController : MonoBehaviour, IDamageable
     protected virtual void Die()
     {
         isDead = true;
+        // 미드보스 처치 기록
+        if (SaveData.Instance != null)
+        {
+            SaveData.Instance.run.midBossKillCount++;
+        }
         MidBossHealthUI.Instance?.Hide();
         StopMove();
         gameObject.SetActive(false);

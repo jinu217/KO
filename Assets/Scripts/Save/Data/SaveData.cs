@@ -16,6 +16,9 @@ public class SaveData : MonoBehaviour
     public bool isLoaded = false;
     public int currentSlot;
 
+    // Load시 인트로
+    public bool isLoadIntro;
+
     // 플레이 정보
     public float playTime;
     public float hp;
@@ -24,7 +27,6 @@ public class SaveData : MonoBehaviour
 
     // 죽은 횟수
     public int deathCount;
-
 
     // 현재 진행 정보
     public string currentStage;
@@ -62,6 +64,8 @@ public class SaveData : MonoBehaviour
 
     public void ResetForNewGame(int slot = 1)
     {
+        isLoadIntro = false;
+
         currentSlot = Mathf.Max(1, slot);
         isLoaded = false;
         playTime = 0f;

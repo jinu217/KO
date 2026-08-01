@@ -849,6 +849,11 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
     protected virtual void Die()
     {
         isDead = true;
+        // 메인보스 처치 기록
+        if (SaveData.Instance != null)
+        {
+            SaveData.Instance.run.mainBossKillCount++;
+        }
         MainBossHealthUI.Instance?.Hide();
         StopMove();
         StopAllCoroutines();

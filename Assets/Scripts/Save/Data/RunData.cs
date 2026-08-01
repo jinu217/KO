@@ -27,4 +27,9 @@ public class RunData
 
     public bool inBossFight;
     public string currentBossID;
+
+    // 이번 회차 기록
+    public int killCount;
+    public int midBossKillCount;
+    public int mainBossKillCount;
 }

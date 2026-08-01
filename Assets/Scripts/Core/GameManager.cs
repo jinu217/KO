@@ -23,6 +23,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // 게임 플레이 시간 누적
+        if (SaveData.Instance == null)
+            return;
+
+        // 일시정지 중에는 플레이 시간 증가하지 않음
+        if (Time.timeScale == 0f)
+            return;
+
+        SaveData.Instance.persistent.playTime += Time.deltaTime;
+    }
+
     private void OnDestroy()
     {
         if (Instance == this)

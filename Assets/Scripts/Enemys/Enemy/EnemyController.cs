@@ -1069,6 +1069,11 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         if (currentHp <= 0)
         {
             tutorialDummy?.NotifyDefeated();
+            // 일반 적 처치 횟수 기록
+            if (tutorialDummy == null && SaveData.Instance != null)
+            {
+                SaveData.Instance.run.killCount++;
+            }
             gameObject.SetActive(false);
         }
     }
