@@ -52,7 +52,6 @@ public class PrologueManager : MonoBehaviour
 
     [Header("Flash Settings")]
     [SerializeField] private float flashDuration = 0.05f;
-    [SerializeField] private float flashInterval = 0.1f;
     [SerializeField] private float flashIntervalIncrease = 0.15f;
     private float currentFlashInterval;
 

@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 // =====================================================
 // PauseController
@@ -47,6 +46,11 @@ public class PauseController : MonoBehaviour
         if (pauseManager.IsSettingOpen)
             return;
 
+        // 확인 패널이 열려 있으면 Pause 메뉴는 입력 금지
+        // Enter / ESC 입력은 PauseManager가 처리한다.
+        if (pauseManager.IsConfirmOpen)
+            return;
+
         HandleInput();
     }
 
@@ -56,12 +60,15 @@ public class PauseController : MonoBehaviour
 
     void HandleInput()
     {
+        // 위로 이동
         if (Input.GetKeyDown(KeyCode.UpArrow))
             Move(-1);
 
+        // 아래로 이동
         if (Input.GetKeyDown(KeyCode.DownArrow))
             Move(1);
 
+        // 선택
         if (Input.GetKeyDown(KeyCode.Return) ||
             Input.GetKeyDown(KeyCode.Space) ||
             Input.GetKeyDown(KeyCode.Z))
@@ -95,29 +102,36 @@ public class PauseController : MonoBehaviour
     {
         switch (currentIndex)
         {
+            //================================================
             // 계속하기
+            //================================================
             case 0:
                 pauseManager.Resume();
                 break;
 
+            //================================================
             // 설정
+            //================================================
             case 1:
                 pauseManager.OpenSetting();
                 break;
 
+            //================================================
             // 타이틀
+            //================================================
             case 2:
-                Time.timeScale = 1f;
-                SceneManager.LoadScene("Title Scene");
+                // 바로 타이틀로 이동하지 않고
+                // 확인 패널을 띄운다.
+                pauseManager.OpenTitleConfirm();
                 break;
 
+            //================================================
             // 게임 종료
+            //================================================
             case 3:
-#if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-#else
-                Application.Quit();
-#endif
+                // 바로 게임을 종료하지 않고
+                // 확인 패널을 띄운다.
+                pauseManager.OpenQuitConfirm();
                 break;
         }
     }
@@ -148,6 +162,8 @@ public class PauseController : MonoBehaviour
         text.color = selected ? selectedColor : normalColor;
 
         // 선택된 메뉴는 볼드체
-        text.fontStyle = selected ? FontStyles.Bold : FontStyles.Normal;
+        text.fontStyle = selected
+            ? FontStyles.Bold
+            : FontStyles.Normal;
     }
 }
