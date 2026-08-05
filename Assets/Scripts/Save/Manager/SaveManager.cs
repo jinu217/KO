@@ -68,6 +68,11 @@ public class SaveManager : MonoBehaviour
         file.run.maxHp = SaveData.Instance.run.maxHp;
         file.run.sp = SaveData.Instance.run.sp;
         file.run.bpm = SaveData.Instance.run.bpm;
+        
+        file.run.killCount = SaveData.Instance.run.killCount;
+        file.run.midBossKillCount = SaveData.Instance.run.midBossKillCount;
+        file.run.mainBossKillCount = SaveData.Instance.run.mainBossKillCount;
+        
         file.run.initialized = SaveData.Instance.run.initialized;
         file.run.inventoryItemIds = SaveData.Instance.run.inventoryItemIds != null
             ? new System.Collections.Generic.List<int>(SaveData.Instance.run.inventoryItemIds)

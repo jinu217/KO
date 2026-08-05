@@ -14,11 +14,33 @@ public class SaveSlotUI : MonoBehaviour
     public TMP_Text playTimeText;
     public TMP_Text deathText;
 
+    [Header("Selection UI")]
+    public TMP_Text startText;
+    public GameObject deleteImage;
+
     [Header("Sprites")]
     public Sprite darkTombSprite;
     public Sprite brightTombSprite;
 
-    public void SetSelected(bool selected)
+    private bool hasSave;
+
+    // 저장 데이터 존재 여부 설정
+    public void SetHasSave(bool value)
+    {
+        hasSave = value;
+
+        // 빈 슬롯이면 선택 UI 숨김
+        if (!hasSave)
+        {
+            if (startText != null)
+                startText.gameObject.SetActive(false);
+
+            if (deleteImage != null)
+                deleteImage.SetActive(false);
+        }
+    }
+
+    public void SetSelected(bool selected, bool isNewGameMode)
     {
         // 묘비 변경
         tombImage.sprite = selected ? brightTombSprite : darkTombSprite;
@@ -38,10 +60,31 @@ public class SaveSlotUI : MonoBehaviour
 
         SetTextAlpha(playTimeText, alpha);
         SetTextAlpha(deathText, alpha);
+
+        // 저장 데이터가 있는 슬롯만 START / 삭제 표시
+        if (hasSave)
+        {
+            if (startText != null)
+                startText.gameObject.SetActive(selected && !isNewGameMode);
+
+            if (deleteImage != null)
+                deleteImage.SetActive(selected && !isNewGameMode);
+        }
+        else
+        {
+            if (startText != null)
+                startText.gameObject.SetActive(false);
+
+            if (deleteImage != null)
+                deleteImage.SetActive(false);
+        }
     }
 
-    void SetTextAlpha(TMP_Text text, float alpha)
+    private void SetTextAlpha(TMP_Text text, float alpha)
     {
+        if (text == null)
+            return;
+
         Color c = text.color;
         c.a = alpha;
         text.color = c;

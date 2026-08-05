@@ -3,7 +3,6 @@ using UnityEngine;
 public class CurrencyManager : MonoBehaviour
 {
     public int coin;
-
     public int soul;
 
     public bool CanAfford(CurrencyType currencyType, int amount)
@@ -50,6 +49,9 @@ public class CurrencyManager : MonoBehaviour
 
     public void AddCurrency(ItemData item)
     {
+        if (item == null)
+            return;
+
         switch (item.currencyType)
         {
             case CurrencyType.Coin:
@@ -60,10 +62,7 @@ public class CurrencyManager : MonoBehaviour
 
             case CurrencyType.Soul:
 
-                soul += item.currencyAmount;
-
-                SaveSoul();
-
+                // Soul은 DeathScene 결과창에서 지급
                 break;
         }
     }

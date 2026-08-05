@@ -13,6 +13,7 @@ public class CurrencyUI : MonoBehaviour
     {
         coinText.text = currency.coin.ToString();
 
-        soulText.text = currency.soul.ToString();
+        if (SaveData.Instance != null)
+            soulText.text = SaveData.Instance.persistent.soul.ToString();
     }
 }

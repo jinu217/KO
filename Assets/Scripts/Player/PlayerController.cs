@@ -1449,6 +1449,9 @@ public class PlayerController : MonoBehaviour, IDamageable
         rb.simulated = false;      // Rigidbody2D 정지
         enabled = false;           // PlayerController 비활성화 (선택 사항)
 
+        // 사망 횟수 증가
+        SaveData.Instance.persistent.deathCount++;
+        
         float t = 0f;
 
         while (t < fadeDuration)
