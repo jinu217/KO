@@ -40,7 +40,7 @@ public class SaveSlotUI : MonoBehaviour
         }
     }
 
-    public void SetSelected(bool selected)
+    public void SetSelected(bool selected, bool isNewGameMode)
     {
         // 묘비 변경
         tombImage.sprite = selected ? brightTombSprite : darkTombSprite;
@@ -65,10 +65,10 @@ public class SaveSlotUI : MonoBehaviour
         if (hasSave)
         {
             if (startText != null)
-                startText.gameObject.SetActive(selected);
+                startText.gameObject.SetActive(selected && !isNewGameMode);
 
             if (deleteImage != null)
-                deleteImage.SetActive(selected);
+                deleteImage.SetActive(selected && !isNewGameMode);
         }
         else
         {

@@ -52,6 +52,7 @@ public class TitleMenuController : MonoBehaviour
     [Header("Confirmation")]
     [SerializeField] private GameObject confirmationPanel;
     [SerializeField] private TMP_Text confirmationText;
+    [SerializeField] private GameObject pressEnterText;
 
     [Header("Title")]
     public GameObject Titletext;
@@ -85,6 +86,9 @@ public class TitleMenuController : MonoBehaviour
     // 새 게임으로 덮어쓸 슬롯
     private int newGameTargetSlot = -1;
 
+    // 깜빡임
+    private Coroutine blinkCoroutine;
+
 
     //==================================================
     // 초기화
@@ -95,6 +99,7 @@ public class TitleMenuController : MonoBehaviour
         settingPanel.SetActive(false);
         loadPanel.SetActive(false);
         confirmationPanel.SetActive(false);
+        pressEnterText.SetActive(false);
         mainMenu.SetActive(true);
 
         UpdateLoadSlots();
@@ -297,7 +302,7 @@ public class TitleMenuController : MonoBehaviour
     {
         for (int i = 0; i < saveSlotUI.Length; i++)
         {
-            saveSlotUI[i].SetSelected(i == index);
+            saveSlotUI[i].SetSelected(i == index, isNewGameMode);
         }
     }
 
@@ -310,6 +315,21 @@ public class TitleMenuController : MonoBehaviour
         Titletext.SetActive(false);
 
         loadPanel.SetActive(true);
+
+        // START일 때만 Press Enter 표시 + 깜빡임
+        if (isNewGameMode)
+        {
+            pressEnterText.SetActive(true);
+
+            if (blinkCoroutine != null)
+                StopCoroutine(blinkCoroutine);
+
+            blinkCoroutine = StartCoroutine(BlinkPressEnter());
+        }
+        else
+        {
+            pressEnterText.SetActive(false);
+        }
 
         // 최신 저장 데이터 갱신
         UpdateLoadSlots();
@@ -398,6 +418,15 @@ public class TitleMenuController : MonoBehaviour
         isLoadOpen = false;
 
         loadPanel.SetActive(false);
+        
+        // Press Enter 숨기기 + 깜빡임 종료
+        if (blinkCoroutine != null)
+        {
+            StopCoroutine(blinkCoroutine);
+            blinkCoroutine = null;
+        }
+
+        pressEnterText.SetActive(false); 
 
         Titletext.SetActive(true);
         mainMenu.SetActive(true);
@@ -409,6 +438,36 @@ public class TitleMenuController : MonoBehaviour
 
         UpdateLoadSelection();
         UpdateSelection();
+    }
+
+    // 깜빡임 효과
+    IEnumerator BlinkPressEnter()
+    {
+        TMP_Text text = pressEnterText.GetComponent<TMP_Text>();
+        Color color = text.color;
+
+        while (true)
+        {
+            // 서서히 나타남
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.unscaledDeltaTime * 0.5f;   // 숫자가 작을수록 느려짐
+                color.a = Mathf.Lerp(0f, 1f, t);
+                text.color = color;
+                yield return null;
+            }
+
+            // 서서히 사라짐
+            t = 0f;
+            while (t < 1f)
+            {
+                t += Time.unscaledDeltaTime * 0.5f;
+                color.a = Mathf.Lerp(1f, 0f, t);
+                text.color = color;
+                yield return null;
+            }
+        }
     }
 
 
