@@ -17,6 +17,9 @@ public class PauseManager : MonoBehaviour
     [SerializeField] private SettingController settingController;
     [SerializeField] private PlayerController playerController;
 
+    [Header("inventory Pause")]
+    [SerializeField] private InventoryUI inventoryUI;
+
     public bool IsPaused { get; private set; }
     public bool IsSettingOpen => settingPanel != null && settingPanel.activeSelf;
 
@@ -139,8 +142,15 @@ public class PauseManager : MonoBehaviour
         // 플레이어 입력 허용
         playerController?.ResumeKeyboardControl();
 
-        // 게임 재개
-        Time.timeScale = 1f;
+        // 인벤토리가 열려 있으면 계속 일시정지
+        if (inventoryUI != null && inventoryUI.IsOpen)
+        {
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            Time.timeScale = 1f;
+        }
     }
 
     // =========================
