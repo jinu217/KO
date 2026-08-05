@@ -6,9 +6,46 @@ public class CurrencyManager : MonoBehaviour
 
     public int soul;
 
+    public bool CanAfford(CurrencyType currencyType, int amount)
+    {
+        if (amount < 0)
+            return false;
+
+        return currencyType == CurrencyType.Coin
+            ? coin >= amount
+            : soul >= amount;
+    }
+
+    public bool TrySpend(CurrencyType currencyType, int amount)
+    {
+        if (!CanAfford(currencyType, amount))
+            return false;
+
+        if (currencyType == CurrencyType.Coin)
+        {
+            coin -= amount;
+        }
+        else
+        {
+            soul -= amount;
+            SaveSoul();
+
+            if (SaveData.Instance != null)
+                SaveData.Instance.persistent.soul = soul;
+        }
+
+        return true;
+    }
+
     void Start()
     {
         LoadSoul();
+
+        if (SaveData.Instance != null && !SaveData.Instance.run.initialized)
+        {
+            coin = Mathf.Max(0, SaveData.Instance.persistent.startingCoinBonus);
+            SaveData.Instance.run.coin = coin;
+        }
     }
 
     public void AddCurrency(ItemData item)
@@ -33,12 +70,17 @@ public class CurrencyManager : MonoBehaviour
 
     public void SaveSoul()
     {
+        if (SaveData.Instance != null)
+            SaveData.Instance.persistent.soul = soul;
+
         PlayerPrefs.SetInt("SOUL", soul);
     }
 
     public void LoadSoul()
     {
-        soul = PlayerPrefs.GetInt("SOUL", 0);
+        soul = SaveData.Instance != null
+            ? SaveData.Instance.persistent.soul
+            : PlayerPrefs.GetInt("SOUL", 0);
     }
     //테스트용 코드
     /*

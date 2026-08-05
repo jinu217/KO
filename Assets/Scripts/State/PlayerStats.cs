@@ -1,4 +1,16 @@
 [System.Serializable]
+public enum ShamanUpgradeType
+{
+    AttackDamage,
+    MaxHp,
+    AttackSpeed,
+    DashCount,
+    DashCooldownReduction,
+    StartingCoin,
+    EquipmentRerollCount
+}
+
+[System.Serializable]
 public class PlayerStats
 {
     public float maxHp = 50f;

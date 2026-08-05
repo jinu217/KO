@@ -13,4 +13,21 @@ public class PersistentData
 
     // 영구 재화
     public int soul;
+
+    public float bonusAttackDamage;
+    public float bonusMaxHp;
+    public float bonusAttackSpeed;
+    public int bonusDashCount;
+    public float dashCooldownReduction;
+    public int startingCoinBonus;
+
+    public int attackDamageUpgradeCount;
+    public int maxHpUpgradeCount;
+    public int attackSpeedUpgradeCount;
+    public int dashCountUpgradeCount;
+    public int dashCooldownUpgradeCount;
+    public int startingCoinUpgradeCount;
+    public int equipmentRerollBonus;
+    public int equipmentRerollUpgradeCount;
+
 }

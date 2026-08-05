@@ -22,6 +22,21 @@ public class RunData
     public int bpmPotionCount;
     public int coin;
 
+    public int blacksmithRound = -1;
+    public int blacksmithPurchaseCount;
+
+    public int equipmentShopRound = -1;
+    public bool equipmentOffersInitialized;
+    public int offeredHeadItemId = -1;
+    public int offeredBodyItemId = -1;
+    public int offeredHandItemId = -1;
+    public int offeredFootItemId = -1;
+    public bool offeredHeadSold;
+    public bool offeredBodySold;
+    public bool offeredHandSold;
+    public bool offeredFootSold;
+    public int equipmentRerollUsedCount;
+
     public string currentScene;
     public string spawnId;
 

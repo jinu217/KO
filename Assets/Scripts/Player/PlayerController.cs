@@ -162,6 +162,118 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     public PlayerStats Stats => stats;
 
+    private bool persistentUpgradesApplied;
+
+    private void ApplyPersistentUpgrades()
+    {
+        if (SaveData.Instance == null || persistentUpgradesApplied)
+            return;
+
+        persistentUpgradesApplied = true;
+        PersistentData persistent = SaveData.Instance.persistent;
+        baseStats.attackDamage += persistent.bonusAttackDamage;
+        baseStats.maxHp += persistent.bonusMaxHp;
+        baseStats.attackSpeed += persistent.bonusAttackSpeed;
+        availableDashCount = MaxDashCount;
+        RecalculateCurrentEquipmentStats();
+    }
+
+    public void PurchasePersistentUpgrade(ShamanUpgradeType upgradeType, float amountPerPurchase, int purchaseCount)
+    {
+        if (amountPerPurchase <= 0f || purchaseCount <= 0)
+            return;
+
+        float amount = amountPerPurchase * purchaseCount;
+        float previousMaxHp = stats.maxHp;
+        PersistentData persistent = SaveData.Instance != null ? SaveData.Instance.persistent : null;
+
+        switch (upgradeType)
+        {
+            case ShamanUpgradeType.AttackDamage:
+                baseStats.attackDamage += amount;
+                if (persistent != null) persistent.bonusAttackDamage += amount;
+                break;
+            case ShamanUpgradeType.MaxHp:
+                baseStats.maxHp += amount;
+                if (persistent != null) persistent.bonusMaxHp += amount;
+                break;
+            case ShamanUpgradeType.AttackSpeed:
+                baseStats.attackSpeed += amount;
+                if (persistent != null) persistent.bonusAttackSpeed += amount;
+                break;
+            case ShamanUpgradeType.DashCount:
+                int dashIncrease = Mathf.Max(1, Mathf.RoundToInt(amount));
+                if (persistent != null) persistent.bonusDashCount += dashIncrease;
+                availableDashCount += dashIncrease;
+                break;
+            case ShamanUpgradeType.DashCooldownReduction:
+                if (persistent != null)
+                    persistent.dashCooldownReduction = Mathf.Clamp(persistent.dashCooldownReduction + amount, 0f, 0.8f);
+                break;
+            case ShamanUpgradeType.StartingCoin:
+                if (persistent != null)
+                    persistent.startingCoinBonus += Mathf.Max(1, Mathf.RoundToInt(amount));
+                break;
+            case ShamanUpgradeType.EquipmentRerollCount:
+                if (persistent != null)
+                    persistent.equipmentRerollBonus += Mathf.Max(1, Mathf.RoundToInt(amount));
+                break;
+        }
+
+        RecordPersistentUpgradePurchaseCount(upgradeType, purchaseCount);
+
+        RecalculateCurrentEquipmentStats();
+
+        if (playerStatus != null && stats.maxHp > previousMaxHp)
+            playerStatus.currentHp = Mathf.Min(playerStatus.currentHp + (stats.maxHp - previousMaxHp), stats.maxHp);
+    }
+
+    public int GetPersistentUpgradePurchaseCount(ShamanUpgradeType upgradeType)
+    {
+        if (SaveData.Instance == null)
+            return 0;
+
+        PersistentData persistent = SaveData.Instance.persistent;
+        return upgradeType switch
+        {
+            ShamanUpgradeType.AttackDamage => persistent.attackDamageUpgradeCount,
+            ShamanUpgradeType.MaxHp => persistent.maxHpUpgradeCount,
+            ShamanUpgradeType.AttackSpeed => persistent.attackSpeedUpgradeCount,
+            ShamanUpgradeType.DashCount => persistent.dashCountUpgradeCount,
+            ShamanUpgradeType.DashCooldownReduction => persistent.dashCooldownUpgradeCount,
+            ShamanUpgradeType.StartingCoin => persistent.startingCoinUpgradeCount,
+            ShamanUpgradeType.EquipmentRerollCount => persistent.equipmentRerollUpgradeCount,
+            _ => 0
+        };
+    }
+
+    private void RecordPersistentUpgradePurchaseCount(ShamanUpgradeType upgradeType, int purchaseCount)
+    {
+        if (SaveData.Instance == null)
+            return;
+
+        PersistentData persistent = SaveData.Instance.persistent;
+        switch (upgradeType)
+        {
+            case ShamanUpgradeType.AttackDamage: persistent.attackDamageUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.MaxHp: persistent.maxHpUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.AttackSpeed: persistent.attackSpeedUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.DashCount: persistent.dashCountUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.DashCooldownReduction: persistent.dashCooldownUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.StartingCoin: persistent.startingCoinUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.EquipmentRerollCount: persistent.equipmentRerollUpgradeCount += purchaseCount; break;
+        }
+    }
+
+    private void RecalculateCurrentEquipmentStats()
+    {
+        EquipmentManager equipment = GetComponent<EquipmentManager>();
+        if (equipment != null)
+            equipment.RefreshStats();
+        else
+            stats.CopyFrom(baseStats);
+    }
+
     public void RecalculateEquipmentStats(params ItemData[] equippedItems)
     {
         stats.CopyFrom(baseStats);
@@ -259,6 +371,15 @@ public class PlayerController : MonoBehaviour, IDamageable
     private bool isDashing;          // 대쉬 중 여부
     private bool canDash = true;     // 대쉬 가능 여부
     private Coroutine dashRoutine;
+    private int availableDashCount = 1;
+
+    public int MaxDashCount => 1 + (SaveData.Instance != null
+        ? Mathf.Max(0, SaveData.Instance.persistent.bonusDashCount)
+        : 0);
+    public int AvailableDashCount => availableDashCount;
+    public float EffectiveDashCooldown => dashCooldown * (1f - (SaveData.Instance != null
+        ? Mathf.Clamp(SaveData.Instance.persistent.dashCooldownReduction, 0f, 0.8f)
+        : 0f));
 
     // -------------------- 하향 점프 / 강화 하강 --------------------
     [Header("하향 점프(Down Jump) 설정")]
@@ -390,6 +511,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     void Awake()
     {
         stats.CopyFrom(baseStats);
+        ApplyPersistentUpgrades();
         rb = GetComponent<Rigidbody2D>();
         if (bodyCollider == null) bodyCollider = GetComponent<Collider2D>();
 
@@ -718,11 +840,14 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         }
 
-        if (!canDash || isDashing)
+        if (!canDash || availableDashCount <= 0 || isDashing)
             return;
 
         if (!playerStatus.OnDash())
             return;
+
+        availableDashCount--;
+        canDash = availableDashCount > 0;
 
         if (!playerStatus.CanAttackOrDash)
             return;
@@ -733,7 +858,6 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 대쉬 실행 루틴(중력 무시 + 일정 거리 직진 후 정지)
     private IEnumerator DashAction()
     {
-        canDash = false;
         isDashing = true;
 
         float prevGravity = rb.gravityScale;
@@ -763,8 +887,14 @@ public class PlayerController : MonoBehaviour, IDamageable
         isDashing = false;
         dashRoutine = null;
 
-        yield return new WaitForSeconds(dashCooldown);
-        canDash = true;
+        StartCoroutine(RestoreDashCharge());
+    }
+
+    private IEnumerator RestoreDashCharge()
+    {
+        yield return new WaitForSeconds(EffectiveDashCooldown);
+        availableDashCount = Mathf.Min(availableDashCount + 1, MaxDashCount);
+        canDash = availableDashCount > 0;
     }
 
     // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)

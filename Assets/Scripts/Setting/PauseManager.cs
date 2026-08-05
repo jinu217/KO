@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public static class ShopInteractionState
+{
+    public static bool IsOpen { get; set; }
+    public static int LastClosedFrame { get; set; } = -1;
+    public static bool BlockPauseThisFrame => IsOpen || Time.frameCount == LastClosedFrame;
+}
+
 public class PauseManager : MonoBehaviour
 {
     [Header("Panels")]
@@ -26,6 +33,9 @@ public class PauseManager : MonoBehaviour
 
     void Update()
     {
+        if (ShopInteractionState.BlockPauseThisFrame)
+            return;
+
         // 설정창이 열려 있을 때는 ESC 처리를 SettingController가 담당
         if (settingPanel != null && settingPanel.activeSelf)
             return;

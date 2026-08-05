@@ -1,5 +1,14 @@
 using UnityEngine;
 
+public enum ItemRarity
+{
+    None,
+    Normal,
+    Rare,
+    Epic,
+    Legendary
+}
+
 [CreateAssetMenu(menuName = "Items/Item")]
 public class ItemData : ScriptableObject
 {
@@ -13,6 +22,9 @@ public class ItemData : ScriptableObject
     // 아이템 종류 ============================
     [Header("아이템 종류")]
     public ItemType itemType;
+
+    [Tooltip("포션과 재화는 None 장비는 Normal 이상")]
+    public ItemRarity rarity = ItemRarity.None;
 
     // 장비 타입 (머리, 몸통, 장갑, 신발 등)
     public EquipmentType equipType;
@@ -67,12 +79,24 @@ public class ItemData : ScriptableObject
     // 발
     public Sprite footLeftSprite;
     public Sprite footRightSprite;
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (itemType == ItemType.Equipment && rarity == ItemRarity.None)
+            rarity = ItemRarity.Normal;
+        else if (itemType != ItemType.Equipment)
+            rarity = ItemRarity.None;
+    }
+#endif
 }
 
 [CreateAssetMenu(menuName = "Items/Item Database")]
 public class ItemDatabase : ScriptableObject
 {
     [SerializeField] private System.Collections.Generic.List<ItemData> items = new System.Collections.Generic.List<ItemData>();
+
+    public System.Collections.Generic.IReadOnlyList<ItemData> Items => items;
 
     private System.Collections.Generic.Dictionary<int, ItemData> itemsById;
 

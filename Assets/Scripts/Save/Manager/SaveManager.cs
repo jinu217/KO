@@ -48,6 +48,20 @@ public class SaveManager : MonoBehaviour
         file.persistent.deathCount = SaveData.Instance.persistent.deathCount;
         file.persistent.nextStage = SaveData.Instance.persistent.nextStage;
         file.persistent.soul = SaveData.Instance.persistent.soul;
+        file.persistent.bonusAttackDamage = SaveData.Instance.persistent.bonusAttackDamage;
+        file.persistent.bonusMaxHp = SaveData.Instance.persistent.bonusMaxHp;
+        file.persistent.bonusAttackSpeed = SaveData.Instance.persistent.bonusAttackSpeed;
+        file.persistent.bonusDashCount = SaveData.Instance.persistent.bonusDashCount;
+        file.persistent.dashCooldownReduction = SaveData.Instance.persistent.dashCooldownReduction;
+        file.persistent.startingCoinBonus = SaveData.Instance.persistent.startingCoinBonus;
+        file.persistent.attackDamageUpgradeCount = SaveData.Instance.persistent.attackDamageUpgradeCount;
+        file.persistent.maxHpUpgradeCount = SaveData.Instance.persistent.maxHpUpgradeCount;
+        file.persistent.attackSpeedUpgradeCount = SaveData.Instance.persistent.attackSpeedUpgradeCount;
+        file.persistent.dashCountUpgradeCount = SaveData.Instance.persistent.dashCountUpgradeCount;
+        file.persistent.dashCooldownUpgradeCount = SaveData.Instance.persistent.dashCooldownUpgradeCount;
+        file.persistent.startingCoinUpgradeCount = SaveData.Instance.persistent.startingCoinUpgradeCount;
+        file.persistent.equipmentRerollBonus = SaveData.Instance.persistent.equipmentRerollBonus;
+        file.persistent.equipmentRerollUpgradeCount = SaveData.Instance.persistent.equipmentRerollUpgradeCount;
 
         // Run
         file.run.hp = SaveData.Instance.run.hp;
@@ -66,6 +80,19 @@ public class SaveManager : MonoBehaviour
         file.run.healPotionCount = SaveData.Instance.run.healPotionCount;
         file.run.bpmPotionCount = SaveData.Instance.run.bpmPotionCount;
         file.run.coin = SaveData.Instance.run.coin;
+        file.run.blacksmithRound = SaveData.Instance.run.blacksmithRound;
+        file.run.blacksmithPurchaseCount = SaveData.Instance.run.blacksmithPurchaseCount;
+        file.run.equipmentShopRound = SaveData.Instance.run.equipmentShopRound;
+        file.run.equipmentOffersInitialized = SaveData.Instance.run.equipmentOffersInitialized;
+        file.run.offeredHeadItemId = SaveData.Instance.run.offeredHeadItemId;
+        file.run.offeredBodyItemId = SaveData.Instance.run.offeredBodyItemId;
+        file.run.offeredHandItemId = SaveData.Instance.run.offeredHandItemId;
+        file.run.offeredFootItemId = SaveData.Instance.run.offeredFootItemId;
+        file.run.offeredHeadSold = SaveData.Instance.run.offeredHeadSold;
+        file.run.offeredBodySold = SaveData.Instance.run.offeredBodySold;
+        file.run.offeredHandSold = SaveData.Instance.run.offeredHandSold;
+        file.run.offeredFootSold = SaveData.Instance.run.offeredFootSold;
+        file.run.equipmentRerollUsedCount = SaveData.Instance.run.equipmentRerollUsedCount;
         file.run.currentScene = SaveData.Instance.run.currentScene;
         file.run.spawnId = SaveData.Instance.run.spawnId;
         file.run.inBossFight = SaveData.Instance.run.inBossFight;
@@ -98,6 +125,20 @@ public class SaveManager : MonoBehaviour
         SaveData.Instance.persistent.deathCount = file.persistent.deathCount;
         SaveData.Instance.persistent.nextStage = file.persistent.nextStage;
         SaveData.Instance.persistent.soul = file.persistent.soul;
+        SaveData.Instance.persistent.bonusAttackDamage = file.persistent.bonusAttackDamage;
+        SaveData.Instance.persistent.bonusMaxHp = file.persistent.bonusMaxHp;
+        SaveData.Instance.persistent.bonusAttackSpeed = file.persistent.bonusAttackSpeed;
+        SaveData.Instance.persistent.bonusDashCount = file.persistent.bonusDashCount;
+        SaveData.Instance.persistent.dashCooldownReduction = file.persistent.dashCooldownReduction;
+        SaveData.Instance.persistent.startingCoinBonus = file.persistent.startingCoinBonus;
+        SaveData.Instance.persistent.attackDamageUpgradeCount = file.persistent.attackDamageUpgradeCount;
+        SaveData.Instance.persistent.maxHpUpgradeCount = file.persistent.maxHpUpgradeCount;
+        SaveData.Instance.persistent.attackSpeedUpgradeCount = file.persistent.attackSpeedUpgradeCount;
+        SaveData.Instance.persistent.dashCountUpgradeCount = file.persistent.dashCountUpgradeCount;
+        SaveData.Instance.persistent.dashCooldownUpgradeCount = file.persistent.dashCooldownUpgradeCount;
+        SaveData.Instance.persistent.startingCoinUpgradeCount = file.persistent.startingCoinUpgradeCount;
+        SaveData.Instance.persistent.equipmentRerollBonus = file.persistent.equipmentRerollBonus;
+        SaveData.Instance.persistent.equipmentRerollUpgradeCount = file.persistent.equipmentRerollUpgradeCount;
 
         // Run
         SaveData.Instance.run = file.run ?? new RunData();
