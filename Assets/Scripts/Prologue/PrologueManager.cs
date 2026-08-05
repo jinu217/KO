@@ -314,20 +314,21 @@ public class PrologueManager : MonoBehaviour
         skipConfirmPanel.SetActive(true);
     }
 
-
-
     private void CancelSkip()
     {
         skipConfirmPanel.SetActive(false);
     }
 
-
-
-    private void SkipPrologue()
+    public void SkipPrologue()
     {
-        SceneManager.LoadScene("Tutorial_0");
+        StartCoroutine(SkipCoroutine());
     }
 
+    private IEnumerator SkipCoroutine()
+    {
+        yield return StartCoroutine(fadeManager.FadeOut());
+        SceneManager.LoadScene("Tutorial_0");
+    }
 
 
     //==================================================
