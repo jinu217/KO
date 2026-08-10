@@ -51,6 +51,7 @@ public class SaveManager : MonoBehaviour
         file.persistent.bonusAttackDamage = SaveData.Instance.persistent.bonusAttackDamage;
         file.persistent.bonusMaxHp = SaveData.Instance.persistent.bonusMaxHp;
         file.persistent.bonusAttackSpeed = SaveData.Instance.persistent.bonusAttackSpeed;
+        file.persistent.bonusMoveSpeed = SaveData.Instance.persistent.bonusMoveSpeed;
         file.persistent.bonusDashCount = SaveData.Instance.persistent.bonusDashCount;
         file.persistent.dashCooldownReduction = SaveData.Instance.persistent.dashCooldownReduction;
         file.persistent.startingCoinBonus = SaveData.Instance.persistent.startingCoinBonus;
@@ -98,6 +99,11 @@ public class SaveManager : MonoBehaviour
         file.run.offeredHandSold = SaveData.Instance.run.offeredHandSold;
         file.run.offeredFootSold = SaveData.Instance.run.offeredFootSold;
         file.run.equipmentRerollUsedCount = SaveData.Instance.run.equipmentRerollUsedCount;
+        file.run.shamanPurchasedProductIds = SaveData.Instance.run.shamanPurchasedProductIds != null
+            ? new System.Collections.Generic.List<int>(SaveData.Instance.run.shamanPurchasedProductIds)
+            : new System.Collections.Generic.List<int>();
+        file.run.shamanHpPotionPurchasedCount = SaveData.Instance.run.shamanHpPotionPurchasedCount;
+        file.run.shamanBpmPotionPurchasedCount = SaveData.Instance.run.shamanBpmPotionPurchasedCount;
         file.run.currentScene = SaveData.Instance.run.currentScene;
         file.run.spawnId = SaveData.Instance.run.spawnId;
         file.run.inBossFight = SaveData.Instance.run.inBossFight;
@@ -133,6 +139,7 @@ public class SaveManager : MonoBehaviour
         SaveData.Instance.persistent.bonusAttackDamage = file.persistent.bonusAttackDamage;
         SaveData.Instance.persistent.bonusMaxHp = file.persistent.bonusMaxHp;
         SaveData.Instance.persistent.bonusAttackSpeed = file.persistent.bonusAttackSpeed;
+        SaveData.Instance.persistent.bonusMoveSpeed = file.persistent.bonusMoveSpeed;
         SaveData.Instance.persistent.bonusDashCount = file.persistent.bonusDashCount;
         SaveData.Instance.persistent.dashCooldownReduction = file.persistent.dashCooldownReduction;
         SaveData.Instance.persistent.startingCoinBonus = file.persistent.startingCoinBonus;
@@ -148,6 +155,7 @@ public class SaveManager : MonoBehaviour
         // Run
         SaveData.Instance.run = file.run ?? new RunData();
         SaveData.Instance.run.inventoryItemIds ??= new System.Collections.Generic.List<int>();
+        SaveData.Instance.run.shamanPurchasedProductIds ??= new System.Collections.Generic.List<int>();
     }
 
     //============== 저장 삭제 ==================

@@ -6,108 +6,186 @@ using UnityEngine.UI;
 [Serializable]
 public class BuffShamanPotionProduct
 {
-    [Header("Potion Data")]
+    [Tooltip("포션 표시 이름")]
+    public string displayName;
     [Tooltip("판매 포션 ItemData")]
     public ItemData potion;
     [Tooltip("포션 1개당 코인 가격")]
     [Min(0)] public int coinPrice;
-
-    [Header("Panel Slot")]
-    [Tooltip("포션 이름 및 가격 텍스트")]
-    public TMP_Text productText;
-    [Tooltip("포션 아이콘 이미지")]
-    public Image iconImage;
+    [Tooltip("한 회차에서 구매할 수 있는 총 최대 수량")]
+    [Min(1)] public int maxPurchaseCount = 99;
+    [Tooltip("방향키로 포션을 가리킬 때 노란색이 되는 1차 선택 텍스트")]
+    public TMP_Text primarySelectionText;
+    [Tooltip("공격키로 포션을 선택했을 때 노란색이 되는 2차 선택 텍스트")]
+    public TMP_Text secondarySelectionText;
+    [Tooltip("구매 완료 시 비활성화할 포션 관련 오브젝트")]
+    public GameObject potionObject;
 }
 
 [Serializable]
 public class BuffShamanStatProduct
 {
-    [Header("Stat Data")]
-    [Tooltip("능력치 상품 표시 이름")]
+    [Tooltip("스탯 표시 이름")]
     public string displayName;
     [Tooltip("영구 강화 종류")]
     public ShamanUpgradeType upgradeType;
-    [Tooltip("1회당 능력치 증가량")]
+    [Tooltip("1회당 스탯 증가량")]
     public float amountPerPurchase = 1f;
     [Tooltip("1회당 소울 가격")]
     [Min(0)] public int soulPrice;
-    [Tooltip("최대 상승 횟수")]
+    [Tooltip("세이브 파일당 최대 구매 횟수")]
     [Min(1)] public int maxPurchaseCount = 1;
-    [Tooltip("능력치 상품 아이콘")]
-    public Sprite statIcon;
-
-    [Header("Panel Slot")]
-    [Tooltip("능력치 이름 증가량 가격 텍스트")]
-    public TMP_Text productText;
-    [Tooltip("능력치 아이콘 이미지")]
-    public Image iconImage;
+    [Tooltip("스탯 표시 이미지 오브젝트")]
+    public Sprite statImage;
 }
 
 public class BuffShamanShopNPC : NPCShopBase
 {
+    private enum MainSelection
+    {
+        HpPotion,
+        BpmPotion,
+        Stat
+    }
+
+    private static readonly ShamanUpgradeType[] StatDisplayOrder =
+    {
+        ShamanUpgradeType.MaxHp,
+        ShamanUpgradeType.AttackDamage,
+        ShamanUpgradeType.Speed,
+        ShamanUpgradeType.DashCount,
+        ShamanUpgradeType.DashCooldownReduction,
+        ShamanUpgradeType.StartingCoin,
+        ShamanUpgradeType.EquipmentRerollCount
+    };
+
     [Header("Potions - Coin")]
-    [Tooltip("코인 포션 상품 목록")]
-    [SerializeField] private BuffShamanPotionProduct[] potions = Array.Empty<BuffShamanPotionProduct>();
+    [Tooltip("HP 포션 설정")]
+    [SerializeField] private BuffShamanPotionProduct hpPotion = new BuffShamanPotionProduct();
+    [Tooltip("BPM 포션 설정")]
+    [SerializeField] private BuffShamanPotionProduct bpmPotion = new BuffShamanPotionProduct();
 
     [Header("Stats - Soul")]
-    [Tooltip("소울 능력치 상품 목록")]
+    [Tooltip("영구 스탯 상품 목록")]
     [SerializeField] private BuffShamanStatProduct[] stats = Array.Empty<BuffShamanStatProduct>();
 
-    [Header("Selection UI")]
-    [Tooltip("구매 수량 상승 횟수 총가격 텍스트")]
-    [SerializeField] private TMP_Text quantityText;
-    [Tooltip("미선택 상품 색상")]
-    [SerializeField] private Color normalColor = Color.white;
-    [Tooltip("선택 상품 색상")]
-    [SerializeField] private Color selectedColor = Color.yellow;
-    [Tooltip("최대 구매 수량 및 상승 횟수")]
-    [SerializeField, Min(1)] private int maximumPurchaseCount = 99;
+    [Header("Selected Product UI")]
+    [Tooltip("스탯 전용 공용 이미지")]
+    [SerializeField] private Image statDisplayImage;
+    [Tooltip("포션 미선택 텍스트 색상")]
+    [SerializeField] private Color potionNormalColor = Color.white;
+    [Tooltip("포션 선택 텍스트 색상")]
+    [SerializeField] private Color potionSelectedColor = Color.yellow;
+    [Tooltip("선택 상품 이름과 가격 텍스트")]
+    [SerializeField] private TMP_Text selectedInfoText;
+    [Tooltip("선택 수량 구매 가능 수량 텍스트")]
+    [SerializeField] private TMP_Text selectedCountText;
 
-    private int selectedIndex;
+    [Header("Direction Button Effect")]
+    [Tooltip("위 방향키 버튼")]
+    [SerializeField] private RectTransform upButton;
+    [Tooltip("아래 방향키 버튼")]
+    [SerializeField] private RectTransform downButton;
+    [Tooltip("왼쪽 방향키 버튼")]
+    [SerializeField] private RectTransform leftButton;
+    [Tooltip("오른쪽 방향키 버튼")]
+    [SerializeField] private RectTransform rightButton;
+    [Tooltip("방향키 버튼 확대 배율")]
+    [SerializeField, Min(1f)] private float buttonPressScale = 1.15f;
+    [Tooltip("방향키 버튼 확대 복귀 시간")]
+    [SerializeField, Min(0.01f)] private float buttonPressDuration = 0.12f;
+
+    private MainSelection mainSelection = MainSelection.HpPotion;
+    private int selectedStatIndex;
     private int purchaseCount = 1;
     private bool choosingCount;
+    private Vector3 upButtonScale;
+    private Vector3 downButtonScale;
+    private Vector3 leftButtonScale;
+    private Vector3 rightButtonScale;
+    private Coroutine upButtonRoutine;
+    private Coroutine downButtonRoutine;
+    private Coroutine leftButtonRoutine;
+    private Coroutine rightButtonRoutine;
 
-    private int ProductCount => potions.Length + stats.Length;
-    private bool IsPotionSelected => selectedIndex < potions.Length;
-
-    // 실제 결제 재화는 선택 상품에 따라 Coin 또는 Soul로 결정한다.
     protected override CurrencyType PaymentCurrency => CurrencyType.Soul;
     protected override bool HasFirstSelection => choosingCount;
 
+    protected override void Awake()
+    {
+        base.Awake();
+        upButtonScale = GetButtonScale(upButton);
+        downButtonScale = GetButtonScale(downButton);
+        leftButtonScale = GetButtonScale(leftButton);
+        rightButtonScale = GetButtonScale(rightButton);
+    }
+
     protected override bool CanOpenShop()
     {
-        if (ProductCount > 0)
-            return true;
-
-        Debug.LogWarning("포션 또는 능력치 상품을 하나 이상 등록해 주세요.", this);
-        return false;
+        return hpPotion?.potion != null || bpmPotion?.potion != null || stats.Length > 0;
     }
 
     protected override void OnShopOpened()
     {
-        selectedIndex = 0;
+        mainSelection = MainSelection.HpPotion;
+        selectedStatIndex = 0;
         purchaseCount = 1;
         choosingCount = false;
+        SelectFirstAvailableProduct();
+        SetFeedback(AreAllProductsSoldOut() ? "모든 물품 구매완료!" : string.Empty);
         RefreshUI();
     }
 
     protected override void OnVerticalInput(int direction)
     {
         if (choosingCount)
-            purchaseCount = Mathf.Clamp(purchaseCount - direction, 1, GetSelectedMaximumCount());
+        {
+            int maximum = GetMaximumPurchasableCount();
+            if (maximum > 0 && mainSelection != MainSelection.Stat)
+            {
+                PlayVerticalButtonEffect(direction);
+                purchaseCount = Mathf.Clamp(purchaseCount - direction, 1, maximum);
+            }
+        }
         else
-            selectedIndex = WrapIndex(selectedIndex + direction, ProductCount);
+        {
+            MoveMainSelection(direction);
+            purchaseCount = 1;
+        }
 
         RefreshUI();
     }
 
+    protected override bool OnHorizontalInput(int direction)
+    {
+        if (mainSelection != MainSelection.Stat)
+            return false;
+
+        if (AreAllProductsSoldOut())
+            return true;
+
+        PlayHorizontalButtonEffect(direction);
+        MoveStatSelection(-direction);
+        purchaseCount = GetMaximumPurchasableCount() > 0 ? 1 : 0;
+        SetFeedback(string.Empty);
+        RefreshUI();
+        return true;
+    }
+
     protected override void OnAttackInput()
     {
+        if (AreAllProductsSoldOut())
+        {
+            SetFeedback("모든 물품 구매완료!");
+            return;
+        }
+
         if (!choosingCount)
         {
-            if (!IsPotionSelected && GetSelectedRemainingStatCount() <= 0)
+            int maximum = GetMaximumPurchasableCount();
+            if (maximum <= 0)
             {
-                SetFeedback("최대 상승 횟수 도달");
+                SetUnavailableFeedback();
                 return;
             }
 
@@ -118,19 +196,26 @@ public class BuffShamanShopNPC : NPCShopBase
             return;
         }
 
-        if (IsPotionSelected)
-            PurchasePotion();
-        else
+        if (mainSelection == MainSelection.Stat)
             PurchaseStat();
+        else
+            PurchasePotion(GetSelectedPotion());
     }
 
-    private void PurchasePotion()
+    protected override void CancelFirstSelection()
     {
-        BuffShamanPotionProduct product = potions[selectedIndex];
+        choosingCount = false;
+        purchaseCount = 1;
+        SetFeedback(string.Empty);
+        RefreshUI();
+    }
+
+    private void PurchasePotion(BuffShamanPotionProduct product)
+    {
         if (product == null || product.potion == null ||
             product.potion.itemType != ItemType.Potion || PlayerItemManager == null)
         {
-            SetFeedback("포션 ItemData 설정을 확인해 주세요.");
+            SetFeedback("포션 설정 오류");
             return;
         }
 
@@ -140,22 +225,25 @@ public class BuffShamanShopNPC : NPCShopBase
         for (int i = 0; i < purchaseCount; i++)
             PlayerItemManager.AddItem(product.potion);
 
-        CompletePurchase($"{product.potion.itemName} {purchaseCount}개 구매 완료");
+        AddSelectedPotionPurchaseCount(purchaseCount);
+        if (GetRemainingPotionPurchaseCount(product) <= 0)
+            SetSelectedPurchasedForRound();
+        CompletePurchase($"{GetSelectedName()}을 {purchaseCount}개 구입!");
     }
 
     private void PurchaseStat()
     {
-        BuffShamanStatProduct product = stats[selectedIndex - potions.Length];
+        BuffShamanStatProduct product = GetSelectedStat();
         if (product == null || product.amountPerPurchase <= 0f || PlayerController == null)
         {
-            SetFeedback("능력치 증가량 설정을 확인해 주세요.");
+            SetFeedback("스탯 설정 오류");
             return;
         }
 
-        int remainingCount = GetRemainingStatCount(product);
-        if (remainingCount <= 0 || purchaseCount > remainingCount)
+        int remaining = GetRemainingStatPurchaseCount(product);
+        if (purchaseCount <= 0 || purchaseCount > remaining)
         {
-            SetFeedback("최대 상승 횟수 도달");
+            SetFeedback("최대 구매 횟수 도달");
             return;
         }
 
@@ -167,152 +255,468 @@ public class BuffShamanShopNPC : NPCShopBase
             product.amountPerPurchase,
             purchaseCount);
 
-        CompletePurchase($"{GetStatName(product)} {purchaseCount}회 상승 완료");
+        SetSelectedPurchasedForRound();
+        CompletePurchase($"{GetSelectedName()}을 {purchaseCount}개 구입!");
     }
 
     private void CompletePurchase(string message)
     {
         SaveRuntimeState();
-        SetFeedback(message);
         choosingCount = false;
         purchaseCount = 1;
-        RefreshUI();
-    }
-
-    protected override void CancelFirstSelection()
-    {
-        choosingCount = false;
-        purchaseCount = 1;
-        SetFeedback(string.Empty);
+        if (!IsMainSelectionAvailable(mainSelection))
+            MoveToNextAvailableProduct();
+        SetFeedback(AreAllProductsSoldOut() ? "모든 물품 구매완료!" : message);
         RefreshUI();
     }
 
     private void RefreshUI()
     {
-        for (int i = 0; i < potions.Length; i++)
-            RefreshPotionSlot(potions[i], i, i == selectedIndex);
+        RefreshImageObjects();
+        RefreshMainSelectionUI();
 
-        for (int i = 0; i < stats.Length; i++)
+        if (AreAllProductsSoldOut())
         {
-            int combinedIndex = potions.Length + i;
-            RefreshStatSlot(stats[i], combinedIndex == selectedIndex);
+            if (selectedInfoText != null) selectedInfoText.text = string.Empty;
+            if (selectedCountText != null) selectedCountText.text = string.Empty;
+            SetDirectionButtonsActive(false);
+            return;
         }
 
-        if (quantityText == null)
-            return;
+        CurrencyType currencyType = GetSelectedCurrencyType();
+        string currencyName = currencyType == CurrencyType.Coin ? "COIN" : "SOUL";
+        if (selectedInfoText != null)
+            selectedInfoText.text = $"{GetSelectedName()}\n{currencyName} : {GetSelectedUnitPrice() * Mathf.Max(1, purchaseCount)}";
 
-        quantityText.gameObject.SetActive(choosingCount);
-        if (!choosingCount)
-            return;
+        int maximum = GetMaximumPurchasableCount();
+        if (selectedCountText != null)
+            selectedCountText.text = mainSelection == MainSelection.Stat && maximum > 0
+                ? "1/1"
+                : maximum > 0
+                ? $"{Mathf.Clamp(purchaseCount, 1, maximum)}/{maximum}"
+                : "0/0";
+    }
 
-        if (IsPotionSelected)
+    private BuffShamanPotionProduct GetSelectedPotion()
+    {
+        return mainSelection == MainSelection.HpPotion ? hpPotion : bpmPotion;
+    }
+
+    private BuffShamanStatProduct GetSelectedStat()
+    {
+        ShamanUpgradeType targetType = StatDisplayOrder[selectedStatIndex];
+        return Array.Find(stats, product => product != null && product.upgradeType == targetType);
+    }
+
+    private string GetSelectedName()
+    {
+        if (mainSelection == MainSelection.HpPotion)
+            return GetPotionName(hpPotion, "HP 포션");
+        if (mainSelection == MainSelection.BpmPotion)
+            return GetPotionName(bpmPotion, "BPM 포션");
+
+        BuffShamanStatProduct stat = GetSelectedStat();
+        if (stat != null && !string.IsNullOrWhiteSpace(stat.displayName))
+            return stat.displayName;
+
+        return GetDefaultStatName(StatDisplayOrder[selectedStatIndex]);
+    }
+
+    private CurrencyType GetSelectedCurrencyType()
+    {
+        return mainSelection == MainSelection.Stat ? CurrencyType.Soul : CurrencyType.Coin;
+    }
+
+    private int GetSelectedUnitPrice()
+    {
+        if (mainSelection != MainSelection.Stat)
+            return GetSelectedPotion()?.coinPrice ?? 0;
+        return GetSelectedStat()?.soulPrice ?? 0;
+    }
+
+    private int GetMaximumPurchasableCount()
+    {
+        if (IsSelectedPurchasedForRound())
+            return 0;
+
+        int unitPrice = GetSelectedUnitPrice();
+        CurrencyType currencyType = GetSelectedCurrencyType();
+        int ownedCurrency = Currency == null
+            ? 0
+            : currencyType == CurrencyType.Coin ? Currency.coin : Currency.soul;
+        int affordableCount = unitPrice <= 0 ? int.MaxValue : ownedCurrency / unitPrice;
+
+        int productLimit;
+        if (mainSelection == MainSelection.Stat)
         {
-            BuffShamanPotionProduct product = potions[selectedIndex];
-            quantityText.text = $"수량: {purchaseCount} / 합계: {product.coinPrice * purchaseCount} Coin";
+            BuffShamanStatProduct stat = GetSelectedStat();
+            if (stat == null || stat.amountPerPurchase <= 0f)
+                return 0;
+            productLimit = GetRemainingStatPurchaseCount(stat) > 0 ? 1 : 0;
         }
         else
         {
-            BuffShamanStatProduct product = stats[selectedIndex - potions.Length];
-            quantityText.text = $"횟수: {purchaseCount} / 합계: {product.soulPrice * purchaseCount} Soul";
-        }
-    }
-
-    private void RefreshPotionSlot(BuffShamanPotionProduct product, int index, bool selected)
-    {
-        if (product == null)
-            return;
-
-        string itemName = product.potion != null ? product.potion.itemName : "미설정 포션";
-        if (product.productText != null)
-        {
-            product.productText.text = $"{itemName} - {product.coinPrice} Coin";
-            product.productText.color = selected ? selectedColor : normalColor;
+            BuffShamanPotionProduct potion = GetSelectedPotion();
+            productLimit = GetRemainingPotionPurchaseCount(potion);
         }
 
-        SetIcon(product.iconImage, product.potion != null ? product.potion.icon : null, selected);
+        return Mathf.Max(0, Mathf.Min(productLimit, affordableCount));
     }
 
-    private void RefreshStatSlot(BuffShamanStatProduct product, bool selected)
-    {
-        if (product == null)
-            return;
-
-        int purchasedCount = PlayerController != null
-            ? PlayerController.GetPersistentUpgradePurchaseCount(product.upgradeType)
-            : 0;
-        string actionText = choosingCount && selected ? "  [상승]" : string.Empty;
-        if (product.productText != null)
-        {
-            product.productText.text = $"{GetStatName(product)} +{product.amountPerPurchase:0.##} - {product.soulPrice} Soul ({purchasedCount}/{product.maxPurchaseCount}){actionText}";
-            product.productText.color = selected ? selectedColor : normalColor;
-        }
-
-        SetIcon(product.iconImage, product.statIcon, selected);
-    }
-
-    private void SetIcon(Image iconImage, Sprite icon, bool selected)
-    {
-        if (iconImage == null)
-            return;
-
-        iconImage.sprite = icon;
-        iconImage.enabled = icon != null;
-        iconImage.preserveAspect = true;
-        iconImage.color = selected ? selectedColor : normalColor;
-    }
-
-    private static string GetStatName(BuffShamanStatProduct product)
-    {
-        if (!string.IsNullOrWhiteSpace(product.displayName))
-            return product.displayName;
-
-        return product.upgradeType switch
-        {
-            ShamanUpgradeType.AttackDamage => "공격력 증가",
-            ShamanUpgradeType.MaxHp => "최대 체력 증가",
-            ShamanUpgradeType.AttackSpeed => "공격속도 증가",
-            ShamanUpgradeType.DashCount => "대시 횟수 증가",
-            ShamanUpgradeType.DashCooldownReduction => "대시 쿨다운 감소",
-            ShamanUpgradeType.StartingCoin => "시작 코인 증가",
-            ShamanUpgradeType.EquipmentRerollCount => "장비 리롤 횟수 증가",
-            _ => product.upgradeType.ToString()
-        };
-    }
-
-    private int GetSelectedMaximumCount()
-    {
-        if (IsPotionSelected)
-            return maximumPurchaseCount;
-
-        return Mathf.Max(1, Mathf.Min(maximumPurchaseCount, GetSelectedRemainingStatCount()));
-    }
-
-    private int GetSelectedRemainingStatCount()
-    {
-        return GetRemainingStatCount(stats[selectedIndex - potions.Length]);
-    }
-
-    private int GetRemainingStatCount(BuffShamanStatProduct product)
+    private int GetRemainingStatPurchaseCount(BuffShamanStatProduct product)
     {
         if (product == null)
             return 0;
 
-        int purchasedCount = PlayerController != null
+        int purchased = PlayerController != null
             ? PlayerController.GetPersistentUpgradePurchaseCount(product.upgradeType)
             : 0;
-        return Mathf.Max(0, product.maxPurchaseCount - purchasedCount);
+        return Mathf.Max(0, product.maxPurchaseCount - purchased);
+    }
+
+    private int GetRemainingPotionPurchaseCount(BuffShamanPotionProduct product)
+    {
+        if (product == null)
+            return 0;
+
+        return Mathf.Max(
+            0,
+            Mathf.Max(1, product.maxPurchaseCount) - GetSelectedPotionPurchaseCount());
+    }
+
+    private int GetSelectedPotionPurchaseCount()
+    {
+        if (SaveData.Instance == null)
+            return 0;
+
+        return mainSelection == MainSelection.HpPotion
+            ? SaveData.Instance.run.shamanHpPotionPurchasedCount
+            : SaveData.Instance.run.shamanBpmPotionPurchasedCount;
+    }
+
+    private void AddSelectedPotionPurchaseCount(int amount)
+    {
+        if (SaveData.Instance == null || amount <= 0)
+            return;
+
+        if (mainSelection == MainSelection.HpPotion)
+            SaveData.Instance.run.shamanHpPotionPurchasedCount += amount;
+        else if (mainSelection == MainSelection.BpmPotion)
+            SaveData.Instance.run.shamanBpmPotionPurchasedCount += amount;
+    }
+
+    private void SetUnavailableFeedback()
+    {
+        if (IsSelectedPurchasedForRound())
+            SetFeedback("이번 회차 구매 완료");
+        else if (mainSelection == MainSelection.Stat && GetSelectedStat() == null)
+            SetFeedback("스탯 설정 오류");
+        else if (mainSelection == MainSelection.Stat && GetRemainingStatPurchaseCount(GetSelectedStat()) <= 0)
+            SetFeedback("최대 구매 횟수 도달");
+        else
+            SetFeedback(GetSelectedCurrencyType() == CurrencyType.Coin ? "코인 부족" : "소울 부족");
+    }
+
+    private void RefreshImageObjects()
+    {
+        BuffShamanStatProduct stat = GetSelectedStat();
+        if (statDisplayImage == null)
+            return;
+
+        statDisplayImage.sprite = stat != null ? stat.statImage : null;
+        statDisplayImage.preserveAspect = true;
+        statDisplayImage.enabled = stat != null &&
+            stat.statImage != null &&
+            IsStatAvailable(stat.upgradeType);
+    }
+
+    private void RefreshMainSelectionUI()
+    {
+        bool allSoldOut = AreAllProductsSoldOut();
+        if (upButton != null)
+            upButton.gameObject.SetActive(!allSoldOut);
+        if (downButton != null)
+            downButton.gameObject.SetActive(!allSoldOut);
+
+        bool hpAvailable = IsMainSelectionAvailable(MainSelection.HpPotion);
+        bool bpmAvailable = IsMainSelectionAvailable(MainSelection.BpmPotion);
+        SetPotionObjectActive(hpPotion?.potionObject, hpPotion?.primarySelectionText, hpAvailable);
+        SetPotionObjectActive(bpmPotion?.potionObject, bpmPotion?.primarySelectionText, bpmAvailable);
+        RefreshPotionTextColors(hpPotion, mainSelection == MainSelection.HpPotion);
+        RefreshPotionTextColors(bpmPotion, mainSelection == MainSelection.BpmPotion);
+
+        bool showStatDirectionButtons = !allSoldOut &&
+            mainSelection == MainSelection.Stat &&
+            IsMainSelectionAvailable(MainSelection.Stat);
+        if (leftButton != null)
+            leftButton.gameObject.SetActive(showStatDirectionButtons);
+        if (rightButton != null)
+            rightButton.gameObject.SetActive(showStatDirectionButtons);
+    }
+
+    private void SelectFirstAvailableProduct()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            MainSelection candidate = (MainSelection)i;
+            if (!IsMainSelectionAvailable(candidate))
+                continue;
+
+            mainSelection = candidate;
+            if (candidate == MainSelection.Stat)
+                MoveStatSelection(0);
+            return;
+        }
+    }
+
+    private void MoveMainSelection(int direction)
+    {
+        if (AreAllProductsSoldOut())
+            return;
+
+        for (int offset = 1; offset <= 3; offset++)
+        {
+            MainSelection candidate = (MainSelection)WrapIndex(
+                (int)mainSelection + direction * offset, 3);
+            if (!IsMainSelectionAvailable(candidate))
+                continue;
+
+            mainSelection = candidate;
+            if (candidate == MainSelection.Stat && !IsStatAvailable(StatDisplayOrder[selectedStatIndex]))
+                MoveStatSelection(direction);
+            return;
+        }
+    }
+
+    private void MoveStatSelection(int direction)
+    {
+        int step = direction == 0 ? 1 : direction;
+        int startOffset = direction == 0 ? 0 : 1;
+        for (int offset = startOffset; offset < StatDisplayOrder.Length + startOffset; offset++)
+        {
+            int candidate = WrapIndex(selectedStatIndex + step * offset, StatDisplayOrder.Length);
+            if (!IsStatAvailable(StatDisplayOrder[candidate]))
+                continue;
+
+            selectedStatIndex = candidate;
+            return;
+        }
+    }
+
+    private void MoveToNextAvailableProduct()
+    {
+        if (AreAllProductsSoldOut())
+            return;
+
+        if (mainSelection == MainSelection.Stat && IsMainSelectionAvailable(MainSelection.Stat))
+        {
+            MoveStatSelection(1);
+            return;
+        }
+
+        MoveMainSelection(1);
+    }
+
+    private bool IsMainSelectionAvailable(MainSelection selection)
+    {
+        if (selection == MainSelection.HpPotion)
+            return hpPotion?.potion != null && !IsProductPurchasedForRound(0);
+        if (selection == MainSelection.BpmPotion)
+            return bpmPotion?.potion != null && !IsProductPurchasedForRound(1);
+
+        for (int i = 0; i < StatDisplayOrder.Length; i++)
+        {
+            if (IsStatAvailable(StatDisplayOrder[i]))
+                return true;
+        }
+        return false;
+    }
+
+    private bool IsStatAvailable(ShamanUpgradeType type)
+    {
+        BuffShamanStatProduct stat = Array.Find(
+            stats, product => product != null && product.upgradeType == type);
+        return stat != null &&
+            stat.amountPerPurchase > 0f &&
+            GetRemainingStatPurchaseCount(stat) > 0 &&
+            !IsProductPurchasedForRound(GetStatProductId(type));
+    }
+
+    private bool AreAllProductsSoldOut()
+    {
+        return !IsMainSelectionAvailable(MainSelection.HpPotion) &&
+            !IsMainSelectionAvailable(MainSelection.BpmPotion) &&
+            !IsMainSelectionAvailable(MainSelection.Stat);
+    }
+
+    private static void SetPotionObjectActive(
+        GameObject productObject,
+        TMP_Text fallbackText,
+        bool active)
+    {
+        GameObject target = productObject != null
+            ? productObject
+            : fallbackText != null ? fallbackText.gameObject : null;
+        if (target != null)
+            target.SetActive(active);
+    }
+
+    private string GetPotionName(BuffShamanPotionProduct product, string fallbackName)
+    {
+        if (product != null && !string.IsNullOrWhiteSpace(product.displayName))
+            return product.displayName;
+
+        return fallbackName;
+    }
+
+    private void RefreshPotionTextColors(BuffShamanPotionProduct product, bool isPointed)
+    {
+        if (product == null)
+            return;
+
+        if (product.primarySelectionText != null)
+        {
+            product.primarySelectionText.text =
+                $"{GetPotionName(product, "포션")}\nCOIN : {product.coinPrice}";
+            product.primarySelectionText.color = isPointed && !choosingCount
+                ? potionSelectedColor
+                : potionNormalColor;
+        }
+
+        if (product.secondarySelectionText != null)
+        {
+            product.secondarySelectionText.color = isPointed && choosingCount
+                ? potionSelectedColor
+                : potionNormalColor;
+        }
+    }
+
+    private void SetDirectionButtonsActive(bool active)
+    {
+        if (upButton != null) upButton.gameObject.SetActive(active);
+        if (downButton != null) downButton.gameObject.SetActive(active);
+        if (leftButton != null) leftButton.gameObject.SetActive(active);
+        if (rightButton != null) rightButton.gameObject.SetActive(active);
+    }
+
+    private bool IsSelectedPurchasedForRound()
+    {
+        return IsProductPurchasedForRound(GetSelectedProductId());
+    }
+
+    private bool IsProductPurchasedForRound(int productId)
+    {
+        return SaveData.Instance != null &&
+            SaveData.Instance.run.shamanPurchasedProductIds != null &&
+            SaveData.Instance.run.shamanPurchasedProductIds.Contains(productId);
+    }
+
+    private void SetSelectedPurchasedForRound()
+    {
+        if (SaveData.Instance == null)
+            return;
+
+        SaveData.Instance.run.shamanPurchasedProductIds ??= new System.Collections.Generic.List<int>();
+        int productId = GetSelectedProductId();
+        if (!SaveData.Instance.run.shamanPurchasedProductIds.Contains(productId))
+            SaveData.Instance.run.shamanPurchasedProductIds.Add(productId);
+    }
+
+    private int GetSelectedProductId()
+    {
+        if (mainSelection == MainSelection.HpPotion)
+            return 0;
+        if (mainSelection == MainSelection.BpmPotion)
+            return 1;
+        return GetStatProductId(StatDisplayOrder[selectedStatIndex]);
+    }
+
+    private static int GetStatProductId(ShamanUpgradeType type)
+    {
+        return 100 + (int)type;
+    }
+
+    private static Vector3 GetButtonScale(RectTransform button)
+    {
+        return button != null ? button.localScale : Vector3.one;
+    }
+
+    private void PlayVerticalButtonEffect(int direction)
+    {
+        if (direction < 0)
+            RestartButtonEffect(upButton, upButtonScale, ref upButtonRoutine);
+        else
+            RestartButtonEffect(downButton, downButtonScale, ref downButtonRoutine);
+    }
+
+    private void PlayHorizontalButtonEffect(int direction)
+    {
+        if (direction < 0)
+            RestartButtonEffect(rightButton, rightButtonScale, ref rightButtonRoutine);
+        else
+            RestartButtonEffect(leftButton, leftButtonScale, ref leftButtonRoutine);
+    }
+
+    private void RestartButtonEffect(
+        RectTransform button,
+        Vector3 originalScale,
+        ref Coroutine routine)
+    {
+        if (button == null)
+            return;
+
+        if (routine != null)
+            StopCoroutine(routine);
+        button.localScale = originalScale;
+        routine = StartCoroutine(ButtonPressRoutine(button, originalScale));
+    }
+
+    private System.Collections.IEnumerator ButtonPressRoutine(
+        RectTransform button,
+        Vector3 originalScale)
+    {
+        float halfDuration = buttonPressDuration * 0.5f;
+        Vector3 pressedScale = originalScale * buttonPressScale;
+        float time = 0f;
+
+        while (time < halfDuration)
+        {
+            time += Time.unscaledDeltaTime;
+            button.localScale = Vector3.Lerp(originalScale, pressedScale, time / halfDuration);
+            yield return null;
+        }
+
+        time = 0f;
+        while (time < halfDuration)
+        {
+            time += Time.unscaledDeltaTime;
+            button.localScale = Vector3.Lerp(pressedScale, originalScale, time / halfDuration);
+            yield return null;
+        }
+
+        button.localScale = originalScale;
+    }
+
+    private static string GetDefaultStatName(ShamanUpgradeType type)
+    {
+        return type switch
+        {
+            ShamanUpgradeType.MaxHp => "최대체력",
+            ShamanUpgradeType.AttackDamage => "공격력",
+            ShamanUpgradeType.Speed => "속도",
+            ShamanUpgradeType.DashCount => "대쉬횟수",
+            ShamanUpgradeType.DashCooldownReduction => "대쉬쿨타임",
+            ShamanUpgradeType.StartingCoin => "시작코인",
+            ShamanUpgradeType.EquipmentRerollCount => "장비리롤",
+            _ => type.ToString()
+        };
     }
 
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        maximumPurchaseCount = Mathf.Max(1, maximumPurchaseCount);
-
-        for (int i = 0; i < potions.Length; i++)
-            RefreshPotionSlot(potions[i], i, i == selectedIndex);
-
-        for (int i = 0; i < stats.Length; i++)
-            RefreshStatSlot(stats[i], potions.Length + i == selectedIndex);
+        buttonPressScale = Mathf.Max(1f, buttonPressScale);
+        buttonPressDuration = Mathf.Max(0.01f, buttonPressDuration);
     }
 #endif
 }

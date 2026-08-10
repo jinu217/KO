@@ -17,6 +17,7 @@ public class PersistentData
     public float bonusAttackDamage;
     public float bonusMaxHp;
     public float bonusAttackSpeed;
+    public float bonusMoveSpeed;
     public int bonusDashCount;
     public float dashCooldownReduction;
     public int startingCoinBonus;

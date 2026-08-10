@@ -16,6 +16,8 @@ public class InventoryDisplay : MonoBehaviour
     void Awake()
     {
         slots = GetComponentsInChildren<InventorySlotUI>(true);
+        if (inventory != null)
+            inventory.SetCapacity(slots.Length);
     }
 
     void Start()
@@ -25,6 +27,8 @@ public class InventoryDisplay : MonoBehaviour
             Debug.LogError("Inventory 연결 안됨!");
             return;
         }
+
+        inventory.SetCapacity(slots != null ? slots.Length : 0);
 
         inventory.onInventoryChanged += UpdateInventory;
         UpdateInventory();

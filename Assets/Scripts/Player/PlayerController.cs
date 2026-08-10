@@ -174,6 +174,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         baseStats.attackDamage += persistent.bonusAttackDamage;
         baseStats.maxHp += persistent.bonusMaxHp;
         baseStats.attackSpeed += persistent.bonusAttackSpeed;
+        baseStats.moveSpeed += persistent.bonusMoveSpeed;
         availableDashCount = MaxDashCount;
         RecalculateCurrentEquipmentStats();
     }
@@ -197,9 +198,14 @@ public class PlayerController : MonoBehaviour, IDamageable
                 baseStats.maxHp += amount;
                 if (persistent != null) persistent.bonusMaxHp += amount;
                 break;
-            case ShamanUpgradeType.AttackSpeed:
+            case ShamanUpgradeType.Speed:
                 baseStats.attackSpeed += amount;
-                if (persistent != null) persistent.bonusAttackSpeed += amount;
+                baseStats.moveSpeed += amount;
+                if (persistent != null)
+                {
+                    persistent.bonusAttackSpeed += amount;
+                    persistent.bonusMoveSpeed += amount;
+                }
                 break;
             case ShamanUpgradeType.DashCount:
                 int dashIncrease = Mathf.Max(1, Mathf.RoundToInt(amount));
@@ -238,7 +244,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             ShamanUpgradeType.AttackDamage => persistent.attackDamageUpgradeCount,
             ShamanUpgradeType.MaxHp => persistent.maxHpUpgradeCount,
-            ShamanUpgradeType.AttackSpeed => persistent.attackSpeedUpgradeCount,
+            ShamanUpgradeType.Speed => persistent.attackSpeedUpgradeCount,
             ShamanUpgradeType.DashCount => persistent.dashCountUpgradeCount,
             ShamanUpgradeType.DashCooldownReduction => persistent.dashCooldownUpgradeCount,
             ShamanUpgradeType.StartingCoin => persistent.startingCoinUpgradeCount,
@@ -257,7 +263,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             case ShamanUpgradeType.AttackDamage: persistent.attackDamageUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.MaxHp: persistent.maxHpUpgradeCount += purchaseCount; break;
-            case ShamanUpgradeType.AttackSpeed: persistent.attackSpeedUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.Speed: persistent.attackSpeedUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.DashCount: persistent.dashCountUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.DashCooldownReduction: persistent.dashCooldownUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.StartingCoin: persistent.startingCoinUpgradeCount += purchaseCount; break;

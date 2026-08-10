@@ -37,6 +37,10 @@ public class RunData
     public bool offeredFootSold;
     public int equipmentRerollUsedCount;
 
+    public List<int> shamanPurchasedProductIds = new List<int>();
+    public int shamanHpPotionPurchasedCount;
+    public int shamanBpmPotionPurchasedCount;
+
     public string currentScene;
     public string spawnId;
 

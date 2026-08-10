@@ -3,7 +3,7 @@ public enum ShamanUpgradeType
 {
     AttackDamage,
     MaxHp,
-    AttackSpeed,
+    Speed,
     DashCount,
     DashCooldownReduction,
     StartingCoin,

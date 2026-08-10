@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -14,10 +15,8 @@ public class EquipmentShopSlotUI
     public Image iconImage;
     [Tooltip("장비 이름 능력치 가격 텍스트")]
     public TMP_Text itemText;
-    [Tooltip("구매 표시 배경 이미지")]
-    public Image purchaseBackground;
-    [Tooltip("구매 표시 텍스트")]
-    public TMP_Text purchaseText;
+    [Tooltip("이 장비가 선택되었을 때 활성화할 이미지 오브젝트")]
+    public GameObject selectionImage;
 }
 
 public class EquipmentShopNPC : NPCShopBase
@@ -59,21 +58,42 @@ public class EquipmentShopNPC : NPCShopBase
     [Tooltip("사망 횟수당 레전더리 확률 변화량")]
     [SerializeField] private float legendaryChangePerRound = 0.5f;
 
-    [Header("Selection Color")]
-    [Tooltip("미선택 장비 색상")]
-    [SerializeField] private Color normalColor = Color.white;
-    [Tooltip("선택 장비 색상")]
-    [SerializeField] private Color selectedColor = Color.yellow;
+    [Header("Image Color")]
+    [Tooltip("장비와 리롤 버튼 기본 색상")]
+    [SerializeField, HideInInspector] private Color normalColor = Color.white;
 
     [Header("Reroll Button")]
     [Tooltip("장비 리롤 버튼 이미지")]
     [SerializeField] private Image rerollButtonImage;
+    [Tooltip("리롤 버튼이 선택되었을 때 활성화할 이미지 오브젝트")]
+    [SerializeField] private GameObject rerollSelectionImage;
     [Tooltip("남은 장비 리롤 횟수 텍스트")]
     [SerializeField] private TMP_Text rerollCountText;
+
+    [Header("Confirmation UI")]
+    [Tooltip("구매 또는 리롤 확인 선택지를 표시할 텍스트")]
+    [SerializeField] private TMP_Text selectionText;
+    [Tooltip("확인 중 리롤 버튼과 선택 이미지가 아래로 내려가는 거리")]
+    [SerializeField] private float rerollPressedOffset = 6f;
+    [Tooltip("리롤 버튼과 선택 이미지가 내려가거나 돌아오는 시간")]
+    [Min(0f)]
+    [SerializeField] private float rerollMoveDuration = 0.12f;
+    [SerializeField] private Color confirmationSelectedColor = Color.yellow;
+    [SerializeField] private Color confirmationNormalColor = Color.white;
+
+    private const string DefaultFeedback = "이번에 들어온 장비들이야!";
+    private const string ConfirmFeedback = "그걸로 구매할거야?";
 
     private readonly Dictionary<EquipmentType, ItemData> offers = new Dictionary<EquipmentType, ItemData>();
     private int selectedIndex;
     private bool confirming;
+    private bool confirmYes = true;
+    private bool keepInventoryFullFeedback;
+    private Vector2 rerollButtonOriginalPosition;
+    private Vector2 rerollSelectionOriginalPosition;
+    private bool rerollPositionsCached;
+    private bool rerollPressedVisual;
+    private Coroutine rerollMoveRoutine;
 
     private int RerollIndex => slots.Length;
     private bool IsRerollSelected => selectedIndex == RerollIndex;
@@ -88,8 +108,10 @@ public class EquipmentShopNPC : NPCShopBase
 
     private void Start()
     {
+        CacheRerollPositions();
         EnsureRoundOffers();
         confirming = false;
+        confirmYes = true;
         selectedIndex = FindNextAvailableIndex(0, 1);
         RefreshUI();
     }
@@ -107,38 +129,114 @@ public class EquipmentShopNPC : NPCShopBase
         // 씬 시작 시 생성된 진열 상태를 불러오기만 한다.
         EnsureRoundOffers();
         confirming = false;
+        confirmYes = true;
+        keepInventoryFullFeedback = false;
         selectedIndex = FindNextAvailableIndex(0, 1);
+        SetFeedback(DefaultFeedback);
         RefreshUI();
     }
 
     protected override void OnVerticalInput(int direction)
     {
+    }
+
+    protected override bool OnHorizontalInput(int direction)
+    {
         if (confirming)
-            return;
-        selectedIndex = FindNextAvailableIndex(selectedIndex + direction, direction);
+        {
+            confirmYes = direction > 0;
+            RefreshUI();
+            return true;
+        }
+
+        int selectionDirection = -direction;
+        selectedIndex = FindNextAvailableIndex(
+            selectedIndex + selectionDirection,
+            selectionDirection);
+        if (!keepInventoryFullFeedback)
+            SetFeedback(DefaultFeedback);
         RefreshUI();
+        return true;
     }
 
     protected override void OnAttackInput()
     {
+        if (!confirming)
+        {
+            keepInventoryFullFeedback = false;
+
+            if (IsRerollSelected && RemainingRerollCount <= 0)
+            {
+                SetFeedback("남은 리롤 횟수 없음");
+                return;
+            }
+
+            if (!IsRerollSelected &&
+                (slots.Length == 0 || selectedIndex < 0 || selectedIndex >= slots.Length ||
+                 IsSold(slots[selectedIndex].equipmentType)))
+            {
+                SetFeedback("구매 가능한 장비 없음");
+                return;
+            }
+
+            confirming = true;
+            confirmYes = true;
+            SetFeedback(ConfirmFeedback);
+            RefreshUI();
+            return;
+        }
+
+        if (!confirmYes)
+        {
+            CancelFirstSelection();
+            return;
+        }
+
         if (IsRerollSelected)
         {
             RerollEquipment();
             return;
         }
 
-        if (slots.Length == 0 || selectedIndex < 0 || selectedIndex >= slots.Length ||
-            IsSold(slots[selectedIndex].equipmentType))
+        BuySelectedEquipment();
+    }
+
+    protected override void CancelFirstSelection()
+    {
+        confirming = false;
+        confirmYes = true;
+        keepInventoryFullFeedback = false;
+        SetFeedback(DefaultFeedback);
+        RefreshUI();
+    }
+
+    protected override void OnShopClosed()
+    {
+        confirming = false;
+        confirmYes = true;
+        keepInventoryFullFeedback = false;
+
+        if (rerollMoveRoutine != null)
         {
-            SetFeedback("구매 가능한 장비 없음");
-            return;
+            StopCoroutine(rerollMoveRoutine);
+            rerollMoveRoutine = null;
         }
 
-        if (!confirming)
+        CacheRerollPositions();
+        rerollPressedVisual = false;
+        SetRerollPositions(
+            rerollButtonOriginalPosition,
+            rerollSelectionOriginalPosition,
+            rerollSelectionImage != null
+                ? rerollSelectionImage.transform as RectTransform
+                : null);
+    }
+
+    private void BuySelectedEquipment()
+    {
+        if (selectedIndex < 0 || selectedIndex >= slots.Length)
         {
-            confirming = true;
-            SetFeedback(string.Empty);
-            RefreshUI();
+            CancelFirstSelection();
             return;
         }
 
@@ -150,22 +248,26 @@ public class EquipmentShopNPC : NPCShopBase
             return;
         }
 
+        if (!PlayerItemManager.HasInventorySpace())
+        {
+            confirming = false;
+            confirmYes = true;
+            keepInventoryFullFeedback = true;
+            SetFeedback("인벤토리가 꽉찼어!");
+            RefreshUI();
+            return;
+        }
+
         if (!TryPay(GetPrice(item.rarity)))
             return;
 
         PlayerItemManager.AddItem(item);
         SetSold(type, true);
         confirming = false;
+        confirmYes = true;
         SaveRuntimeState();
-        SetFeedback($"{item.itemName} 구매 완료");
         selectedIndex = FindNextAvailableIndex(selectedIndex, 1);
-        RefreshUI();
-    }
-
-    protected override void CancelFirstSelection()
-    {
-        confirming = false;
-        SetFeedback(string.Empty);
+        SetFeedback(DefaultFeedback);
         RefreshUI();
     }
 
@@ -220,7 +322,8 @@ public class EquipmentShopNPC : NPCShopBase
         confirming = false;
         selectedIndex = FindNextAvailableIndex(0, 1);
         SaveRuntimeState();
-        SetFeedback("장비 리롤 완료");
+        confirmYes = true;
+        SetFeedback(DefaultFeedback);
         RefreshUI();
     }
 
@@ -298,27 +401,129 @@ public class EquipmentShopNPC : NPCShopBase
                 slot.iconImage.sprite = item != null ? item.icon : null;
                 slot.iconImage.enabled = item != null && item.icon != null;
                 slot.iconImage.preserveAspect = true;
-                slot.iconImage.color = selected ? selectedColor : normalColor;
+                slot.iconImage.color = normalColor;
             }
             if (slot.itemText != null)
                 slot.itemText.text = sold ? "판매 완료" : item != null ? BuildDescription(item) : "상품 없음";
 
-            bool showPurchase = confirming && selected;
-            if (slot.purchaseBackground != null)
-                slot.purchaseBackground.gameObject.SetActive(showPurchase);
-            if (slot.purchaseText != null)
-            {
-                slot.purchaseText.gameObject.SetActive(showPurchase);
-                slot.purchaseText.text = "구매";
-            }
+            if (slot.selectionImage != null)
+                slot.selectionImage.SetActive(selected);
         }
 
 
         if (rerollButtonImage != null)
-            rerollButtonImage.color = IsRerollSelected ? selectedColor : normalColor;
+            rerollButtonImage.color = normalColor;
+
+        if (rerollSelectionImage != null)
+            rerollSelectionImage.SetActive(IsRerollSelected);
 
         if (rerollCountText != null)
-            rerollCountText.text = $"리롤 {RemainingRerollCount}/{MaximumRerollCount}";
+        {
+            rerollCountText.gameObject.SetActive(IsRerollSelected);
+            rerollCountText.text = $"{RemainingRerollCount}/{MaximumRerollCount}";
+        }
+        RefreshConfirmationText();
+        RefreshRerollPressedVisual();
+    }
+
+    private void RefreshConfirmationText()
+    {
+        if (selectionText == null)
+            return;
+
+        selectionText.gameObject.SetActive(confirming);
+        if (!confirming)
+            return;
+
+        string selectedHex = ColorUtility.ToHtmlStringRGB(confirmationSelectedColor);
+        string normalHex = ColorUtility.ToHtmlStringRGB(confirmationNormalColor);
+        selectionText.text = confirmYes
+            ? $"<color=#{selectedHex}>응</color> / <color=#{normalHex}>아니, 다시 고를게</color>"
+            : $"<color=#{normalHex}>응</color> / <color=#{selectedHex}>아니, 다시 고를게</color>";
+    }
+
+    private void CacheRerollPositions()
+    {
+        if (rerollPositionsCached)
+            return;
+
+        if (rerollButtonImage != null)
+            rerollButtonOriginalPosition = rerollButtonImage.rectTransform.anchoredPosition;
+
+        if (rerollSelectionImage != null &&
+            rerollSelectionImage.transform is RectTransform selectionRect)
+            rerollSelectionOriginalPosition = selectionRect.anchoredPosition;
+
+        rerollPositionsCached = true;
+    }
+
+    private void RefreshRerollPressedVisual()
+    {
+        CacheRerollPositions();
+        bool pressed = confirming && IsRerollSelected;
+
+        if (pressed == rerollPressedVisual && rerollMoveRoutine == null)
+            return;
+
+        rerollPressedVisual = pressed;
+        if (rerollMoveRoutine != null)
+            StopCoroutine(rerollMoveRoutine);
+
+        rerollMoveRoutine = StartCoroutine(AnimateRerollPosition(pressed));
+    }
+
+    private IEnumerator AnimateRerollPosition(bool pressed)
+    {
+        Vector2 buttonStart = rerollButtonImage != null
+            ? rerollButtonImage.rectTransform.anchoredPosition
+            : rerollButtonOriginalPosition;
+        RectTransform selectionRect = rerollSelectionImage != null
+            ? rerollSelectionImage.transform as RectTransform
+            : null;
+        Vector2 selectionStart = selectionRect != null
+            ? selectionRect.anchoredPosition
+            : rerollSelectionOriginalPosition;
+        Vector2 offset = pressed ? Vector2.down * rerollPressedOffset : Vector2.zero;
+        Vector2 buttonTarget = rerollButtonOriginalPosition + offset;
+        Vector2 selectionTarget = rerollSelectionOriginalPosition + offset;
+
+        if (rerollMoveDuration <= 0f)
+        {
+            SetRerollPositions(buttonTarget, selectionTarget, selectionRect);
+            rerollMoveRoutine = null;
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < rerollMoveDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(elapsed / rerollMoveDuration));
+
+            SetRerollPositions(
+                Vector2.LerpUnclamped(buttonStart, buttonTarget, progress),
+                Vector2.LerpUnclamped(selectionStart, selectionTarget, progress),
+                selectionRect);
+            yield return null;
+        }
+
+        SetRerollPositions(buttonTarget, selectionTarget, selectionRect);
+        rerollMoveRoutine = null;
+    }
+
+    private void SetRerollPositions(
+        Vector2 buttonPosition,
+        Vector2 selectionPosition,
+        RectTransform selectionRect)
+    {
+        if (rerollButtonImage != null)
+            rerollButtonImage.rectTransform.anchoredPosition = buttonPosition;
+
+        if (selectionRect != null)
+            selectionRect.anchoredPosition = selectionPosition;
     }
 
     private string BuildDescription(ItemData item)

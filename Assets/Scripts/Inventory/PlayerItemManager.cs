@@ -8,6 +8,11 @@ public class PlayerItemManager : MonoBehaviour
 
     public CurrencyManager currencyManager;
 
+    public bool HasInventorySpace()
+    {
+        return inventory != null && inventory.HasSpace;
+    }
+
     public void AddItem(ItemData item)
     {
         switch (item.itemType)

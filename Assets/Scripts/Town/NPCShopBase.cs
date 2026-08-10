@@ -66,10 +66,16 @@ public abstract class NPCShopBase : MonoBehaviour
         int vertical = ReadAxisStep(move.y, ref verticalHeld);
         int horizontal = ReadAxisStep(move.x, ref horizontalHeld);
 
-        if (HasFirstSelection && horizontal != 0)
+        if (horizontal != 0)
         {
-            CancelFirstSelection();
-            return;
+            if (OnHorizontalInput(horizontal))
+                return;
+
+            if (HasFirstSelection)
+            {
+                CancelFirstSelection();
+                return;
+            }
         }
 
         if (vertical != 0)
@@ -158,6 +164,7 @@ public abstract class NPCShopBase : MonoBehaviour
     protected abstract bool CanOpenShop();
     protected abstract void OnShopOpened();
     protected abstract void OnVerticalInput(int direction);
+    protected virtual bool OnHorizontalInput(int direction) { return false; }
     protected abstract void OnAttackInput();
     protected abstract void CancelFirstSelection();
     protected virtual void OnShopClosed() { }

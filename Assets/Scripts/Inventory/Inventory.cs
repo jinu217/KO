@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class Inventory : MonoBehaviour
 {
+    [Header("용량")]
+    [Tooltip("인벤토리 UI가 연결되기 전에 사용할 기본 슬롯 개수")]
+    [SerializeField, Min(1)] private int capacity = 9;
+
     public EquipmentManager equipmentManager;
 
     public List<InventorySlot> items = new List<InventorySlot>();
@@ -11,6 +15,16 @@ public class Inventory : MonoBehaviour
     public ItemData[] startItems;
 
     public Action onInventoryChanged;
+
+    public int Capacity => capacity;
+    public int Count => items != null ? items.Count : 0;
+    public bool HasSpace => Count < capacity;
+
+    public void SetCapacity(int slotCount)
+    {
+        if (slotCount > 0)
+            capacity = slotCount;
+    }
 
     void Awake()
     {

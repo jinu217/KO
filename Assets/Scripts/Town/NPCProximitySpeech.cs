@@ -33,7 +33,23 @@ public class NPCProximitySpeech : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float intervalDuration = 0.5f;
 
+    [Header("Scale Animation")]
+    [Tooltip("말풍선이 작은 크기에서 원래 크기로 커지는 시간입니다.")]
+    [Min(0f)]
+    [SerializeField] private float showScaleDuration = 0.2f;
+
+    [Tooltip("말풍선이 원래 크기에서 작아지는 시간입니다.")]
+    [Min(0f)]
+    [SerializeField] private float hideScaleDuration = 0.15f;
+
+    [Tooltip("등장·퇴장 시 사용할 크기 변화 곡선입니다.")]
+    [SerializeField] private AnimationCurve scaleCurve =
+        new AnimationCurve(
+            new Keyframe(0f, 0f, 0f, 2f),
+            new Keyframe(1f, 1f, 0f, 0f));
+
     private Coroutine speechRoutine;
+    private Vector3 originalSpeechScale = Vector3.one;
 
     private void Reset()
     {
@@ -45,12 +61,14 @@ public class NPCProximitySpeech : MonoBehaviour
     private void Awake()
     {
         CacheReferences();
+        CacheOriginalScale();
         SetSpeechVisible(false);
     }
 
     private void OnEnable()
     {
         CacheReferences();
+        CacheOriginalScale();
 
         if (speechRoutine != null)
             StopCoroutine(speechRoutine);
@@ -65,6 +83,9 @@ public class NPCProximitySpeech : MonoBehaviour
             StopCoroutine(speechRoutine);
             speechRoutine = null;
         }
+
+        if (speechRoot != null)
+            speechRoot.transform.localScale = originalSpeechScale;
 
         SetSpeechVisible(false);
     }
@@ -94,12 +115,12 @@ public class NPCProximitySpeech : MonoBehaviour
         if (speechText != null)
             speechText.text = nextMessage ?? string.Empty;
 
-        SetSpeechVisible(true);
+        yield return AnimateSpeechScale(true, showScaleDuration);
 
         if (displayDuration > 0f)
             yield return new WaitForSeconds(displayDuration);
 
-        SetSpeechVisible(false);
+        yield return AnimateSpeechScale(false, hideScaleDuration);
 
         if (intervalDuration > 0f)
             yield return new WaitForSeconds(intervalDuration);
@@ -114,6 +135,64 @@ public class NPCProximitySpeech : MonoBehaviour
 
         if (speechRoot == null && speechText != null)
             speechRoot = speechText.transform.parent.gameObject;
+    }
+
+    private void CacheOriginalScale()
+    {
+        if (speechRoot == null)
+            return;
+
+        Vector3 currentScale = speechRoot.transform.localScale;
+        if (currentScale.sqrMagnitude > 0f)
+            originalSpeechScale = currentScale;
+    }
+
+    private IEnumerator AnimateSpeechScale(bool showing, float duration)
+    {
+        if (speechRoot == null)
+            yield break;
+
+        Transform speechTransform = speechRoot.transform;
+        Vector3 startScale = showing ? Vector3.zero : originalSpeechScale;
+        Vector3 endScale = showing ? originalSpeechScale : Vector3.zero;
+
+        if (showing)
+        {
+            speechTransform.localScale = Vector3.zero;
+            SetSpeechVisible(true);
+        }
+
+        if (duration <= 0f)
+        {
+            speechTransform.localScale = endScale;
+        }
+        else
+        {
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float progress = Mathf.Clamp01(elapsed / duration);
+                float curvedProgress = scaleCurve != null
+                    ? scaleCurve.Evaluate(progress)
+                    : Mathf.SmoothStep(0f, 1f, progress);
+
+                speechTransform.localScale = Vector3.LerpUnclamped(
+                    startScale,
+                    endScale,
+                    curvedProgress);
+
+                yield return null;
+            }
+
+            speechTransform.localScale = endScale;
+        }
+
+        if (!showing)
+        {
+            SetSpeechVisible(false);
+            speechTransform.localScale = originalSpeechScale;
+        }
     }
 
     private void SetSpeechVisible(bool visible)
