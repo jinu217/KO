@@ -9,16 +9,18 @@ public class NPC1_SpriteRenamer
     {
         { "앞어깨",    "Shoulder_F" },
         { "앞전완",    "Hand_F"     },
+        { "앞손",      "Hand_F"     },
         { "머리",      "Head"       },
         { "몸",        "Body"       },
         { "뒷어깨",    "Shoulder_B" },
         { "뒷전완",    "Hand_B"     },
+        { "뒷손",      "Hand_B"     },
     };
 
     // 발(앞뒤) → Foot_F, Foot_B 두 개로 복사
     const string FOOT_KR = "발(앞뒤)";
 
-    [MenuItem("Tools/NPC1/스프라이트 이름 영문 변환")]
+    [MenuItem("Tools/Sprites/스프라이트 이름 영문 변환")]
     static void RenameAll()
     {
         int count = 0;
