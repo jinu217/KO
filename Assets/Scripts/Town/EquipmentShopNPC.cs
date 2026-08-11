@@ -528,12 +528,14 @@ public class EquipmentShopNPC : NPCShopBase
 
     private string BuildDescription(ItemData item)
     {
-        StringBuilder text = new StringBuilder($"{item.itemName} [{item.rarity}] - {GetPrice(item.rarity)} Coin");
+        StringBuilder text = new StringBuilder(item.itemName);
+        text.Append($"\n{item.rarity}");
         if (item.hp != 0) text.Append($"\n체력 +{item.hp}");
         if (item.defense != 0) text.Append($"\n방어력 +{item.defense}");
         if (item.attack != 0) text.Append($"\n공격력 +{item.attack}");
         if (item.attackSpeed != 0f) text.Append($"\n공격속도 +{item.attackSpeed:0.##}");
         if (item.moveSpeed != 0f) text.Append($"\n이동속도 +{item.moveSpeed:0.##}");
+        text.Append($"\n{GetPrice(item.rarity)} Coin");
         return text.ToString();
     }
 

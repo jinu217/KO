@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,6 +12,12 @@ public abstract class NPCShopBase : MonoBehaviour
     [SerializeField] protected GameObject shopPanel;
     [Tooltip("구매 결과 및 오류 안내 텍스트")]
     [SerializeField] protected TMPro.TMP_Text feedbackText;
+
+    [Header("Panel Open Animation")]
+    [Tooltip("상점 패널이 아래에서 시작할 거리")]
+    [SerializeField, Min(0f)] private float panelOpenOffsetY = 500f;
+    [Tooltip("상점 패널이 원래 위치로 올라오는 시간")]
+    [SerializeField, Min(0f)] private float panelOpenDuration = 0.35f;
 
     private const string InteractActionName = "Interact";
     private const string MoveActionName = "Move";
@@ -30,6 +37,9 @@ public abstract class NPCShopBase : MonoBehaviour
     private int playerColliderCount;
     private bool verticalHeld;
     private bool horizontalHeld;
+    private RectTransform[] animatedPanelChildren = System.Array.Empty<RectTransform>();
+    private Vector2[] animatedChildrenOriginalPositions = System.Array.Empty<Vector2>();
+    private Coroutine panelOpenRoutine;
 
     protected abstract CurrencyType PaymentCurrency { get; }
     protected abstract bool HasFirstSelection { get; }
@@ -38,7 +48,10 @@ public abstract class NPCShopBase : MonoBehaviour
     {
         GetComponent<Collider2D>().isTrigger = true;
         if (shopPanel != null)
+        {
+            CacheAnimatedPanelChildren();
             shopPanel.SetActive(false);
+        }
     }
 
     private void Update()
@@ -109,7 +122,10 @@ public abstract class NPCShopBase : MonoBehaviour
         horizontalHeld = false;
         PlayerController?.PauseKeyboardControl();
         if (shopPanel != null)
+        {
             shopPanel.SetActive(true);
+            PlayPanelOpenAnimation();
+        }
         SetFeedback(string.Empty);
         OnShopOpened();
     }
@@ -124,8 +140,93 @@ public abstract class NPCShopBase : MonoBehaviour
         ShopInteractionState.IsOpen = false;
         ShopInteractionState.LastClosedFrame = Time.frameCount;
         if (shopPanel != null)
+        {
+            StopPanelOpenAnimation();
             shopPanel.SetActive(false);
+        }
         PlayerController?.ResumeKeyboardControl();
+    }
+
+    private void PlayPanelOpenAnimation()
+    {
+        if (animatedPanelChildren.Length == 0)
+            return;
+
+        StopPanelOpenAnimation();
+        SetAnimatedChildrenProgress(0f);
+
+        if (panelOpenDuration <= 0f)
+        {
+            SetAnimatedChildrenProgress(1f);
+            return;
+        }
+
+        panelOpenRoutine = StartCoroutine(PanelOpenRoutine());
+    }
+
+    private IEnumerator PanelOpenRoutine()
+    {
+        float elapsed = 0f;
+
+        while (elapsed < panelOpenDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(elapsed / panelOpenDuration));
+            SetAnimatedChildrenProgress(progress);
+            yield return null;
+        }
+
+        SetAnimatedChildrenProgress(1f);
+        panelOpenRoutine = null;
+    }
+
+    private void StopPanelOpenAnimation()
+    {
+        if (panelOpenRoutine != null)
+        {
+            StopCoroutine(panelOpenRoutine);
+            panelOpenRoutine = null;
+        }
+
+        SetAnimatedChildrenProgress(1f);
+    }
+
+    private void CacheAnimatedPanelChildren()
+    {
+        if (shopPanel == null)
+            return;
+
+        Transform panelTransform = shopPanel.transform;
+        int childCount = panelTransform.childCount;
+        animatedPanelChildren = new RectTransform[childCount];
+        animatedChildrenOriginalPositions = new Vector2[childCount];
+
+        for (int i = 0; i < childCount; i++)
+        {
+            RectTransform child = panelTransform.GetChild(i) as RectTransform;
+            animatedPanelChildren[i] = child;
+            if (child != null)
+                animatedChildrenOriginalPositions[i] = child.anchoredPosition;
+        }
+    }
+
+    private void SetAnimatedChildrenProgress(float progress)
+    {
+        float clampedProgress = Mathf.Clamp01(progress);
+        Vector2 startOffset = Vector2.down * panelOpenOffsetY;
+
+        for (int i = 0; i < animatedPanelChildren.Length; i++)
+        {
+            RectTransform child = animatedPanelChildren[i];
+            if (child == null)
+                continue;
+
+            child.anchoredPosition = animatedChildrenOriginalPositions[i] +
+                Vector2.LerpUnclamped(startOffset, Vector2.zero, clampedProgress);
+        }
     }
 
     protected bool TryPay(int amount)

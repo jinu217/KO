@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -72,6 +73,14 @@ public class BuffShamanShopNPC : NPCShopBase
     [Header("Selected Product UI")]
     [Tooltip("스탯 전용 공용 이미지")]
     [SerializeField] private Image statDisplayImage;
+    [Tooltip("카드 전환 중 다음 스탯을 표시할 보조 이미지")]
+    [SerializeField] private Image nextStatCard;
+    [Tooltip("카드가 보이는 범위를 제한할 Viewport. 비워두면 현재 카드의 부모를 사용합니다.")]
+    [SerializeField] private RectTransform statCardViewport;
+    [Tooltip("카드가 좌우로 이동하는 거리")]
+    [SerializeField, Min(0f)] private float statCardSlideDistance = 350f;
+    [Tooltip("카드 한 번의 전환 시간")]
+    [SerializeField, Min(0f)] private float statCardSlideDuration = 0.25f;
     [Tooltip("포션 미선택 텍스트 색상")]
     [SerializeField] private Color potionNormalColor = Color.white;
     [Tooltip("포션 선택 텍스트 색상")]
@@ -107,6 +116,10 @@ public class BuffShamanShopNPC : NPCShopBase
     private Coroutine downButtonRoutine;
     private Coroutine leftButtonRoutine;
     private Coroutine rightButtonRoutine;
+    private Coroutine statCardRoutine;
+    private Vector2 currentCardOriginalPosition;
+    private Vector2 nextCardOriginalPosition;
+    private bool statCardTransitioning;
 
     protected override CurrencyType PaymentCurrency => CurrencyType.Soul;
     protected override bool HasFirstSelection => choosingCount;
@@ -118,6 +131,9 @@ public class BuffShamanShopNPC : NPCShopBase
         downButtonScale = GetButtonScale(downButton);
         leftButtonScale = GetButtonScale(leftButton);
         rightButtonScale = GetButtonScale(rightButton);
+        CacheStatCardLayout();
+        ConfigureStatCardViewport();
+        ResetStatCardTransition();
     }
 
     protected override bool CanOpenShop()
@@ -127,6 +143,7 @@ public class BuffShamanShopNPC : NPCShopBase
 
     protected override void OnShopOpened()
     {
+        ResetStatCardTransition();
         mainSelection = MainSelection.HpPotion;
         selectedStatIndex = 0;
         purchaseCount = 1;
@@ -161,20 +178,38 @@ public class BuffShamanShopNPC : NPCShopBase
         if (mainSelection != MainSelection.Stat)
             return false;
 
-        if (AreAllProductsSoldOut())
+        if (!HasAnyConfiguredStat())
+            return true;
+
+        if (statCardTransitioning)
             return true;
 
         PlayHorizontalButtonEffect(direction);
-        MoveStatSelection(-direction);
+        int previousStatIndex = selectedStatIndex;
+        Sprite previousSprite = statDisplayImage != null ? statDisplayImage.sprite : null;
+        int navigationDirection = -direction;
+        MoveStatSelection(navigationDirection);
         purchaseCount = GetMaximumPurchasableCount() > 0 ? 1 : 0;
-        SetFeedback(string.Empty);
+
+        if (selectedStatIndex != previousStatIndex &&
+            statDisplayImage != null && nextStatCard != null)
+        {
+            Sprite nextSprite = GetSelectedStat()?.statImage;
+            StartStatCardTransition(previousSprite, nextSprite, navigationDirection);
+        }
+
         RefreshUI();
         return true;
     }
 
+    protected override void OnShopClosed()
+    {
+        ResetStatCardTransition();
+    }
+
     protected override void OnAttackInput()
     {
-        if (AreAllProductsSoldOut())
+        if (AreAllProductsSoldOut() && !HasAnyConfiguredStat())
         {
             SetFeedback("모든 물품 구매완료!");
             return;
@@ -191,7 +226,6 @@ public class BuffShamanShopNPC : NPCShopBase
 
             choosingCount = true;
             purchaseCount = 1;
-            SetFeedback(string.Empty);
             RefreshUI();
             return;
         }
@@ -206,7 +240,6 @@ public class BuffShamanShopNPC : NPCShopBase
     {
         choosingCount = false;
         purchaseCount = 1;
-        SetFeedback(string.Empty);
         RefreshUI();
     }
 
@@ -419,24 +452,28 @@ public class BuffShamanShopNPC : NPCShopBase
 
     private void RefreshImageObjects()
     {
+        if (statCardTransitioning)
+            return;
+
         BuffShamanStatProduct stat = GetSelectedStat();
         if (statDisplayImage == null)
             return;
 
+        bool hasStatImage = stat != null && stat.statImage != null;
+        statDisplayImage.gameObject.SetActive(hasStatImage);
         statDisplayImage.sprite = stat != null ? stat.statImage : null;
         statDisplayImage.preserveAspect = true;
-        statDisplayImage.enabled = stat != null &&
-            stat.statImage != null &&
-            IsStatAvailable(stat.upgradeType);
+        statDisplayImage.enabled = hasStatImage;
     }
 
     private void RefreshMainSelectionUI()
     {
         bool allSoldOut = AreAllProductsSoldOut();
+        bool hasNavigableProduct = !allSoldOut || HasAnyConfiguredStat();
         if (upButton != null)
-            upButton.gameObject.SetActive(!allSoldOut);
+            upButton.gameObject.SetActive(hasNavigableProduct);
         if (downButton != null)
-            downButton.gameObject.SetActive(!allSoldOut);
+            downButton.gameObject.SetActive(hasNavigableProduct);
 
         bool hpAvailable = IsMainSelectionAvailable(MainSelection.HpPotion);
         bool bpmAvailable = IsMainSelectionAvailable(MainSelection.BpmPotion);
@@ -445,9 +482,8 @@ public class BuffShamanShopNPC : NPCShopBase
         RefreshPotionTextColors(hpPotion, mainSelection == MainSelection.HpPotion);
         RefreshPotionTextColors(bpmPotion, mainSelection == MainSelection.BpmPotion);
 
-        bool showStatDirectionButtons = !allSoldOut &&
-            mainSelection == MainSelection.Stat &&
-            IsMainSelectionAvailable(MainSelection.Stat);
+        bool showStatDirectionButtons = mainSelection == MainSelection.Stat &&
+            HasAnyConfiguredStat();
         if (leftButton != null)
             leftButton.gameObject.SetActive(showStatDirectionButtons);
         if (rightButton != null)
@@ -467,22 +503,26 @@ public class BuffShamanShopNPC : NPCShopBase
                 MoveStatSelection(0);
             return;
         }
+
+        if (HasAnyConfiguredStat())
+        {
+            mainSelection = MainSelection.Stat;
+            MoveStatSelection(0);
+        }
     }
 
     private void MoveMainSelection(int direction)
     {
-        if (AreAllProductsSoldOut())
-            return;
-
         for (int offset = 1; offset <= 3; offset++)
         {
             MainSelection candidate = (MainSelection)WrapIndex(
                 (int)mainSelection + direction * offset, 3);
-            if (!IsMainSelectionAvailable(candidate))
+            if (!IsMainSelectionNavigable(candidate))
                 continue;
 
             mainSelection = candidate;
-            if (candidate == MainSelection.Stat && !IsStatAvailable(StatDisplayOrder[selectedStatIndex]))
+            if (candidate == MainSelection.Stat &&
+                !IsStatConfigured(StatDisplayOrder[selectedStatIndex]))
                 MoveStatSelection(direction);
             return;
         }
@@ -495,7 +535,7 @@ public class BuffShamanShopNPC : NPCShopBase
         for (int offset = startOffset; offset < StatDisplayOrder.Length + startOffset; offset++)
         {
             int candidate = WrapIndex(selectedStatIndex + step * offset, StatDisplayOrder.Length);
-            if (!IsStatAvailable(StatDisplayOrder[candidate]))
+            if (!IsStatConfigured(StatDisplayOrder[candidate]))
                 continue;
 
             selectedStatIndex = candidate;
@@ -530,6 +570,33 @@ public class BuffShamanShopNPC : NPCShopBase
                 return true;
         }
         return false;
+    }
+
+    private bool IsMainSelectionNavigable(MainSelection selection)
+    {
+        if (selection == MainSelection.Stat)
+            return HasAnyConfiguredStat();
+
+        return IsMainSelectionAvailable(selection);
+    }
+
+    private bool HasAnyConfiguredStat()
+    {
+        for (int i = 0; i < StatDisplayOrder.Length; i++)
+        {
+            if (IsStatConfigured(StatDisplayOrder[i]))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsStatConfigured(ShamanUpgradeType type)
+    {
+        BuffShamanStatProduct stat = Array.Find(
+            stats,
+            product => product != null && product.upgradeType == type);
+        return stat != null && stat.amountPerPurchase > 0f;
     }
 
     private bool IsStatAvailable(ShamanUpgradeType type)
@@ -634,6 +701,140 @@ public class BuffShamanShopNPC : NPCShopBase
     private static int GetStatProductId(ShamanUpgradeType type)
     {
         return 100 + (int)type;
+    }
+
+    private void CacheStatCardLayout()
+    {
+        if (statDisplayImage != null)
+        {
+            RectTransform currentRect = statDisplayImage.rectTransform;
+            currentCardOriginalPosition = currentRect.anchoredPosition;
+        }
+
+        if (nextStatCard != null)
+        {
+            RectTransform nextRect = nextStatCard.rectTransform;
+            nextCardOriginalPosition = nextRect.anchoredPosition;
+        }
+    }
+
+    private void ConfigureStatCardViewport()
+    {
+        if (statCardViewport == null && statDisplayImage != null)
+            statCardViewport = statDisplayImage.rectTransform.parent as RectTransform;
+
+        if (statCardViewport != null &&
+            statCardViewport.GetComponent<RectMask2D>() == null)
+            statCardViewport.gameObject.AddComponent<RectMask2D>();
+    }
+
+    private void StartStatCardTransition(
+        Sprite previousSprite,
+        Sprite nextSprite,
+        int navigationDirection)
+    {
+        ResetStatCardTransition();
+
+        statCardTransitioning = true;
+        float direction = navigationDirection >= 0 ? 1f : -1f;
+        RectTransform currentRect = statDisplayImage.rectTransform;
+        RectTransform nextRect = nextStatCard.rectTransform;
+
+        statDisplayImage.sprite = previousSprite;
+        statDisplayImage.preserveAspect = true;
+        statDisplayImage.gameObject.SetActive(previousSprite != null);
+        statDisplayImage.enabled = previousSprite != null;
+        SetCardOpaque(statDisplayImage);
+        currentRect.anchoredPosition = currentCardOriginalPosition;
+
+        nextStatCard.sprite = nextSprite;
+        nextStatCard.preserveAspect = true;
+        nextStatCard.gameObject.SetActive(nextSprite != null);
+        nextStatCard.enabled = nextSprite != null;
+        SetCardOpaque(nextStatCard);
+        nextRect.anchoredPosition = nextCardOriginalPosition +
+            Vector2.right * statCardSlideDistance * direction;
+
+        if (statCardSlideDuration <= 0f)
+        {
+            CompleteStatCardTransition(nextSprite);
+            return;
+        }
+
+        statCardRoutine = StartCoroutine(StatCardTransitionRoutine(nextSprite, direction));
+    }
+
+    private IEnumerator StatCardTransitionRoutine(Sprite nextSprite, float direction)
+    {
+        RectTransform currentRect = statDisplayImage.rectTransform;
+        RectTransform nextRect = nextStatCard.rectTransform;
+        Vector2 currentTarget = currentCardOriginalPosition +
+            Vector2.left * statCardSlideDistance * direction;
+        Vector2 nextStart = nextCardOriginalPosition +
+            Vector2.right * statCardSlideDistance * direction;
+        float elapsed = 0f;
+
+        while (elapsed < statCardSlideDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(elapsed / statCardSlideDuration));
+
+            currentRect.anchoredPosition = Vector2.LerpUnclamped(
+                currentCardOriginalPosition,
+                currentTarget,
+                progress);
+            nextRect.anchoredPosition = Vector2.LerpUnclamped(
+                nextStart,
+                nextCardOriginalPosition,
+                progress);
+            yield return null;
+        }
+
+        CompleteStatCardTransition(nextSprite);
+    }
+
+    private void CompleteStatCardTransition(Sprite nextSprite)
+    {
+        statDisplayImage.sprite = nextSprite;
+        ResetStatCardTransition();
+        RefreshUI();
+    }
+
+    private void ResetStatCardTransition()
+    {
+        if (statCardRoutine != null)
+        {
+            StopCoroutine(statCardRoutine);
+            statCardRoutine = null;
+        }
+
+        statCardTransitioning = false;
+
+        if (statDisplayImage != null)
+        {
+            RectTransform currentRect = statDisplayImage.rectTransform;
+            currentRect.anchoredPosition = currentCardOriginalPosition;
+        }
+
+        if (nextStatCard != null)
+        {
+            RectTransform nextRect = nextStatCard.rectTransform;
+            nextRect.anchoredPosition = nextCardOriginalPosition;
+            nextStatCard.gameObject.SetActive(false);
+        }
+    }
+
+    private static void SetCardOpaque(Image image)
+    {
+        if (image == null)
+            return;
+
+        Color color = image.color;
+        color.a = 1f;
+        image.color = color;
     }
 
     private static Vector3 GetButtonScale(RectTransform button)
