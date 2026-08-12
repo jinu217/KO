@@ -42,8 +42,8 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
     [Tooltip("대사가 끝난 후 플레이어가 자동으로 이동하는 속도")]
     [SerializeField, Min(0f)] private float autoMoveSpeed = 5f;
 
-    [Tooltip("씬을 이동하기 전 플레이어가 자동으로 이동할 거리")]
-    [SerializeField, Min(0f)] private float autoMoveDistance = 3f;
+    [Tooltip("자동 이동을 시작한 뒤 씬이 전환되기까지의 시간")]
+    [SerializeField, Min(0f)] private float autoMoveDuration = 3f;
 
     [Tooltip("자동 이동이 끝난 후 불러올 씬 이름")]
     [SerializeField] private string targetSceneName = "Stage1-1";
@@ -129,14 +129,10 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
             yield break;
         }
 
-        Vector3 moveStartPosition = player.transform.position;
         player.StartAutoMoveForward(autoMoveSpeed);
 
-        while (player != null &&
-               Mathf.Abs(player.transform.position.x - moveStartPosition.x) < autoMoveDistance)
-        {
-            yield return null;
-        }
+        if (autoMoveDuration > 0f)
+            yield return new WaitForSeconds(autoMoveDuration);
 
         if (!string.IsNullOrWhiteSpace(targetSceneName))
             SceneManager.LoadScene(targetSceneName);
