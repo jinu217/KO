@@ -36,10 +36,10 @@ public class TankMob2_AnimGenerators
     static readonly float[] IDLE_BOTTOM_Y = { -0.563f, -0.5708f, -0.5785f, -0.586f, -0.593f, -0.5995f, -0.6054f, -0.6106f, -0.615f, -0.6184f, -0.621f, -0.6225f, -0.623f, -0.6225f, -0.621f, -0.6184f, -0.615f, -0.6106f, -0.6054f, -0.5995f, -0.593f, -0.586f, -0.5785f, -0.5708f, -0.563f, -0.5552f, -0.5475f, -0.54f, -0.533f, -0.5265f, -0.5206f, -0.5154f, -0.511f, -0.5076f, -0.505f, -0.5035f, -0.503f, -0.5035f, -0.505f, -0.5076f, -0.511f, -0.5154f, -0.5206f, -0.5265f, -0.533f, -0.54f, -0.5475f, -0.5552f };
 
     // ── Walk 배열 (32프레임) ────────────────────────────────────────
-    static readonly float[] WALK_FF_X = { -0.475f, -0.479f, -0.484f, -0.488f, -0.492f, -0.497f, -0.501f, -0.506f, -0.51f, -0.514f, -0.519f, -0.523f, -0.527f, -0.532f, -0.536f, -0.541f, -0.545f, -0.541f, -0.536f, -0.532f, -0.528f, -0.523f, -0.519f, -0.514f, -0.51f, -0.506f, -0.501f, -0.497f, -0.493f, -0.488f, -0.484f, -0.479f };
-    static readonly float[] WALK_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0098f, 0.0191f, 0.0278f, 0.0354f, 0.0416f, 0.0462f, 0.049f, 0.05f, 0.049f, 0.0462f, 0.0416f, 0.0354f, 0.0278f, 0.0191f, 0.0098f };
-    static readonly float[] WALK_FB_X = { -0.029f, -0.025f, -0.02f, -0.016f, -0.011f, -0.007f, -0.003f, 0.002f, 0.006f, 0.01f, 0.015f, 0.019f, 0.024f, 0.028f, 0.032f, 0.037f, 0.041f, 0.037f, 0.032f, 0.028f, 0.024f, 0.019f, 0.015f, 0.01f, 0.006f, 0.002f, -0.003f, -0.007f, -0.012f, -0.016f, -0.02f, -0.025f };
-    static readonly float[] WALK_FB_Y = { 0.0f, 0.0098f, 0.0191f, 0.0278f, 0.0354f, 0.0416f, 0.0462f, 0.049f, 0.05f, 0.049f, 0.0462f, 0.0416f, 0.0354f, 0.0278f, 0.0191f, 0.0098f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] WALK_FF_X = { -0.475f, -0.486f, -0.497f, -0.509f, -0.52f, -0.531f, -0.542f, -0.554f, -0.565f, -0.576f, -0.587f, -0.599f, -0.61f, -0.621f, -0.632f, -0.644f, -0.655f, -0.644f, -0.633f, -0.621f, -0.61f, -0.599f, -0.588f, -0.576f, -0.565f, -0.554f, -0.542f, -0.531f, -0.52f, -0.509f, -0.498f, -0.486f };
+    static readonly float[] WALK_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0195f, 0.0383f, 0.0556f, 0.0707f, 0.0831f, 0.0924f, 0.0981f, 0.1f, 0.0981f, 0.0924f, 0.0831f, 0.0707f, 0.0556f, 0.0383f, 0.0195f };
+    static readonly float[] WALK_FB_X = { -0.139f, -0.128f, -0.117f, -0.105f, -0.094f, -0.083f, -0.072f, -0.06f, -0.049f, -0.038f, -0.027f, -0.015f, -0.004f, 0.007f, 0.018f, 0.03f, 0.041f, 0.03f, 0.019f, 0.007f, -0.004f, -0.015f, -0.027f, -0.038f, -0.049f, -0.06f, -0.071f, -0.083f, -0.094f, -0.105f, -0.116f, -0.128f };
+    static readonly float[] WALK_FB_Y = { 0.0f, 0.0195f, 0.0383f, 0.0556f, 0.0707f, 0.0831f, 0.0924f, 0.0981f, 0.1f, 0.0981f, 0.0924f, 0.0831f, 0.0707f, 0.0556f, 0.0383f, 0.0195f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     static readonly float[] WALK_SF_ROT = { -0.0f, -4.88f, -9.57f, -13.89f, -17.68f, -20.79f, -23.1f, -24.52f, -25.0f, -24.52f, -23.1f, -20.79f, -17.68f, -13.89f, -9.57f, -4.88f, -0.0f, 4.88f, 9.57f, 13.89f, 17.68f, 20.79f, 23.1f, 24.52f, 25.0f, 24.52f, 23.1f, 20.79f, 17.68f, 13.89f, 9.57f, 4.88f };
     static readonly float[] WALK_SB_ROT = { 0.0f, 4.88f, 9.57f, 13.89f, 17.68f, 20.79f, 23.1f, 24.52f, 25.0f, 24.52f, 23.1f, 20.79f, 17.68f, 13.89f, 9.57f, 4.88f, 0.0f, -4.88f, -9.57f, -13.89f, -17.68f, -20.79f, -23.1f, -24.52f, -25.0f, -24.52f, -23.1f, -20.79f, -17.68f, -13.89f, -9.57f, -4.88f };
     static readonly float[] WALK_HF_ROT = { 15.0f, 12.07f, 9.26f, 6.67f, 4.39f, 2.53f, 1.14f, 0.29f, 0.0f, 0.29f, 1.14f, 2.53f, 4.39f, 6.67f, 9.26f, 12.07f, 15.0f, 17.93f, 20.74f, 23.33f, 25.61f, 27.47f, 28.86f, 29.71f, 30.0f, 29.71f, 28.86f, 27.47f, 25.61f, 23.33f, 20.74f, 17.93f };
@@ -80,7 +80,7 @@ public class TankMob2_AnimGenerators
         L(HB, "localPosition.x", 0.158f); L(HB, "localPosition.y", -0.340f); L(HB, "localPosition.z", 0f);
         L(HB, "localEulerAngles.z", 120f);
         L(AXE, "localPosition.x", 0.485f); L(AXE, "localPosition.y", -0.421f); L(AXE, "localPosition.z", 0f);
-        L(AXE, "localEulerAngles.z", -90f);
+        L(AXE, "localEulerAngles.z", -75f);
         L(BOTTOM, "localPosition.x", 0.109f); C(BOTTOM, "localPosition.y", IDLE_BOTTOM_Y); L(BOTTOM, "localPosition.z", 0f);
         L(BOTTOM, "localEulerAngles.z", 0f);
         L(FOOT_F, "localPosition.x", -0.475f); L(FOOT_F, "localPosition.y", 0f); L(FOOT_F, "localPosition.z", 0f);
@@ -114,7 +114,7 @@ public class TankMob2_AnimGenerators
         L(HB, "localPosition.x", 0.158f); L(HB, "localPosition.y", -0.340f); L(HB, "localPosition.z", 0f);
         L(HB, "localEulerAngles.z", 120f);
         L(AXE, "localPosition.x", 0.485f); L(AXE, "localPosition.y", -0.421f); L(AXE, "localPosition.z", 0f);
-        L(AXE, "localEulerAngles.z", -90f);
+        L(AXE, "localEulerAngles.z", -75f);
         L(BOTTOM, "localPosition.x", 0.109f); L(BOTTOM, "localPosition.y", -0.563f); L(BOTTOM, "localPosition.z", 0f);
         C(BOTTOM, "localEulerAngles.z", WALK_BOT_ROT);
         C(FOOT_F, "localPosition.x", WALK_FF_X); C(FOOT_F, "localPosition.y", WALK_FF_Y); L(FOOT_F, "localPosition.z", 0f);
@@ -170,11 +170,12 @@ public class TankMob2_AnimGenerators
     static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.1485f, 0.21f, 0.1485f };
     static readonly float[] RUN_FB_X = { -0.229f, -0.162f, -0.094f, -0.026f, 0.041f, -0.027f, -0.094f, -0.162f };
     static readonly float[] RUN_FB_Y = { 0.0f, 0.1485f, 0.21f, 0.1485f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] RUN_BODY_ROT = { -8.0f, -5.88f, -5.0f, -5.88f, -8.0f, -10.12f, -11.0f, -10.12f };
-    static readonly float[] RUN_BOT_ROT = { 8.0f, 5.88f, 5.0f, 5.88f, 8.0f, 10.12f, 11.0f, 10.12f };
+    static readonly float[] RUN_BODY_ROT = { -8.0f, -6.59f, -6.0f, -6.59f, -8.0f, -9.41f, -10.0f, -9.41f };
+    static readonly float[] RUN_BOT_ROT = { 8.0f, 6.59f, 6.0f, 6.59f, 8.0f, 9.41f, 10.0f, 9.41f };
     static readonly float[] RUN_SF_ROT = { 0.0f, 3.54f, 5.0f, 3.54f, 0.0f, -3.54f, -5.0f, -3.54f };
     static readonly float[] RUN_HF_ROT = { 60.0f, 63.54f, 65.0f, 63.54f, 60.0f, 56.46f, 55.0f, 56.46f };
-    static readonly float[] RUN_HB_ROT = { 120.0f, 121.77f, 122.5f, 121.77f, 120.0f, 118.23f, 117.5f, 118.23f };
+    static readonly float[] RUN_AXE_ROT = { -75.0f, -78.54f, -80.0f, -78.54f, -75.0f, -71.46f, -70.0f, -71.46f };
+    static readonly float[] RUN_HB_ROT = { 90.0f, 93.54f, 95.0f, 93.54f, 90.0f, 86.46f, 85.0f, 86.46f };
 
     // ================================================================
     // Generate Run
@@ -201,7 +202,7 @@ public class TankMob2_AnimGenerators
         L(HB, "localPosition.x", 0.158f); C(HB, "localPosition.y", ATK_HB_Y); L(HB, "localPosition.z", 0f);
         C(HB, "localEulerAngles.z", RUN_HB_ROT);
         L(AXE, "localPosition.x", 0.485f); L(AXE, "localPosition.y", -0.421f); L(AXE, "localPosition.z", 0f);
-        L(AXE, "localEulerAngles.z", -90f);
+        L(AXE, "localEulerAngles.z", -75f);
         L(BOTTOM, "localPosition.x", 0.109f); L(BOTTOM, "localPosition.y", -0.563f); L(BOTTOM, "localPosition.z", 0f);
         C(BOTTOM, "localEulerAngles.z", RUN_BOT_ROT);
         C(FOOT_F, "localPosition.x", RUN_FF_X); C(FOOT_F, "localPosition.y", RUN_FF_Y); L(FOOT_F, "localPosition.z", 0f);
@@ -258,7 +259,7 @@ public class TankMob2_AnimGenerators
         C(HB, "localEulerAngles.z", ATK_HB_ROT);
 
         L(AXE, "localPosition.x", 0.485f); L(AXE, "localPosition.y", -0.421f); L(AXE, "localPosition.z", 0f);
-        L(AXE, "localEulerAngles.z", -90f);
+        L(AXE, "localEulerAngles.z", -75f);
 
         L(BOTTOM, "localPosition.x", 0f); C(BOTTOM, "localPosition.y", ATK_BOTTOM_Y); L(BOTTOM, "localPosition.z", 0f);
         C(BOTTOM, "localEulerAngles.z", ATK_BOT_ROT);
