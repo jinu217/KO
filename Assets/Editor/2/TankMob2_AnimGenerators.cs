@@ -143,6 +143,20 @@ public class TankMob2_AnimGenerators
         return clip;
     }
 
+
+    static void SetCurveSpeed(AnimationClip clip, string path, string prop, float[] vals, int total, float speed)
+    {
+        var keys = new Keyframe[total];
+        for (int i = 0; i < total; i++) keys[i] = new Keyframe(i / FRAME_RATE / speed, vals[i]);
+        var curve = new AnimationCurve(keys);
+        for (int i = 0; i < curve.keys.Length; i++)
+        {
+            AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+            AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+        }
+        clip.SetCurve(path, typeof(Transform), prop, curve);
+    }
+
     static void SetCurve(AnimationClip clip, string path, string prop, float[] vals, int total)
     {
         var keys = new Keyframe[total];
@@ -166,16 +180,18 @@ public class TankMob2_AnimGenerators
         Debug.Log($"[TankMob2] {name} → {assetPath}");
     }
     // ── Run 배열 (16프레임) ─────────────────────────────────────────
-    static readonly float[] RUN_FF_X = { -0.475f, -0.542f, -0.61f, -0.677f, -0.745f, -0.677f, -0.61f, -0.542f };
-    static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.1485f, 0.21f, 0.1485f };
-    static readonly float[] RUN_FB_X = { -0.229f, -0.162f, -0.094f, -0.026f, 0.041f, -0.027f, -0.094f, -0.162f };
-    static readonly float[] RUN_FB_Y = { 0.0f, 0.1485f, 0.21f, 0.1485f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] RUN_BODY_ROT = { -8.0f, -6.59f, -6.0f, -6.59f, -8.0f, -9.41f, -10.0f, -9.41f };
-    static readonly float[] RUN_BOT_ROT = { 8.0f, 6.59f, 6.0f, 6.59f, 8.0f, 9.41f, 10.0f, 9.41f };
-    static readonly float[] RUN_SF_ROT = { 0.0f, 3.54f, 5.0f, 3.54f, 0.0f, -3.54f, -5.0f, -3.54f };
-    static readonly float[] RUN_HF_ROT = { 60.0f, 63.54f, 65.0f, 63.54f, 60.0f, 56.46f, 55.0f, 56.46f };
-    static readonly float[] RUN_AXE_ROT = { -75.0f, -78.54f, -80.0f, -78.54f, -75.0f, -71.46f, -70.0f, -71.46f };
-    static readonly float[] RUN_HB_ROT = { 90.0f, 93.54f, 95.0f, 93.54f, 90.0f, 86.46f, 85.0f, 86.46f };
+    static readonly float[] RUN_HEAD_ROT = { 8.0f, 7.23f, 6.59f, 6.15f, 6.0f, 6.15f, 6.59f, 7.23f, 8.0f, 8.77f, 9.41f, 9.85f, 10.0f, 9.85f, 9.41f, 8.77f, 8.0f };
+    static readonly float[] RUN_SB_ROT = { 11.0f, 11.38f, 12.46f, 14.08f, 16.0f, 17.92f, 19.54f, 20.62f, 21.0f, 20.62f, 19.54f, 17.92f, 16.0f, 14.08f, 12.46f, 11.38f, 11.0f };
+    static readonly float[] RUN_HB_ROT = { 65.0f, 64.62f, 63.54f, 61.92f, 60.0f, 58.08f, 56.46f, 55.38f, 55.0f, 55.38f, 56.46f, 58.08f, 60.0f, 61.92f, 63.54f, 64.62f, 65.0f };
+    static readonly float[] RUN_FF_X = { -0.475f, -0.509f, -0.542f, -0.576f, -0.61f, -0.644f, -0.677f, -0.711f, -0.745f, -0.711f, -0.677f, -0.644f, -0.61f, -0.576f, -0.542f, -0.509f, -0.475f };
+    static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0804f, 0.1485f, 0.194f, 0.21f, 0.194f, 0.1485f, 0.0804f, 0.0f };
+    static readonly float[] RUN_FB_X = { -0.129f, -0.095f, -0.061f, -0.028f, 0.006f, 0.04f, 0.074f, 0.107f, 0.141f, 0.107f, 0.074f, 0.04f, 0.006f, -0.028f, -0.061f, -0.095f, -0.129f };
+    static readonly float[] RUN_FB_Y = { 0.0f, 0.0804f, 0.1485f, 0.194f, 0.21f, 0.194f, 0.1485f, 0.0804f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] RUN_BODY_ROT = { -8.0f, -7.23f, -6.59f, -6.15f, -6.0f, -6.15f, -6.59f, -7.23f, -8.0f, -8.77f, -9.41f, -9.85f, -10.0f, -9.85f, -9.41f, -8.77f, -8.0f };
+    static readonly float[] RUN_BOT_ROT = { 8.0f, 7.23f, 6.59f, 6.15f, 6.0f, 6.15f, 6.59f, 7.23f, 8.0f, 8.77f, 9.41f, 9.85f, 10.0f, 9.85f, 9.41f, 8.77f, 8.0f };
+    static readonly float[] RUN_SF_ROT = { 10.0f, 9.24f, 7.07f, 3.83f, 0.0f, -3.83f, -7.07f, -9.24f, -10.0f, -9.24f, -7.07f, -3.83f, 0.0f, 3.83f, 7.07f, 9.24f, 10.0f };
+    static readonly float[] RUN_HF_ROT = { 60.0f, 63.54f, 65.0f, 63.54f, 60.0f, 56.46f, 55.0f, 56.46f, 60.0f, 63.54f, 65.0f, 63.54f, 60.0f, 56.46f, 55.0f, 56.46f, 60.0f };
+    static readonly float[] RUN_AXE_ROT = { -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f };
 
     // ================================================================
     // Generate Run
@@ -183,54 +199,50 @@ public class TankMob2_AnimGenerators
     [MenuItem("Tools/TankMob2/Generate Run")]
     public static void GenerateRun()
     {
-        const float DUR_RUN = 8 / 12f;
-        var clip = MakeClip("TankMob2_Run", 8, true);
-        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 8);
+        var clip = MakeClip("TankMob2_Run", 17, true);
+        void C(string path, string prop, float[] vals) => SetCurveSpeed(clip, path, prop, vals, 17, 4f);
         void L(string path, string prop, float val) =>
-            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR_RUN, val));
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 17 / 12f / 4f, val));
 
         L(BODY, "localPosition.x", 0f); L(BODY, "localPosition.y", 0f); L(BODY, "localPosition.z", 0f);
         C(BODY, "localEulerAngles.z", RUN_BODY_ROT);
         L(HEAD, "localPosition.x", -0.112f); L(HEAD, "localPosition.y", 0.747f); L(HEAD, "localPosition.z", 0f);
-        L(HEAD, "localEulerAngles.z", 0f);
-        L(SF, "localPosition.x", -0.719f); L(SF, "localPosition.y", 0.500f); L(SF, "localPosition.z", 0f);
+        C(HEAD, "localEulerAngles.z", RUN_HEAD_ROT);
+        L(SF, "localPosition.x", -0.719f); L(SF, "localPosition.y", 0.5f); L(SF, "localPosition.z", 0f);
         C(SF, "localEulerAngles.z", RUN_SF_ROT);
         L(HF, "localPosition.x", -0.042f); L(HF, "localPosition.y", -0.343f); L(HF, "localPosition.z", 0f);
         C(HF, "localEulerAngles.z", RUN_HF_ROT);
-        L(SB, "localPosition.x", 0.174f); C(SB, "localPosition.y", ATK_SB_Y); L(SB, "localPosition.z", 0f);
-        L(SB, "localEulerAngles.z", 0f);
-        L(HB, "localPosition.x", 0.158f); C(HB, "localPosition.y", ATK_HB_Y); L(HB, "localPosition.z", 0f);
+        L(SB, "localPosition.x", 0.174f); L(SB, "localPosition.y", 0.545f); L(SB, "localPosition.z", 0f);
+        C(SB, "localEulerAngles.z", RUN_SB_ROT);
+        L(HB, "localPosition.x", 0.158f); L(HB, "localPosition.y", -0.34f); L(HB, "localPosition.z", 0f);
         C(HB, "localEulerAngles.z", RUN_HB_ROT);
         L(AXE, "localPosition.x", 0.485f); L(AXE, "localPosition.y", -0.421f); L(AXE, "localPosition.z", 0f);
-        L(AXE, "localEulerAngles.z", -75f);
+        L(AXE, "localEulerAngles.z", -65f);
         L(BOTTOM, "localPosition.x", 0.109f); L(BOTTOM, "localPosition.y", -0.563f); L(BOTTOM, "localPosition.z", 0f);
         C(BOTTOM, "localEulerAngles.z", RUN_BOT_ROT);
         C(FOOT_F, "localPosition.x", RUN_FF_X); C(FOOT_F, "localPosition.y", RUN_FF_Y); L(FOOT_F, "localPosition.z", 0f);
         L(FOOT_F, "localEulerAngles.z", 0f);
         C(FOOT_B, "localPosition.x", RUN_FB_X); C(FOOT_B, "localPosition.y", RUN_FB_Y); L(FOOT_B, "localPosition.z", 0f);
         L(FOOT_B, "localEulerAngles.z", 0f);
-
         Save(clip, "TankMob2_Run");
     }
-    // ── Attack 배열 (36프레임) ──────────────────────────────────────
-    static readonly float[] ATK_FB_ROT = { 0.0f, 4.5f, 9.0f, 13.5f, 18.0f, 22.5f, 27.0f, 31.5f, 36.0f, 40.5f, 45.0f, 30.0f, 15.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] ATK_FB_X = { 0.041f, 0.0469f, 0.0528f, 0.0587f, 0.0646f, 0.0705f, 0.0764f, 0.0823f, 0.0882f, 0.0941f, 0.1f, 0.0803f, 0.0607f, 0.041f, 0.041f, 0.041f, 0.041f, 0.041f, 0.041f, 0.041f };
-    static readonly float[] ATK_FB_Y = { 0.0f, 0.025f, 0.05f, 0.075f, 0.1f, 0.125f, 0.15f, 0.175f, 0.2f, 0.225f, 0.25f, 0.1633f, 0.0767f, -0.01f, -0.005f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] ATK_SB_Y = { 0.545f, 0.55f, 0.555f, 0.56f, 0.565f, 0.57f, 0.575f, 0.58f, 0.585f, 0.59f, 0.595f, 0.5683f, 0.5417f, 0.515f, 0.515f, 0.515f, 0.5225f, 0.53f, 0.5375f, 0.545f };
-    static readonly float[] ATK_HB_Y = { -0.34f, -0.335f, -0.33f, -0.325f, -0.32f, -0.315f, -0.31f, -0.305f, -0.3f, -0.295f, -0.29f, -0.3167f, -0.3433f, -0.37f, -0.37f, -0.37f, -0.3625f, -0.355f, -0.3475f, -0.34f };
-    static readonly float[] ATK_SB_ROT = { 0.0f, 6.0f, 12.0f, 18.0f, 24.0f, 30.0f, 36.0f, 42.0f, 48.0f, 54.0f, 60.0f, 31.67f, 3.33f, -25.0f, -25.0f, -25.0f, -18.75f, -12.5f, -6.25f, 0.0f };
-    static readonly float[] ATK_HB_ROT = { 0.0f, 7.5f, 15.0f, 22.5f, 30.0f, 37.5f, 45.0f, 52.5f, 60.0f, 67.5f, 75.0f, 58.33f, 41.67f, 25.0f, 25.0f, 25.0f, 18.75f, 12.5f, 6.25f, 0.0f };
-    static readonly float[] ATK_BODY_ROT = { 0.0f, 0.8f, 1.6f, 2.4f, 3.2f, 4.0f, 4.8f, 5.6f, 6.4f, 7.2f, 8.0f, 0.33f, -7.33f, -15.0f, -13.5f, -12.0f, -9.0f, -6.0f, -3.0f, 0.0f };
-    static readonly float[] ATK_BOT_ROT = { -0.0f, -0.8f, -1.6f, -2.4f, -3.2f, -4.0f, -4.8f, -5.6f, -6.4f, -7.2f, -8.0f, -0.33f, 7.33f, 15.0f, 13.5f, 12.0f, 9.0f, 6.0f, 3.0f, -0.0f };
-    static readonly float[] ATK_SF_ROT = { 0.0f, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -5.0f, 10.0f, 25.0f, 22.5f, 20.0f, 15.0f, 10.0f, 5.0f, 0.0f };
-    static readonly float[] ATK_HF_ROT = { 0.0f, -1.2f, -2.4f, -3.6f, -4.8f, -6.0f, -7.2f, -8.4f, -9.6f, -10.8f, -12.0f, -3.0f, 6.0f, 15.0f, 13.5f, 12.0f, 9.0f, 6.0f, 3.0f, 0.0f };
-    static readonly float[] ATK_BODY_Y = { 0.0f, 0.0f, 0.0f, 0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.02f, 0.02f, 0.02f, 0.0f, -0.02f, -0.04f, -0.04f, -0.03f, -0.02f, -0.01f, -0.01f, 0.0f };
-    static readonly float[] ATK_BOTTOM_Y = { -0.563f, -0.563f, -0.573f, -0.573f, -0.573f, -0.573f, -0.573f, -0.583f, -0.583f, -0.573f, -0.573f, -0.573f, -0.563f, -0.563f, -0.533f, -0.533f, -0.538f, -0.543f, -0.548f, -0.553f };
 
-    // ================================================================
-    // Generate Attack
-    // ================================================================
-    [MenuItem("Tools/TankMob2/Generate Attack")]
+
+    // ── Attack 배열 (20프레임) ──────────────────────────────────────
+    static readonly float[] ATK_SB_ROT = { 0.0f, 3.0f, 6.0f, 9.0f, 12.0f, 15.0f, 18.0f, 21.0f, 24.0f, 27.0f, 30.0f, -25.0f, -25.0f, -20.0f, -15.0f, -10.0f, -5.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK_HB_ROT = { 0.0f, 7.5f, 15.0f, 22.5f, 30.0f, 37.5f, 45.0f, 52.5f, 60.0f, 67.5f, 75.0f, 25.0f, 25.0f, 18.75f, 12.5f, 6.25f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK_SF_ROT = { 0.0f, -1.5f, -3.0f, -4.5f, -6.0f, -7.5f, -9.0f, -10.5f, -12.0f, -13.5f, -15.0f, 12.0f, 12.0f, 9.0f, 6.0f, 3.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK_HF_ROT = { 0.0f, -1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f, -10.0f, 8.0f, 8.0f, 6.0f, 4.0f, 2.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK_BODY_ROT = { 0.0f, 0.8f, 1.6f, 2.4f, 3.2f, 4.0f, 4.8f, 5.6f, 6.4f, 7.2f, 8.0f, -10.0f, -10.0f, -7.5f, -5.0f, -2.5f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK_BOT_ROT = { -0.0f, -0.8f, -1.6f, -2.4f, -3.2f, -4.0f, -4.8f, -5.6f, -6.4f, -7.2f, -8.0f, 10.0f, 10.0f, 7.5f, 5.0f, 2.5f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK_SB_Y = { 0.55f, 0.55f, 0.56f, 0.56f, 0.57f, 0.57f, 0.57f, 0.58f, 0.58f, 0.59f, 0.59f, 0.57f, 0.54f, 0.52f, 0.52f, 0.52f, 0.52f, 0.53f, 0.54f, 0.55f };
+    static readonly float[] ATK_HB_Y = { -0.34f, -0.34f, -0.33f, -0.33f, -0.32f, -0.32f, -0.31f, -0.3f, -0.3f, -0.29f, -0.29f, -0.32f, -0.34f, -0.37f, -0.37f, -0.37f, -0.36f, -0.35f, -0.35f, -0.34f };
+    static readonly float[] ATK_BODY_Y = { 0.0f, 0.0f, 0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.02f, 0.02f, 0.01f, 0.01f, 0.01f, 0.0f, 0.0f, -0.03f, -0.03f, -0.025f, -0.02f, -0.015f, -0.01f };
+    static readonly float[] ATK_BOTTOM_Y = { -0.563f, -0.563f, -0.573f, -0.573f, -0.573f, -0.573f, -0.573f, -0.583f, -0.583f, -0.573f, -0.573f, -0.573f, -0.563f, -0.563f, -0.533f, -0.533f, -0.538f, -0.543f, -0.548f, -0.553f };
+    static readonly float[] ATK_FB_ROT = { 0.0f, 5.62f, 11.25f, 16.88f, 22.5f, 28.12f, 33.75f, 39.38f, 45.0f, 36.0f, 27.0f, 18.0f, 9.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK_FB_X = { 0.04f, 0.05f, 0.06f, 0.06f, 0.07f, 0.08f, 0.09f, 0.09f, 0.1f, 0.09f, 0.08f, 0.06f, 0.05f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f };
+    static readonly float[] ATK_FB_Y = { 0.0f, 0.03f, 0.06f, 0.09f, 0.12f, 0.16f, 0.19f, 0.22f, 0.25f, 0.2f, 0.15f, 0.09f, 0.04f, -0.01f, -0.01f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+
     public static void GenerateAttack()
     {
         const float DUR_ATK = 20 / 12f;

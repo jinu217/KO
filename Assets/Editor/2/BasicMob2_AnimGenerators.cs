@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class BasicMob2_AnimGenerators
 {
-    const string SAVE_PATH = "Assets/Animations/BasicMob 2";
+    const string SAVE_PATH = "Assets/Animations/2/BasicMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
     const float DUR_32 = 32 / 12f;
@@ -45,12 +45,16 @@ public class BasicMob2_AnimGenerators
     static readonly float[] WALK_BODY_Y = { 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f };
 
     // ── Run 배열 (8프레임) ──────────────────────────────────────────
-    static readonly float[] RUN_FF_X = { -0.249f, -0.286f, -0.322f, -0.359f, -0.322f, -0.286f };
-    static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0693f, 0.0693f };
-    static readonly float[] RUN_FB_X = { -0.027f, 0.01f, 0.046f, 0.083f, 0.046f, 0.01f };
-    static readonly float[] RUN_FB_Y = { 0.0f, 0.0693f, 0.0693f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] RUN_BODY_ROT = { -15.0f, -13.27f, -13.27f, -15.0f, -16.73f, -16.73f };
-    static readonly float[] RUN_BOT_ROT = { 15.0f, 13.27f, 13.27f, 15.0f, 16.73f, 16.73f };
+    static readonly float[] RUN_HEAD_ROT = { 15.0f, 14.23f, 13.59f, 13.15f, 13.0f, 13.15f, 13.59f, 14.23f, 15.0f, 15.77f, 16.41f, 16.85f, 17.0f, 16.85f, 16.41f, 15.77f, 15.0f };
+    static readonly float[] RUN_SB_ROT = { 30.0f, 29.23f, 28.59f, 28.15f, 28.0f, 28.15f, 28.59f, 29.23f, 30.0f, 30.77f, 31.41f, 31.85f, 32.0f, 31.85f, 31.41f, 30.77f, 30.0f };
+    static readonly float[] RUN_SF_ROT = { 0.0f, 9.18f, 16.97f, 22.17f, 24.0f, 22.17f, 16.97f, 9.18f, 0.0f, -9.18f, -16.97f, -22.17f, -24.0f, -22.17f, -16.97f, -9.18f, -0.0f };
+    static readonly float[] RUN_HF_ROT = { 32.5f, 43.02f, 51.95f, 57.91f, 60.0f, 57.91f, 51.95f, 43.02f, 32.5f, 21.98f, 13.05f, 7.09f, 5.0f, 7.09f, 13.05f, 21.98f, 32.5f };
+    static readonly float[] RUN_FF_X = { -0.249f, -0.283f, -0.317f, -0.35f, -0.384f, -0.418f, -0.452f, -0.485f, -0.519f, -0.485f, -0.452f, -0.418f, -0.384f, -0.35f, -0.317f, -0.283f, -0.249f };
+    static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0612f, 0.1131f, 0.1478f, 0.16f, 0.1478f, 0.1131f, 0.0612f, 0.0f };
+    static readonly float[] RUN_FB_X = { -0.087f, -0.053f, -0.019f, 0.014f, 0.048f, 0.082f, 0.116f, 0.149f, 0.183f, 0.149f, 0.115f, 0.082f, 0.048f, 0.014f, -0.02f, -0.053f, -0.087f };
+    static readonly float[] RUN_FB_Y = { 0.0f, 0.0612f, 0.1131f, 0.1478f, 0.16f, 0.1478f, 0.1131f, 0.0612f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] RUN_BODY_ROT = { -15.0f, -14.23f, -13.59f, -13.15f, -13.0f, -13.15f, -13.59f, -14.23f, -15.0f, -15.77f, -16.41f, -16.85f, -17.0f, -16.85f, -16.41f, -15.77f, -15.0f };
+    static readonly float[] RUN_BOT_ROT = { 15.0f, 14.23f, 13.59f, 13.15f, 13.0f, 13.15f, 13.59f, 14.23f, 15.0f, 15.77f, 16.41f, 16.85f, 17.0f, 16.85f, 16.41f, 15.77f, 15.0f };
 
     // ── Attack 배열 (20프레임) ──────────────────────────────────────
     // 숏소드 슬래시: SB 올리고 빠르게 내려치기, 임팩트 -25도 오버슈트
@@ -90,7 +94,7 @@ public class BasicMob2_AnimGenerators
         L(BODY, "localPosition.x", 0f); C(BODY, "localPosition.y", IDLE_BODY_Y); L(BODY, "localPosition.z", 0f);
         L(BODY, "localEulerAngles.z", 0f);
         L(HEAD, "localPosition.x", -0.096f); L(HEAD, "localPosition.y", 0.398f); L(HEAD, "localPosition.z", 0f);
-        L(HEAD, "localEulerAngles.z", 0f);
+        C(HEAD, "localEulerAngles.z", RUN_HEAD_ROT);
         L(SF, "localPosition.x", -0.460f); C(SF, "localPosition.y", IDLE_SF_Y); L(SF, "localPosition.z", 0f);
         L(SF, "localEulerAngles.z", 0f);
         L(HF, "localPosition.x", -0.062f); L(HF, "localPosition.y", -0.338f); L(HF, "localPosition.z", 0f);
@@ -124,7 +128,7 @@ public class BasicMob2_AnimGenerators
         L(BODY, "localPosition.x", 0f); C(BODY, "localPosition.y", WALK_BODY_Y); L(BODY, "localPosition.z", 0f);
         C(BODY, "localEulerAngles.z", WALK_BODY_ROT);
         L(HEAD, "localPosition.x", -0.096f); L(HEAD, "localPosition.y", 0.398f); L(HEAD, "localPosition.z", 0f);
-        L(HEAD, "localEulerAngles.z", 0f);
+        C(HEAD, "localEulerAngles.z", RUN_HEAD_ROT);
         L(SF, "localPosition.x", -0.460f); L(SF, "localPosition.y", 0.418f); L(SF, "localPosition.z", 0f);
         L(SF, "localEulerAngles.z", 0f);
         L(HF, "localPosition.x", -0.062f); L(HF, "localPosition.y", -0.338f); L(HF, "localPosition.z", 0f);
@@ -150,23 +154,23 @@ public class BasicMob2_AnimGenerators
     [MenuItem("Tools/BasicMob2/Generate Run")]
     public static void GenerateRun()
     {
-        var clip = MakeClip("BasicMob2_Run", 6, true);
-        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 6);
+        var clip = MakeClip("BasicMob2_Run", 17, true);
+        void C(string path, string prop, float[] vals) => SetCurveSpeed(clip, path, prop, vals, 17, 3f);
         void L(string path, string prop, float val) =>
-            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 6 / 12f, val));
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 17 / 12f / 3f, val));
 
         L(BODY, "localPosition.x", 0f); L(BODY, "localPosition.y", 0f); L(BODY, "localPosition.z", 0f);
         C(BODY, "localEulerAngles.z", RUN_BODY_ROT);
         L(HEAD, "localPosition.x", -0.096f); L(HEAD, "localPosition.y", 0.398f); L(HEAD, "localPosition.z", 0f);
-        L(HEAD, "localEulerAngles.z", 0f);
+        C(HEAD, "localEulerAngles.z", RUN_HEAD_ROT);
         L(SF, "localPosition.x", -0.460f); L(SF, "localPosition.y", 0.418f); L(SF, "localPosition.z", 0f);
-        L(SF, "localEulerAngles.z", 0f);
+        C(SF, "localEulerAngles.z", RUN_SF_ROT);
         L(HF, "localPosition.x", -0.062f); L(HF, "localPosition.y", -0.338f); L(HF, "localPosition.z", 0f);
-        L(HF, "localEulerAngles.z", 60f);
+        C(HF, "localEulerAngles.z", RUN_HF_ROT);
         L(SB, "localPosition.x", 0.134f); L(SB, "localPosition.y", 0.418f); L(SB, "localPosition.z", 0f);
-        L(SB, "localEulerAngles.z", 15f);
+        C(SB, "localEulerAngles.z", RUN_SB_ROT);
         L(HB, "localPosition.x", 0.062f); L(HB, "localPosition.y", -0.306f); L(HB, "localPosition.z", 0f);
-        L(HB, "localEulerAngles.z", 75f);
+        L(HB, "localEulerAngles.z", 65f);
         L(SWORD, "localPosition.x", 0.134f); L(SWORD, "localPosition.y", -0.224f); L(SWORD, "localPosition.z", 0f);
         L(SWORD, "localEulerAngles.z", -75f);
         L(BOTTOM, "localPosition.x", -0.125f); L(BOTTOM, "localPosition.y", -0.496f); L(BOTTOM, "localPosition.z", 0f);
@@ -193,7 +197,7 @@ public class BasicMob2_AnimGenerators
         L(BODY, "localPosition.x", 0f); C(BODY, "localPosition.y", ATK_BODY_Y); L(BODY, "localPosition.z", 0f);
         C(BODY, "localEulerAngles.z", ATK_BODY_ROT);
         L(HEAD, "localPosition.x", -0.096f); L(HEAD, "localPosition.y", 0.398f); L(HEAD, "localPosition.z", 0f);
-        L(HEAD, "localEulerAngles.z", 0f);
+        C(HEAD, "localEulerAngles.z", RUN_HEAD_ROT);
         L(SF, "localPosition.x", -0.460f); L(SF, "localPosition.y", 0.418f); L(SF, "localPosition.z", 0f);
         C(SF, "localEulerAngles.z", ATK_SF_ROT);
         L(HF, "localPosition.x", -0.062f); L(HF, "localPosition.y", -0.338f); L(HF, "localPosition.z", 0f);
@@ -220,7 +224,9 @@ public class BasicMob2_AnimGenerators
         {
             if (!AssetDatabase.IsValidFolder("Assets/Animations"))
                 AssetDatabase.CreateFolder("Assets", "Animations");
-            AssetDatabase.CreateFolder("Assets/Animations", "BasicMob 2");
+            if (!AssetDatabase.IsValidFolder("Assets/Animations/2"))
+                AssetDatabase.CreateFolder("Assets/Animations", "2");
+            AssetDatabase.CreateFolder("Assets/Animations/2", "BasicMob 2");
         }
         var clip = new AnimationClip { frameRate = FRAME_RATE };
         clip.name = name;
@@ -228,6 +234,19 @@ public class BasicMob2_AnimGenerators
         s.loopTime = loop;
         AnimationUtility.SetAnimationClipSettings(clip, s);
         return clip;
+    }
+
+    static void SetCurveSpeed(AnimationClip clip, string path, string prop, float[] vals, int total, float speed)
+    {
+        var keys = new Keyframe[total];
+        for (int i = 0; i < total; i++) keys[i] = new Keyframe(i / FRAME_RATE / speed, vals[i]);
+        var curve = new AnimationCurve(keys);
+        for (int i = 0; i < curve.keys.Length; i++)
+        {
+            AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+            AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+        }
+        clip.SetCurve(path, typeof(Transform), prop, curve);
     }
 
     static void SetCurve(AnimationClip clip, string path, string prop, float[] vals, int total)

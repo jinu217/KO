@@ -42,12 +42,16 @@ public class EArcher2_AnimGenerators
     static readonly float[] WALK_BODY_Y = { 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f };
 
     // ── Run (8프레임) ───────────────────────────────────────────────
-    static readonly float[] RUN_FF_X = { -0.381f, -0.431f, -0.481f, -0.531f, -0.581f, -0.531f, -0.481f, -0.431f };
-    static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.099f, 0.14f, 0.099f };
-    static readonly float[] RUN_FB_X = { -0.143f, -0.093f, -0.043f, 0.007f, 0.057f, 0.007f, -0.043f, -0.093f };
-    static readonly float[] RUN_FB_Y = { 0.0f, 0.099f, 0.14f, 0.099f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] RUN_BODY_ROT = { -8.0f, -6.59f, -6.0f, -6.59f, -8.0f, -9.41f, -10.0f, -9.41f };
-    static readonly float[] RUN_BOT_ROT = { 8.0f, 6.59f, 6.0f, 6.59f, 8.0f, 9.41f, 10.0f, 9.41f };
+    static readonly float[] RUN_HEAD_ROT = { 8.0f, 7.23f, 6.59f, 6.15f, 6.0f, 6.15f, 6.59f, 7.23f, 8.0f, 8.77f, 9.41f, 9.85f, 10.0f, 9.85f, 9.41f, 8.77f, 8.0f };
+    static readonly float[] RUN_SB_ROT = { 16.0f, 15.23f, 14.59f, 14.15f, 14.0f, 14.15f, 14.59f, 15.23f, 16.0f, 16.77f, 17.41f, 17.85f, 18.0f, 17.85f, 17.41f, 16.77f, 16.0f };
+    static readonly float[] RUN_SF_ROT = { 0.0f, 7.65f, 14.14f, 18.48f, 20.0f, 18.48f, 14.14f, 7.65f, 0.0f, -7.65f, -14.14f, -18.48f, -20.0f, -18.48f, -14.14f, -7.65f, -0.0f };
+    static readonly float[] RUN_HF_ROT = { 32.5f, 43.02f, 51.95f, 57.91f, 60.0f, 57.91f, 51.95f, 43.02f, 32.5f, 21.98f, 13.05f, 7.09f, 5.0f, 7.09f, 13.05f, 21.98f, 32.5f };
+    static readonly float[] RUN_FF_X = { -0.381f, -0.423f, -0.464f, -0.506f, -0.546f, -0.586f, -0.629f, -0.671f, -0.711f, -0.671f, -0.629f, -0.586f, -0.546f, -0.504f, -0.464f, -0.422f, -0.381f };
+    static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.1072f, 0.198f, 0.2586f, 0.28f, 0.2586f, 0.198f, 0.1072f, 0.0f };
+    static readonly float[] RUN_FB_X = { -0.063f, -0.022f, 0.020f, 0.062f, 0.102f, 0.144f, 0.185f, 0.227f, 0.267f, 0.227f, 0.185f, 0.143f, 0.102f, 0.060f, 0.020f, -0.022f, -0.063f };
+    static readonly float[] RUN_FB_Y = { 0.0f, 0.1072f, 0.198f, 0.2586f, 0.28f, 0.2586f, 0.198f, 0.1072f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] RUN_BODY_ROT = { -8.0f, -7.23f, -6.59f, -6.15f, -6.0f, -6.15f, -6.59f, -7.23f, -8.0f, -8.77f, -9.41f, -9.85f, -10.0f, -9.85f, -9.41f, -8.77f, -8.0f };
+    static readonly float[] RUN_BOT_ROT = { 8.0f, 7.23f, 6.59f, 6.15f, 6.0f, 6.15f, 6.59f, 7.23f, 8.0f, 8.77f, 9.41f, 9.85f, 10.0f, 9.85f, 9.41f, 8.77f, 8.0f };
 
     // ── Attack (24프레임) ───────────────────────────────────────────
     // f0~f8:  활 당기기 (SB -45, HB -30, Body 뒤로)
@@ -139,26 +143,26 @@ public class EArcher2_AnimGenerators
     [MenuItem("Tools/EArcher2/Generate Run")]
     public static void GenerateRun()
     {
-        var clip = MakeClip("EArcher2_Run", 8, true);
-        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 8);
+        var clip = MakeClip("EArcher2_Run", 17, true);
+        void C(string path, string prop, float[] vals) => SetCurveSpeed(clip, path, prop, vals, 17, 3f);
         void L(string path, string prop, float val) =>
-            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 8 / 12f, val));
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 17 / 12f / 3f, val));
 
         L(BODY, "localPosition.x", 0f); L(BODY, "localPosition.y", 0f); L(BODY, "localPosition.z", 0f);
         C(BODY, "localEulerAngles.z", RUN_BODY_ROT);
         L(HEAD, "localPosition.x", -0.069f); L(HEAD, "localPosition.y", 0.497f); L(HEAD, "localPosition.z", 0f);
-        C(HEAD, "localEulerAngles.z", ATK_BOW_HEAD_ROT);
+        C(HEAD, "localEulerAngles.z", RUN_HEAD_ROT);
         L(SF, "localPosition.x", -0.578f); L(SF, "localPosition.y", 0.459f); L(SF, "localPosition.z", 0f);
-        L(SF, "localEulerAngles.z", 0f);
-        L(HF, "localPosition.x", -0.009f); L(HF, "localPosition.y", -0.370f); L(HF, "localPosition.z", 0f);
-        L(HF, "localEulerAngles.z", 0f);
+        C(SF, "localEulerAngles.z", RUN_SF_ROT);
+        L(HF, "localPosition.x", -0.009f); L(HF, "localPosition.y", -0.37f); L(HF, "localPosition.z", 0f);
+        C(HF, "localEulerAngles.z", RUN_HF_ROT);
         L(SB, "localPosition.x", 0.063f); L(SB, "localPosition.y", 0.413f); L(SB, "localPosition.z", 0f);
-        L(SB, "localEulerAngles.z", 0f);
+        C(SB, "localEulerAngles.z", RUN_SB_ROT);
         L(HB, "localPosition.x", 0.232f); L(HB, "localPosition.y", -0.308f); L(HB, "localPosition.z", 0f);
         L(HB, "localEulerAngles.z", 0f);
         L(BOW, "localPosition.x", 0.118f); L(BOW, "localPosition.y", -0.319f); L(BOW, "localPosition.z", 0f);
-        C(BOW, "localEulerAngles.z", ATK_BOW_ROT);
-        L(BOTTOM, "localPosition.x", 0f); L(BOTTOM, "localPosition.y", -0.559f); L(BOTTOM, "localPosition.z", 0f);
+        L(BOW, "localEulerAngles.z", -60f);
+        L(BOTTOM, "localPosition.x", 0.0f); L(BOTTOM, "localPosition.y", -0.559f); L(BOTTOM, "localPosition.z", 0f);
         C(BOTTOM, "localEulerAngles.z", RUN_BOT_ROT);
         C(FOOT_F, "localPosition.x", RUN_FF_X); C(FOOT_F, "localPosition.y", RUN_FF_Y); L(FOOT_F, "localPosition.z", 0f);
         L(FOOT_F, "localEulerAngles.z", 0f);
@@ -167,7 +171,6 @@ public class EArcher2_AnimGenerators
         Save(clip, "EArcher2_Run");
     }
 
-    [MenuItem("Tools/EArcher2/Generate Attack")]
     public static void GenerateAttack()
     {
         var clip = MakeClip("EArcher2_Attack", 14, false);
@@ -214,6 +217,20 @@ public class EArcher2_AnimGenerators
         s.loopTime = loop;
         AnimationUtility.SetAnimationClipSettings(clip, s);
         return clip;
+    }
+
+
+    static void SetCurveSpeed(AnimationClip clip, string path, string prop, float[] vals, int total, float speed)
+    {
+        var keys = new Keyframe[total];
+        for (int i = 0; i < total; i++) keys[i] = new Keyframe(i / FRAME_RATE / speed, vals[i]);
+        var curve = new AnimationCurve(keys);
+        for (int i = 0; i < curve.keys.Length; i++)
+        {
+            AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+            AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+        }
+        clip.SetCurve(path, typeof(Transform), prop, curve);
     }
 
     static void SetCurve(AnimationClip clip, string path, string prop, float[] vals, int total)

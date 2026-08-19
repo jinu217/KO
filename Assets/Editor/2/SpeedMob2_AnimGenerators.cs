@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class SpeedMob2_AnimGenerators
 {
-    const string SAVE_PATH = "Assets/Animations/SpeedMob 2";
+    const string SAVE_PATH = "Assets/Animations/2/SpeedMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
     const float DUR_32 = 32 / 12f;
@@ -22,11 +22,11 @@ public class SpeedMob2_AnimGenerators
 
     // ================================================================
     // rest 실측값:
-    //   Body(0,0), Head(-0.096, 0.398)
-    //   SF(-0.460, 0.418), HF(-0.062, -0.338)
-    //   SB(0.134, 0.418), HB(0.062, -0.306)
-    //   Sword(0.134, -0.224) rot=-60
-    //   Bottom(-0.125, -0.496), Foot_F(-0.249, 0), Foot_B(0.173, 0)
+    //    Body(0,0), Head(-0.096, 0.398)
+    //    SF(-0.460, 0.418), HF(-0.062, -0.338)
+    //    SB(0.134, 0.418), HB(0.062, -0.306)
+    //    Sword(0.134, -0.224) rot=-60
+    //    Bottom(-0.125, -0.496), Foot_F(-0.249, 0), Foot_B(0.173, 0)
     // ================================================================
 
     // ── Idle 배열 (48프레임) ────────────────────────────────────────
@@ -44,16 +44,20 @@ public class SpeedMob2_AnimGenerators
     static readonly float[] WALK_BOT_ROT = { 0.0f, 1.53f, 2.83f, 3.7f, 4.0f, 3.7f, 2.83f, 1.53f, 0.0f, -1.53f, -2.83f, -3.7f, -4.0f, -3.7f, -2.83f, -1.53f };
     static readonly float[] WALK_BODY_Y = { 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f, 0.0f, 0.0057f, 0.008f, 0.0057f };
 
-    // ── Run 배열 (8프레임) ──────────────────────────────────────────
-    static readonly float[] RUN_FF_X = { -0.249f, -0.322f, -0.396f, -0.469f, -0.396f, -0.322f };
-    static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.1386f, 0.1386f };
-    static readonly float[] RUN_FB_X = { -0.047f, 0.026f, 0.1f, 0.173f, 0.1f, 0.026f };
-    static readonly float[] RUN_FB_Y = { 0.0f, 0.1386f, 0.1386f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] RUN_BODY_ROT = { -10.0f, -7.4f, -7.4f, -10.0f, -12.6f, -12.6f };
-    static readonly float[] RUN_BOT_ROT = { 10.0f, 7.4f, 7.4f, 10.0f, 12.6f, 12.6f };
+    // ── Run 배열 (8프레임 / 17키) ───────────────────────────────────
+    // Body 기준 -30deg 기울기 적용 및 상쇄값 오프셋 조정
+    static readonly float[] RUN_BODY_ROT = { -20.0f, -19.23f, -18.59f, -18.15f, -18.0f, -18.15f, -18.59f, -19.23f, -20.0f, -20.77f, -21.41f, -21.85f, -22.0f, -21.85f, -21.41f, -20.77f, -20.0f };
+    static readonly float[] RUN_HEAD_ROT = { 20.0f, 19.23f, 18.59f, 18.15f, 18.0f, 18.15f, 18.59f, 19.23f, 20.0f, 20.77f, 21.41f, 21.85f, 22.0f, 21.85f, 21.41f, 20.77f, 20.0f };
+    static readonly float[] RUN_BOT_ROT = { 20.0f, 19.23f, 18.59f, 18.15f, 18.0f, 18.15f, 18.59f, 19.23f, 20.0f, 20.77f, 21.41f, 21.85f, 22.0f, 21.85f, 21.41f, 20.77f, 20.0f };
+    static readonly float[] RUN_SB_ROT = { 30.0f, 29.23f, 28.59f, 28.15f, 28.0f, 28.15f, 28.59f, 29.23f, 30.0f, 30.77f, 31.41f, 31.85f, 32.0f, 31.85f, 31.41f, 30.77f, 30.0f };
+    static readonly float[] RUN_SF_ROT = { 10.0f, 19.18f, 26.97f, 32.17f, 34.0f, 32.17f, 26.97f, 19.18f, 10.0f, 0.82f, -6.97f, -12.17f, -14.0f, -12.17f, -6.97f, 0.82f, 10.0f };
+    static readonly float[] RUN_HF_ROT = { 7.5f, 12.28f, 16.34f, 19.05f, 20.0f, 19.05f, 16.34f, 12.28f, 7.5f, 2.72f, -1.34f, -4.05f, -5.0f, -4.05f, -1.34f, 2.72f, 7.5f };
+    static readonly float[] RUN_FF_X = { -0.249f, -0.283f, -0.317f, -0.35f, -0.384f, -0.418f, -0.452f, -0.485f, -0.519f, -0.485f, -0.452f, -0.418f, -0.384f, -0.35f, -0.317f, -0.283f, -0.249f };
+    static readonly float[] RUN_FF_Y = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0612f, 0.1131f, 0.1478f, 0.16f, 0.1478f, 0.1131f, 0.0612f, 0.0f };
+    static readonly float[] RUN_FB_X = { 0.003f, 0.037f, 0.071f, 0.104f, 0.138f, 0.172f, 0.206f, 0.239f, 0.273f, 0.239f, 0.206f, 0.172f, 0.138f, 0.104f, 0.071f, 0.037f, 0.003f };
+    static readonly float[] RUN_FB_Y = { 0.0f, 0.0612f, 0.1131f, 0.1478f, 0.16f, 0.1478f, 0.1131f, 0.0612f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
     // ── Attack 배열 (20프레임) ──────────────────────────────────────
-    // 숏소드 슬래시: SB 올리고 빠르게 내려치기, 임팩트 -25도 오버슈트
     static readonly float[] ATK_SB_ROT = { 0.0f, -10.0f, -20.0f, 2.5f, 25.0f, 25.0f, 16.67f, 8.33f, 0.0f };
     static readonly float[] ATK_HB_ROT = { 0.0f, -10.0f, -20.0f, 2.5f, 25.0f, 25.0f, 16.67f, 8.33f, 0.0f };
     static readonly float[] ATK_SF_ROT = { 0.0f, 5.0f, 10.0f, 0.0f, -10.0f, -8.0f, -5.33f, -2.67f, 0.0f };
@@ -155,21 +159,21 @@ public class SpeedMob2_AnimGenerators
     [MenuItem("Tools/SpeedMob2/Generate Run")]
     public static void GenerateRun()
     {
-        var clip = MakeClip("SpeedMob2_Run", 6, true);
-        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 6);
+        var clip = MakeClip("SpeedMob2_Run", 17, true);
+        void C(string path, string prop, float[] vals) => SetCurveSpeed(clip, path, prop, vals, 17, 4.5f);
         void L(string path, string prop, float val) =>
-            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 6 / 12f, val));
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 17 / 12f / 4.5f, val));
 
         L(BODY, "localPosition.x", 0f); L(BODY, "localPosition.y", 0f); L(BODY, "localPosition.z", 0f);
         C(BODY, "localEulerAngles.z", RUN_BODY_ROT);
         L(HEAD, "localPosition.x", -0.096f); L(HEAD, "localPosition.y", 0.398f); L(HEAD, "localPosition.z", 0f);
-        L(HEAD, "localEulerAngles.z", 0f);
-        L(SF, "localPosition.x", -0.460f); L(SF, "localPosition.y", 0.418f); L(SF, "localPosition.z", 0f);
-        L(SF, "localEulerAngles.z", 0f);
+        C(HEAD, "localEulerAngles.z", RUN_HEAD_ROT);
+        L(SF, "localPosition.x", -0.46f); L(SF, "localPosition.y", 0.418f); L(SF, "localPosition.z", 0f);
+        C(SF, "localEulerAngles.z", RUN_SF_ROT);
         L(HF, "localPosition.x", -0.062f); L(HF, "localPosition.y", -0.338f); L(HF, "localPosition.z", 0f);
-        L(HF, "localEulerAngles.z", 0f);
+        C(HF, "localEulerAngles.z", RUN_HF_ROT);
         L(SB, "localPosition.x", 0.134f); L(SB, "localPosition.y", 0.418f); L(SB, "localPosition.z", 0f);
-        L(SB, "localEulerAngles.z", 0f);
+        C(SB, "localEulerAngles.z", RUN_SB_ROT);
         L(HB, "localPosition.x", 0.062f); L(HB, "localPosition.y", -0.306f); L(HB, "localPosition.z", 0f);
         L(HB, "localEulerAngles.z", 0f);
         L(WEAPON, "localPosition.x", 0.109f); L(WEAPON, "localPosition.y", -0.247f); L(WEAPON, "localPosition.z", 0f);
@@ -183,10 +187,6 @@ public class SpeedMob2_AnimGenerators
         Save(clip, "SpeedMob2_Run");
     }
 
-    // ================================================================
-    // Generate Attack
-    // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Attack")]
     public static void GenerateAttack()
     {
         var clip = MakeClip("SpeedMob2_Attack", 9, false);
@@ -224,7 +224,8 @@ public class SpeedMob2_AnimGenerators
         {
             if (!AssetDatabase.IsValidFolder("Assets/Animations"))
                 AssetDatabase.CreateFolder("Assets", "Animations");
-            AssetDatabase.CreateFolder("Assets/Animations", "BasicMob 2");
+            AssetDatabase.CreateFolder("Assets/Animations", "2");
+            AssetDatabase.CreateFolder("Assets/Animations/2", "SpeedMob 2");
         }
         var clip = new AnimationClip { frameRate = FRAME_RATE };
         clip.name = name;
@@ -232,6 +233,19 @@ public class SpeedMob2_AnimGenerators
         s.loopTime = loop;
         AnimationUtility.SetAnimationClipSettings(clip, s);
         return clip;
+    }
+
+    static void SetCurveSpeed(AnimationClip clip, string path, string prop, float[] vals, int total, float speed)
+    {
+        var keys = new Keyframe[total];
+        for (int i = 0; i < total; i++) keys[i] = new Keyframe(i / FRAME_RATE / speed, vals[i]);
+        var curve = new AnimationCurve(keys);
+        for (int i = 0; i < curve.keys.Length; i++)
+        {
+            AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+            AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Auto);
+        }
+        clip.SetCurve(path, typeof(Transform), prop, curve);
     }
 
     static void SetCurve(AnimationClip clip, string path, string prop, float[] vals, int total)
@@ -256,6 +270,7 @@ public class SpeedMob2_AnimGenerators
         AssetDatabase.Refresh();
         Debug.Log($"[SpeedMob2] {name} → {assetPath}");
     }
+
     // ── Attack2 배열 (18프레임: 찌르기 + 슬래시 2연격) ────────────
     static readonly float[] ATK2_SB_ROT = { 0.0f, -10.0f, -20.0f, 2.5f, 25.0f, 25.0f, 16.67f, 8.33f, 0.0f, -6.67f, -13.33f, -20.0f, 2.5f, 25.0f, 25.0f, 16.67f, 8.33f, 0.0f };
     static readonly float[] ATK2_HB_ROT = { 0.0f, -10.0f, -20.0f, 2.5f, 25.0f, 25.0f, 16.67f, 8.33f, 0.0f, -6.67f, -13.33f, -20.0f, 2.5f, 25.0f, 25.0f, 16.67f, 8.33f, 0.0f };
