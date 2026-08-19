@@ -200,9 +200,9 @@ public class TankMob2_AnimGenerators
     public static void GenerateRun()
     {
         var clip = MakeClip("TankMob2_Run", 17, true);
-        void C(string path, string prop, float[] vals) => SetCurveSpeed(clip, path, prop, vals, 17, 4f);
+        void C(string path, string prop, float[] vals) => SetCurveSpeed(clip, path, prop, vals, 17, 2f);
         void L(string path, string prop, float val) =>
-            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 17 / 12f / 4f, val));
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, 17 / 12f / 2f, val));
 
         L(BODY, "localPosition.x", 0f); L(BODY, "localPosition.y", 0f); L(BODY, "localPosition.z", 0f);
         C(BODY, "localEulerAngles.z", RUN_BODY_ROT);
