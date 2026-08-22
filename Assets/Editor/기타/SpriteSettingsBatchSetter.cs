@@ -3,35 +3,53 @@ using UnityEngine;
 
 public class SpriteSettingsBatchSetter
 {
-    [MenuItem("Tools/Sprites/Set All Sprite Settings")]
-    public static void SetAllSprites()
+    [MenuItem("Tools/Sprites/Set Selected Sprite Settings")]
+    public static void SetSelectedSprites()
     {
         int count = 0;
-        string[] guids = AssetDatabase.FindAssets("t:Texture2D");
 
-        foreach (string guid in guids)
+        // Project 창에서 선택한 파일만 가져옴
+        Object[] selectedObjects = Selection.GetFiltered<Object>(
+            SelectionMode.Assets
+        );
+
+        foreach (Object obj in selectedObjects)
         {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string path = AssetDatabase.GetAssetPath(obj);
+
+            // Texture2D가 아니면 무시
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (importer == null) continue;
+            if (importer == null)
+                continue;
 
             bool changed = false;
 
             // Texture Type: Sprite
             if (importer.textureType != TextureImporterType.Sprite)
-            { importer.textureType = TextureImporterType.Sprite; changed = true; }
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                changed = true;
+            }
 
             // Sprite Mode: Single
             if (importer.spriteImportMode != SpriteImportMode.Single)
-            { importer.spriteImportMode = SpriteImportMode.Single; changed = true; }
+            {
+                importer.spriteImportMode = SpriteImportMode.Single;
+                changed = true;
+            }
 
             // PPU: 64
             if (importer.spritePixelsPerUnit != 64f)
-            { importer.spritePixelsPerUnit = 64f; changed = true; }
+            {
+                importer.spritePixelsPerUnit = 64f;
+                changed = true;
+            }
 
-            // Pivot: Custom (기존 pivot 위치 유지)
+            // Pivot: Custom
+            // 기존 Pivot 위치 유지
             var spriteSettings = new TextureImporterSettings();
             importer.ReadTextureSettings(spriteSettings);
+
             if (spriteSettings.spriteAlignment != (int)SpriteAlignment.Custom)
             {
                 spriteSettings.spriteAlignment = (int)SpriteAlignment.Custom;
@@ -39,19 +57,40 @@ public class SpriteSettingsBatchSetter
                 changed = true;
             }
 
-            // Filter Mode: Point (No Filter)
+            // Filter Mode: Point
             if (importer.filterMode != FilterMode.Point)
-            { importer.filterMode = FilterMode.Point; changed = true; }
+            {
+                importer.filterMode = FilterMode.Point;
+                changed = true;
+            }
 
             if (changed)
             {
-                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                EditorUtility.SetDirty(importer);
+                AssetDatabase.ImportAsset(
+                    path,
+                    ImportAssetOptions.ForceUpdate
+                );
+
                 count++;
                 Debug.Log($"[SpriteSettings] 적용: {path}");
             }
         }
 
         AssetDatabase.Refresh();
-        EditorUtility.DisplayDialog("완료", $"{count}개 스프라이트 설정 완료", "확인");
+
+        EditorUtility.DisplayDialog(
+            "완료",
+            $"{count}개 스프라이트 설정 완료",
+            "확인"
+        );
+    }
+
+    // 선택된 파일이 없으면 메뉴 비활성화
+    [MenuItem("Tools/Sprites/Set Selected Sprite Settings", true)]
+    private static bool ValidateSetSelectedSprites()
+    {
+        return Selection.objects != null &&
+               Selection.objects.Length > 0;
     }
 }
