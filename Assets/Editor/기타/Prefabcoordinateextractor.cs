@@ -5,7 +5,6 @@ using System.IO;
 
 public class PrefabCoordinateExtractor : EditorWindow
 {
-
     [MenuItem("Tools/Extract Prefab Coordinates")]
     static void OpenWindow()
     {
@@ -35,7 +34,7 @@ public class PrefabCoordinateExtractor : EditorWindow
         includePosition = EditorGUILayout.Toggle("Position", includePosition);
         includeRotation = EditorGUILayout.Toggle("Rotation (Euler Z)", includeRotation);
         includeScale = EditorGUILayout.Toggle("Scale", includeScale);
-        includeSpriteInfo = EditorGUILayout.Toggle("Sprite 정보 (pivot, PPU, 크기)", includeSpriteInfo);
+        includeSpriteInfo = EditorGUILayout.Toggle("Sprite 정보 (pivot, 크기)", includeSpriteInfo);
         relativePathFromRoot = EditorGUILayout.Toggle("Root 기준 경로 표시", relativePathFromRoot);
         decimalPlaces = EditorGUILayout.IntSlider("소수점 자릿수", decimalPlaces, 2, 6);
 
@@ -43,19 +42,13 @@ public class PrefabCoordinateExtractor : EditorWindow
 
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("추출 + 클립보드 복사", GUILayout.Height(30)))
-        {
             Extract(true, false);
-        }
         if (GUILayout.Button("추출 + 텍스트 파일 저장", GUILayout.Height(30)))
-        {
             Extract(false, true);
-        }
         EditorGUILayout.EndHorizontal();
 
         if (GUILayout.Button("추출 (미리보기만)"))
-        {
             Extract(false, false);
-        }
 
         GUILayout.Space(10);
 
@@ -71,10 +64,7 @@ public class PrefabCoordinateExtractor : EditorWindow
     void Extract(bool copyToClipboard, bool saveToFile)
     {
         if (target == null)
-        {
-            // 선택된 GameObject 자동 사용
             target = Selection.activeGameObject;
-        }
 
         if (target == null)
         {
@@ -117,58 +107,49 @@ public class PrefabCoordinateExtractor : EditorWindow
 
         sb.Append($"{indent}[{path}]");
 
-        // SpriteRenderer 정보
+        // SpriteRenderer: 레이어만 표시 (스프라이트 이름 제외)
         var sr = t.GetComponent<SpriteRenderer>();
         if (sr != null && sr.sprite != null)
-        {
-            sb.Append($"  (sprite: {sr.sprite.name}, layer: {sr.sortingOrder})");
-        }
+            sb.Append($"  (layer: {sr.sortingOrder})");
+
         sb.AppendLine();
 
-        string format = "F" + decimalPlaces;
+        string fmt = "F" + decimalPlaces;
 
         if (includePosition)
         {
             Vector3 p = t.localPosition;
-            sb.AppendLine($"{indent}  pos: ({p.x.ToString(format)}, {p.y.ToString(format)}, {p.z.ToString(format)})");
+            sb.AppendLine($"{indent}  pos: ({p.x.ToString(fmt)}, {p.y.ToString(fmt)}, {p.z.ToString(fmt)})");
         }
 
         if (includeRotation)
         {
             Vector3 e = t.localEulerAngles;
-            // Z 회전을 -180 ~ +180 범위로 정규화
             float z = e.z;
             if (z > 180f) z -= 360f;
-            sb.AppendLine($"{indent}  rot.z: {z.ToString(format)}°");
+            sb.AppendLine($"{indent}  rot.z: {z.ToString(fmt)}°");
 
             if (Mathf.Abs(e.x) > 0.01f || Mathf.Abs(e.y) > 0.01f)
-            {
-                sb.AppendLine($"{indent}  rot.xy: ({e.x.ToString(format)}, {e.y.ToString(format)})°");
-            }
+                sb.AppendLine($"{indent}  rot.xy: ({e.x.ToString(fmt)}, {e.y.ToString(fmt)})°");
         }
 
         if (includeScale)
         {
             Vector3 s = t.localScale;
             if (s != Vector3.one)
-            {
-                sb.AppendLine($"{indent}  scale: ({s.x.ToString(format)}, {s.y.ToString(format)}, {s.z.ToString(format)})");
-            }
+                sb.AppendLine($"{indent}  scale: ({s.x.ToString(fmt)}, {s.y.ToString(fmt)}, {s.z.ToString(fmt)})");
         }
 
+        // Sprite 정보: pivot과 크기만 (ppu, 스프라이트 이름 제외)
         if (includeSpriteInfo && sr != null && sr.sprite != null)
         {
             Sprite sprite = sr.sprite;
             sb.AppendLine($"{indent}  sprite_size: {sprite.rect.width}x{sprite.rect.height} px");
-            sb.AppendLine($"{indent}  pivot_normalized: ({(sprite.pivot.x / sprite.rect.width).ToString(format)}, {(sprite.pivot.y / sprite.rect.height).ToString(format)})");
-            sb.AppendLine($"{indent}  ppu: {sprite.pixelsPerUnit}");
+            sb.AppendLine($"{indent}  pivot_normalized: ({(sprite.pivot.x / sprite.rect.width).ToString(fmt)}, {(sprite.pivot.y / sprite.rect.height).ToString(fmt)})");
         }
 
-        // 자식 재귀
         foreach (Transform child in t)
-        {
             WriteTransform(sb, root, child, depth + 1);
-        }
     }
 
     string GetRelativePath(Transform root, Transform target)
@@ -183,9 +164,8 @@ public class PrefabCoordinateExtractor : EditorWindow
             t = t.parent;
         }
         if (t == root)
-        {
             path = root.name + "/" + path;
-        }
+
         return path;
     }
 }
