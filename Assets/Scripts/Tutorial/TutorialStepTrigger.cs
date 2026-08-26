@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Collider2D))]
 public class TutorialStepTrigger : MonoBehaviour
@@ -18,6 +17,9 @@ public class TutorialStepTrigger : MonoBehaviour
 
     [Header("Go Town")]
     [SerializeField] private string townSceneName = "Town";
+    [SerializeField, Min(0f)] private float goTownAutoMoveSpeed = 5f;
+    [SerializeField] private string townSpawnId;
+    [SerializeField] private bool saveBeforeGoingToTown;
 
     [Header("Floating Text")]
     [SerializeField] private bool showFloatingText;
@@ -74,7 +76,16 @@ public class TutorialStepTrigger : MonoBehaviour
             if (oneShot)
                 used = true;
 
-            SceneManager.LoadScene(townSceneName);
+            PlayerController player = other.GetComponentInParent<PlayerController>();
+            if (player == null)
+                return;
+
+            SceneTransitionManager.GetOrCreate().PrepareAutoExit(
+                player,
+                townSceneName,
+                townSpawnId,
+                saveBeforeGoingToTown,
+                goTownAutoMoveSpeed);
             return;
         }
 
