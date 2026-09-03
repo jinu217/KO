@@ -53,6 +53,7 @@ public class MainBoss2_AnimGenerators
         GenerateWalk();
         GenerateWalk2();
         GenerateAttack();
+        GenerateAttack2();
         GenerateSkill1();
         GenerateSkill2();
         GenerateSkill3();
@@ -247,24 +248,26 @@ public class MainBoss2_AnimGenerators
     static readonly float[] RUN_FB_ROT_CANCEL_SB = { 100.0f, 104.94f, 109.4f, 112.94f, 115.22f, 116.0f, 115.22f, 112.94f, 109.4f, 104.94f, 100.0f, 92.28f, 85.31f, 79.78f, 76.22f, 75.0f, 76.22f, 79.78f, 85.31f, 92.28f };  // Run1 전용: SB>base 쪽만 1.5625배로 더 상쇄, SB<base 쪽은 기존 1배 유지
 
     // ================================================================
-    // Attack 커브 (일반공격: 기모으기 -> 크게 스윙업 -> 플레이어 발사 -> 복귀, 26프레임 논루프, 추측 기반 1차 버전)
+    // Attack 커브 (일반공격: 기모으기 -> 크게 스윙업 -> 플레이어 발사 -> 복귀, 29프레임 논루프, 추측 기반 1차 버전)
     // ================================================================
-    static readonly float[] ATK_SB_ROT = { 0.0f, -6.8f, -22.4f, -39.6f, -51.2f, -50.0f, -36.418f, -16.827f, 7.043f, 33.462f, 60.697f, 87.019f, 110.697f, 130.0f, 144.225f, 154.228f, 160.618f, 164.006f, 165.0f };
-    static readonly float[] ATK_FB_ROT = { 75.0f, 77.237f, 82.311f, 87.766f, 91.148f, 90.0f, 84.359f, 76.38f, 66.788f, 56.308f, 45.664f, 35.582f, 26.785f, 20.0f, 16.247f, 15.308f, 16.046f, 17.322f, 18.0f };
-    static readonly float[] ATK_HB_ROT = { 0.0f, -1.225f, -4.074f, -7.311f, -9.698f, -10.0f, -8.194f, -5.315f, -1.711f, 2.269f, 6.279f, 9.969f, 12.992f, 15.0f, 15.158f, 13.533f, 11.129f, 8.95f, 8.0f };
-    static readonly float[] ATK_SF_ROT = { 0.0f, 2.388f, 7.963f, 14.345f, 19.151f, 20.0f, 16.914f, 11.901f, 5.563f, -1.5f, -8.688f, -15.401f, -21.039f, -25.0f, -26.143f, -24.641f, -21.867f, -19.196f, -18.0f };
-    static readonly float[] ATK_FF_ROT = { 25.0f, 26.163f, 28.889f, 32.034f, 34.452f, 35.0f, 33.695f, 31.5f, 28.69f, 25.538f, 22.32f, 19.308f, 16.776f, 15.0f, 14.475f, 15.114f, 16.316f, 17.479f, 18.0f };
-    static readonly float[] ATK_BODY_Y = { 0.0f, -0.017f, -0.056f, -0.102f, -0.138f, -0.15f, -0.137f, -0.113f, -0.081f, -0.044f, -0.006f, 0.029f, 0.059f, 0.08f, 0.087f, 0.081f, 0.068f, 0.056f, 0.05f };
-    static readonly float[] ATK_BODY_ROT = { 0.0f, -1.806f, -6.018f, -10.828f, -14.425f, -15.0f, -12.579f, -8.695f, -3.8f, 1.654f, 7.213f, 12.425f, 16.839f, 20.0f, 21.11f, 20.309f, 18.553f, 16.798f, 16.0f };
-    static readonly float[] ATK_BODY_X = { 0.0f, -0.007f, -0.023f, -0.041f, -0.052f, -0.05f, -0.034f, -0.011f, 0.017f, 0.048f, 0.079f, 0.107f, 0.132f, 0.15f, 0.157f, 0.153f, 0.144f, 0.134f, 0.13f };
-    static readonly float[] ATK_BOT_ROT = { 0.0f, 1.084f, 3.611f, 6.497f, 8.655f, 9.0f, 7.542f, 5.2f, 2.247f, -1.038f, -4.382f, -7.507f, -10.139f, -12.0f, -12.574f, -11.941f, -10.721f, -9.534f, -9.0f };
-    static readonly float[] ATK_THIGH_F_ROT = { 10.0f, 9.228f, 7.445f, 5.447f, 4.033f, 4.0f, 5.354f, 7.418f, 9.966f, 12.769f, 15.602f, 18.236f, 20.444f, 22.0f, 22.426f, 21.775f, 20.61f, 19.497f, 19.0f };
-    static readonly float[] ATK_CALF_F_ROT = { 0.0f, -0.795f, -2.705f, -5.018f, -7.02f, -8.0f, -7.995f, -7.594f, -6.905f, -6.038f, -5.105f, -4.214f, -3.476f, -3.0f, -2.907f, -3.13f, -3.5f, -3.847f, -4.0f };
-    static readonly float[] ATK_FOOT_F_ROT = { 0.0f, -0.618f, -2.055f, -3.683f, -4.874f, -5.0f, -4.054f, -2.565f, -0.706f, 1.346f, 3.418f, 5.334f, 6.92f, 8.0f, 8.18f, 7.498f, 6.425f, 5.435f, 5.0f };
-    static readonly float[] ATK_THIGH_B_ROT = { -6.0f, -6.769f, -8.708f, -11.262f, -13.877f, -16.0f, -17.761f, -19.606f, -21.456f, -23.231f, -24.852f, -26.24f, -27.316f, -28.0f, -27.671f, -26.22f, -24.334f, -22.698f, -22.0f };
-    static readonly float[] ATK_CALF_B_ROT = { 0.0f, -0.732f, -2.597f, -5.095f, -7.729f, -10.0f, -12.041f, -14.248f, -16.513f, -18.731f, -20.795f, -22.599f, -24.036f, -25.0f, -24.819f, -23.386f, -21.444f, -19.735f, -19.0f };
-    static readonly float[] ATK_FOOT_B_ROT = { 0.0f, -1.47f, -4.889f, -8.773f, -11.638f, -12.0f, -9.844f, -6.418f, -2.129f, 2.615f, 7.408f, 11.841f, 15.508f, 18.0f, 18.404f, 16.81f, 14.313f, 12.011f, 11.0f };
-    static readonly float[] ATK_BODY_SCALE_X = { 1f, 1f, 0.2f, -1f, -1f, -1f, -1f, -1f, -1f, -0.2f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f };  // Body 루트 X스케일 반전으로 기모으기 때 잠깐 뒤돌아봄 (기본 스케일 1 가정)
+    static readonly float[] ATK_SB_ROT = { 0.0f, -0.831f, -2.974f, -5.904f, -9.096f, -12.026f, -14.169f, -15.0f, -13.0f, -13.0f, -13.0f, -13.0f, -13.0f, -13.0f, -13.0f, -13.0f, -13.0f, -13.0f, -13.0f, -17.0f, 60.697f, 87.019f, 110.697f, 130.0f, 144.225f, 154.228f, 160.618f, 164.006f, 165.0f };
+    static readonly float[] ATK_FB_ROT = { 75.0f, 71.676f, 63.105f, 51.385f, 38.615f, 26.895f, 18.324f, 15.0f, 16.5f, 16.5f, 16.5f, 16.5f, 16.5f, 16.5f, 16.5f, 16.5f, 16.5f, 16.5f, 16.5f, 13.5f, 45.664f, 35.582f, 26.785f, 20.0f, 16.247f, 15.308f, 16.046f, 17.322f, 18.0f };
+    static readonly float[] ATK_HB_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 6.279f, 9.969f, 12.992f, 15.0f, 15.158f, 13.533f, 11.129f, 8.95f, 8.0f };
+    static readonly float[] ATK_AXE_POS_X = { 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 0.191f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f };
+    static readonly float[] ATK_SF_ROT = { 0.0f, -0.352f, -1.26f, -2.501f, -3.853f, -5.094f, -6.002f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, -6.354f, 105.802f, 117.047f, 127.238f, 135.614f, 142.02f, 146.85f, 150.18f, 152.097f, 152.71f };
+    static readonly float[] ATK_FF_ROT = { 25.0f, 23.279f, 18.842f, 12.775f, 6.164f, 0.097f, -4.34f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -6.061f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f };
+    static readonly float[] ATK_BODY_Y = { 0.0f, -0.037f, -0.132f, -0.262f, -0.404f, -0.534f, -0.629f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.006f, 0.029f, 0.059f, 0.08f, 0.087f, 0.081f, 0.068f, 0.056f, 0.05f };
+    static readonly float[] ATK_BODY_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, -1.2f, 7.213f, 12.425f, 16.839f, 20.0f, 21.11f, 20.309f, 18.553f, 16.798f, 16.0f };
+    static readonly float[] ATK_BODY_X = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.079f, 0.107f, 0.132f, 0.15f, 0.157f, 0.153f, 0.144f, 0.134f, 0.13f };
+    static readonly float[] ATK_BOT_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -4.382f, -7.507f, -10.139f, -12.0f, -12.574f, -11.941f, -10.721f, -9.534f, -9.0f };
+    static readonly float[] ATK_THIGH_F_ROT = { 10.0f, 10.434f, 11.554f, 13.085f, 14.754f, 16.285f, 17.405f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 15.602f, 18.236f, 20.444f, 22.0f, 22.426f, 21.775f, 20.61f, 19.497f, 19.0f };
+    static readonly float[] ATK_CALF_F_ROT = { 0.0f, -4.282f, -15.324f, -30.423f, -46.873f, -61.972f, -73.014f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -5.105f, -4.214f, -3.476f, -3.0f, -2.907f, -3.13f, -3.5f, -3.847f, -4.0f };
+    static readonly float[] ATK_FOOT_F_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 3.418f, 5.334f, 6.92f, 8.0f, 8.18f, 7.498f, 6.425f, 5.435f, 5.0f };
+    static readonly float[] ATK_THIGH_B_ROT = { -6.0f, -2.811f, 5.413f, 16.657f, 28.909f, 40.153f, 48.377f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, -24.852f, -26.24f, -27.316f, -28.0f, -27.671f, -26.22f, -24.334f, -22.698f, -22.0f };
+    static readonly float[] ATK_CALF_B_ROT = { 0.0f, -2.752f, -9.848f, -19.551f, -30.123f, -39.826f, -46.922f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -20.795f, -22.599f, -24.036f, -25.0f, -24.819f, -23.386f, -21.444f, -19.735f, -19.0f };
+    static readonly float[] ATK_FOOT_B_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 7.408f, 11.841f, 15.508f, 18.0f, 18.404f, 16.81f, 14.313f, 12.011f, 11.0f };
+    static readonly float[] ATK_HEAD_ROT = { 0.0f, 0.111f, 0.397f, 0.787f, 1.213f, 1.603f, 1.889f, 2.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK_BODY_SCALE_X = { 1.0f, 1.0f, 0.2f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -0.2f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };  // Body 루트 X스케일 반전 (기본 스케일 1 가정) — 3~18 홀드 구간 -1 유지, 19에서 복귀
 
     // ================================================================
     // Skill1 커브 (2연타: 크게 젖혀찍기 -> 점프 내려찍기, 34프레임 논루프, 추측 기반)
@@ -279,11 +282,11 @@ public class MainBoss2_AnimGenerators
     static readonly float[] SK1_SF_ROT = { 0.0f, 1.019f, 3.602f, 7.034f, 10.603f, 13.596f, 15.299f, 15.0f, 11.655f, 5.569f, -1.949f, -9.589f, -16.043f, -20.0f, -20.996f, -19.862f, -17.229f, -13.731f, -10.0f, -5.079f, 1.566f, 8.665f, 14.949f, 19.151f, 20.0f, 16.107f, 8.21f, -1.771f, -11.914f, -20.297f, -25.0f, -19.506f, -6.975f, 0.0f };
     static readonly float[] SK1_FF_ROT = { 25.0f, 25.648f, 27.296f, 29.501f, 31.818f, 33.802f, 35.011f, 35.0f, 33.174f, 29.737f, 25.446f, 21.055f, 17.322f, 15.0f, 14.429f, 15.124f, 16.604f, 18.389f, 20.0f, 21.803f, 24.175f, 26.648f, 28.754f, 30.027f, 30.0f, 28.094f, 24.568f, 20.208f, 15.802f, 12.137f, 10.0f, 12.099f, 17.16f, 20.0f };
     static readonly float[] SK1_THIGH_F_ROT = { 10.0f, 9.463f, 8.1f, 6.286f, 4.395f, 2.801f, 1.878f, 2.0f, 3.451f, 6.017f, 9.327f, 13.009f, 16.69f, 20.0f, 23.189f, 26.567f, 29.851f, 32.756f, 35.0f, 36.864f, 38.653f, 40.114f, 40.993f, 41.04f, 40.0f, 37.454f, 33.519f, 28.75f, 23.704f, 18.935f, 15.0f, 12.222f, 10.556f, 10.0f };
-    static readonly float[] SK1_CALF_F_ROT = { 0.0f, -0.314f, -1.127f, -2.248f, -3.488f, -4.654f, -5.555f, -6.0f, -5.318f, -3.524f, -1.456f, 0.046f, 0.144f, -2.0f, -7.97f, -17.376f, -28.097f, -38.012f, -45.0f, -49.492f, -53.172f, -55.801f, -57.141f, -56.954f, -55.0f, -50.49f, -43.457f, -34.896f, -25.802f, -17.172f, -10.0f, -4.691f, -1.235f, 0.0f };
-    static readonly float[] SK1_FOOT_F_ROT = { 0.0f, -0.278f, -0.981f, -1.913f, -2.878f, -3.678f, -4.118f, -4.0f, -3.179f, -1.765f, 0.051f, 2.077f, 4.124f, 6.0f, 7.867f, 9.888f, 11.876f, 13.642f, 15.0f, 16.246f, 17.599f, 18.756f, 19.411f, 19.26f, 18.0f, 15.021f, 10.444f, 5.062f, -0.333f, -4.951f, -8.0f, -6.815f, -2.519f, 0.0f };
+    static readonly float[] SK1_CALF_F_ROT = { 352.938f, 351.447f, 348.63f, 345.944f, 343.878f, 342.557f, 341.642f, 341.099f, 340.957f, 341.281f, 342.7f, 346.613f, -1.529f, -4.839f, -8.028f, -17.376f, -28.097f, -38.012f, -45.0f, -49.492f, -53.172f, -55.801f, -57.141f, -56.954f, -55.0f, -50.49f, -43.457f, -34.896f, -25.802f, -17.172f, 340.558f, 341.317f, 347.726f, 352.938f };
+    static readonly float[] SK1_FOOT_F_ROT = { -362.938f, -360.411f, -354.956f, -348.742f, -342.969f, -338.473f, -335.624f, -335.099f, -337.639f, -342.934f, -350.691f, -361.39f, -19.557f, -21.161f, -21.458f, 9.888f, 11.876f, 13.642f, 15.0f, 16.246f, 17.599f, 18.756f, 19.411f, 19.26f, 18.0f, 15.021f, 10.444f, 5.062f, -0.333f, -4.951f, -360.558f, -357.391f, -359.653f, -362.938f };
     static readonly float[] SK1_THIGH_B_ROT = { -6.0f, -6.274f, -7.021f, -8.131f, -9.495f, -11.001f, -12.54f, -14.0f, -15.437f, -16.975f, -18.607f, -20.326f, -22.126f, -24.0f, -26.133f, -28.548f, -30.997f, -33.231f, -35.0f, -36.577f, -38.219f, -39.653f, -40.609f, -40.815f, -40.0f, -37.911f, -34.716f, -30.771f, -26.432f, -22.056f, -18.0f, -13.21f, -8.272f, -6.0f };
-    static readonly float[] SK1_CALF_B_ROT = { 0.0f, -0.255f, -0.958f, -2.018f, -3.344f, -4.844f, -6.427f, -8.0f, -9.427f, -10.782f, -12.29f, -14.179f, -16.673f, -20.0f, -25.011f, -31.651f, -38.785f, -45.28f, -50.0f, -53.397f, -56.441f, -58.778f, -60.054f, -59.913f, -58.0f, -53.684f, -47.123f, -39.146f, -30.58f, -22.255f, -15.0f, -8.247f, -2.457f, 0.0f };
-    static readonly float[] SK1_FOOT_B_ROT = { 0.0f, -0.695f, -2.453f, -4.784f, -7.194f, -9.195f, -10.294f, -10.0f, -7.675f, -3.543f, 1.593f, 6.93f, 11.667f, 15.0f, 16.573f, 16.923f, 16.586f, 16.1f, 16.0f, 16.638f, 17.724f, 18.83f, 19.529f, 19.394f, 18.0f, 14.699f, 9.704f, 3.875f, -1.926f, -6.838f, -10.0f, -8.296f, -3.037f, 0.0f };
+    static readonly float[] SK1_CALF_B_ROT = { 356.185f, 354.443f, 350.888f, 347.192f, 344.187f, 342.353f, 341.68f, 342.446f, 344.957f, 348.985f, 354.459f, 361.516f, 370.936f, 387.923f, 390.056f, -31.651f, -38.785f, -45.28f, -50.0f, -53.397f, -56.441f, -58.778f, -60.054f, -59.913f, -58.0f, -53.684f, -47.123f, -39.146f, -30.58f, -22.255f, 354.862f, 350.112f, 352.051f, 356.185f };
+    static readonly float[] SK1_FOOT_B_ROT = { -350.185f, -347.67f, -342.093f, -335.573f, -329.388f, -324.467f, -321.244f, -320.446f, -322.751f, -327.646f, -334.516f, -342.958f, -353.206f, -369.923f, -370.22f, 16.923f, 16.586f, 16.1f, 16.0f, 16.638f, 17.724f, 18.83f, 19.529f, 19.394f, 18.0f, 14.699f, 9.704f, 3.875f, -1.926f, -6.838f, -341.862f, -340.754f, -345.15f, -350.185f };
 
     // ================================================================
     // Skill2 커브 (3연타: 돌진 몸빵 -> 스윙 -> 내려찍기, 36프레임 논루프, 추측 기반)
@@ -298,11 +301,11 @@ public class MainBoss2_AnimGenerators
     static readonly float[] SK2_SF_ROT = { 0.0f, -1.72f, -5.76f, -10.44f, -14.08f, -15.0f, -12.196f, -6.789f, -0.284f, 5.815f, 10.0f, 12.643f, 14.933f, 16.591f, 17.34f, 16.902f, 15.0f, 9.658f, 0.847f, -8.793f, -16.622f, -20.0f, -17.844f, -12.027f, -4.341f, 3.421f, 9.465f, 12.0f, 9.236f, 2.291f, -6.273f, -13.891f, -18.0f, -14.0f, -5.0f, 0.0f };
     static readonly float[] SK2_FF_ROT = { 25.0f, 23.88f, 21.24f, 18.16f, 15.72f, 15.0f, 16.589f, 19.767f, 23.651f, 27.356f, 30.0f, 31.822f, 33.519f, 34.886f, 35.724f, 35.829f, 35.0f, 32.12f, 27.196f, 21.713f, 17.153f, 15.0f, 15.758f, 18.364f, 21.955f, 25.667f, 28.636f, 30.0f, 29.027f, 26.272f, 22.805f, 19.692f, 18.0f, 19.537f, 23.046f, 25.0f };
     static readonly float[] SK2_THIGH_F_ROT = { 10.0f, 7.24f, 0.72f, -6.92f, -13.04f, -15.0f, -11.011f, -2.833f, 6.851f, 15.356f, 20.0f, 20.126f, 17.646f, 13.727f, 9.535f, 6.237f, 5.0f, 6.841f, 10.984f, 15.907f, 20.087f, 22.0f, 21.178f, 18.694f, 15.341f, 11.912f, 9.201f, 8.0f, 9.092f, 11.973f, 15.509f, 18.563f, 20.0f, 17.519f, 12.648f, 10.0f };
-    static readonly float[] SK2_CALF_F_ROT = { 0.0f, -3.04f, -10.32f, -19.08f, -26.56f, -30.0f, -28.011f, -22.433f, -15.349f, -8.844f, -5.0f, -4.133f, -4.761f, -6.273f, -8.057f, -9.503f, -10.0f, -9.083f, -7.187f, -5.049f, -3.408f, -3.0f, -4.179f, -6.434f, -9.205f, -11.929f, -14.048f, -15.0f, -14.376f, -12.511f, -9.957f, -7.269f, -5.0f, -2.87f, -0.88f, 0.0f };
-    static readonly float[] SK2_FOOT_F_ROT = { 0.0f, -1.72f, -5.76f, -10.44f, -14.08f, -15.0f, -11.978f, -6.135f, 0.698f, 6.687f, 10.0f, 10.231f, 8.7f, 6.159f, 3.36f, 1.056f, 0.0f, 0.788f, 2.903f, 5.424f, 7.43f, 8.0f, 6.696f, 4.145f, 1.023f, -1.993f, -4.226f, -5.0f, -3.424f, 0.111f, 4.357f, 8.069f, 10.0f, 7.685f, 2.731f, 0.0f };
+    static readonly float[] SK2_CALF_F_ROT = { 352.938f, 352.919f, 355.632f, 361.447f, 367.638f, 369.871f, 365.606f, 358.551f, 354.058f, -0.195f, 355.161f, -4.965f, 349.848f, 343.941f, 342.414f, 342.591f, 342.987f, 343.553f, 345.815f, 359.254f, 355.074f, -6.839f, -6.017f, 356.467f, 344.594f, 340.018f, 338.306f, 338.147f, 339.503f, 343.541f, -0.348f, -3.402f, 355.161f, -2.358f, 362.513f, 352.938f };
+    static readonly float[] SK2_FOOT_F_ROT = { -362.938f, -360.399f, -356.992f, -355.247f, -354.598f, -352.871f, -347.823f, -341.721f, -339.473f, 11.689f, -347.161f, 8.369f, -352.494f, -353.122f, -357.646f, -362.419f, -364.987f, -363.467f, -359.871f, -366.198f, -356.161f, 7.839f, 4.378f, -363.73f, -358.935f, -361.361f, -365.046f, -367.147f, -366.088f, -363.956f, -12.305f, -2.059f, -356.161f, 0.08f, -369.652f, -362.938f };
     static readonly float[] SK2_THIGH_B_ROT = { -6.0f, -2.632f, 5.344f, 14.736f, 22.352f, 25.0f, 20.773f, 11.799f, 0.939f, -8.948f, -15.0f, -16.713f, -16.128f, -14.205f, -11.902f, -10.181f, -10.0f, -12.171f, -16.022f, -20.287f, -23.702f, -25.0f, -23.652f, -20.552f, -16.568f, -12.569f, -9.423f, -8.0f, -9.321f, -12.852f, -17.121f, -20.66f, -22.0f, -17.741f, -10.093f, -6.0f };
-    static readonly float[] SK2_CALF_B_ROT = { 0.0f, -3.512f, -11.936f, -22.104f, -30.848f, -35.0f, -33.039f, -27.076f, -19.393f, -12.274f, -8.0f, -6.668f, -6.613f, -7.477f, -8.902f, -10.529f, -12.0f, -13.884f, -16.524f, -19.222f, -21.28f, -22.0f, -21.01f, -18.808f, -16.0f, -13.192f, -10.99f, -10.0f, -11.124f, -13.989f, -17.293f, -19.731f, -20.0f, -14.259f, -4.907f, 0.0f };
-    static readonly float[] SK2_FOOT_B_ROT = { 0.0f, 2.032f, 6.816f, 12.384f, 16.768f, 18.0f, 14.783f, 8.428f, 0.881f, -5.91f, -10.0f, -11.397f, -11.572f, -10.773f, -9.246f, -7.239f, -5.0f, -1.422f, 3.807f, 9.247f, 13.458f, 15.0f, 13.12f, 8.835f, 3.364f, -2.077f, -6.271f, -8.0f, -5.93f, -0.801f, 5.492f, 11.057f, 14.0f, 10.815f, 3.852f, 0.0f };
+    static readonly float[] SK2_CALF_B_ROT = { 356.185f, 354.553f, -1.421f, -10.813f, -18.429f, 338.923f, -16.85f, -7.876f, 2.984f, 361.123f, 365.495f, 364.3f, 359.653f, 353.928f, 348.534f, 344.934f, 344.142f, 347.895f, 355.931f, 367.029f, 380.919f, 388.923f, 380.304f, 367.531f, 356.898f, 348.202f, 342.315f, 340.213f, 343.405f, 351.77f, 364.423f, 24.583f, 385.923f, 381.664f, 364.512f, 356.185f };
+    static readonly float[] SK2_FOOT_B_ROT = { -350.185f, -352.161f, -4.563f, -4.643f, -3.923f, -361.923f, 2.849f, 10.074f, 17.513f, -325.325f, -322.495f, -324.057f, -328.525f, -335.177f, -342.329f, -348.344f, -351.142f, -348.797f, -342.981f, -337.779f, -338.217f, -340.923f, -337.113f, -335.548f, -339.33f, -345.064f, -350.431f, -353.213f, -351.577f, -347.36f, -344.446f, 9.179f, -344.923f, -348.682f, -348.91f, -350.185f };
 
     // ================================================================
     // Skill3 커브 (캐릭터 파트: 내리찍기만. 돌기둥/충격파 VFX는 별도 시스템 필요, 22프레임 논루프)
@@ -317,11 +320,11 @@ public class MainBoss2_AnimGenerators
     static readonly float[] SK3_SF_ROT = { 0.0f, 1.03f, 3.711f, 7.427f, 11.562f, 15.503f, 18.633f, 20.337f, 20.0f, 17.207f, 12.365f, 6.094f, -0.986f, -8.255f, -15.093f, -20.882f, -25.0f, -26.449f, -25.455f, -23.237f, -21.012f, -20.0f };
     static readonly float[] SK3_FF_ROT = { 25.0f, 25.498f, 26.797f, 28.604f, 30.625f, 32.568f, 34.141f, 35.049f, 35.0f, 33.805f, 31.662f, 28.859f, 25.683f, 22.421f, 19.362f, 16.792f, 15.0f, 14.475f, 15.114f, 16.316f, 17.479f, 18.0f };
     static readonly float[] SK3_THIGH_F_ROT = { 10.0f, 9.253f, 7.305f, 4.595f, 1.562f, -1.353f, -3.711f, -5.073f, -5.0f, -3.22f, -0.037f, 4.13f, 8.861f, 13.733f, 18.328f, 22.223f, 25.0f, 26.017f, 25.439f, 24.053f, 22.644f, 22.0f };
-    static readonly float[] SK3_CALF_F_ROT = { 0.0f, -0.026f, -0.117f, -0.29f, -0.562f, -0.952f, -1.477f, -2.153f, -3.0f, -4.175f, -5.728f, -7.517f, -9.399f, -11.231f, -12.871f, -14.175f, -15.0f, -14.825f, -13.628f, -12.018f, -10.606f, -10.0f };
-    static readonly float[] SK3_FOOT_F_ROT = { 0.0f, -0.446f, -1.602f, -3.19f, -4.938f, -6.567f, -7.805f, -8.374f, -8.0f, -6.445f, -3.871f, -0.598f, 3.053f, 6.759f, 10.2f, 13.054f, 15.0f, 15.366f, 14.237f, 12.425f, 10.742f, 10.0f };
+    static readonly float[] SK3_CALF_F_ROT = { 352.938f, 355.511f, 366.203f, 370.566f, 373.599f, 16.514f, 18.872f, 20.234f, 380.161f, 18.381f, 15.198f, 11.031f, 350.256f, 337.956f, 328.626f, 321.591f, 317.042f, 315.574f, 316.957f, 319.679f, 322.507f, 323.819f };
+    static readonly float[] SK3_FOOT_F_ROT = { -362.938f, -364.359f, -372.047f, -372.234f, -370.599f, -9.033f, -7.778f, -7.074f, -367.161f, -8.196f, -10.017f, -12.388f, -359.026f, -354.354f, -352.21f, -351.262f, -351.042f, -351.121f, -351.522f, -351.99f, -352.543f, -352.819f };
     static readonly float[] SK3_THIGH_B_ROT = { -6.0f, -5.664f, -4.812f, -3.68f, -2.5f, -1.508f, -0.938f, -1.023f, -2.0f, -4.15f, -7.37f, -11.319f, -15.654f, -20.032f, -24.111f, -27.547f, -30.0f, -30.766f, -29.921f, -28.294f, -26.711f, -26.0f };
-    static readonly float[] SK3_CALF_B_ROT = { 0.0f, -0.01f, -0.078f, -0.264f, -0.625f, -1.221f, -2.109f, -3.35f, -5.0f, -7.35f, -10.468f, -14.08f, -17.913f, -21.695f, -25.153f, -28.012f, -30.0f, -30.311f, -28.94f, -26.814f, -24.858f, -24.0f };
-    static readonly float[] SK3_FOOT_B_ROT = { 0.0f, -0.566f, -2.031f, -4.043f, -6.25f, -8.301f, -9.844f, -10.527f, -10.0f, -7.956f, -4.599f, -0.341f, 4.404f, 9.223f, 13.704f, 17.434f, 20.0f, 20.558f, 19.217f, 16.998f, 14.919f, 14.0f };
+    static readonly float[] SK3_CALF_B_ROT = { 356.185f, 358.619f, 8.735f, 7.603f, 366.423f, 365.431f, 364.861f, 4.946f, 365.923f, 368.073f, 11.293f, 15.242f, 358.513f, 353.996f, 352.027f, 351.258f, 351.192f, 351.193f, 351.19f, 351.154f, 351.285f, 351.387f };
+    static readonly float[] SK3_FOOT_B_ROT = { -350.185f, -352.55f, -2.462f, -0.996f, -359.361f, -357.795f, -356.54f, 4.164f, -355.923f, -356.958f, 1.221f, -1.15f, -342.768f, -336.629f, -333.172f, -331.159f, -330.192f, -329.957f, -330.395f, -331.118f, -331.966f, -332.387f };
 
     // ================================================================
     // Buff 커브 (웅크렸다 가슴 펴며 일어남, 24프레임 논루프)
@@ -336,11 +339,33 @@ public class MainBoss2_AnimGenerators
     static readonly float[] BUFF_FF_ROT = { 25.0f, 25.759f, 27.809f, 30.811f, 34.426f, 38.315f, 42.139f, 45.559f, 48.235f, 49.828f, 50.0f, 48.771f, 46.517f, 43.435f, 39.719f, 35.565f, 31.169f, 26.724f, 22.428f, 18.475f, 15.06f, 12.379f, 10.627f, 10.0f };
     static readonly float[] BUFF_BOT_ROT = { 0.0f, 0.459f, 1.699f, 3.514f, 5.697f, 8.043f, 10.346f, 12.399f, 13.997f, 14.932f, 15.0f, 14.209f, 12.784f, 10.849f, 8.522f, 5.927f, 3.183f, 0.412f, -2.265f, -4.726f, -6.852f, -8.52f, -9.61f, -10.0f };
     static readonly float[] BUFF_THIGH_F_ROT = { 10.0f, 10.568f, 12.108f, 14.375f, 17.123f, 20.109f, 23.085f, 25.808f, 28.031f, 29.51f, 30.0f, 29.555f, 28.474f, 26.872f, 24.867f, 22.575f, 20.115f, 17.604f, 15.157f, 12.893f, 10.928f, 9.379f, 8.364f, 8.0f };
-    static readonly float[] BUFF_CALF_F_ROT = { 0.0f, -1.26f, -4.68f, -9.72f, -15.84f, -22.5f, -29.16f, -35.28f, -40.32f, -43.74f, -45.0f, -44.242f, -42.132f, -38.917f, -34.841f, -30.15f, -25.091f, -19.909f, -14.85f, -10.159f, -6.083f, -2.868f, -0.758f, 0.0f };
-    static readonly float[] BUFF_FOOT_F_ROT = { 0.0f, 0.336f, 1.248f, 2.592f, 4.224f, 6.0f, 7.776f, 9.408f, 10.752f, 11.664f, 12.0f, 11.798f, 11.235f, 10.378f, 9.291f, 8.04f, 6.691f, 5.309f, 3.96f, 2.709f, 1.622f, 0.765f, 0.202f, 0.0f };
+    static readonly float[] BUFF_CALF_F_ROT = { 352.938f, 350.943f, 345.795f, 339.707f, 333.152f, 326.795f, 321.086f, 316.28f, 312.623f, 310.461f, 309.981f, 311.237f, 313.674f, 317.246f, 321.967f, 327.553f, 334.297f, 342.405f, 354.787f, 2.268f, 4.233f, 365.782f, 366.797f, 367.161f };
+    static readonly float[] BUFF_FOOT_F_ROT = { -362.938f, -361.211f, -356.793f, -351.785f, -346.546f, -341.632f, -337.378f, -333.928f, -331.416f, -330.075f, -329.981f, -331.23f, -333.415f, -336.532f, -340.637f, -345.49f, -351.426f, -358.697f, -370.251f, -16.96f, -18.249f, -379.262f, -379.924f, -380.161f };
     static readonly float[] BUFF_THIGH_B_ROT = { -6.0f, -6.812f, -9.016f, -12.264f, -16.208f, -20.5f, -24.792f, -28.736f, -31.984f, -34.188f, -35.0f, -34.512f, -33.152f, -31.08f, -28.453f, -25.43f, -22.17f, -18.83f, -15.57f, -12.547f, -9.92f, -7.848f, -6.488f, -6.0f };
-    static readonly float[] BUFF_CALF_B_ROT = { 0.0f, -1.4f, -5.2f, -10.8f, -17.6f, -25.0f, -32.4f, -39.2f, -44.8f, -48.6f, -50.0f, -49.158f, -46.814f, -43.241f, -38.712f, -33.5f, -27.879f, -22.121f, -16.5f, -11.288f, -6.759f, -3.186f, -0.842f, 0.0f };
-    static readonly float[] BUFF_FOOT_B_ROT = { 0.0f, 0.42f, 1.56f, 3.24f, 5.28f, 7.5f, 9.72f, 11.76f, 13.44f, 14.58f, 15.0f, 14.747f, 14.044f, 12.972f, 11.614f, 10.05f, 8.364f, 6.636f, 4.95f, 3.386f, 2.028f, 0.956f, 0.253f, 0.0f };
+    static readonly float[] BUFF_CALF_B_ROT = { 356.185f, 354.594f, 351.348f, 348.949f, 347.546f, 347.263f, 347.954f, 349.259f, 350.77f, 352.162f, 352.966f, 353.323f, 353.398f, 353.426f, 353.691f, 354.211f, 355.471f, 357.748f, 362.007f, 376.47f, 13.843f, 11.771f, 370.411f, 369.923f };
+    static readonly float[] BUFF_FOOT_B_ROT = { -350.185f, -347.482f, -341.222f, -334.388f, -327.609f, -321.491f, -316.369f, -312.363f, -309.548f, -308.078f, -307.966f, -309.249f, -311.513f, -314.76f, -319.041f, -324.143f, -330.315f, -337.606f, -346.744f, -365.722f, -7.011f, -8.024f, -368.686f, -368.923f };
+
+    // ================================================================
+    // Attack2 커브 (Attack 베이스, scale=-1 10프레임 동안 새 좌표로 도달 후 기존 스윙 이어붙임)
+    // ================================================================
+    static readonly float[] ATK2_BODY_SCALE_X = { 1.0f, 1.0f, 0.2f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -0.2f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+    static readonly float[] ATK2_BODY_Y = { 0.0f, -0.037f, -0.132f, -0.262f, -0.404f, -0.534f, -0.629f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.666f, -0.006f, 0.029f, 0.059f, 0.08f, 0.087f, 0.081f, 0.068f, 0.056f, 0.05f };
+    static readonly float[] ATK2_BODY_ROT = { 0.0f, 0.024f, 0.089f, 0.188f, 0.311f, 0.451f, 0.6f, 0.749f, 0.889f, 1.012f, 1.111f, 1.176f, 1.2f, 1.2f, 7.213f, 12.425f, 16.839f, 20.0f, 21.11f, 20.309f, 18.553f, 16.798f, 16.0f };
+    static readonly float[] ATK2_BODY_X = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.079f, 0.107f, 0.132f, 0.15f, 0.157f, 0.153f, 0.144f, 0.134f, 0.13f };
+    static readonly float[] ATK2_HEAD_ROT = { 0.0f, 0.059f, 0.222f, 0.469f, 0.778f, 1.128f, 1.5f, 1.872f, 2.222f, 2.531f, 2.778f, 2.941f, 3.0f, 3.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] ATK2_SF_ROT = { 0.0f, 0.735f, 2.767f, 5.836f, 9.684f, 14.05f, 18.676f, 23.302f, 27.668f, 31.516f, 34.585f, 36.617f, 37.352f, 37.352f, 105.802f, 117.047f, 127.238f, 135.614f, 142.02f, 146.85f, 150.18f, 152.097f, 152.71f };
+    static readonly float[] ATK2_FF_ROT = { 25.0f, 24.281f, 22.292f, 19.289f, 15.524f, 11.251f, 6.724f, 2.197f, -2.076f, -5.841f, -8.844f, -10.833f, -11.552f, -11.552f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f, -11.238f };
+    static readonly float[] ATK2_SB_ROT = { 0.0f, -0.256f, -0.963f, -2.031f, -3.37f, -4.89f, -6.5f, -8.11f, -9.63f, -10.969f, -12.037f, -12.744f, -13.0f, -13.0f, 60.697f, 87.019f, 110.697f, 130.0f, 144.225f, 154.228f, 160.618f, 164.006f, 165.0f };
+    static readonly float[] ATK2_FB_ROT = { 75.0f, 73.849f, 70.667f, 65.859f, 59.833f, 52.995f, 45.75f, 38.505f, 31.667f, 25.641f, 20.833f, 17.651f, 16.5f, 16.5f, 45.664f, 35.582f, 26.785f, 20.0f, 16.247f, 15.308f, 16.046f, 17.322f, 18.0f };
+    static readonly float[] ATK2_HB_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 6.279f, 9.969f, 12.992f, 15.0f, 15.158f, 13.533f, 11.129f, 8.95f, 8.0f };
+    static readonly float[] ATK2_AXE_POS_X = { 0.191f, 0.218f, 0.294f, 0.409f, 0.553f, 0.716f, 0.89f, 1.063f, 1.226f, 1.37f, 1.485f, 1.561f, 1.588f, 1.588f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f, 2.11f };
+    static readonly float[] ATK2_BOT_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -4.382f, -7.507f, -10.139f, -12.0f, -12.574f, -11.941f, -10.721f, -9.534f, -9.0f };
+    static readonly float[] ATK2_THIGH_F_ROT = { 10.0f, 10.434f, 11.554f, 13.085f, 14.754f, 16.285f, 17.405f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 17.839f, 15.602f, 18.236f, 20.444f, 22.0f, 22.426f, 21.775f, 20.61f, 19.497f, 19.0f };
+    static readonly float[] ATK2_CALF_F_ROT = { 0.0f, -4.282f, -15.324f, -30.423f, -46.873f, -61.972f, -73.014f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -77.296f, -5.105f, -4.214f, -3.476f, -3.0f, -2.907f, -3.13f, -3.5f, -3.847f, -4.0f };
+    static readonly float[] ATK2_FOOT_F_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 3.418f, 5.334f, 6.92f, 8.0f, 8.18f, 7.498f, 6.425f, 5.435f, 5.0f };
+    static readonly float[] ATK2_THIGH_B_ROT = { -6.0f, -2.811f, 5.413f, 16.657f, 28.909f, 40.153f, 48.377f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, 51.566f, -24.852f, -26.24f, -27.316f, -28.0f, -27.671f, -26.22f, -24.334f, -22.698f, -22.0f };
+    static readonly float[] ATK2_CALF_B_ROT = { 0.0f, -2.752f, -9.848f, -19.551f, -30.123f, -39.826f, -46.922f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -49.674f, -20.795f, -22.599f, -24.036f, -25.0f, -24.819f, -23.386f, -21.444f, -19.735f, -19.0f };
+    static readonly float[] ATK2_FOOT_B_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 7.408f, 11.841f, 15.508f, 18.0f, 18.404f, 16.81f, 14.313f, 12.011f, 11.0f };
 
     // ================================================================
     // Generate Walk
@@ -471,9 +496,9 @@ public class MainBoss2_AnimGenerators
     [MenuItem("Tools/MainBoss2/Generate Attack")]
     public static void GenerateAttack()
     {
-        const float DUR = 19 / FRAME_RATE;
-        var clip = MakeClip("MainBoss2_Attack", 19, false);
-        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 19, FRAME_RATE, loop: false);
+        const float DUR = 29 / FRAME_RATE;
+        var clip = MakeClip("MainBoss2_Attack", 29, false);
+        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 29, FRAME_RATE, loop: false);
         void L(string path, string prop, float val) =>
             clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR, val));
 
@@ -481,7 +506,7 @@ public class MainBoss2_AnimGenerators
         C(BODY, "localEulerAngles.z", ATK_BODY_ROT);
         C(BODY, "localScale.x", ATK_BODY_SCALE_X); L(BODY, "localScale.y", 1f); L(BODY, "localScale.z", 1f);
         L(HEAD, "localPosition.x", -0.275f); L(HEAD, "localPosition.y", 1.025f); L(HEAD, "localPosition.z", 0f);
-        L(HEAD, "localEulerAngles.z", 0f);
+        C(HEAD, "localEulerAngles.z", ATK_HEAD_ROT);
 
         // 앞팔: 무기 스윙 반대 방향으로 작게 카운터스윙 (균형 잡는 느낌)
         L(SF, "localPosition.x", -0.856f); L(SF, "localPosition.y", 0.601f); L(SF, "localPosition.z", 0f);
@@ -498,7 +523,7 @@ public class MainBoss2_AnimGenerators
         C(FB, "localEulerAngles.z", ATK_FB_ROT);
         L(HB, "localPosition.x", 0.026f); L(HB, "localPosition.y", -0.687f); L(HB, "localPosition.z", 0f);
         C(HB, "localEulerAngles.z", ATK_HB_ROT);
-        L(AXE, "localPosition.x", 0.191f); L(AXE, "localPosition.y", -0.263f); L(AXE, "localPosition.z", 0f);
+        C(AXE, "localPosition.x", ATK_AXE_POS_X); L(AXE, "localPosition.y", -0.263f); L(AXE, "localPosition.z", 0f);
         L(AXE, "localEulerAngles.z", -90f);
 
         // Bottom: 몸통 반대로 카운터 트위스트
@@ -526,10 +551,61 @@ public class MainBoss2_AnimGenerators
     }
 
     // ================================================================
-    // Generate Skill1 (2연타 — 크게 뒤로 젖혀찍기 → 점프 내려찍기)
-    // 콘티 기반 1차 추측: 도끼를 크게 뒤로 젖혔다가 아래로 내려찍고(HIT1),
-    // 그 반동으로 점프해서 공중에서 한 번 더 내려찍음(HIT2). 논루프, 착지 자세로 끝.
+    // Generate Attack2 (Attack 베이스 — scale=-1인 10프레임 동안 새 좌표로 도달, 이후 Attack의 스윙을 이어붙임)
     // ================================================================
+    [MenuItem("Tools/MainBoss2/Generate Attack2")]
+    public static void GenerateAttack2()
+    {
+        const float DUR = 23 / FRAME_RATE;
+        var clip = MakeClip("MainBoss2_Attack2", 23, false);
+        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 23, FRAME_RATE, loop: false);
+        void L(string path, string prop, float val) =>
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR, val));
+
+        C(BODY, "localPosition.y", ATK2_BODY_Y); C(BODY, "localPosition.x", ATK2_BODY_X); L(BODY, "localPosition.z", 0f);
+        C(BODY, "localEulerAngles.z", ATK2_BODY_ROT);
+        C(BODY, "localScale.x", ATK2_BODY_SCALE_X); L(BODY, "localScale.y", 1f); L(BODY, "localScale.z", 1f);
+        L(HEAD, "localPosition.x", -0.275f); L(HEAD, "localPosition.y", 1.025f); L(HEAD, "localPosition.z", 0f);
+        C(HEAD, "localEulerAngles.z", ATK2_HEAD_ROT);
+
+        L(SF, "localPosition.x", -0.856f); L(SF, "localPosition.y", 0.601f); L(SF, "localPosition.z", 0f);
+        C(SF, "localEulerAngles.z", ATK2_SF_ROT);
+        L(FF, "localPosition.x", -0.245f); L(FF, "localPosition.y", -0.562f); L(FF, "localPosition.z", 0f);
+        C(FF, "localEulerAngles.z", ATK2_FF_ROT);
+        L(HF, "localPosition.x", -0.093f); L(HF, "localPosition.y", -0.678f); L(HF, "localPosition.z", 0f);
+        L(HF, "localEulerAngles.z", 0f);
+
+        L(SB, "localPosition.x", 0.467f); L(SB, "localPosition.y", 0.632f); L(SB, "localPosition.z", 0f);
+        C(SB, "localEulerAngles.z", ATK2_SB_ROT);
+        L(FB, "localPosition.x", 0.141f); L(FB, "localPosition.y", -0.506f); L(FB, "localPosition.z", 0f);
+        C(FB, "localEulerAngles.z", ATK2_FB_ROT);
+        L(HB, "localPosition.x", 0.026f); L(HB, "localPosition.y", -0.687f); L(HB, "localPosition.z", 0f);
+        C(HB, "localEulerAngles.z", ATK2_HB_ROT);
+        C(AXE, "localPosition.x", ATK2_AXE_POS_X); L(AXE, "localPosition.y", -0.263f); L(AXE, "localPosition.z", 0f);
+        L(AXE, "localEulerAngles.z", -90f);
+
+        L(BOTTOM, "localPosition.x", -0.141f); L(BOTTOM, "localPosition.y", 0f); L(BOTTOM, "localPosition.z", 0f);
+        C(BOTTOM, "localEulerAngles.z", ATK2_BOT_ROT);
+
+        L(THIGH_F, "localPosition.x", -0.572f); L(THIGH_F, "localPosition.y", -0.472f); L(THIGH_F, "localPosition.z", 0f);
+        C(THIGH_F, "localEulerAngles.z", ATK2_THIGH_F_ROT);
+        L(CALF_F, "localPosition.x", 0.008f); L(CALF_F, "localPosition.y", -0.718f); L(CALF_F, "localPosition.z", 0f);
+        C(CALF_F, "localEulerAngles.z", ATK2_CALF_F_ROT);
+        L(FOOT_F, "localPosition.x", -0.265f); L(FOOT_F, "localPosition.y", -0.978f); L(FOOT_F, "localPosition.z", 0f);
+        C(FOOT_F, "localEulerAngles.z", ATK2_FOOT_F_ROT);
+
+        L(THIGH_B, "localPosition.x", 0.394f); L(THIGH_B, "localPosition.y", -0.556f); L(THIGH_B, "localPosition.z", 0f);
+        C(THIGH_B, "localEulerAngles.z", ATK2_THIGH_B_ROT);
+        L(CALF_B, "localPosition.x", 0.259f); L(CALF_B, "localPosition.y", -0.737f); L(CALF_B, "localPosition.z", 0f);
+        C(CALF_B, "localEulerAngles.z", ATK2_CALF_B_ROT);
+        L(FOOT_B, "localPosition.x", -0.060f); L(FOOT_B, "localPosition.y", -0.875f); L(FOOT_B, "localPosition.z", 0f);
+        C(FOOT_B, "localEulerAngles.z", ATK2_FOOT_B_ROT);
+
+        Save(clip, "MainBoss2_Attack2");
+        GenerateAC();
+    }
+
+
     [MenuItem("Tools/MainBoss2/Generate Skill1")]
     public static void GenerateSkill1()
     {
@@ -1005,8 +1081,21 @@ public class MainBoss2_AnimGenerators
 
     static void SetCurve(AnimationClip clip, string path, string prop, float[] vals, int total, float rate = FRAME_RATE, bool loop = true)
     {
-        var keys = new Keyframe[total];
-        for (int i = 0; i < total; i++) keys[i] = new Keyframe(i / rate, vals[i]);
+        if (vals == null || vals.Length == 0)
+        {
+            Debug.LogError($"[MainBoss2] 빈 배열: {path} / {prop}");
+            return;
+        }
+
+        int count = Mathf.Min(total, vals.Length);
+
+        if (vals.Length != total)
+        {
+            Debug.LogWarning($"[MainBoss2] 프레임 수 불일치: {path} / {prop} / total={total} / array={vals.Length}");
+        }
+
+        var keys = new Keyframe[count];
+        for (int i = 0; i < count; i++) keys[i] = new Keyframe(i / rate, vals[i]);
         var curve = new AnimationCurve(keys);
         for (int i = 0; i < curve.keys.Length; i++)
         {
@@ -1019,10 +1108,10 @@ public class MainBoss2_AnimGenerators
         // 전환에서 속도가 어긋나 멈칫하는 느낌이 생김. 이음매를 가로지르는 기울기를
         // 직접 계산해서 첫 키의 outTangent와 마지막 키의 inTangent에 동일하게 넣어줌.
         // 논루프 클립(공격 모션 등)은 시작/끝이 정지 상태여야 하므로 이 보정을 건너뜀.
-        if (loop && total >= 3)
+        if (loop && count >= 3)
         {
             float dt = 2f / rate;
-            float seamTangent = (vals[1] - vals[total - 2]) / dt;
+            float seamTangent = (vals[1] - vals[count - 2]) / dt;
 
             var k0 = curve.keys[0];
             k0.inTangent = seamTangent;
@@ -1031,7 +1120,7 @@ public class MainBoss2_AnimGenerators
             AnimationUtility.SetKeyLeftTangentMode(curve, 0, AnimationUtility.TangentMode.Free);
             AnimationUtility.SetKeyRightTangentMode(curve, 0, AnimationUtility.TangentMode.Free);
 
-            int last = total - 1;
+            int last = count - 1;
             var kLast = curve.keys[last];
             kLast.inTangent = seamTangent;
             kLast.outTangent = seamTangent;
@@ -1042,6 +1131,7 @@ public class MainBoss2_AnimGenerators
 
         clip.SetCurve(path, typeof(Transform), prop, curve);
     }
+
 
     static void Save(AnimationClip clip, string name)
     {
