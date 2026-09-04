@@ -535,6 +535,36 @@ public abstract class MidBossController : MonoBehaviour, IDamageable
             player.TakeDamageNoIFrame(damage, (Vector2)transform.position);
     }
 
+    // 전방 박스 범위의 플레이어에게 피해를 준 뒤 지정한 힘으로 넉백한다.
+    // TakeDamage에서 넉백 상태/충돌 무시를 활성화한 다음 힘만 패턴별 값으로 교체한다.
+    protected virtual bool HitPlayerWithKnockback(
+        float damage,
+        float range,
+        float height,
+        float offset,
+        float heightOffset,
+        float horizontalPower,
+        float upwardPower)
+    {
+        Collider2D hit = GetPlayerHit(range, height, offset, heightOffset);
+        if (hit == null || !hit.TryGetComponent<PlayerController>(out var player))
+            return false;
+
+        player.TakeDamage(damage, (Vector2)transform.position, true, false);
+
+        Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
+        if (playerRb != null)
+        {
+            playerRb.linearVelocity = Vector2.zero;
+            playerRb.AddForce(
+                new Vector2(lookDirection * horizontalPower, upwardPower),
+                ForceMode2D.Impulse
+            );
+        }
+
+        return true;
+    }
+
     // 전방 박스 범위에서 플레이어 콜라이더 반환(자식이 직접 후처리할 때 사용)
     protected virtual Collider2D GetPlayerHit(float range, float height, float offset, float heightOffset = 0f)
     {
