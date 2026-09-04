@@ -3,7 +3,7 @@ using UnityEngine;
 
 // [메인보스 공통 AI]
 // - 인식/추적/페이즈 전환/스킬 선택/쿨다운/버프 상태를 공통으로 관리
-// - 자식 클래스(Stage1_MainBoss 등)에서 BasicAttackAction/Skill1/2/4/Desire의 실제 연출 구현
+// - 자식 클래스(Stage1_MainBoss 등)에서 각 공격의 실제 연출 구현
 public abstract class MainBossController : MonoBehaviour, IDamageable
 {
     // 보스가 다음에 사용할 공격 종류
@@ -666,7 +666,7 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
         isAttacking = false;
     }
 
-    // 3스킬 코루틴: 선딜 → 공격속도 버프 시작 → 후딜
+    // 3스킬 코루틴: 선딜 → 자식 동작(기본값은 공격속도 버프) → 후딜
     protected virtual IEnumerator Skill3Routine()
     {
         isAttacking = true;
@@ -676,7 +676,7 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
 
         yield return new WaitForSeconds(data.skill3PreDelay);
 
-        StartAttackSpeedBuff();
+        yield return Skill3Action();
 
         yield return new WaitForSeconds(data.skill3PostDelay);
 
@@ -864,6 +864,12 @@ public abstract class MainBossController : MonoBehaviour, IDamageable
     protected abstract IEnumerator BasicAttackAction();
     protected abstract IEnumerator Skill1Action();
     protected abstract IEnumerator Skill2Action();
+    // 기존 스테이지1 동작 보존: 오버라이드하지 않으면 공격속도 버프를 사용한다.
+    protected virtual IEnumerator Skill3Action()
+    {
+        StartAttackSpeedBuff();
+        yield break;
+    }
     protected abstract IEnumerator Skill4Action();
     protected abstract IEnumerator DesireAction();
 
