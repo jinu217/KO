@@ -14,73 +14,247 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainBossData
   maxHp: 1000
   chaseSpeed: 2.8
-  detectRange: 5
-  chaseRange: 8
-  positionUpdateDelay: 0.5
-  wallCheckDistance: 0.25
+  detectRange: 12
+  chaseRange: 16
+  positionUpdateDelay: 0.12
+  wallCheckDistance: 0.5
+  basicAttack:
+    skillName: "\uAE30\uBCF8\uACF5\uACA9 2\uC5F0\uACA9"
+    skillType: 0
+    executionOrder: 0
+    cooldown: 2
+    minimumPhase: 1
+    castRange: 3
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps:
+      - stepName: "1\uD0C0 \uC138\uB85C"
+        actionType: 2
+        preDelay: 0.18
+        postDelay: 0.18
+        duration: 0
+        interval: 0
+        attackCount: 1
+        damage: 7
+        hitboxSize: {x: 1.5, y: 2.4}
+        hitboxOffset: {x: 1.2, y: 0}
+        knockbackForce: {x: 0, y: 0}
+        moveSpeed: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnInterval: 0
+      - stepName: "2\uD0C0 \uAC00\uB85C"
+        actionType: 2
+        preDelay: 0.18
+        postDelay: 0.18
+        duration: 0
+        interval: 0
+        attackCount: 1
+        damage: 10
+        hitboxSize: {x: 2.6, y: 1.5}
+        hitboxOffset: {x: 1.4, y: 0}
+        knockbackForce: {x: 0, y: 0}
+        moveSpeed: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnInterval: 0
+    buff:
+      duration: 0
+      effects: []
+  skills:
+  - skillName: "1\uC2A4\uD0AC 3\uC5F0\uACA9"
+    skillType: 0
+    executionOrder: 0
+    cooldown: 6
+    minimumPhase: 1
+    castRange: 3.5
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps:
+      - stepName: "1\uD0C0 \uC138\uB85C"
+        actionType: 2
+        preDelay: 0.18
+        postDelay: 0.18
+        duration: 0
+        interval: 0
+        attackCount: 1
+        damage: 7
+        hitboxSize: {x: 1.6, y: 2.5}
+        hitboxOffset: {x: 1.2, y: 0}
+        knockbackForce: {x: 0, y: 0}
+        moveSpeed: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnInterval: 0
+      - stepName: "2\uD0C0 \uC138\uB85C"
+        actionType: 2
+        preDelay: 0.18
+        postDelay: 0.18
+        duration: 0
+        interval: 0
+        attackCount: 1
+        damage: 7
+        hitboxSize: {x: 1.8, y: 2.5}
+        hitboxOffset: {x: 1.5, y: 0}
+        knockbackForce: {x: 0, y: 0}
+        moveSpeed: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnInterval: 0
+      - stepName: "3\uD0C0 \uAC00\uB85C"
+        actionType: 2
+        preDelay: 0.18
+        postDelay: 0.18
+        duration: 0
+        interval: 0
+        attackCount: 1
+        damage: 10
+        hitboxSize: {x: 3, y: 1.7}
+        hitboxOffset: {x: 1.7, y: 0}
+        knockbackForce: {x: 10, y: 2.5}
+        moveSpeed: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnInterval: 0
+    buff:
+      duration: 0
+      effects: []
+  - skillName: "2\uC2A4\uD0AC \uAC80\uAE30"
+    skillType: 0
+    executionOrder: 0
+    cooldown: 10
+    minimumPhase: 1
+    castRange: 9
+    forceCastMinDistance: 4
+    forceCastRemainingCooldown: 5
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps:
+      - stepName: "\uAC80\uAE30 \uBC1C\uC0AC"
+        actionType: 7
+        preDelay: 0
+        postDelay: 0
+        duration: 0
+        interval: 0
+        attackCount: 0
+        damage: 10
+        hitboxSize: {x: 0, y: 0}
+        hitboxOffset: {x: 0, y: 0}
+        knockbackForce: {x: 0, y: 0}
+        moveSpeed: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        spawnPrefab: {fileID: 746325345839286181, guid: 5f458570f6d849d4b85b8746677b33f1, type: 3}
+        spawnCount: 1
+        spawnOffset: {x: 1.2, y: 0.2}
+        spawnSpacing: 0
+        spawnInterval: 0
+    buff:
+      duration: 0
+      effects: []
+  - skillName: "3\uC2A4\uD0AC \uACF5\uC18D \uAC15\uD654"
+    skillType: 1
+    executionOrder: 0
+    cooldown: 20
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 10
+      effects:
+      - stat: 1
+        valueMode: 1
+        value: 1.5
+  - skillName: "4\uC2A4\uD0AC \uB3CC\uC9C4"
+    skillType: 0
+    executionOrder: 0
+    cooldown: 10
+    minimumPhase: 2
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps:
+      - stepName: "\uC7A5\uAC70\uB9AC \uB3CC\uC9C4"
+        actionType: 4
+        preDelay: 0.75
+        postDelay: 0.6
+        duration: 0.8
+        interval: 0
+        attackCount: 1
+        damage: 15
+        hitboxSize: {x: 2.4, y: 1}
+        hitboxOffset: {x: 1.4, y: -0.25}
+        knockbackForce: {x: 0, y: 0}
+        moveSpeed: 15
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 1
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnInterval: 0
+    buff:
+      duration: 0
+      effects: []
+  - skillName: "5\uC2A4\uD0AC \uC774\uC18D \uAC15\uD654"
+    skillType: 1
+    executionOrder: 0
+    cooldown: 20
+    minimumPhase: 2
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 10
+      effects:
+      - stat: 0
+        valueMode: 1
+        value: 1.5
   phase2HpPercent: 0.7
   phase3HpPercent: 0.3
-  basicCooldown: 2
-  basicPreDelay: 0.25
-  basicPostDelay: 0.35
-  basicComboInterval: 0.22
-  basicVerticalDamage: 7
-  basicHorizontalDamage: 10
-  basicVerticalRange: 1.5
-  basicVerticalHeight: 2.4
-  basicVerticalOffset: 1.2
-  basicHorizontalRange: 2.4
-  basicHorizontalHeight: 1.5
-  basicHorizontalOffset: 1.4
-  skill1Cooldown: 6
-  skill1PreDelay: 0.35
-  skill1PostDelay: 0.5
-  skill1ComboInterval: 0.25
-  skill1VerticalDamage: 7
-  skill1HorizontalDamage: 10
-  skill1FinalHorizontalDamage: 15
-  skill1KnockbackPower: 10
-  skill1StrongKnockbackPower: 15
-  skill2Cooldown: 10
-  skill2PreDelay: 0.45
-  skill2PostDelay: 0.4
-  skill2Damage: 10
-  skill2ForceCastRemainingCooldown: 5
-  skill2MinDistanceToForceCast: 4
-  skill2CastRange: 9
-  skill3Cooldown: 20
-  skill3PreDelay: 0.35
-  skill3PostDelay: 0.25
-  skill3Duration: 10
-  skill3AttackSpeedMultiplier: 1.35
-  skill4Cooldown: 10
-  skill4PreDelay: 0.75
-  skill4PostDelay: 0.6
-  skill4Damage: 15
-  skill4DashSpeed: 15
-  skill4DashDuration: 0.45
-  skill4Range: 2.4
-  skill4Height: 1.4
-  skill4Offset: 1.4
-  skill5Cooldown: 20
-  skill5PreDelay: 0.35
-  skill5PostDelay: 0.25
-  skill5Duration: 10
-  skill5MoveSpeedMultiplier: 1.35
-  desireCooldown: 30
-  desirePreDelay: 0.8
-  desirePostDelay: 0.5
-  desireBuffDuration: 15
-  desireEnhanceDuration: 10
-  desireAttackSpeedMultiplier: 1.4
-  desireMoveSpeedMultiplier: 1.25
-  desireBasicCooldown: 1
-  desireBasicVerticalDamage: 8
-  desireBasicHorizontalDamage: 11
-  desireSkill1Cooldown: 3
-  desireSkill1VerticalDamage: 10
-  desireSkill1HorizontalDamage: 15
-  desireSkill2Cooldown: 5
-  desireSkill2Damage: 15
-  desireSkill2ForceCastRemainingCooldown: 3
-  desireSkill2ProjectileCount: 2

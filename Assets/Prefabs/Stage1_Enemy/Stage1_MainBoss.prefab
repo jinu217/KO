@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 4048134802029589269}
   - component: {fileID: 1221640104977840777}
   - component: {fileID: -3552566402549802811}
+  - component: {fileID: 5591299394994831371}
   m_Layer: 11
   m_Name: Stage1_MainBoss
   m_TagString: MainBoss
@@ -213,51 +214,93 @@ MonoBehaviour:
     m_Bits: 64
   wallCheck: {fileID: 9133239407048182343}
   turnDeadZone: 0.2
-  stopDistanceX: 0.35
-  skillGlobalLockDuration: 1
-  showDetectRangeGizmo: 1
-  showChaseRangeGizmo: 1
-  showBasicAttackGizmo: 1
-  showSkill4Gizmo: 1
-  showWallCheckGizmo: 1
+  showGizmos: 1
   currentHp: 0
-  showSkillDebugLog: 1
-  swordWavePrefab: {fileID: 6521345192943851699, guid: 5f458570f6d849d4b85b8746677b33f1, type: 3}
-  swordWaveSpawnPoint: {fileID: 0}
-  basicHit1Range: 1.5
-  basicHit1Height: 2.4
-  basicHit1Offset: 1.2
-  basicHit2Range: 2.6
-  basicHit2Height: 1.5
-  basicHit2Offset: 1.4
-  basicHit3Range: 1.8
-  basicHit3Height: 2.5
-  basicHit3Offset: 1.4
-  skill1Hit1Range: 1.6
-  skill1Hit1Height: 2.5
-  skill1Hit1Offset: 1.2
-  skill1Hit2Range: 1.8
-  skill1Hit2Height: 2.5
-  skill1Hit2Offset: 1.5
-  skill1Hit3Range: 3
-  skill1Hit3Height: 1.7
-  skill1Hit3Offset: 1.7
-  skill1Hit4Range: 2
-  skill1Hit4Height: 2.6
-  skill1Hit4Offset: 1.6
-  skill1Hit5Range: 3.5
-  skill1Hit5Height: 1.8
-  skill1Hit5Offset: 1.9
-  desireSkill1TrackSpeed: 2.5
-  desireSkill1TurnDelay: 0.15
-  showBasicHit1Gizmo: 1
-  showBasicHit2Gizmo: 1
-  showBasicHit3Gizmo: 1
-  showSkill1Hit1Gizmo: 1
-  showSkill1Hit2Gizmo: 1
-  showSkill1Hit3Gizmo: 1
-  showSkill1Hit4Gizmo: 1
-  showSkill1Hit5Gizmo: 1
+  desireSkill: {fileID: 0}
+  empoweredSkill1:
+    skillName: 
+    skillType: 0
+    executionOrder: 0
+    cooldown: 0
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 0
+      effects: []
+  swordWavePrefab: {fileID: 746325345839286181, guid: 5f458570f6d849d4b85b8746677b33f1, type: 3}
+--- !u!114 &5591299394994831371
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 732157c7194dbc64f950578df9e41efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Stage1_DesireSkill
+  cooldown: 30
+  preDelay: 0.8
+  postDelay: 0.5
+  mainBuffDuration: 15
+  attackSpeedMultiplier: 1.4
+  moveSpeedMultiplier: 1.25
+  enhancedBasicAttack:
+    skillName: 
+    skillType: 0
+    executionOrder: 0
+    cooldown: 0
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 0
+      effects: []
+  skillEnhanceDuration: 10
+  enhancedSkill1:
+    skillName: 
+    skillType: 0
+    executionOrder: 0
+    cooldown: 0
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 0
+      effects: []
+  enhancedSkill2:
+    skillName: 
+    skillType: 0
+    executionOrder: 0
+    cooldown: 0
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 0
+      effects: []
 --- !u!1 &7738030062326856143
 GameObject:
   m_ObjectHideFlags: 0
