@@ -15,7 +15,7 @@ MonoBehaviour:
   maxHp: 1000
   chaseSpeed: 2.8
   detectRange: 12
-  chaseRange: 16
+  chaseRange: 30
   positionUpdateDelay: 0.12
   wallCheckDistance: 0.5
   basicAttack:
@@ -41,7 +41,7 @@ MonoBehaviour:
         damage: 7
         hitboxSize: {x: 1.5, y: 2.4}
         hitboxOffset: {x: 1.2, y: 0}
-        knockbackForce: {x: 0, y: 0}
+        knockbackForce: {x: 1.5, y: 0.6}
         moveSpeed: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
@@ -50,7 +50,10 @@ MonoBehaviour:
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
         spawnSpacing: 0
+        spawnVerticalSpacing: 0
         spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 9
       - stepName: "2\uD0C0 \uAC00\uB85C"
         actionType: 2
         preDelay: 0.18
@@ -61,7 +64,7 @@ MonoBehaviour:
         damage: 10
         hitboxSize: {x: 2.6, y: 1.5}
         hitboxOffset: {x: 1.4, y: 0}
-        knockbackForce: {x: 0, y: 0}
+        knockbackForce: {x: 1.5, y: 0.6}
         moveSpeed: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
@@ -70,7 +73,10 @@ MonoBehaviour:
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
         spawnSpacing: 0
+        spawnVerticalSpacing: 0
         spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
     buff:
       duration: 0
       effects: []
@@ -106,7 +112,10 @@ MonoBehaviour:
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
         spawnSpacing: 0
+        spawnVerticalSpacing: 0
         spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
       - stepName: "2\uD0C0 \uC138\uB85C"
         actionType: 2
         preDelay: 0.18
@@ -126,7 +135,10 @@ MonoBehaviour:
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
         spawnSpacing: 0
+        spawnVerticalSpacing: 0
         spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
       - stepName: "3\uD0C0 \uAC00\uB85C"
         actionType: 2
         preDelay: 0.18
@@ -146,7 +158,10 @@ MonoBehaviour:
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
         spawnSpacing: 0
+        spawnVerticalSpacing: 0
         spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
     buff:
       duration: 0
       effects: []
@@ -156,8 +171,8 @@ MonoBehaviour:
     cooldown: 10
     minimumPhase: 1
     castRange: 9
-    forceCastMinDistance: 4
-    forceCastRemainingCooldown: 5
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
     preDelay: 0
     postDelay: 0
     active:
@@ -181,7 +196,10 @@ MonoBehaviour:
         spawnCount: 1
         spawnOffset: {x: 1.2, y: 0.2}
         spawnSpacing: 0
+        spawnVerticalSpacing: 0
         spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 9
     buff:
       duration: 0
       effects: []
@@ -225,7 +243,7 @@ MonoBehaviour:
         damage: 15
         hitboxSize: {x: 2.4, y: 1}
         hitboxOffset: {x: 1.4, y: -0.25}
-        knockbackForce: {x: 0, y: 0}
+        knockbackForce: {x: 14, y: 4}
         moveSpeed: 15
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
@@ -234,7 +252,10 @@ MonoBehaviour:
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
         spawnSpacing: 0
+        spawnVerticalSpacing: 0
         spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
     buff:
       duration: 0
       effects: []

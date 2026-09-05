@@ -4,6 +4,17 @@ using UnityEngine;
 // Basic Attack + Skills 데이터만 실행하는 중간보스 공통 컨트롤러
 public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 {
+    private enum AttackGizmoSelection
+    {
+        All,
+        BasicAttack,
+        Skill1,
+        Skill2,
+        Skill3,
+        Skill4,
+        Skill5
+    }
+
     [Header("데이터")]
     public BossDataBase data;
     [Header("레이어")]
@@ -12,7 +23,15 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     [Header("감지 위치")]
     public Transform wallCheck;
     [SerializeField] private float turnDeadZone = 0.2f;
-    [SerializeField] private bool showGizmos = true;
+    [Header("기즈모")]
+    [SerializeField, Tooltip("공격 범위 기즈모 표시 여부")] private bool showGizmos = true;
+    [SerializeField, Tooltip("전체, 기본 공격 또는 확인할 스킬 하나를 선택")]
+    private AttackGizmoSelection attackGizmoSelection = AttackGizmoSelection.All;
+    [SerializeField, Tooltip("감지 범위, 추적 범위와 벽 감지선도 함께 표시")]
+    private bool showDetectionGizmos;
+    [Header("디버그")]
+    [SerializeField, Tooltip("기본 공격과 스킬의 시작/종료 및 쿨타임 변경을 Console에 출력")]
+    private bool logSkillUsage = true;
     [SerializeField] protected float currentHp;
 
     protected Rigidbody2D rb;
@@ -30,6 +49,8 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     private bool initialCooldownsApplied;
     private float lastBasicTime = -999f;
     private float[] lastSkillTimes;
+    private int[] skillUseCounts;
+    private bool[] distanceCooldownReduced;
     private Coroutine buffRoutine;
     private float moveMultiplier = 1f;
     private float damageMultiplier = 1f;
@@ -179,9 +200,17 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         currentSkillIndex = index;
         StopMove();
         if (index < 0) lastBasicTime = Time.time;
-        else { EnsureTimers(); lastSkillTimes[index] = Time.time; }
+        else
+        {
+            EnsureTimers();
+            lastSkillTimes[index] = Time.time;
+            skillUseCounts[index]++;
+            distanceCooldownReduced[index] = false;
+        }
+        LogSkillDebug(index < 0 ? "기본 공격 시작" : $"{index + 1}스킬 시작", skill);
         yield return BossSkillExecutor.Execute(skill, this);
         OnSkillExecutionFinished(index);
+        LogSkillDebug(index < 0 ? "기본 공격 종료" : $"{index + 1}스킬 종료", skill);
         currentSkillIndex = -1;
         isAttacking = false;
     }
@@ -189,8 +218,12 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     private void EnsureTimers()
     {
         int count = data.skills != null ? data.skills.Count : 0;
-        if (lastSkillTimes != null && lastSkillTimes.Length == count) return;
-        lastSkillTimes = new float[count];
+        if (lastSkillTimes == null || lastSkillTimes.Length != count)
+            lastSkillTimes = new float[count];
+        if (skillUseCounts == null || skillUseCounts.Length != count)
+            skillUseCounts = new int[count];
+        if (distanceCooldownReduced == null || distanceCooldownReduced.Length != count)
+            distanceCooldownReduced = new bool[count];
     }
 
     protected bool IsWallInFront()
@@ -231,7 +264,23 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     public Rigidbody2D BossBody => rb;
     public LayerMask PlayerLayer => playerLayer;
     public int LookDirection => lookDirection;
+    public Vector2 PlayerPosition => playerTransform != null ? playerTransform.position : transform.position;
     public bool IsWallAhead() => IsWallInFront();
+    public bool IsGrounded()
+    {
+        if (bossCollider == null) return false;
+        Bounds bounds = bossCollider.bounds;
+        Vector2 origin = new Vector2(bounds.center.x, bounds.min.y + 0.03f);
+        float width = Mathf.Max(0.1f, bounds.size.x * 0.75f);
+        return Physics2D.BoxCast(origin, new Vector2(width, 0.08f), 0f, Vector2.down, 0.12f, wallLayer).collider != null;
+    }
+    public float GetDistanceToGround()
+    {
+        if (bossCollider == null) return 0f;
+        Bounds bounds = bossCollider.bounds;
+        RaycastHit2D hit = Physics2D.Raycast(new Vector2(bounds.center.x, bounds.min.y + 0.03f), Vector2.down, 100f, wallLayer);
+        return hit.collider != null ? hit.distance : 0f;
+    }
     public void RefreshSkillDirection()
     {
         if (playerTransform != null) FacePlayer();
@@ -254,6 +303,50 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         lastBasicTime = -999f;
         EnsureTimers();
         for (int i = 0; i < lastSkillTimes.Length; i++) lastSkillTimes[i] = -999f;
+    }
+
+    // 보스 전용 규칙에서 호출한다. 해당 스킬을 한 번 이상 사용한 뒤,
+    // 한 쿨타임 주기당 한 번만 현재 남은 쿨타임을 지정 배율로 줄인다.
+    protected bool TryReduceRemainingSkillCooldownByDistance(int skillIndex, float minimumDistance, float remainingMultiplier = 0.5f)
+    {
+        if (data == null || playerTransform == null || isDead || isAttacking)
+            return false;
+
+        EnsureTimers();
+        if (skillIndex < 0 || skillIndex >= lastSkillTimes.Length
+            || skillUseCounts[skillIndex] <= 0 || distanceCooldownReduced[skillIndex])
+            return false;
+
+        BossSkillData skill = GetSkillData(skillIndex);
+        if (skill == null || Vector2.Distance(transform.position, playerTransform.position) < minimumDistance)
+            return false;
+
+        float cooldown = AdjustCooldown(skill.cooldown);
+        float remaining = lastSkillTimes[skillIndex] + cooldown - Time.time;
+        if (remaining <= 0f)
+            return false;
+
+        float multiplier = Mathf.Clamp01(remainingMultiplier);
+        float reducedRemaining = remaining * multiplier;
+        lastSkillTimes[skillIndex] = Time.time + reducedRemaining - cooldown;
+        distanceCooldownReduced[skillIndex] = true;
+        if (logSkillUsage)
+        {
+            float distance = Vector2.Distance(transform.position, playerTransform.position);
+            Debug.Log($"[BossSkill] {name} | {skillIndex + 1}스킬 거리 쿨타임 감소 | "
+                + $"거리 {distance:F2}/{minimumDistance:F2} | 남은 시간 {remaining:F2}s → {reducedRemaining:F2}s", this);
+        }
+        return true;
+    }
+
+    protected void LogSkillDebug(string state, BossSkillData skill)
+    {
+        if (!logSkillUsage || skill == null) return;
+        float distance = playerTransform != null
+            ? Vector2.Distance(transform.position, playerTransform.position)
+            : -1f;
+        Debug.Log($"[BossSkill] {name} | {state} | {skill.skillName} | "
+            + $"Phase {currentPhase} | 거리 {(distance >= 0f ? distance.ToString("F2") : "없음")} | 쿨타임 {skill.cooldown:F2}s", this);
     }
     protected virtual void UpdatePhase() { currentPhase = 1; }
     protected virtual void ShowHealthUI() => MidBossHealthUI.Instance?.Show(name, currentHp, data.maxHp);
@@ -335,12 +428,17 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected virtual void OnDrawGizmos()
     {
         if (!showGizmos || data == null) return;
-        Gizmos.color = Color.yellow; Gizmos.DrawWireSphere(transform.position, data.detectRange);
-        Gizmos.color = Color.red; Gizmos.DrawWireSphere(transform.position, data.chaseRange);
-        if (wallCheck != null) { Gizmos.color = Color.white; Gizmos.DrawRay(wallCheck.position, Vector2.right * lookDirection * data.wallCheckDistance); }
+        if (showDetectionGizmos)
+        {
+            Gizmos.color = Color.yellow; Gizmos.DrawWireSphere(transform.position, data.detectRange);
+            Gizmos.color = Color.red; Gizmos.DrawWireSphere(transform.position, data.chaseRange);
+            if (wallCheck != null) { Gizmos.color = Color.white; Gizmos.DrawRay(wallCheck.position, Vector2.right * lookDirection * data.wallCheckDistance); }
+        }
 
         // 기본공격과 모든 스킬의 각 타격 단계는 서로 독립된 Size/Offset으로 표시한다.
-        DrawSkillHitboxes(data.basicAttack, Color.cyan);
+        if (attackGizmoSelection == AttackGizmoSelection.All
+            || attackGizmoSelection == AttackGizmoSelection.BasicAttack)
+            DrawSkillHitboxes(data.basicAttack, Color.cyan);
 
         if (data.skills == null) return;
         Color[] skillColors =
@@ -352,8 +450,16 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             new Color(1f, 0.2f, 0.2f)
         };
 
-        for (int i = 0; i < data.skills.Count; i++)
-            DrawSkillHitboxes(data.skills[i], skillColors[i % skillColors.Length]);
+        if (attackGizmoSelection == AttackGizmoSelection.All)
+        {
+            for (int i = 0; i < data.skills.Count; i++)
+                DrawSkillHitboxes(data.skills[i], skillColors[i % skillColors.Length]);
+            return;
+        }
+
+        int selectedSkillIndex = (int)attackGizmoSelection - (int)AttackGizmoSelection.Skill1;
+        if (selectedSkillIndex >= 0 && selectedSkillIndex < data.skills.Count)
+            DrawSkillHitboxes(data.skills[selectedSkillIndex], skillColors[selectedSkillIndex % skillColors.Length]);
     }
 
     private void DrawSkillHitboxes(BossSkillData skill, Color baseColor)

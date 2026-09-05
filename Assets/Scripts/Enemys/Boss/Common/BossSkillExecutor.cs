@@ -9,6 +9,9 @@ public interface IBossSkillContext
     LayerMask PlayerLayer { get; }
     int LookDirection { get; }
     bool IsWallAhead();
+    bool IsGrounded();
+    Vector2 PlayerPosition { get; }
+    float GetDistanceToGround();
     void RefreshSkillDirection();
     void OnSkillAttackHit(BossAttackStepData step);
     float GetSkillDamage(float baseDamage);
@@ -18,7 +21,7 @@ public interface IBossSkillContext
 
 public interface IBossSpawnedSkillObject
 {
-    void Init(int direction, float damage, LayerMask playerLayer, float sizeMultiplier = 1f);
+    void Init(int direction, float damage, LayerMask playerLayer, float sizeMultiplier = 1f, float projectileSpeed = 0f);
 }
 
 // BossSkillData의 액티브 단계와 버프를 공통 방식으로 실행한다.
@@ -61,6 +64,8 @@ public static class BossSkillExecutor
         if (active?.attackSteps == null)
             yield break;
 
+        JumpTargetState jumpTarget = new JumpTargetState();
+
         foreach (BossAttackStepData step in active.attackSteps)
         {
             if (step == null || step.actionType == BossActionType.None)
@@ -91,11 +96,11 @@ public static class BossSkillExecutor
                     break;
 
                 case BossActionType.Jump:
-                    yield return ExecuteJump(step, context);
+                    yield return ExecuteJump(step, context, jumpTarget);
                     break;
 
                 case BossActionType.Slam:
-                    yield return ExecuteSlam(step, context);
+                    yield return ExecuteSlam(step, context, jumpTarget);
                     break;
 
                 case BossActionType.SpawnPrefab:
@@ -142,31 +147,86 @@ public static class BossSkillExecutor
         StopHorizontal(context.BossBody);
     }
 
-    private static IEnumerator ExecuteJump(BossAttackStepData step, IBossSkillContext context)
+    private static IEnumerator ExecuteJump(BossAttackStepData step, IBossSkillContext context, JumpTargetState jumpTarget)
     {
         Rigidbody2D body = context.BossBody;
         if (body == null || step.jumpForce == Vector2.zero)
             yield break;
 
+        bool useTargetRatio = step.targetDistanceRatio > 0f;
+        float startX = body.position.x;
+        float targetX = startX;
+        if (useTargetRatio)
+        {
+            jumpTarget.active = true;
+            jumpTarget.startX = startX;
+            jumpTarget.totalDeltaX = context.PlayerPosition.x - startX;
+            jumpTarget.completedRatio = step.targetDistanceRatio;
+            targetX = startX + jumpTarget.totalDeltaX * step.targetDistanceRatio;
+        }
+
         body.linearVelocity = new Vector2(
-            context.LookDirection * step.jumpForce.x,
+            useTargetRatio ? 0f : context.LookDirection * step.jumpForce.x,
             step.jumpForce.y
         );
 
-        if (step.duration > 0f)
-            yield return new WaitForSeconds(context.GetSkillDelay(step.duration));
+        // 고정 대기 대신 상승 정점까지 기다려 내려찍기가 자연스럽게 이어지게 한다.
+        float timeout = step.duration > 0f ? context.GetSkillDelay(step.duration) : 2f;
+        float elapsed = 0f;
+        yield return new WaitForFixedUpdate();
+        while (body.linearVelocity.y > 0f && elapsed < timeout)
+        {
+            if (useTargetRatio)
+            {
+                float progress = 1f - Mathf.Clamp01(body.linearVelocity.y / Mathf.Max(0.01f, step.jumpForce.y));
+                body.position = new Vector2(Mathf.Lerp(startX, targetX, progress), body.position.y);
+            }
+            elapsed += Time.fixedDeltaTime;
+            yield return new WaitForFixedUpdate();
+        }
+        if (useTargetRatio)
+            body.position = new Vector2(targetX, body.position.y);
     }
 
-    private static IEnumerator ExecuteSlam(BossAttackStepData step, IBossSkillContext context)
+    private static IEnumerator ExecuteSlam(BossAttackStepData step, IBossSkillContext context, JumpTargetState jumpTarget)
     {
         Rigidbody2D body = context.BossBody;
         if (body != null && step.slamSpeed > 0f)
             body.linearVelocity = new Vector2(body.linearVelocity.x, -step.slamSpeed);
 
-        if (step.duration > 0f)
-            yield return new WaitForSeconds(context.GetSkillDelay(step.duration));
+        // 낙하 시작 직후의 기존 지면 접촉값을 건너뛴 뒤 실제 착지를 기다린다.
+        yield return new WaitForFixedUpdate();
+        float timeout = step.duration > 0f ? context.GetSkillDelay(step.duration) : 2f;
+        float elapsed = 0f;
+        bool useTargetRatio = jumpTarget.active && step.targetDistanceRatio > 0f;
+        float startX = body != null ? body.position.x : 0f;
+        float targetX = useTargetRatio
+            ? jumpTarget.startX + jumpTarget.totalDeltaX * Mathf.Clamp01(jumpTarget.completedRatio + step.targetDistanceRatio)
+            : startX;
+        float startY = body != null ? body.position.y : 0f;
+        float groundDistance = Mathf.Max(0.01f, context.GetDistanceToGround());
+        while (!context.IsGrounded() && elapsed < timeout)
+        {
+            if (useTargetRatio && body != null)
+            {
+                float progress = Mathf.Clamp01((startY - body.position.y) / groundDistance);
+                body.position = new Vector2(Mathf.Lerp(startX, targetX, progress), body.position.y);
+            }
+            elapsed += Time.fixedDeltaTime;
+            yield return new WaitForFixedUpdate();
+        }
+        if (useTargetRatio && body != null)
+            body.position = new Vector2(targetX, body.position.y);
 
         yield return ExecuteRepeatedAttacks(step, context);
+    }
+
+    private sealed class JumpTargetState
+    {
+        public bool active;
+        public float startX;
+        public float totalDeltaX;
+        public float completedRatio;
     }
 
     private static IEnumerator ExecuteSpawn(BossAttackStepData step, IBossSkillContext context)
@@ -189,7 +249,8 @@ public static class BossSkillExecutor
                     context.LookDirection,
                     context.GetSkillDamage(step.damage),
                     context.PlayerLayer,
-                    step.spawnScaleMultiplier > 0f ? step.spawnScaleMultiplier : 1f
+                    step.spawnScaleMultiplier > 0f ? step.spawnScaleMultiplier : 1f,
+                    step.projectileSpeed
                 );
 
             if (i < step.spawnCount - 1 && step.spawnInterval > 0f)

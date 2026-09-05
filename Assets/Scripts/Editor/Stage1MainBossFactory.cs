@@ -19,7 +19,8 @@ public static class Stage1MainBossFactory
             data.positionUpdateDelay = 0.12f; data.wallCheckDistance = 0.5f;
             data.phase2HpPercent = 0.7f; data.phase3HpPercent = 0.3f;
             data.basicAttack = Active("기본공격 2연격", 2f, 3f,
-                Hit("1타 세로", 7f, 1.5f, 2.4f, 1.2f), Hit("2타 가로", 10f, 2.6f, 1.5f, 1.4f));
+                Hit("1타 세로", 7f, 1.5f, 2.4f, 1.2f, new Vector2(1.5f, 0.6f)),
+                Hit("2타 가로", 10f, 2.6f, 1.5f, 1.4f, new Vector2(1.5f, 0.6f)));
 
             BossSkillData skill1 = Active("1스킬 3연격", 6f, 3.5f,
                 Hit("1타 세로", 7f, 1.6f, 2.5f, 1.2f), Hit("2타 세로", 7f, 1.8f, 2.5f, 1.5f),
@@ -29,16 +30,15 @@ public static class Stage1MainBossFactory
             BossSkillData skill2 = Active("2스킬 검기", 10f, 9f, new BossAttackStepData
             {
                 stepName = "검기 발사", actionType = BossActionType.SpawnPrefab, damage = 10f,
-                spawnPrefab = wave, spawnCount = 1, spawnOffset = new Vector2(1.2f, 0.2f)
+                spawnPrefab = wave, spawnCount = 1, spawnOffset = new Vector2(1.2f, 0.2f), projectileSpeed = 9f
             });
-            skill2.forceCastMinDistance = 4f; skill2.forceCastRemainingCooldown = 5f;
-
             BossSkillData skill3 = Buff("3스킬 공속 강화", 20f, 10f, BossBuffStat.AttackSpeed, 1.5f);
             BossSkillData skill4 = Active("4스킬 돌진", 10f, 0f, new BossAttackStepData
             {
                 stepName = "장거리 돌진", actionType = BossActionType.DashAttack, damage = 15f, attackCount = 1,
                 hitboxSize = new Vector2(2.4f, 1f), hitboxOffset = new Vector2(1.4f, -0.25f),
-                moveSpeed = 15f, duration = 0.8f, preDelay = 0.75f, postDelay = 0.6f, stopAtWall = true
+                moveSpeed = 15f, duration = 0.8f, preDelay = 0.75f, postDelay = 0.6f,
+                knockbackForce = new Vector2(14f, 4f), stopAtWall = true
             });
             skill4.minimumPhase = 2;
             BossSkillData skill5 = Buff("5스킬 이속 강화", 20f, 10f, BossBuffStat.MoveSpeed, 1.5f);
@@ -53,9 +53,6 @@ public static class Stage1MainBossFactory
             Stage1_MainBoss boss = root.GetComponent<Stage1_MainBoss>();
             if (boss == null) boss = root.AddComponent<Stage1_MainBoss>();
             boss.data = data;
-            SerializedObject serializedBoss = new SerializedObject(boss);
-            serializedBoss.FindProperty("swordWavePrefab").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(WavePath);
-            serializedBoss.ApplyModifiedPropertiesWithoutUndo();
             if (root.GetComponent<Stage1_DesireSkill>() == null) root.AddComponent<Stage1_DesireSkill>();
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             PrefabUtility.UnloadPrefabContents(root);

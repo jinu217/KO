@@ -11964,6 +11964,10 @@ PrefabInstance:
       propertyPath: showSkill1Hit4Gizmo
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -3552566402549802811, guid: 8143fb364ac25344880458be215f7ebd, type: 3}
+      propertyPath: attackGizmoSelection
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 1756117263892283272, guid: 8143fb364ac25344880458be215f7ebd, type: 3}
       propertyPath: m_LocalPosition.x
       value: 81.27
@@ -56382,7 +56386,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   baseStats:
-    maxHp: 50
+    maxHp: 1000
     attackDamage: 10
     attackSpeed: 1
     critChance: 0.5

@@ -116,6 +116,10 @@ public class BossAttackStepData
     [Min(0f)] public float spawnInterval;
     [Tooltip("생성물의 크기 배율입니다. 0이면 기본 크기 1배로 처리합니다.")]
     [Min(0f)] public float spawnScaleMultiplier;
+    [Tooltip("생성된 투사체의 이동속도입니다. 0이면 프리팹의 기본 속도를 사용합니다.")]
+    [Min(0f)] public float projectileSpeed;
+    [Tooltip("Jump/Slam에서 시전 순간 플레이어까지 X거리 중 이 단계가 이동할 비율입니다. 0이면 기존 속도 방식을 사용합니다.")]
+    [Range(0f, 1f)] public float targetDistanceRatio;
 }
 
 [Serializable]
