@@ -1,7 +1,6 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Collider2D))]
@@ -71,11 +70,11 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
     [Tooltip("대사가 끝난 후 플레이어가 자동으로 이동하는 속도")]
     [SerializeField, Min(0f)] private float autoMoveSpeed = 5f;
 
-    [Tooltip("자동 이동을 시작한 뒤 씬이 전환되기까지의 시간")]
-    [SerializeField, Min(0f)] private float autoMoveDuration = 3f;
-
-    [Tooltip("자동 이동이 끝난 후 불러올 씬 이름")]
+    [Tooltip("로딩 트리거에 도달한 뒤 불러올 씬 이름")]
     [SerializeField] private string targetSceneName = "Stage1-1";
+
+    [SerializeField] private string targetSpawnId;
+    [SerializeField] private bool saveBeforeSceneLoad;
 
     private bool hasPlayed;
     private Coroutine hideRoutine;
@@ -175,13 +174,12 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
             yield break;
         }
 
-        player.StartAutoMoveForward(autoMoveSpeed);
-
-        if (autoMoveDuration > 0f)
-            yield return new WaitForSeconds(autoMoveDuration);
-
-        if (!string.IsNullOrWhiteSpace(targetSceneName))
-            SceneManager.LoadScene(targetSceneName);
+        SceneTransitionManager.GetOrCreate().PrepareAutoExit(
+            player,
+            targetSceneName,
+            targetSpawnId,
+            saveBeforeSceneLoad,
+            autoMoveSpeed);
 
         hideRoutine = null;
     }
