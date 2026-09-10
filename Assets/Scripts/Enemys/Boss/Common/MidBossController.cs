@@ -43,6 +43,8 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected bool isChasing;
     protected bool isAttacking;
     protected bool isDead;
+    public bool IsDead => isDead;
+    public event System.Action Defeated;
     protected int currentPhase = 1;
     protected int currentSkillIndex = -1;
     private bool buffActive;
@@ -252,12 +254,14 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
     protected virtual void Die()
     {
+        if (isDead) return;
         isDead = true;
         RecordKill();
         HideHealthUI();
         StopAllCoroutines();
         StopMove();
         gameObject.SetActive(false);
+        Defeated?.Invoke();
     }
 
     public Transform BossTransform => transform;
