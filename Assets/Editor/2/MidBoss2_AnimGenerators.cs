@@ -232,28 +232,84 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Skill3 커브 (기모으기 진입 f5,6을 6프레임으로 완만하게, 29프레임 논루프)
     // ================================================================
-    static readonly float[] MS3_BODY_Y = { 0.0f, 0.011f, 0.022f, 0.033f, 0.043f, 0.05f, 0.054f, 0.057f, 0.059f, 0.059f, 0.059f, 0.06f, 0.06f, 0.06f, 0.06f, 0.06f, 0.06f, 0.06f, 0.06f, 0.06f, 0.03f, 0.03f, 0.03f, 0.03f, 0.031f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.015f, 0.0f };
-    static readonly float[] MS3_BODY_X = { 0.0f, 0.009f, 0.018f, 0.028f, 0.036f, 0.041f, 0.045f, 0.047f, 0.049f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.3f, 0.3f, 0.3f, 0.317f, 0.318f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.15f, 0.0f };
-    static readonly float[] MS3_BODY_ROT = { 0.0f, 3.667f, 7.333f, 11.0f, 14.096f, 16.461f, 18.148f, 19.213f, 19.597f, 19.81f, 19.927f, 19.982f, 19.995f, 19.998f, 19.999f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f, -45.0f, -45.0f, -45.0f, -42.233f, -33.922f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
-    static readonly float[] MS3_HEAD_ROT = { 0.0f, 2.75f, 5.5f, 8.25f, 10.572f, 12.345f, 13.61f, 14.41f, 14.697f, 14.857f, 14.945f, 14.986f, 14.995f, 14.998f, 14.999f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.364f, 15.744f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 7.5f, 0.0f };
-    static readonly float[] MS3_SF_ROT = { 0.0f, 33.0f, 66.0f, 99.0f, 126.865f, 148.146f, 163.331f, 172.92f, 176.373f, 178.289f, 179.345f, 179.832f, 179.947f, 179.98f, 179.993f, 179.998f, 180.0f, 180.0f, 180.0f, 180.0f, 60.0f, 60.0f, 60.0f, 49.323f, 45.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 25.0f, 0.0f };
-    static readonly float[] MS3_FF_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -4.896f, -10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] MS3_HF_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -30.0f, -30.0f, -30.0f, -30.938f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
-    static readonly float[] MS3_SF_POS_X = { -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.66f, -0.66f, -0.66f, -0.693f, -0.75f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f };
-    static readonly float[] MS3_SF_POS_Y = { 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.81f, 0.81f, 0.81f, 0.82f, 0.845f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f };
-    static readonly float[] MS3_SB_ROT = { 0.0f, 22.0f, 44.0f, 66.0f, 84.576f, 98.764f, 108.887f, 115.28f, 117.582f, 118.859f, 119.563f, 119.888f, 119.965f, 119.987f, 119.995f, 119.998f, 120.0f, 120.0f, 120.0f, 120.0f, 60.0f, 60.0f, 60.0f, 47.604f, 30.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 22.5f, 0.0f };
-    static readonly float[] MS3_FB_ROT = { 70.0f, 67.25f, 64.5f, 61.75f, 59.428f, 57.655f, 56.39f, 55.59f, 55.303f, 55.143f, 55.055f, 55.014f, 55.005f, 55.002f, 55.001f, 55.0f, 55.0f, 55.0f, 55.0f, 55.0f, 15.0f, 15.0f, 15.0f, 27.812f, 45.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 50.0f, 70.0f };
-    static readonly float[] MS3_HB_ROT = { -10.0f, -11.833f, -13.667f, -15.5f, -17.048f, -18.23f, -19.074f, -19.607f, -19.799f, -19.905f, -19.963f, -19.99f, -19.997f, -19.999f, -20.0f, -20.0f, -20.0f, -20.0f, -20.0f, -20.0f, -50.0f, -50.0f, -50.0f, -55.417f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -35.0f, -10.0f };
-    static readonly float[] MS3_SPEAR_POS_X = { 0.0f, 0.22f, 0.44f, 0.66f, 0.845f, 0.987f, 1.088f, 1.152f, 1.175f, 1.189f, 1.196f, 1.198f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 0.172f, 0.172f, 0.172f, 0.066f, 0.007f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] MS3_SPEAR_POS_Y = { -0.269f, -0.167f, -0.064f, 0.038f, 0.125f, 0.191f, 0.238f, 0.268f, 0.279f, 0.285f, 0.288f, 0.289f, 0.29f, 0.29f, 0.29f, 0.29f, 0.29f, 0.29f, 0.29f, 0.29f, -0.244f, -0.244f, -0.244f, -0.27f, -0.266f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f };
-    static readonly float[] MS3_WEAPON_ROT = { -60.0f, -59.874f, -59.748f, -59.623f, -59.516f, -59.435f, -59.378f, -59.342f, -59.328f, -59.32f, -59.316f, -59.315f, -59.314f, -59.314f, -59.314f, -59.314f, -59.314f, -59.314f, -59.314f, -59.314f, -75.0f, -75.0f, -75.0f, -75.944f, -75.926f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -67.5f, -60.0f };
-    static readonly float[] MS3_BOT_ROT = { 0.0f, 4.583f, 9.167f, 13.75f, 17.62f, 20.576f, 22.685f, 24.017f, 24.496f, 24.762f, 24.908f, 24.976f, 24.992f, 24.997f, 24.998f, 24.999f, 25.0f, 25.0f, 25.0f, 25.0f, 75.0f, 75.0f, 75.0f, 66.148f, 51.174f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 22.5f, 0.0f };
-    static readonly float[] MS3_THIGH_F_ROT = { 0.0f, -7.333f, -14.667f, -22.0f, -28.192f, -32.921f, -36.296f, -38.427f, -39.194f, -39.62f, -39.855f, -39.963f, -39.988f, -39.996f, -39.998f, -39.999f, -40.0f, -40.0f, -40.0f, -40.0f, -60.0f, -60.0f, -60.0f, -55.936f, -49.145f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -22.5f, 0.0f };
-    static readonly float[] MS3_CALF_F_ROT = { 0.0f, -3.667f, -7.333f, -11.0f, -14.096f, -16.461f, -18.148f, -19.213f, -19.597f, -19.81f, -19.927f, -19.982f, -19.995f, -19.998f, -19.999f, -20.0f, -20.0f, -20.0f, -20.0f, -20.0f, -60.0f, -60.0f, -60.0f, -50.414f, -35.314f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
-    static readonly float[] MS3_FOOT_F_ROT = { 0.0f, 2.75f, 5.5f, 8.25f, 10.572f, 12.345f, 13.61f, 14.41f, 14.697f, 14.857f, 14.945f, 14.986f, 14.995f, 14.998f, 14.999f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 0.0f, 0.0f, 0.0f, -0.554f, -0.174f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] MS3_THIGH_B_ROT = { 0.0f, 5.5f, 11.0f, 16.5f, 21.145f, 24.691f, 27.222f, 28.82f, 29.395f, 29.715f, 29.891f, 29.972f, 29.991f, 29.996f, 29.998f, 29.999f, 30.0f, 30.0f, 30.0f, 30.0f, 15.0f, 15.0f, 15.0f, 8.551f, 1.508f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    static readonly float[] MS3_CALF_B_ROT = { 0.0f, -7.333f, -14.667f, -22.0f, -28.192f, -32.921f, -36.296f, -38.427f, -39.194f, -39.62f, -39.855f, -39.963f, -39.988f, -39.996f, -39.998f, -39.999f, -40.0f, -40.0f, -40.0f, -40.0f, -15.0f, -15.0f, -15.0f, -14.442f, -15.455f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -7.5f, 0.0f };
-    static readonly float[] MS3_FOOT_B_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -30.0f, -30.0f, -30.0f, -19.316f, -3.71f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3_BODY_Y = { 0.0f, 0.011f, 0.022f, 0.033f, 0.043f, 0.05f, 0.054f, 0.057f, 0.059f, 0.059f, 0.059f, 0.06f, 0.06f, 0.06f, 0.03f, 0.03f, 0.03f, 0.03f, 0.031f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.03f, 0.015f, 0.0f };
+    static readonly float[] MS3_BODY_X = { 0.0f, 0.009f, 0.018f, 0.028f, 0.036f, 0.041f, 0.045f, 0.047f, 0.049f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.3f, 0.3f, 0.3f, 0.317f, 0.318f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.15f, 0.0f };
+    static readonly float[] MS3_BODY_ROT = { 0.0f, 3.667f, 7.333f, 11.0f, 14.096f, 16.461f, 18.148f, 19.213f, 19.597f, 19.81f, 19.927f, 19.982f, 19.995f, 20.0f, -45.0f, -45.0f, -45.0f, -42.233f, -33.922f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3_HEAD_ROT = { 0.0f, 2.75f, 5.5f, 8.25f, 10.572f, 12.345f, 13.61f, 14.41f, 14.697f, 14.857f, 14.945f, 14.986f, 14.995f, 15.0f, 15.0f, 15.0f, 15.0f, 15.364f, 15.744f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 7.5f, 0.0f };
+    static readonly float[] MS3_SF_ROT = { 0.0f, 33.0f, 66.0f, 99.0f, 126.865f, 148.146f, 163.331f, 172.92f, 176.373f, 178.289f, 179.345f, 179.832f, 179.947f, 180.0f, 60.0f, 60.0f, 60.0f, 49.323f, 45.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 25.0f, 0.0f };
+    static readonly float[] MS3_FF_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -4.896f, -10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3_HF_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -30.0f, -30.0f, -30.0f, -30.938f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3_SF_POS_X = { -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.66f, -0.66f, -0.66f, -0.693f, -0.75f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f };
+    static readonly float[] MS3_SF_POS_Y = { 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.81f, 0.81f, 0.81f, 0.82f, 0.845f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f };
+    static readonly float[] MS3_SB_ROT = { 0.0f, 22.0f, 44.0f, 66.0f, 84.576f, 98.764f, 108.887f, 115.28f, 117.582f, 118.859f, 119.563f, 119.888f, 119.965f, 120.0f, 60.0f, 60.0f, 60.0f, 47.604f, 30.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 22.5f, 0.0f };
+    static readonly float[] MS3_FB_ROT = { 70.0f, 67.25f, 64.5f, 61.75f, 59.428f, 57.655f, 56.39f, 55.59f, 55.303f, 55.143f, 55.055f, 55.014f, 55.005f, 55.0f, 15.0f, 15.0f, 15.0f, 27.812f, 45.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 50.0f, 70.0f };
+    static readonly float[] MS3_HB_ROT = { -10.0f, -11.833f, -13.667f, -15.5f, -17.048f, -18.23f, -19.074f, -19.607f, -19.799f, -19.905f, -19.963f, -19.99f, -19.997f, -20.0f, -50.0f, -50.0f, -50.0f, -55.417f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -35.0f, -10.0f };
+    static readonly float[] MS3_SPEAR_POS_X = { 0.0f, 0.22f, 0.44f, 0.66f, 0.845f, 0.987f, 1.088f, 1.152f, 1.175f, 1.189f, 1.196f, 1.198f, 1.2f, 1.2f, 0.172f, 0.172f, 0.172f, 0.066f, 0.007f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3_SPEAR_POS_Y = { -0.269f, -0.167f, -0.064f, 0.038f, 0.125f, 0.191f, 0.238f, 0.268f, 0.279f, 0.285f, 0.288f, 0.289f, 0.29f, 0.29f, -0.244f, -0.244f, -0.244f, -0.27f, -0.266f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f };
+    static readonly float[] MS3_WEAPON_ROT = { -60.0f, -59.874f, -59.748f, -59.623f, -59.516f, -59.435f, -59.378f, -59.342f, -59.328f, -59.32f, -59.316f, -59.315f, -59.314f, -59.314f, -75.0f, -75.0f, -75.0f, -75.944f, -75.926f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -67.5f, -60.0f };
+    static readonly float[] MS3_BOT_ROT = { 0.0f, 4.583f, 9.167f, 13.75f, 17.62f, 20.576f, 22.685f, 24.017f, 24.496f, 24.762f, 24.908f, 24.976f, 24.992f, 25.0f, 75.0f, 75.0f, 75.0f, 66.148f, 51.174f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 22.5f, 0.0f };
+    static readonly float[] MS3_THIGH_F_ROT = { 0.0f, -7.333f, -14.667f, -22.0f, -28.192f, -32.921f, -36.296f, -38.427f, -39.194f, -39.62f, -39.855f, -39.963f, -39.988f, -40.0f, -60.0f, -60.0f, -60.0f, -55.936f, -49.145f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -45.0f, -22.5f, 0.0f };
+    static readonly float[] MS3_CALF_F_ROT = { 0.0f, -3.667f, -7.333f, -11.0f, -14.096f, -16.461f, -18.148f, -19.213f, -19.597f, -19.81f, -19.927f, -19.982f, -19.995f, -20.0f, -60.0f, -60.0f, -60.0f, -50.414f, -35.314f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3_FOOT_F_ROT = { 0.0f, 2.75f, 5.5f, 8.25f, 10.572f, 12.345f, 13.61f, 14.41f, 14.697f, 14.857f, 14.945f, 14.986f, 14.995f, 15.0f, 0.0f, 0.0f, 0.0f, -0.554f, -0.174f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3_THIGH_B_ROT = { 0.0f, 5.5f, 11.0f, 16.5f, 21.145f, 24.691f, 27.222f, 28.82f, 29.395f, 29.715f, 29.891f, 29.972f, 29.991f, 30.0f, 15.0f, 15.0f, 15.0f, 8.551f, 1.508f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3_CALF_B_ROT = { 0.0f, -7.333f, -14.667f, -22.0f, -28.192f, -32.921f, -36.296f, -38.427f, -39.194f, -39.62f, -39.855f, -39.963f, -39.988f, -40.0f, -15.0f, -15.0f, -15.0f, -14.442f, -15.455f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -15.0f, -7.5f, 0.0f };
+    static readonly float[] MS3_FOOT_B_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -30.0f, -30.0f, -30.0f, -19.316f, -3.71f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+
+    // ================================================================
+    // Skill3-1 커브 (Skill3 + 돌진 중 달리는 하체 추가)
+    // ================================================================
+    static readonly float[] MS3B_BODY_ROT = { 0.0f, 3.667f, 7.333f, 11.0f, 14.096f, 16.461f, 18.148f, 19.213f, 19.597f, 19.81f, 19.927f, 19.982f, 19.995f, 20.0f, -45.0f, -45.0f, -45.0f, -42.233f, -33.922f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3B_BODY_X = { 0.0f, 0.009f, 0.018f, 0.028f, 0.036f, 0.041f, 0.045f, 0.047f, 0.049f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.3f, 0.3f, 0.3f, 0.317f, 0.318f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.75f, 0.8f, 0.85f, 0.9f, 0.45f, 0.0f };
+    static readonly float[] MS3B_BODY_Y = { 0.0f, 0.011f, 0.022f, 0.033f, 0.043f, 0.05f, 0.054f, 0.057f, 0.059f, 0.059f, 0.059f, 0.06f, 0.06f, 0.06f, 0.03f, 0.03f, 0.03f, 0.03f, 0.031f, 0.03f, 0.04f, 0.047f, 0.05f, 0.047f, 0.04f, 0.03f, 0.04f, 0.047f, 0.05f, 0.047f, 0.04f, 0.03f, 0.015f, 0.0f };
+    static readonly float[] MS3B_BOT_ROT = { 0.0f, 4.583f, 9.167f, 13.75f, 17.62f, 20.576f, 22.685f, 24.017f, 24.496f, 24.762f, 24.908f, 24.976f, 24.992f, 25.0f, 75.0f, 75.0f, 75.0f, 66.148f, 51.174f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 22.5f, 0.0f };
+    static readonly float[] MS3B_CALF_B_ROT = { 0.0f, -7.333f, -14.667f, -22.0f, -28.192f, -32.921f, -36.296f, -38.427f, -39.194f, -39.62f, -39.855f, -39.963f, -39.988f, -40.0f, -15.0f, -15.0f, -15.0f, -14.442f, -15.455f, -15.0f, -15.0f, -15.0f, -25.607f, -27.99f, -15.0f, -15.0f, -15.0f, -27.99f, -25.607f, -15.0f, -15.0f, -15.0f, -7.5f, 0.0f };
+    static readonly float[] MS3B_CALF_F_ROT = { 0.0f, -3.667f, -7.333f, -11.0f, -14.096f, -16.461f, -18.148f, -19.213f, -19.597f, -19.81f, -19.927f, -19.982f, -19.995f, -20.0f, -60.0f, -60.0f, -60.0f, -50.414f, -35.314f, -30.0f, -44.489f, -37.5f, -30.0f, -30.0f, -33.882f, -45.0f, -33.882f, -30.0f, -30.0f, -37.5f, -44.489f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3B_FB_ROT = { 70.0f, 67.25f, 64.5f, 61.75f, 59.428f, 57.655f, 56.39f, 55.59f, 55.303f, 55.143f, 55.055f, 55.014f, 55.005f, 55.0f, 15.0f, 15.0f, 15.0f, 27.812f, 45.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 50.0f, 70.0f };
+    static readonly float[] MS3B_FF_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -4.896f, -10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3B_FOOT_B_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -30.0f, -30.0f, -30.0f, -19.316f, -3.71f, 0.0f, 9.659f, 5.0f, 0.0f, 0.0f, 2.588f, 10.0f, 2.588f, 0.0f, 0.0f, 5.0f, 9.659f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3B_FOOT_F_ROT = { 0.0f, 2.75f, 5.5f, 8.25f, 10.572f, 12.345f, 13.61f, 14.41f, 14.697f, 14.857f, 14.945f, 14.986f, 14.995f, 15.0f, 0.0f, 0.0f, 0.0f, -0.554f, -0.174f, 0.0f, 0.0f, 0.0f, 7.071f, 8.66f, 0.0f, 0.0f, 0.0f, 8.66f, 7.071f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3B_HB_ROT = { -10.0f, -11.833f, -13.667f, -15.5f, -17.048f, -18.23f, -19.074f, -19.607f, -19.799f, -19.905f, -19.963f, -19.99f, -19.997f, -20.0f, -50.0f, -50.0f, -50.0f, -55.417f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -35.0f, -10.0f };
+    static readonly float[] MS3B_HEAD_ROT = { 0.0f, 2.75f, 5.5f, 8.25f, 10.572f, 12.345f, 13.61f, 14.41f, 14.697f, 14.857f, 14.945f, 14.986f, 14.995f, 15.0f, 15.0f, 15.0f, 15.0f, 15.364f, 15.744f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 15.0f, 7.5f, 0.0f };
+    static readonly float[] MS3B_HF_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -30.0f, -30.0f, -30.0f, -30.938f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3B_SB_ROT = { 0.0f, 22.0f, 44.0f, 66.0f, 84.576f, 98.764f, 108.887f, 115.28f, 117.582f, 118.859f, 119.563f, 119.888f, 119.965f, 120.0f, 60.0f, 60.0f, 60.0f, 47.604f, 30.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 22.5f, 0.0f };
+    static readonly float[] MS3B_SF_POS_X = { -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.66f, -0.66f, -0.66f, -0.693f, -0.75f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f };
+    static readonly float[] MS3B_SF_POS_Y = { 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.81f, 0.81f, 0.81f, 0.82f, 0.845f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f };
+    static readonly float[] MS3B_SF_ROT = { 0.0f, 33.0f, 66.0f, 99.0f, 126.865f, 148.146f, 163.331f, 172.92f, 176.373f, 178.289f, 179.345f, 179.832f, 179.947f, 180.0f, 60.0f, 60.0f, 60.0f, 49.323f, 45.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 25.0f, 0.0f };
+    static readonly float[] MS3B_SPEAR_POS_X = { 0.0f, 0.22f, 0.44f, 0.66f, 0.845f, 0.987f, 1.088f, 1.152f, 1.175f, 1.189f, 1.196f, 1.198f, 1.2f, 1.2f, 0.172f, 0.172f, 0.172f, 0.066f, 0.007f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3B_SPEAR_POS_Y = { -0.269f, -0.167f, -0.064f, 0.038f, 0.125f, 0.191f, 0.238f, 0.268f, 0.279f, 0.285f, 0.288f, 0.289f, 0.29f, 0.29f, -0.244f, -0.244f, -0.244f, -0.27f, -0.266f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f };
+    static readonly float[] MS3B_THIGH_B_ROT = { 0.0f, 5.5f, 11.0f, 16.5f, 21.145f, 24.691f, 27.222f, 28.82f, 29.395f, 29.715f, 29.891f, 29.972f, 29.991f, 30.0f, 15.0f, 15.0f, 15.0f, 8.551f, 1.508f, 0.0f, -28.978f, -15.0f, 21.213f, 25.981f, -7.765f, -30.0f, -7.765f, 25.981f, 21.213f, -15.0f, -28.978f, -0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3B_THIGH_F_ROT = { 0.0f, -7.333f, -14.667f, -22.0f, -28.192f, -32.921f, -36.296f, -38.427f, -39.194f, -39.62f, -39.855f, -39.963f, -39.988f, -40.0f, -60.0f, -60.0f, -60.0f, -55.936f, -49.145f, -45.0f, -16.022f, -30.0f, -66.213f, -70.981f, -37.235f, -15.0f, -37.235f, -70.981f, -66.213f, -30.0f, -16.022f, -45.0f, -22.5f, 0.0f };
+    static readonly float[] MS3B_WEAPON_ROT = { -60.0f, -59.874f, -59.748f, -59.623f, -59.516f, -59.435f, -59.378f, -59.342f, -59.328f, -59.32f, -59.316f, -59.315f, -59.314f, -59.314f, -75.0f, -75.0f, -75.0f, -75.944f, -75.926f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -67.5f, -60.0f };
+
+    // ================================================================
+    // Skill3-2 커브 (Skill3 + 돌진 중 관절 많이 쓰는 달리기, 엉덩이/상체/머리 추가)
+    // ================================================================
+    static readonly float[] MS3C_BODY_ROT = { 0.0f, 3.667f, 7.333f, 11.0f, 14.096f, 16.461f, 18.148f, 19.213f, 19.597f, 19.81f, 19.927f, 19.982f, 19.995f, 20.0f, -45.0f, -45.0f, -45.0f, -42.233f, -33.922f, -30.0f, -35.796f, -33.0f, -25.757f, -24.804f, -31.553f, -36.0f, -31.553f, -24.804f, -25.757f, -33.0f, -35.796f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3C_BODY_X = { 0.0f, 0.009f, 0.018f, 0.028f, 0.036f, 0.041f, 0.045f, 0.047f, 0.049f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.3f, 0.3f, 0.3f, 0.317f, 0.318f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.75f, 0.8f, 0.85f, 0.9f, 0.45f, 0.0f };
+    static readonly float[] MS3C_BODY_Y = { 0.0f, 0.011f, 0.022f, 0.033f, 0.043f, 0.05f, 0.054f, 0.057f, 0.059f, 0.059f, 0.059f, 0.06f, 0.06f, 0.06f, 0.03f, 0.03f, 0.03f, 0.03f, 0.031f, 0.03f, 0.045f, 0.056f, 0.06f, 0.056f, 0.045f, 0.03f, 0.045f, 0.056f, 0.06f, 0.056f, 0.045f, 0.03f, 0.015f, 0.0f };
+    static readonly float[] MS3C_BOT_ROT = { 0.0f, 4.583f, 9.167f, 13.75f, 17.62f, 20.576f, 22.685f, 24.017f, 24.496f, 24.762f, 24.908f, 24.976f, 24.992f, 25.0f, 75.0f, 75.0f, 75.0f, 66.148f, 51.174f, 45.0f, 54.659f, 50.0f, 37.929f, 36.34f, 47.588f, 55.0f, 47.588f, 36.34f, 37.929f, 50.0f, 54.659f, 45.0f, 22.5f, 0.0f };
+    static readonly float[] MS3C_CALF_B_ROT = { 0.0f, -7.333f, -14.667f, -22.0f, -28.192f, -32.921f, -36.296f, -38.427f, -39.194f, -39.62f, -39.855f, -39.963f, -39.988f, -40.0f, -15.0f, -15.0f, -15.0f, -14.442f, -15.455f, -15.0f, -15.0f, -15.0f, -32.678f, -36.651f, -15.0f, -15.0f, -15.0f, -36.651f, -32.678f, -15.0f, -15.0f, -15.0f, -7.5f, 0.0f };
+    static readonly float[] MS3C_CALF_F_ROT = { 0.0f, -3.667f, -7.333f, -11.0f, -14.096f, -16.461f, -18.148f, -19.213f, -19.597f, -19.81f, -19.927f, -19.982f, -19.995f, -20.0f, -60.0f, -60.0f, -60.0f, -50.414f, -35.314f, -30.0f, -54.148f, -42.5f, -30.0f, -30.0f, -36.47f, -55.0f, -36.47f, -30.0f, -30.0f, -42.5f, -54.148f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3C_FB_ROT = { 70.0f, 67.25f, 64.5f, 61.75f, 59.428f, 57.655f, 56.39f, 55.59f, 55.303f, 55.143f, 55.055f, 55.014f, 55.005f, 55.0f, 15.0f, 15.0f, 15.0f, 27.812f, 45.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 50.0f, 70.0f };
+    static readonly float[] MS3C_FF_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -4.896f, -10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3C_FOOT_B_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -30.0f, -30.0f, -30.0f, -19.316f, -3.71f, 0.0f, 17.387f, 9.0f, 0.0f, 0.0f, 4.659f, 18.0f, 4.659f, 0.0f, 0.0f, 9.0f, 17.387f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3C_FOOT_F_ROT = { 0.0f, 2.75f, 5.5f, 8.25f, 10.572f, 12.345f, 13.61f, 14.41f, 14.697f, 14.857f, 14.945f, 14.986f, 14.995f, 15.0f, 0.0f, 0.0f, 0.0f, -0.554f, -0.174f, 0.0f, 0.0f, 0.0f, 12.728f, 15.588f, 0.0f, 0.0f, 0.0f, 15.588f, 12.728f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3C_HB_ROT = { -10.0f, -11.833f, -13.667f, -15.5f, -17.048f, -18.23f, -19.074f, -19.607f, -19.799f, -19.905f, -19.963f, -19.99f, -19.997f, -20.0f, -50.0f, -50.0f, -50.0f, -55.417f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -60.0f, -35.0f, -10.0f };
+    static readonly float[] MS3C_HEAD_ROT = { 0.0f, 2.75f, 5.5f, 8.25f, 10.572f, 12.345f, 13.61f, 14.41f, 14.697f, 14.857f, 14.945f, 14.986f, 14.995f, 15.0f, 15.0f, 15.0f, 15.0f, 15.364f, 15.744f, 15.0f, 17.0f, 11.536f, 19.0f, 11.536f, 17.0f, 15.0f, 13.0f, 18.464f, 11.0f, 18.464f, 13.0f, 15.0f, 7.5f, 0.0f };
+    static readonly float[] MS3C_HF_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -30.0f, -30.0f, -30.0f, -30.938f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -30.0f, -15.0f, 0.0f };
+    static readonly float[] MS3C_SB_ROT = { 0.0f, 22.0f, 44.0f, 66.0f, 84.576f, 98.764f, 108.887f, 115.28f, 117.582f, 118.859f, 119.563f, 119.888f, 119.965f, 120.0f, 60.0f, 60.0f, 60.0f, 47.604f, 30.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 22.5f, 0.0f };
+    static readonly float[] MS3C_SF_POS_X = { -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.66f, -0.66f, -0.66f, -0.693f, -0.75f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f, -0.816f };
+    static readonly float[] MS3C_SF_POS_Y = { 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.81f, 0.81f, 0.81f, 0.82f, 0.845f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f, 0.904f };
+    static readonly float[] MS3C_SF_ROT = { 0.0f, 33.0f, 66.0f, 99.0f, 126.865f, 148.146f, 163.331f, 172.92f, 176.373f, 178.289f, 179.345f, 179.832f, 179.947f, 180.0f, 60.0f, 60.0f, 60.0f, 49.323f, 45.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 50.0f, 25.0f, 0.0f };
+    static readonly float[] MS3C_SPEAR_POS_X = { 0.0f, 0.22f, 0.44f, 0.66f, 0.845f, 0.987f, 1.088f, 1.152f, 1.175f, 1.189f, 1.196f, 1.198f, 1.2f, 1.2f, 0.172f, 0.172f, 0.172f, 0.066f, 0.007f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3C_SPEAR_POS_Y = { -0.269f, -0.167f, -0.064f, 0.038f, 0.125f, 0.191f, 0.238f, 0.268f, 0.279f, 0.285f, 0.288f, 0.289f, 0.29f, 0.29f, -0.244f, -0.244f, -0.244f, -0.27f, -0.266f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f, -0.269f };
+    static readonly float[] MS3C_THIGH_B_ROT = { 0.0f, 5.5f, 11.0f, 16.5f, 21.145f, 24.691f, 27.222f, 28.82f, 29.395f, 29.715f, 29.891f, 29.972f, 29.991f, 30.0f, 15.0f, 15.0f, 15.0f, 8.551f, 1.508f, 0.0f, -43.467f, -22.5f, 31.82f, 38.971f, -11.647f, -45.0f, -11.647f, 38.971f, 31.82f, -22.5f, -43.467f, -0.0f, 0.0f, 0.0f };
+    static readonly float[] MS3C_THIGH_F_ROT = { 0.0f, -7.333f, -14.667f, -22.0f, -28.192f, -32.921f, -36.296f, -38.427f, -39.194f, -39.62f, -39.855f, -39.963f, -39.988f, -40.0f, -60.0f, -60.0f, -60.0f, -55.936f, -49.145f, -45.0f, -1.533f, -22.5f, -76.82f, -83.971f, -33.353f, 0.0f, -33.353f, -83.971f, -76.82f, -22.5f, -1.533f, -45.0f, -22.5f, 0.0f };
+    static readonly float[] MS3C_WEAPON_ROT = { -60.0f, -59.874f, -59.748f, -59.623f, -59.516f, -59.435f, -59.378f, -59.342f, -59.328f, -59.32f, -59.316f, -59.315f, -59.314f, -59.314f, -75.0f, -75.0f, -75.0f, -75.944f, -75.926f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -75.0f, -67.5f, -60.0f };
+
+    // ================================================================
+    // Skill3-3 커브 (Skill3 + 상체 고정, 다리만 앞내딛기+뒤차기 달리기)
+    // ================================================================
 
     // ================================================================
     // Attack 커브 (일반공격: 코일 -> 찌르기 -> 크게 젖혀 넉백스윙 -> 정리, 26프레임 논루프)
@@ -734,9 +790,9 @@ public class MidBoss2_AnimGenerators
     [MenuItem("Tools/MidBoss2/Generate Skill3")]
     public static void GenerateSkill3()
     {
-        const float DUR = 40 / FRAME_RATE;
-        var clip = MakeClip("MidBoss2_Skill3", 40, false);
-        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 40, FRAME_RATE, loop: false);
+        const float DUR = 34 / FRAME_RATE;
+        var clip = MakeClip("MidBoss2_Skill3", 34, false);
+        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 34, FRAME_RATE, loop: false);
         void L(string path, string prop, float val) =>
             clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR, val));
 
@@ -782,6 +838,109 @@ public class MidBoss2_AnimGenerators
         GenerateAC();
     }
 
+    [MenuItem("Tools/MidBoss2/Generate Skill3-1")]
+    public static void GenerateSkill3_1()
+    {
+        const float DUR = 34 / FRAME_RATE;
+        var clip = MakeClip("MidBoss2_Skill3-1", 34, false);
+        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 34, FRAME_RATE, loop: false);
+        void L(string path, string prop, float val) =>
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR, val));
+
+        C(BODY, "localPosition.y", MS3B_BODY_Y); C(BODY, "localPosition.x", MS3B_BODY_X); L(BODY, "localPosition.z", 0f);
+        C(BODY, "localEulerAngles.z", MS3B_BODY_ROT);
+        L(HEAD, "localPosition.x", -0.129f); L(HEAD, "localPosition.y", 1.001f); L(HEAD, "localPosition.z", 0f);
+        C(HEAD, "localEulerAngles.z", MS3B_HEAD_ROT);
+
+        C(SF, "localPosition.x", MS3B_SF_POS_X); C(SF, "localPosition.y", MS3B_SF_POS_Y); L(SF, "localPosition.z", 0f);
+        C(SF, "localEulerAngles.z", MS3B_SF_ROT);
+        L(FF, "localPosition.x", -0.422f); L(FF, "localPosition.y", -0.697f); L(FF, "localPosition.z", 0f);
+        C(FF, "localEulerAngles.z", MS3B_FF_ROT);
+        L(HF, "localPosition.x", 0.058f); L(HF, "localPosition.y", -0.426f); L(HF, "localPosition.z", 0f);
+        C(HF, "localEulerAngles.z", MS3B_HF_ROT);
+
+        L(SB, "localPosition.x", 0.184f); L(SB, "localPosition.y", 0.904f); L(SB, "localPosition.z", 0f);
+        C(SB, "localEulerAngles.z", MS3B_SB_ROT);
+        L(FB, "localPosition.x", 0.390f); L(FB, "localPosition.y", -0.650f); L(FB, "localPosition.z", 0f);
+        C(FB, "localEulerAngles.z", MS3B_FB_ROT);
+        L(HB, "localPosition.x", 0.152f); L(HB, "localPosition.y", -0.395f); L(HB, "localPosition.z", 0f);
+        C(HB, "localEulerAngles.z", MS3B_HB_ROT);
+        C(WEAPON, "localPosition.x", MS3B_SPEAR_POS_X); C(WEAPON, "localPosition.y", MS3B_SPEAR_POS_Y); L(WEAPON, "localPosition.z", 0f);
+        C(WEAPON, "localEulerAngles.z", MS3B_WEAPON_ROT);
+
+        L(BOTTOM, "localPosition.x", -0.098f); L(BOTTOM, "localPosition.y", -0.049f); L(BOTTOM, "localPosition.z", 0f);
+        C(BOTTOM, "localEulerAngles.z", MS3B_BOT_ROT);
+
+        L(THIGH_F, "localPosition.x", -0.442f); L(THIGH_F, "localPosition.y", -0.178f); L(THIGH_F, "localPosition.z", 0f);
+        C(THIGH_F, "localEulerAngles.z", MS3B_THIGH_F_ROT);
+        L(CALF_F, "localPosition.x", 0.009f); L(CALF_F, "localPosition.y", -0.758f); L(CALF_F, "localPosition.z", 0f);
+        C(CALF_F, "localEulerAngles.z", MS3B_CALF_F_ROT);
+        L(FOOT_F, "localPosition.x", -0.160f); L(FOOT_F, "localPosition.y", -0.504f); L(FOOT_F, "localPosition.z", 0f);
+        C(FOOT_F, "localEulerAngles.z", MS3B_FOOT_F_ROT);
+
+        L(THIGH_B, "localPosition.x", 0.120f); L(THIGH_B, "localPosition.y", -0.309f); L(THIGH_B, "localPosition.z", 0f);
+        C(THIGH_B, "localEulerAngles.z", MS3B_THIGH_B_ROT);
+        L(CALF_B, "localPosition.x", 0.275f); L(CALF_B, "localPosition.y", -0.627f); L(CALF_B, "localPosition.z", 0f);
+        C(CALF_B, "localEulerAngles.z", MS3B_CALF_B_ROT);
+        L(FOOT_B, "localPosition.x", -0.160f); L(FOOT_B, "localPosition.y", -0.488f); L(FOOT_B, "localPosition.z", 0f);
+        C(FOOT_B, "localEulerAngles.z", MS3B_FOOT_B_ROT);
+
+        Save(clip, "MidBoss2_Skill3-1");
+        GenerateAC();
+    }
+
+    [MenuItem("Tools/MidBoss2/Generate Skill3-2")]
+    public static void GenerateSkill3_2()
+    {
+        const float DUR = 34 / FRAME_RATE;
+        var clip = MakeClip("MidBoss2_Skill3-2", 34, false);
+        void C(string path, string prop, float[] vals) => SetCurve(clip, path, prop, vals, 34, FRAME_RATE, loop: false);
+        void L(string path, string prop, float val) =>
+            clip.SetCurve(path, typeof(Transform), prop, AnimationCurve.Linear(0f, val, DUR, val));
+
+        C(BODY, "localPosition.y", MS3C_BODY_Y); C(BODY, "localPosition.x", MS3C_BODY_X); L(BODY, "localPosition.z", 0f);
+        C(BODY, "localEulerAngles.z", MS3C_BODY_ROT);
+        L(HEAD, "localPosition.x", -0.129f); L(HEAD, "localPosition.y", 1.001f); L(HEAD, "localPosition.z", 0f);
+        C(HEAD, "localEulerAngles.z", MS3C_HEAD_ROT);
+
+        C(SF, "localPosition.x", MS3C_SF_POS_X); C(SF, "localPosition.y", MS3C_SF_POS_Y); L(SF, "localPosition.z", 0f);
+        C(SF, "localEulerAngles.z", MS3C_SF_ROT);
+        L(FF, "localPosition.x", -0.422f); L(FF, "localPosition.y", -0.697f); L(FF, "localPosition.z", 0f);
+        C(FF, "localEulerAngles.z", MS3C_FF_ROT);
+        L(HF, "localPosition.x", 0.058f); L(HF, "localPosition.y", -0.426f); L(HF, "localPosition.z", 0f);
+        C(HF, "localEulerAngles.z", MS3C_HF_ROT);
+
+        L(SB, "localPosition.x", 0.184f); L(SB, "localPosition.y", 0.904f); L(SB, "localPosition.z", 0f);
+        C(SB, "localEulerAngles.z", MS3C_SB_ROT);
+        L(FB, "localPosition.x", 0.390f); L(FB, "localPosition.y", -0.650f); L(FB, "localPosition.z", 0f);
+        C(FB, "localEulerAngles.z", MS3C_FB_ROT);
+        L(HB, "localPosition.x", 0.152f); L(HB, "localPosition.y", -0.395f); L(HB, "localPosition.z", 0f);
+        C(HB, "localEulerAngles.z", MS3C_HB_ROT);
+        C(WEAPON, "localPosition.x", MS3C_SPEAR_POS_X); C(WEAPON, "localPosition.y", MS3C_SPEAR_POS_Y); L(WEAPON, "localPosition.z", 0f);
+        C(WEAPON, "localEulerAngles.z", MS3C_WEAPON_ROT);
+
+        L(BOTTOM, "localPosition.x", -0.098f); L(BOTTOM, "localPosition.y", -0.049f); L(BOTTOM, "localPosition.z", 0f);
+        C(BOTTOM, "localEulerAngles.z", MS3C_BOT_ROT);
+
+        L(THIGH_F, "localPosition.x", -0.442f); L(THIGH_F, "localPosition.y", -0.178f); L(THIGH_F, "localPosition.z", 0f);
+        C(THIGH_F, "localEulerAngles.z", MS3C_THIGH_F_ROT);
+        L(CALF_F, "localPosition.x", 0.009f); L(CALF_F, "localPosition.y", -0.758f); L(CALF_F, "localPosition.z", 0f);
+        C(CALF_F, "localEulerAngles.z", MS3C_CALF_F_ROT);
+        L(FOOT_F, "localPosition.x", -0.160f); L(FOOT_F, "localPosition.y", -0.504f); L(FOOT_F, "localPosition.z", 0f);
+        C(FOOT_F, "localEulerAngles.z", MS3C_FOOT_F_ROT);
+
+        L(THIGH_B, "localPosition.x", 0.120f); L(THIGH_B, "localPosition.y", -0.309f); L(THIGH_B, "localPosition.z", 0f);
+        C(THIGH_B, "localEulerAngles.z", MS3C_THIGH_B_ROT);
+        L(CALF_B, "localPosition.x", 0.275f); L(CALF_B, "localPosition.y", -0.627f); L(CALF_B, "localPosition.z", 0f);
+        C(CALF_B, "localEulerAngles.z", MS3C_CALF_B_ROT);
+        L(FOOT_B, "localPosition.x", -0.160f); L(FOOT_B, "localPosition.y", -0.488f); L(FOOT_B, "localPosition.z", 0f);
+        C(FOOT_B, "localEulerAngles.z", MS3C_FOOT_B_ROT);
+
+        Save(clip, "MidBoss2_Skill3-2");
+        GenerateAC();
+    }
+
+
 
     // ================================================================
     // Generate All
@@ -799,6 +958,8 @@ public class MidBoss2_AnimGenerators
         GenerateSkill2_1();
         GenerateSkill2_1a();
         GenerateSkill3();
+        GenerateSkill3_1();
+        GenerateSkill3_2();
         GenerateAC();
         Debug.Log("[MidBoss2] 전체 생성 완료");
     }

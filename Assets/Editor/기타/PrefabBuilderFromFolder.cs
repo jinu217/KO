@@ -5,25 +5,43 @@ using System.Collections.Generic;
 
 public class PrefabBuilderWindow : EditorWindow
 {
-    string _folderPath = "Assets/Sprites/";
+    // 여러 폴더를 담는 리스트 (각 폴더마다 프리팹 하나씩 생성)
+    List<string> _folderPaths = new List<string>();
+    string _manualFolderInput = "Assets/Sprites/";
     string _prefabPath = "Assets/Prefab";
+    Vector2 _scrollPos;
 
     [MenuItem("Tools/Prefab/Build Prefab From Sprite Folder")]
     public static void ShowWindow()
     {
         var win = GetWindow<PrefabBuilderWindow>("Prefab Builder");
-        win.minSize = new Vector2(400, 180);
+        win.minSize = new Vector2(420, 320);
     }
 
     void OnGUI()
     {
         GUILayout.Space(10);
 
-        GUILayout.Label("스프라이트 폴더 경로", EditorStyles.boldLabel);
-        _folderPath = EditorGUILayout.TextField("Sprite Folder", _folderPath);
-        _prefabPath = EditorGUILayout.TextField("Prefab Save Path", _prefabPath);
+        GUILayout.Label("스프라이트 폴더 목록 (여러 개 가능)", EditorStyles.boldLabel);
 
-        GUILayout.Space(10);
+        // ------------------------------------------------------------
+        // 수동 입력 + 추가 버튼
+        // ------------------------------------------------------------
+
+        EditorGUILayout.BeginHorizontal();
+        _manualFolderInput = EditorGUILayout.TextField(_manualFolderInput);
+
+        if (GUILayout.Button("추가", GUILayout.Width(50)))
+        {
+            AddFolder(_manualFolderInput);
+        }
+        EditorGUILayout.EndHorizontal();
+
+        GUILayout.Space(5);
+
+        // ------------------------------------------------------------
+        // 드래그 앤 드롭 영역 (여러 폴더 동시 드롭 가능)
+        // ------------------------------------------------------------
 
         var dropArea = GUILayoutUtility.GetRect(
             0,
@@ -31,7 +49,7 @@ public class PrefabBuilderWindow : EditorWindow
             GUILayout.ExpandWidth(true)
         );
 
-        GUI.Box(dropArea, "또는 폴더를 여기에 드래그");
+        GUI.Box(dropArea, "폴더를 여기에 드래그 (여러 개 한번에 가능)");
 
         var evt = Event.current;
 
@@ -50,8 +68,7 @@ public class PrefabBuilderWindow : EditorWindow
                 {
                     if (AssetDatabase.IsValidFolder(path))
                     {
-                        _folderPath = path;
-                        break;
+                        AddFolder(path);
                     }
                 }
             }
@@ -61,11 +78,82 @@ public class PrefabBuilderWindow : EditorWindow
 
         GUILayout.Space(10);
 
-        if (GUILayout.Button(
-            "프리팹 생성",
-            GUILayout.Height(30)))
+        // ------------------------------------------------------------
+        // 추가된 폴더 목록 표시 (개별 삭제 가능)
+        // ------------------------------------------------------------
+
+        GUILayout.Label(
+            $"선택된 폴더 ({_folderPaths.Count}개)",
+            EditorStyles.boldLabel
+        );
+
+        _scrollPos = EditorGUILayout.BeginScrollView(
+            _scrollPos,
+            GUILayout.Height(100)
+        );
+
+        for (int i = 0; i < _folderPaths.Count; i++)
         {
-            Build();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(_folderPaths[i]);
+
+            if (GUILayout.Button("X", GUILayout.Width(24)))
+            {
+                _folderPaths.RemoveAt(i);
+                EditorGUILayout.EndHorizontal();
+                break;
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        EditorGUILayout.EndScrollView();
+
+        if (GUILayout.Button("전체 비우기"))
+        {
+            _folderPaths.Clear();
+        }
+
+        GUILayout.Space(10);
+
+        _prefabPath = EditorGUILayout.TextField("Prefab Save Path", _prefabPath);
+
+        GUILayout.Space(10);
+
+        using (new EditorGUI.DisabledScope(_folderPaths.Count == 0))
+        {
+            if (GUILayout.Button(
+                _folderPaths.Count <= 1
+                    ? "프리팹 생성"
+                    : $"프리팹 {_folderPaths.Count}개 한번에 생성",
+                GUILayout.Height(30)))
+            {
+                BuildAll();
+            }
+        }
+    }
+
+    void AddFolder(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return;
+        }
+
+        if (!AssetDatabase.IsValidFolder(path))
+        {
+            EditorUtility.DisplayDialog(
+                "오류",
+                $"유효한 폴더가 아닙니다:\n{path}",
+                "확인"
+            );
+
+            return;
+        }
+
+        if (!_folderPaths.Contains(path))
+        {
+            _folderPaths.Add(path);
         }
     }
 
@@ -102,21 +190,81 @@ public class PrefabBuilderWindow : EditorWindow
     // 프리팹 생성
     // ================================================================
 
-    void Build()
+    // ================================================================
+    // 여러 폴더 한번에 처리
+    // ================================================================
+    //
+    // 폴더 하나가 실패해도(스프라이트 없음 등) 나머지는 계속 진행하고,
+    // 끝나면 성공/실패 목록을 한번에 요약해서 보여준다.
+    //
+    // ================================================================
+
+    void BuildAll()
     {
-        if (!AssetDatabase.IsValidFolder(_folderPath))
+        var succeeded = new List<string>();
+        var failed = new List<(string folder, string reason)>();
+
+        foreach (string folderPath in _folderPaths)
         {
-            EditorUtility.DisplayDialog(
-                "오류",
-                $"폴더를 찾을 수 없습니다:\n{_folderPath}",
-                "확인"
+            try
+            {
+                string result = Build(folderPath);
+
+                if (result != null)
+                {
+                    succeeded.Add(result);
+                }
+                else
+                {
+                    failed.Add((folderPath, "스프라이트 없음 또는 폴더 없음"));
+                }
+            }
+            catch (System.Exception e)
+            {
+                failed.Add((folderPath, e.Message));
+                Debug.LogError(
+                    $"[PrefabBuilder] {folderPath} 처리 중 오류: {e}"
+                );
+            }
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+
+        string summary =
+            $"성공: {succeeded.Count}개\n실패: {failed.Count}개";
+
+        if (failed.Count > 0)
+        {
+            summary += "\n\n실패 목록:\n";
+
+            foreach (var (folder, reason) in failed)
+            {
+                summary += $"- {folder} ({reason})\n";
+            }
+        }
+
+        EditorUtility.DisplayDialog(
+            "일괄 생성 완료",
+            summary,
+            "확인"
+        );
+    }
+
+    // 반환값: 생성된 캐릭터 이름 (실패 시 null). BuildAll()에서 사용.
+    string Build(string folderPath)
+    {
+        if (!AssetDatabase.IsValidFolder(folderPath))
+        {
+            Debug.LogWarning(
+                $"[PrefabBuilder] 폴더를 찾을 수 없습니다:\n{folderPath}"
             );
 
-            return;
+            return null;
         }
 
         string charName = Path.GetFileName(
-            _folderPath.TrimEnd('/')
+            folderPath.TrimEnd('/')
         );
 
         // ============================================================
@@ -125,7 +273,7 @@ public class PrefabBuilderWindow : EditorWindow
 
         string[] guids = AssetDatabase.FindAssets(
             "t:Sprite",
-            new[] { _folderPath }
+            new[] { folderPath }
         );
 
         var sprites =
@@ -147,13 +295,11 @@ public class PrefabBuilderWindow : EditorWindow
 
         if (sprites.Count == 0)
         {
-            EditorUtility.DisplayDialog(
-                "오류",
-                "해당 폴더에 스프라이트가 없습니다.",
-                "확인"
+            Debug.LogWarning(
+                $"[PrefabBuilder] 해당 폴더에 스프라이트가 없습니다: {folderPath}"
             );
 
-            return;
+            return null;
         }
 
         // ============================================================
@@ -353,9 +499,6 @@ public class PrefabBuilderWindow : EditorWindow
 
         Object.DestroyImmediate(root);
 
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-
         Debug.Log(
             $"[PrefabBuilder] {charName} → {prefabSavePath}"
         );
@@ -365,11 +508,7 @@ public class PrefabBuilderWindow : EditorWindow
                 prefabSavePath
             );
 
-        EditorUtility.DisplayDialog(
-            "완료",
-            $"{charName}.prefab 생성 완료",
-            "확인"
-        );
+        return charName;
     }
 
     // ================================================================

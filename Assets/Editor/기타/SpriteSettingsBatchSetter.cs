@@ -8,9 +8,9 @@ public class SpriteSettingsBatchSetter
     {
         int count = 0;
 
-        // Project 창에서 선택한 파일만 가져옴
+        // Project 창에서 선택한 파일 전부 가져옴 (폴더를 선택했으면 그 안의 파일들까지 전부 포함)
         Object[] selectedObjects = Selection.GetFiltered<Object>(
-            SelectionMode.Assets
+            SelectionMode.Assets | SelectionMode.DeepAssets
         );
 
         foreach (Object obj in selectedObjects)

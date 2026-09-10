@@ -16,7 +16,7 @@ public class SpriteRenamer
         { "몸", "Body" },
         { "몸통", "Body" },
         { "뒷어깨", "Shoulder_B" },
-        { "뒷전완", "Forearm" },
+        { "뒷전완", "Forearm_B" },
         { "뒷손", "Hand_B" },
         { "뒷허벅지", "Thigh_B" },
         { "뒷종아리", "Calf_B" },
