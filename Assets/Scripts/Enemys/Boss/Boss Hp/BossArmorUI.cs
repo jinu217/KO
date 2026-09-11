@@ -2,13 +2,15 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
+//============== 보스 갑옷 UI ==============
+
 public class BossArmorUI : MonoBehaviour
 {
     [Header("Armor UI")]
     [SerializeField] private RectTransform armor100;
-    [SerializeField] private RectTransform armor75;
-    [SerializeField] private RectTransform armor50;
-    [SerializeField] private RectTransform armor25;
+    [SerializeField] private RectTransform armor80;
+    [SerializeField] private RectTransform armor60;
+    [SerializeField] private RectTransform armor40;
 
     [Header("Animation")]
     [SerializeField] private float shakeDuration = 0.35f;
@@ -18,14 +20,14 @@ public class BossArmorUI : MonoBehaviour
     [SerializeField] private float rotateAmount = 90f;
 
     private Vector2 armor100StartPos;
-    private Vector2 armor75StartPos;
-    private Vector2 armor50StartPos;
-    private Vector2 armor25StartPos;
+    private Vector2 armor80StartPos;
+    private Vector2 armor60StartPos;
+    private Vector2 armor40StartPos;
 
     private bool armor100Broken;
-    private bool armor75Broken;
-    private bool armor50Broken;
-    private bool armor25Broken;
+    private bool armor80Broken;
+    private bool armor60Broken;
+    private bool armor40Broken;
 
     private void Awake()
     {
@@ -37,14 +39,14 @@ public class BossArmorUI : MonoBehaviour
         if (armor100 != null)
             armor100StartPos = armor100.anchoredPosition;
 
-        if (armor75 != null)
-            armor75StartPos = armor75.anchoredPosition;
+        if (armor80 != null)
+            armor80StartPos = armor80.anchoredPosition;
 
-        if (armor50 != null)
-            armor50StartPos = armor50.anchoredPosition;
+        if (armor60 != null)
+            armor60StartPos = armor60.anchoredPosition;
 
-        if (armor25 != null)
-            armor25StartPos = armor25.anchoredPosition;
+        if (armor40 != null)
+            armor40StartPos = armor40.anchoredPosition;
     }
 
     // 보스 전투 시작 시 호출
@@ -53,14 +55,14 @@ public class BossArmorUI : MonoBehaviour
         StopAllCoroutines();
 
         ResetArmorObject(armor100, armor100StartPos);
-        ResetArmorObject(armor75, armor75StartPos);
-        ResetArmorObject(armor50, armor50StartPos);
-        ResetArmorObject(armor25, armor25StartPos);
+        ResetArmorObject(armor80, armor80StartPos);
+        ResetArmorObject(armor60, armor60StartPos);
+        ResetArmorObject(armor40, armor40StartPos);
 
         armor100Broken = false;
-        armor75Broken = false;
-        armor50Broken = false;
-        armor25Broken = false;
+        armor80Broken = false;
+        armor60Broken = false;
+        armor40Broken = false;
     }
 
     private void ResetArmorObject(RectTransform armor, Vector2 startPos)
@@ -81,9 +83,9 @@ public class BossArmorUI : MonoBehaviour
     // 현재 HP 비율을 기준으로 갑옷 파괴 확인
     public void UpdateArmor(float hpPercent)
     {
-        // HP 75% 이하
-        // 100% 갑옷 제거
-        if (hpPercent <= 0.75f && !armor100Broken)
+        // HP 80% 이하
+        // 첫 번째 갑옷 제거
+        if (hpPercent <= 0.80f && !armor100Broken)
         {
             armor100Broken = true;
 
@@ -91,34 +93,34 @@ public class BossArmorUI : MonoBehaviour
                 StartCoroutine(BreakArmor(armor100));
         }
 
-        // HP 50% 이하
-        // 75% 갑옷 제거
-        if (hpPercent <= 0.50f && !armor75Broken)
+        // HP 60% 이하
+        // 두 번째 갑옷 제거
+        if (hpPercent <= 0.60f && !armor80Broken)
         {
-            armor75Broken = true;
+            armor80Broken = true;
 
-            if (armor75 != null)
-                StartCoroutine(BreakArmor(armor75));
+            if (armor80 != null)
+                StartCoroutine(BreakArmor(armor80));
         }
 
-        // HP 25% 이하
-        // 50% 갑옷 제거
-        if (hpPercent <= 0.25f && !armor50Broken)
+        // HP 40% 이하
+        // 세 번째 갑옷 제거
+        if (hpPercent <= 0.40f && !armor60Broken)
         {
-            armor50Broken = true;
+            armor60Broken = true;
 
-            if (armor50 != null)
-                StartCoroutine(BreakArmor(armor50));
+            if (armor60 != null)
+                StartCoroutine(BreakArmor(armor60));
         }
 
-        // HP 0%
-        // 25% 갑옷 제거
-        if (hpPercent <= 0f && !armor25Broken)
+        // HP 20% 이하
+        // 네 번째 갑옷 제거
+        if (hpPercent <= 0.20f && !armor40Broken)
         {
-            armor25Broken = true;
+            armor40Broken = true;
 
-            if (armor25 != null)
-                StartCoroutine(BreakArmor(armor25));
+            if (armor40 != null)
+                StartCoroutine(BreakArmor(armor40));
         }
     }
 

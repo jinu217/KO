@@ -43,6 +43,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected bool isChasing;
     protected bool isAttacking;
     protected bool isDead;
+    private bool healthUIShown;
     public bool IsDead => isDead;
     public event System.Action Defeated;
     protected int currentPhase = 1;
@@ -84,7 +85,6 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         }
 
         currentHp = data.maxHp;
-        ShowHealthUI();
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
         {
@@ -137,8 +137,21 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         }
         if (playerTransform == null) return;
         float distance = Vector2.Distance(transform.position, playerTransform.position);
-        if (!isChasing && distance <= data.detectRange) isChasing = true;
-        else if (isChasing && distance > data.chaseRange) isChasing = false;
+        if (!isChasing && distance <= data.detectRange)
+        {
+            isChasing = true;
+
+            // 처음 조우했을 때 HP UI 표시
+            if (!healthUIShown)
+            {
+                healthUIShown = true;
+                ShowHealthUI();
+            }
+        }
+        else if (isChasing && distance > data.chaseRange)
+        {
+            isChasing = false;
+        }
     }
 
     // 최초 인식 시 일반 공격은 즉시 준비하고, 나머지 스킬은 쿨타임이 50% 지난 상태로 시작한다.
