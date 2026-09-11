@@ -145,6 +145,9 @@ public class ChestRewardPanel : MonoBehaviour
         if (rewardPanel != null)
             rewardPanel.SetActive(false);
 
+        if (currentChest != null)
+            currentChest.NotifyRewardPanelClosed();
+
         currentRewards = null;
         currentChest = null;
         inventoryUI = null;
