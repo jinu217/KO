@@ -500,7 +500,7 @@ MonoBehaviour:
   m_ActionEvents:
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnMove
         m_Mode: 0
@@ -516,7 +516,7 @@ MonoBehaviour:
     m_ActionName: 'Player/Move[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnJump
         m_Mode: 0
@@ -532,7 +532,7 @@ MonoBehaviour:
     m_ActionName: 'Player/Jump[/Keyboard/space]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnDash
         m_Mode: 0
@@ -548,7 +548,7 @@ MonoBehaviour:
     m_ActionName: 'Player/Dash[/Keyboard/leftShift]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnAttack
         m_Mode: 0
@@ -564,7 +564,7 @@ MonoBehaviour:
     m_ActionName: 'Player/Attack[/Keyboard/z]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnInteract
         m_Mode: 0
@@ -580,7 +580,7 @@ MonoBehaviour:
     m_ActionName: 'Player/Interact[/Keyboard/f]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnInventory
         m_Mode: 0
@@ -596,7 +596,7 @@ MonoBehaviour:
     m_ActionName: 'Player/Inventory[/Keyboard/i]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnHPPotion
         m_Mode: 0
@@ -612,7 +612,7 @@ MonoBehaviour:
     m_ActionName: 'Player/HPpotion[/Keyboard/p]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnBPMPotion
         m_Mode: 0
@@ -628,7 +628,7 @@ MonoBehaviour:
     m_ActionName: 'Player/BPMPotion[/Keyboard/o]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5275456271088645987}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
         m_MethodName: OnInventoryDrop
         m_Mode: 0
@@ -648,7 +648,7 @@ MonoBehaviour:
     m_ActionName: 'Player/isMeditating[/Keyboard/f]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2887562086025210990}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: 
         m_Mode: 1
@@ -724,7 +724,7 @@ MonoBehaviour:
   airDecelAtHighSpeed: 8
   coyoteTime: 0.1
   jumpBufferTime: 0.12
-  bodyCollider: {fileID: 3058657662090194078}
+  bodyCollider: {fileID: 0}
   cornerCorrectionCheckDistance: 0.1
   cornerCorrectionPushX: 0.15
   cornerCorrectionCooldown: 0.05
@@ -747,7 +747,7 @@ MonoBehaviour:
   fallDamageAmount: 5
   fallDamagePerUnit: 1
   fallDamageStunDelay: 0.5
-  groundCheck: {fileID: 2304696995304926367}
+  groundCheck: {fileID: 0}
   groundCheckSize: {x: 0.4, y: 0.1}
   groundLayer:
     serializedVersion: 2
@@ -769,7 +769,7 @@ MonoBehaviour:
   showGroundCheckGizmo: 1
   fadeGroup: {fileID: 0}
   fadeDuration: 0.8
-  playerStatus: {fileID: 2429996092289418593}
+  playerStatus: {fileID: 0}
 --- !u!114 &2429996092289418593
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -849,7 +849,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8b9c2063ac5c4441b173769916c3b97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentManager
-  inventory: {fileID: 5101979411063196651}
+  inventory: {fileID: 0}
   weaponSlot: {fileID: 0}
   handSlot: {fileID: 0}
   headSlot: {fileID: 0}
@@ -872,8 +872,8 @@ MonoBehaviour:
     defense: 10
     jumpForce: 15
     maxJumpCount: 1
-  playerController: {fileID: 5275456271088645987}
-  playerAppearance: {fileID: 7018842537890649716}
+  playerController: {fileID: 0}
+  playerAppearance: {fileID: 0}
 --- !u!114 &3186593238252557269
 MonoBehaviour:
   m_ObjectHideFlags: 0
