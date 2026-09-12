@@ -298,11 +298,20 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     // -------------------- 컴포넌트/입력 --------------------
     private Rigidbody2D rb;        // 플레이어 물리 제어
+    [SerializeField] private Animator animator;   // 애니메이션 파라미터 갱신용
     private Vector2 moveInput;     // Input System에서 받은 이동 입력
     private bool isKeyboardControlPaused;
     private bool isAutoMovingForward;
     private float autoMoveDirection = 1f;
     private float autoMoveSpeed = 5f;
+
+    // 애니메이터 파라미터 해시(문자열 비교보다 빠름)
+    private static readonly int AnimMoveSpeed = Animator.StringToHash("MoveSpeed");
+    private static readonly int AnimVerticalVelocity = Animator.StringToHash("VerticalVelocity");
+    private static readonly int AnimIsGrounded = Animator.StringToHash("IsGrounded");
+    private static readonly int AnimIsDownJumping = Animator.StringToHash("IsDownJumping");
+    private static readonly int AnimAttack = Animator.StringToHash("Attack");
+    private static readonly int AnimDash = Animator.StringToHash("Dash");
 
     // -------------------- 이동/점프 --------------------
     [Header("이동 및 점프 설정")]
@@ -520,6 +529,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         ApplyPersistentUpgrades();
         rb = GetComponent<Rigidbody2D>();
         if (bodyCollider == null) bodyCollider = GetComponent<Collider2D>();
+        if (animator == null) animator = GetComponentInChildren<Animator>();
 
         hitFlash = GetComponent<HitFlashEffect>();
         runtimeState = GetComponent<PlayerRuntimeState>();
@@ -669,6 +679,19 @@ public class PlayerController : MonoBehaviour, IDamageable
             HandleLandingFallDamage();
 
         wasGrounded = isGrounded;
+
+        UpdateAnimatorParameters();
+    }
+
+    // 매 프레임 애니메이터 파라미터 갱신(MoveSpeed/VerticalVelocity/IsGrounded/IsDownJumping)
+    private void UpdateAnimatorParameters()
+    {
+        if (animator == null) return;
+
+        animator.SetFloat(AnimMoveSpeed, Mathf.Abs(rb.linearVelocity.x));
+        animator.SetFloat(AnimVerticalVelocity, rb.linearVelocity.y);
+        animator.SetBool(AnimIsGrounded, isGrounded);
+        animator.SetBool(AnimIsDownJumping, isDownJumping);
     }
 
     // 입력 콜백: 이동(인벤토리 열림 중에는 인벤토리 커서 이동에 사용)
@@ -743,6 +766,8 @@ public class PlayerController : MonoBehaviour, IDamageable
 
                 return;
             }
+
+            return;
         }
 
         jumpBufferTimer = jumpBufferTime;
@@ -865,6 +890,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     private IEnumerator DashAction()
     {
         isDashing = true;
+        if (animator != null) animator.SetTrigger(AnimDash);
 
         float prevGravity = rb.gravityScale;
         rb.gravityScale = 0f;
@@ -923,7 +949,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         float effectiveAttackSpeed = stats.attackSpeed * attackSpeedMultiplier;
         if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed)) return;
 
-        Attack();
+        if (animator != null) animator.SetTrigger(AnimAttack);
         playerStatus.OnAttack(); // PlayerStatus 연결
         lastAttackTime = Time.time;
     }
@@ -963,7 +989,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         inventoryUI.DropCurrentSelection();
     }
-    
+
     public PlayerStatus playerStatus; //플레이어 현재상태()
 
     // 입력 콜백: HP포션 사용
@@ -984,7 +1010,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         bag.UseHealPotion();
     }
-    
+
     // 입력 콜백: BPM포션 사용
     public void OnBPMPotion(InputAction.CallbackContext context)
     {
@@ -1457,7 +1483,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         // 사망 횟수 증가
         SaveData.Instance.persistent.deathCount++;
-        
+
         float t = 0f;
 
         while (t < fadeDuration)
