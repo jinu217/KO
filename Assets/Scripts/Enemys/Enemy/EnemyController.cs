@@ -122,6 +122,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
     protected Transform playerTransform;
     protected Collider2D bodyCollider;
+    protected Animator animator;
 
     // -------------------- 이동/방향 --------------------
     protected int walkDirection = 1;     // 이동 방향(-1:왼쪽, 1:오른쪽)
@@ -184,9 +185,10 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         hitFlash = GetComponent<HitFlashEffect>();
         bodyCollider = GetComponent<Collider2D>();
+        animator = GetComponentInChildren<Animator>();
 
         walkDirection = (Random.value < 0.5f) ? -1 : 1;
         delayedDirection = walkDirection;
@@ -228,6 +230,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 프레임 로직: 상태 차단 → 플레이어 감지 → 타이머 처리
     protected virtual void Update()
     {
+        UpdateAnimatorParameters();
+
         if (isKnockback || isHitStunned)
         {
             HandleTimers();
@@ -262,6 +266,17 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
 
         CheckPlayerDetection();
         HandleTimers();
+    }
+
+    // Animator 파라미터 갱신
+    protected virtual void UpdateAnimatorParameters()
+    {
+        if (animator == null || rb == null) return;
+
+        animator.SetFloat(
+            "MoveSpeed",
+            Mathf.Abs(rb.linearVelocity.x)
+        );
     }
 
     // 물리 프레임 로직: 절벽 감지 + 이동 상태 처리
@@ -553,6 +568,10 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     protected void StartAttack()
     {
         lastAttackTime = Time.time;
+
+        if (animator != null)
+            animator.SetTrigger("Attack");
+
         Attack();
     }
 
@@ -1002,8 +1021,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
 
         currentHp -= damage;
         // 데미지 텍스트 생성
-        DamageTextManager.Instance?.ShowDamage(Mathf.RoundToInt(damage),transform.position + Vector3.up * 1.5f);
-        
+        DamageTextManager.Instance?.ShowDamage(Mathf.RoundToInt(damage), transform.position + Vector3.up * 1.5f);
+
         hitFlash?.Play();
 
         forcedAggroTimer = 2f;
