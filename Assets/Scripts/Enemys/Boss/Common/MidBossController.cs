@@ -16,13 +16,18 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     }
 
     [Header("데이터")]
+    [Tooltip("보스의 체력, 이동, 기본 공격과 일반 스킬 설정이 들어 있는 데이터 에셋입니다.")]
     public BossDataBase data;
     [Header("레이어")]
+    [Tooltip("공격 판정과 플레이어 탐색에 사용할 플레이어 레이어입니다.")]
     public LayerMask playerLayer;
+    [Tooltip("벽 감지와 착지 판정에 사용할 지형 레이어입니다.")]
     public LayerMask wallLayer;
     [Header("감지 위치")]
+    [Tooltip("보스 전방의 벽을 확인할 기준 위치입니다. 보스의 자식 오브젝트인 벽 감지 위치를 연결합니다.")]
     public Transform wallCheck;
-    [SerializeField] private float turnDeadZone = 0.2f;
+    [SerializeField, Tooltip("플레이어와의 X축 차이가 이 값보다 작으면 방향을 전환하지 않습니다.")]
+    private float turnDeadZone = 0.2f;
     [Header("기즈모")]
     [SerializeField, Tooltip("공격 범위 기즈모 표시 여부")] private bool showGizmos = true;
     [SerializeField, Tooltip("전체, 기본 공격 또는 확인할 스킬 하나를 선택")]
@@ -30,9 +35,10 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     [SerializeField, Tooltip("감지 범위, 추적 범위와 벽 감지선도 함께 표시")]
     private bool showDetectionGizmos;
     [Header("디버그")]
-    [SerializeField, Tooltip("기본 공격과 스킬의 시작/종료 및 쿨타임 변경을 Console에 출력")]
+    [SerializeField, Tooltip("기본 공격과 스킬의 시작·종료 및 쿨타임 변경 내용을 콘솔에 출력합니다.")]
     private bool logSkillUsage = true;
-    [SerializeField] protected float currentHp;
+    [SerializeField, Tooltip("실행 중 확인하기 위한 현재 체력입니다. 게임 시작 시 데이터의 최대 체력으로 초기화됩니다.")]
+    protected float currentHp;
 
     protected Rigidbody2D rb;
     protected SpriteRenderer spriteRenderer;
@@ -105,6 +111,8 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         FindAndDetectPlayer();
         UpdatePhase();
         ApplyInitialCooldownsOnFirstDetection();
+        if (UpdatePriorityBehavior()) { StopMove(); return; }
+        if (!CanRunCombatAI()) { StopMove(); return; }
         if (!isChasing || playerTransform == null) { StopMove(); return; }
         if (isAttacking) { StopMove(); return; }
 
@@ -120,7 +128,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
     protected virtual void FixedUpdate()
     {
-        if (data == null || isDead || isAttacking || !isChasing || playerTransform == null) return;
+        if (data == null || isDead || isAttacking || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
         BossSkillData skill = GetReadySkill(out _) ?? GetBasicAttackData();
         if (InCastRange(skill)) { StopMove(); return; }
         if (IsWallInFront()) { StopMove(); return; }
@@ -247,7 +255,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         return Physics2D.Raycast(wallCheck.position, Vector2.right * lookDirection, data.wallCheckDistance, wallLayer).collider != null;
     }
 
-    private void StopMove()
+    protected void StopMove()
     {
         if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }
@@ -315,6 +323,8 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected virtual float GetExternalDamageMultiplier() => 1f;
     protected virtual float GetExternalBasicCooldownMultiplier() => 1f;
     protected virtual bool IsExternalBuffBlocking() => false;
+    protected virtual bool CanRunCombatAI() => true;
+    protected virtual bool UpdatePriorityBehavior() => false;
     protected void ResetAllSkillCooldowns()
     {
         lastBasicTime = -999f;
@@ -516,6 +526,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
         return step.actionType == BossActionType.MeleeAttack
             || step.actionType == BossActionType.DashAttack
-            || step.actionType == BossActionType.Slam;
+            || step.actionType == BossActionType.Slam
+            || step.actionType == BossActionType.PersistentHitbox;
     }
 }

@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 4048134802029589269}
   - component: {fileID: 1221640104977840777}
   - component: {fileID: 4422395347486997663}
+  - component: {fileID: 5874163920461783204}
   m_Layer: 11
   m_Name: Stage2_MainBoss
   m_TagString: MainBoss
@@ -215,6 +216,41 @@ MonoBehaviour:
   turnDeadZone: 0.2
   showGizmos: 1
   currentHp: 0
+  desireSkill: {fileID: 5874163920461783204}
+--- !u!114 &5874163920461783204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b207724c86e44cf887324f0b8e9dcc3e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Stage2_MainBossDesireSkill
+  cooldown: 60
+  castDelay: 0.8
+  fieldDuration: 25
+  damageEffectDuration: 30
+  fieldRadius: 5
+  activationKnockbackRadius: 4.5
+  activationKnockbackForce: {x: 14, y: 5}
+  baseDamageReduction: 0.25
+  fieldDamageReduction: 0.5
+  fieldAttackMultiplier: 1.1
+  healInterval: 3
+  healMaxHpRatio: 0.03
+  postFieldDamageTakenIncrease: 0.25
+  returnAttackDelay: 5
+  forcedReturnDelay: 10
+  returnAttackPreDelay: 0.7
+  returnAttackDamage: 10
+  returnAttackSize: {x: 3.5, y: 1.8}
+  returnAttackOffset: {x: 1.8, y: 0}
+  returnAttackKnockback: {x: 16, y: 5}
+  missedAttackStunDuration: 3
+  returnMoveSpeed: 8
 --- !u!1 &7738030062326856143
 GameObject:
   m_ObjectHideFlags: 0
