@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 4048134802029589269}
   - component: {fileID: 1221640104977840777}
   - component: {fileID: 6828079844074179072}
+  - component: {fileID: 2924873007192052447}
   m_Layer: 11
   m_Name: Stage3_MainBoss
   m_TagString: MainBoss
@@ -218,8 +219,65 @@ MonoBehaviour:
   showDetectionGizmos: 0
   logSkillUsage: 1
   currentHp: 0
-  skill2ReductionDistance: 7
-  skill4ReductionDistance: 8
+  desireSkill: {fileID: 0}
+--- !u!114 &2924873007192052447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a6dc6d58cd4b8d4c88cd3257a901e33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Stage3_MainBossDesireSkill
+  duration: 20
+  cooldown: 50
+  castDelay: 0.8
+  damageMultiplier: 1.1
+  attackSpeedMultiplier: 1.15
+  moveSpeedMultiplier: 1.15
+  achievedCooldownMultiplier: 0.9
+  enhancedBasicAttack:
+    skillName: 
+    skillType: 0
+    executionOrder: 0
+    cooldown: 0
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 0
+      effects: []
+  enhancedSkill4:
+    skillName: 
+    skillType: 0
+    executionOrder: 0
+    cooldown: 0
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 0
+      effects: []
+  finisherChargeDelay: 1.2
+  finisherJumpForce: 13
+  finisherSlamDamage: 25
+  followupTelegraphDelay: 0.5
+  followupDamage: 20
+  missedFinisherGroggy: 5
+  timeoutGroggy: 3
 --- !u!1 &7738030062326856143
 GameObject:
   m_ObjectHideFlags: 0
