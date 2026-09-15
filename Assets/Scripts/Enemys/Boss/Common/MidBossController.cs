@@ -231,6 +231,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             distanceCooldownReduced[index] = false;
         }
         LogSkillDebug(index < 0 ? "기본 공격 시작" : $"{index + 1}스킬 시작", skill);
+        OnSkillExecutionStarted(skill, index);
         yield return BossSkillExecutor.Execute(skill, this);
         OnSkillExecutionFinished(index);
         LogSkillDebug(index < 0 ? "기본 공격 종료" : $"{index + 1}스킬 종료", skill);
@@ -313,6 +314,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     }
     public virtual void OnSkillAttackHit(BossAttackStepData step) { }
     protected virtual BossSkillData GetBasicAttackData() => data.basicAttack;
+    protected virtual void OnSkillExecutionStarted(BossSkillData skill, int index) { }
     protected virtual void OnSkillExecutionFinished(int index) { }
     protected virtual BossSkillData GetSkillData(int index)
     {

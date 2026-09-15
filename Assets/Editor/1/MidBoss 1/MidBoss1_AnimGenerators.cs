@@ -849,6 +849,102 @@ public class MidBoss1_AnimGenerators
         SavePattern(clip, "Dash");
     }
 
+    [MenuItem("Tools/MidBoss1/Setup Gameplay Animator")]
+    public static void SetupGameplayAnimator()
+    {
+        EnsureFolders();
+        // Rest 기준 자세를 가진 대기 클립. 기존 공격/버프/돌진 클립은 재생성하지 않습니다.
+        AnimationClip restClip = CreatePatternRest("Rest", 0.1f);
+        SavePattern(restClip, "Rest");
+        GenerateAC();
+        AnimatorController ac = AssetDatabase.LoadAssetAtPath<AnimatorController>($"{SAVE_PATH}/{AC_NAME}.controller");
+        string[] triggers = { "VerticalAttack", "HorizontalAttack", "Buff", "Combo2", "Combo3", "Dash" };
+        // 기존 동명 파라미터의 타입이 다르면 임의 변경하지 않고 알려줍니다.
+        foreach (string trigger in triggers) EnsureGameplayParameter(ac, trigger, AnimatorControllerParameterType.Trigger);
+        EnsureGameplayParameter(ac, "IsMoving", AnimatorControllerParameterType.Bool);
+        EnsureGameplayParameter(ac, "IsAttacking", AnimatorControllerParameterType.Bool);
+        EnsureGameplayParameter(ac, "AttackSpeed", AnimatorControllerParameterType.Float);
+        var parameters = ac.parameters;
+        for (int i = 0; i < parameters.Length; i++)
+            if (parameters[i].name == "AttackSpeed") parameters[i].defaultFloat = 1f;
+        ac.parameters = parameters;
+
+        AnimatorStateMachine sm = ac.layers[0].stateMachine;
+        AnimatorState rest = FindGameplayState(sm, LoadClip("Rest"));
+        sm.defaultState = rest;
+        AnimatorState run = FindGameplayState(sm, LoadClip("Run") ?? LoadClip("Walk"));
+        if (run != null)
+        {
+            var move = GameplayTransition(rest, run, "MidBoss1_Auto_Move");
+            move.AddCondition(AnimatorConditionMode.If, 0f, "IsMoving");
+            move.AddCondition(AnimatorConditionMode.IfNot, 0f, "IsAttacking");
+            var stop = GameplayTransition(run, rest, "MidBoss1_Auto_Stop");
+            stop.AddCondition(AnimatorConditionMode.IfNot, 0f, "IsMoving");
+        }
+        foreach (string trigger in triggers)
+        {
+            AnimationClip clip = trigger == "VerticalAttack" ? (LoadClip("세로공격") ?? LoadClip(trigger)) : LoadClip(trigger);
+            AnimatorState state = FindGameplayState(sm, clip);
+            if (state == null) { Debug.LogWarning("[MidBoss1] 클립이 없어 전환을 생략했습니다: " + trigger); continue; }
+            state.speedParameter = "AttackSpeed";
+            state.speedParameterActive = true;
+            string transitionName = "MidBoss1_Auto_" + trigger;
+            AnimatorStateTransition enter = null;
+            foreach (var existing in sm.anyStateTransitions)
+                if (existing.name == transitionName) { enter = existing; break; }
+            if (enter == null) enter = sm.AddAnyStateTransition(state);
+            enter.name = transitionName; enter.destinationState = state;
+            ConfigureGameplayTransition(enter);
+            enter.canTransitionToSelf = true;
+            enter.AddCondition(AnimatorConditionMode.If, 0f, trigger);
+            var leave = GameplayTransition(state, rest, transitionName + "_End");
+            leave.hasExitTime = true;
+            leave.exitTime = 1f;
+        }
+        EditorUtility.SetDirty(ac);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[MidBoss1] Trigger 6개, 이동/공격 Bool, AttackSpeed 및 전환 연결 완료. 보스 Animator에 MidBoss 1_AC를 연결하세요.");
+    }
+
+    static void EnsureGameplayParameter(AnimatorController ac, string name, AnimatorControllerParameterType type)
+    {
+        foreach (var parameter in ac.parameters)
+            if (parameter.name == name)
+            {
+                if (parameter.type != type) throw new System.InvalidOperationException("Animator 파라미터 타입을 확인하세요: " + name + " → " + type);
+                return;
+            }
+        ac.AddParameter(name, type);
+    }
+
+    static AnimatorState FindGameplayState(AnimatorStateMachine sm, AnimationClip clip)
+    {
+        if (clip == null) return null;
+        foreach (var child in sm.states) if (child.state.motion == clip) return child.state;
+        return null;
+    }
+
+    static AnimatorStateTransition GameplayTransition(AnimatorState from, AnimatorState to, string name)
+    {
+        AnimatorStateTransition transition = null;
+        foreach (var existing in from.transitions) if (existing.name == name) { transition = existing; break; }
+        if (transition == null) transition = from.AddTransition(to);
+        transition.name = name;
+        transition.destinationState = to;
+        ConfigureGameplayTransition(transition);
+        return transition;
+    }
+
+    static void ConfigureGameplayTransition(AnimatorStateTransition transition)
+    {
+        transition.conditions = new AnimatorCondition[0];
+        transition.hasExitTime = false;
+        transition.hasFixedDuration = true;
+        transition.duration = 0.04f;
+        transition.offset = 0f;
+        transition.interruptionSource = TransitionInterruptionSource.None;
+    }
+
     static string FindOrCreateClipPath(string actionName)
     {
         string[] guids = AssetDatabase.FindAssets(
