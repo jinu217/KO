@@ -194,7 +194,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         EnsureTimers();
         for (int i = 0; i < data.skills.Count; i++)
         {
-            BossSkillData skill = data.skills[i];
+            BossSkillData skill = GetSkillData(i);
             if (skill == null || currentPhase < skill.minimumPhase) continue;
             float remaining = lastSkillTimes[i] + AdjustCooldown(skill.cooldown) - Time.time;
             bool normalReady = remaining <= 0f;
@@ -260,7 +260,8 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }
 
-    private float AdjustCooldown(float value) => Mathf.Max(0f, value * cooldownMultiplier + cooldownAdd);
+    private float AdjustCooldown(float value)
+        => Mathf.Max(0f, (value * cooldownMultiplier + cooldownAdd) * GetExternalCooldownMultiplier());
     private float AdjustBasicCooldown(float value)
         => Mathf.Max(0f, (value * basicCooldownMultiplier + basicCooldownAdd) * GetExternalBasicCooldownMultiplier());
 
@@ -321,6 +322,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected virtual float GetExternalMoveMultiplier() => 1f;
     protected virtual float GetExternalAttackSpeedMultiplier() => 1f;
     protected virtual float GetExternalDamageMultiplier() => 1f;
+    protected virtual float GetExternalCooldownMultiplier() => 1f;
     protected virtual float GetExternalBasicCooldownMultiplier() => 1f;
     protected virtual bool IsExternalBuffBlocking() => false;
     protected virtual bool CanRunCombatAI() => true;

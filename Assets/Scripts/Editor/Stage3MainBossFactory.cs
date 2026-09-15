@@ -42,6 +42,8 @@ public static class Stage3MainBossFactory
                 if (previousBoss != null) Object.DestroyImmediate(previousBoss);
                 boss = root.AddComponent<Stage3_MainBoss>();
             }
+            if (root.GetComponent<Stage3_MainBossDesireSkill>() == null)
+                root.AddComponent<Stage3_MainBossDesireSkill>();
 
             boss.data = data;
             boss.playerLayer = playerLayer;
