@@ -5,7 +5,8 @@ using UnityEngine;
 public sealed class Stage1_MidBoss : MidBossController
 {
     [Header("Stage1 중간보스 거리 쿨타임 감소")]
-    [SerializeField, Min(0f)] private float skill3ReductionDistance = 6f;
+    [SerializeField, Min(0f), Tooltip("3스킬을 한 번 이상 사용한 뒤 이 거리 이상 벌어지면 남은 쿨타임을 한 번 50% 줄입니다.")]
+    private float skill3ReductionDistance = 6f;
 
     protected override void Update()
     {

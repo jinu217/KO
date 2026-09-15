@@ -31,6 +31,12 @@ public class TreasureChest : MonoBehaviour
     [Tooltip("보상 선택 UI 컴포넌트(미연결 시 씬에서 자동 탐색)")]
     [SerializeField] private ChestRewardPanel rewardUI;
 
+    [Header("상자 이미지")]
+    [Tooltip("이미지를 변경할 SpriteRenderer(미연결 시 자신 또는 자식에서 자동 탐색)")]
+    [SerializeField] private SpriteRenderer chestRenderer;
+    [Tooltip("보상을 수령하고 보상 창을 닫은 뒤 표시할 이미지")]
+    [SerializeField] private Sprite openedSprite;
+
     [Header("디버그")]
     [Tooltip("보물상자 오픈/보상 획득 로그 출력")]
     [SerializeField] private bool showDebugLog = true;
@@ -142,6 +148,18 @@ public class TreasureChest : MonoBehaviour
 
         if (showDebugLog)
             Debug.Log($"[{name}] 보상 획득 완료");
+    }
+
+    // 보상을 받은 상자만 보상 창이 닫힐 때 열린 이미지로 변경
+    public void NotifyRewardPanelClosed()
+    {
+        if (!isOpened || openedSprite == null) return;
+
+        if (chestRenderer == null)
+            chestRenderer = GetComponentInChildren<SpriteRenderer>(true);
+
+        if (chestRenderer != null)
+            chestRenderer.sprite = openedSprite;
     }
 
     // possibleItems에서 rollCount개를 랜덤 추출(allowDuplicate에 따라 중복 허용 여부 결정)

@@ -13,7 +13,7 @@ public abstract class BossDataBase : ScriptableObject
     [Tooltip("벽 감지 거리")] public float wallCheckDistance;
     [Header("기본 공격")] public BossSkillData basicAttack = new BossSkillData { skillName = "기본 공격", skillType = BossSkillType.Active };
     [Header("일반 스킬")]
-    [Tooltip("Size가 일반 스킬 개수입니다. 욕망 같은 보스 전용기는 포함하지 않습니다.")]
+    [Tooltip("목록 크기가 일반 스킬 개수입니다. 욕망 같은 보스 전용기는 포함하지 않습니다.")]
     public List<BossSkillData> skills = new List<BossSkillData>();
 }
 
@@ -40,7 +40,8 @@ public enum BossActionType
     DashAttack,
     Jump,
     Slam,
-    SpawnPrefab
+    SpawnPrefab,
+    PersistentHitbox
 }
 
 public enum BossBuffStat
@@ -66,7 +67,7 @@ public class BossAttackStepData
 {
     [Tooltip("인스펙터에서 구분하기 위한 공격 단계 이름입니다.")]
     public string stepName;
-    [Tooltip("이 단계에서 실행할 행동입니다. None은 아무 행동도 하지 않습니다.")]
+    [Tooltip("이 단계에서 실행할 행동입니다. '없음'을 선택하면 아무 행동도 하지 않습니다.")]
     public BossActionType actionType;
 
     [Header("타이밍")]
@@ -94,12 +95,16 @@ public class BossAttackStepData
     [Header("이동")]
     [Tooltip("전진 또는 돌진 속도입니다. 0이면 이동하지 않습니다.")]
     [Min(0f)] public float moveSpeed;
+    [Tooltip("이동 또는 돌진이 진행할 최대 거리입니다. 0이면 실행 시간으로만 종료를 판단합니다.")]
+    [Min(0f)] public float maxMoveDistance;
     [Tooltip("점프 시 적용할 X/Y 속도입니다. X는 보스가 보는 방향에 맞춰 반전됩니다. (0, 0)이면 점프하지 않습니다.")]
     public Vector2 jumpForce;
     [Tooltip("내려찍기 단계의 아래 방향 낙하 속도입니다. 0이면 강제 낙하하지 않습니다.")]
     [Min(0f)] public float slamSpeed;
     [Tooltip("활성화하면 이동 또는 돌진 중 전방 벽을 감지했을 때 해당 단계를 즉시 종료합니다.")]
     public bool stopAtWall;
+    [Tooltip("활성화하면 돌진 공격이 플레이어에게 적중한 순간 해당 돌진 단계를 종료합니다.")]
+    public bool stopOnPlayerHit;
 
     [Header("생성")]
     [Tooltip("투사체 또는 소환 단계에서 생성할 프리팹입니다. 비어 있으면 아무것도 생성하지 않습니다.")]
@@ -118,14 +123,14 @@ public class BossAttackStepData
     [Min(0f)] public float spawnScaleMultiplier;
     [Tooltip("생성된 투사체의 이동속도입니다. 0이면 프리팹의 기본 속도를 사용합니다.")]
     [Min(0f)] public float projectileSpeed;
-    [Tooltip("Jump/Slam에서 시전 순간 플레이어까지 X거리 중 이 단계가 이동할 비율입니다. 0이면 기존 속도 방식을 사용합니다.")]
+    [Tooltip("점프 또는 내려찍기 시, 시전 순간 플레이어까지의 가로 거리 중 이 단계에서 이동할 비율입니다. 0이면 기존 속도 방식을 사용합니다.")]
     [Range(0f, 1f)] public float targetDistanceRatio;
 }
 
 [Serializable]
 public class BossActiveSkillData
 {
-    [Tooltip("액티브 스킬이 순서대로 실행할 행동 목록입니다. 리스트의 Size가 행동 단계 개수입니다.")]
+    [Tooltip("액티브 스킬이 순서대로 실행할 행동 목록입니다. 목록 크기가 행동 단계 개수입니다.")]
     public List<BossAttackStepData> attackSteps = new List<BossAttackStepData>();
 }
 
@@ -134,9 +139,9 @@ public class BossBuffEffectData
 {
     [Tooltip("버프로 변경할 보스 능력치를 선택합니다.")]
     public BossBuffStat stat;
-    [Tooltip("Add는 고정값 증가, Multiply는 배율 적용, Percent는 입력한 퍼센트만큼 증가합니다.")]
+    [Tooltip("고정값 증가는 입력값을 더하고, 배율 적용은 입력값을 곱하며, 비율 증가는 입력한 백분율만큼 증가시킵니다.")]
     public BossBuffValueMode valueMode = BossBuffValueMode.Multiply;
-    [Tooltip("능력치에 적용할 값입니다. Multiply에서 1은 변화 없음, Percent에서 25는 25% 증가를 뜻합니다.")]
+    [Tooltip("능력치에 적용할 값입니다. 배율 적용에서 1은 변화 없음, 비율 증가에서 25는 25% 증가를 뜻합니다.")]
     public float value;
 }
 
@@ -145,7 +150,7 @@ public class BossBuffSkillData
 {
     [Tooltip("버프가 유지되는 시간(초)입니다. 0이면 버프를 적용하지 않습니다.")]
     [Min(0f)] public float duration;
-    [Tooltip("동시에 적용할 버프 효과 목록입니다. 리스트의 Size가 상승시킬 능력치 개수입니다.")]
+    [Tooltip("동시에 적용할 버프 효과 목록입니다. 목록 크기가 상승시킬 능력치 개수입니다.")]
     public List<BossBuffEffectData> effects = new List<BossBuffEffectData>();
 }
 
@@ -154,9 +159,9 @@ public class BossSkillData
 {
     [Tooltip("인스펙터와 디버그 로그에서 사용할 스킬 이름입니다.")]
     public string skillName;
-    [Tooltip("Active는 공격, Buff는 능력치 강화, Active And Buff는 공격과 버프를 함께 실행합니다.")]
+    [Tooltip("액티브는 공격, 버프는 능력치 강화, 액티브+버프는 공격과 능력치 강화를 함께 실행합니다.")]
     public BossSkillType skillType;
-    [Tooltip("Active And Buff일 때 공격과 버프의 실행 순서를 결정합니다.")]
+    [Tooltip("액티브+버프 스킬일 때 공격과 버프의 실행 순서를 결정합니다.")]
     public BossSkillExecutionOrder executionOrder;
 
     [Tooltip("스킬을 다시 사용할 수 있을 때까지의 시간(초)입니다. 0이면 쿨타임이 없습니다.")]

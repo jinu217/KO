@@ -30,6 +30,8 @@ public static class Stage2MainBossFactory
             Stage2_MainBoss boss = root.GetComponent<Stage2_MainBoss>();
             if (boss == null)
                 boss = root.AddComponent<Stage2_MainBoss>();
+            if (root.GetComponent<Stage2_MainBossDesireSkill>() == null)
+                root.AddComponent<Stage2_MainBossDesireSkill>();
             boss.data = data;
             EditorUtility.SetDirty(boss);
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);

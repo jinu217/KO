@@ -106,6 +106,10 @@ public static class BossSkillExecutor
                 case BossActionType.SpawnPrefab:
                     yield return ExecuteSpawn(step, context);
                     break;
+
+                case BossActionType.PersistentHitbox:
+                    yield return ExecutePersistentHitbox(step, context);
+                    break;
             }
 
             if (step.postDelay > 0f)
@@ -127,10 +131,14 @@ public static class BossSkillExecutor
     {
         float timer = 0f;
         int remainingHits = step.attackCount;
+        float startX = context.BossBody != null ? context.BossBody.position.x : context.BossTransform.position.x;
 
         while (timer < step.duration)
         {
             if (step.stopAtWall && context.IsWallAhead())
+                break;
+            if (step.maxMoveDistance > 0f
+                && Mathf.Abs(context.BossTransform.position.x - startX) >= step.maxMoveDistance)
                 break;
 
             Rigidbody2D body = context.BossBody;
@@ -138,7 +146,11 @@ public static class BossSkillExecutor
                 body.linearVelocity = new Vector2(context.LookDirection * step.moveSpeed, body.linearVelocity.y);
 
             if (attackDuringMove && remainingHits > 0 && HitPlayer(step, context))
+            {
                 remainingHits--;
+                if (step.stopOnPlayerHit)
+                    break;
+            }
 
             timer += Time.deltaTime;
             yield return null;
@@ -256,6 +268,51 @@ public static class BossSkillExecutor
             if (i < step.spawnCount - 1 && step.spawnInterval > 0f)
                 yield return new WaitForSeconds(context.GetSkillDelay(step.spawnInterval));
         }
+    }
+
+    private static IEnumerator ExecutePersistentHitbox(BossAttackStepData step, IBossSkillContext context)
+    {
+        if (step.attackCount <= 0 || step.damage <= 0f || step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f)
+            yield break;
+
+        float interval = Mathf.Max(0.01f, context.GetSkillDelay(step.interval));
+        float lifetime = step.duration > 0f
+            ? context.GetSkillDelay(step.duration)
+            : interval * step.attackCount;
+        float elapsed = 0f;
+        float nextHitTime = 0f;
+        int hitCount = 0;
+        bool playerEntered = false;
+
+        while (elapsed <= lifetime && hitCount < step.attackCount)
+        {
+            bool playerInside = IsPlayerInHitbox(step, context);
+            if (playerEntered && !playerInside)
+                yield break;
+
+            if (playerInside)
+            {
+                playerEntered = true;
+                if (elapsed >= nextHitTime)
+                {
+                    HitPlayer(step, context);
+                    hitCount++;
+                    nextHitTime = elapsed + interval;
+                }
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    private static bool IsPlayerInHitbox(BossAttackStepData step, IBossSkillContext context)
+    {
+        Vector2 center = (Vector2)context.BossTransform.position + new Vector2(
+            context.LookDirection * step.hitboxOffset.x,
+            step.hitboxOffset.y
+        );
+        return Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer) != null;
     }
 
     private static bool HitPlayer(BossAttackStepData step, IBossSkillContext context)
