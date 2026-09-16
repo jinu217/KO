@@ -40,6 +40,10 @@ public class MidBoss1_AnimGenerators
             Debug.Log($"[MidBoss1] 새 AnimatorController 생성: {acPath}");
         }
 
+        // 참고용 클립은 파일로 보존하고 게임플레이 상태/파라미터만 제거합니다.
+        foreach (var layer in ac.layers) RemoveReferenceAttackStates(layer.stateMachine);
+        for (int i = ac.parameters.Length - 1; i >= 0; i--)
+            if (IsReferenceAttackParameter(ac.parameters[i].name)) ac.RemoveParameter(i);
         AnimatorStateMachine rootSM = ac.layers[0].stateMachine;
         var existingNames =
             new System.Collections.Generic.HashSet<string>();
@@ -78,6 +82,7 @@ public class MidBoss1_AnimGenerators
                 continue;
             }
 
+            if (IsReferenceAttackName(clipName) || IsReferenceAttackName(clip.name)) continue;
             AnimatorState matchedState = null;
             foreach (ChildAnimatorState child in rootSM.states)
             {
@@ -98,6 +103,7 @@ public class MidBoss1_AnimGenerators
                 updated++;
             }
 
+            EnableLocomotionLoop(clip);
             matchedState.motion = clip;
         }
 
@@ -202,8 +208,8 @@ public class MidBoss1_AnimGenerators
     const float HORIZONTAL_SWING_END = 0.38f;
     const float HORIZONTAL_DURATION = 0.80f;
 
-    [MenuItem("Tools/MidBoss1/Generate Horizontal Attack")]
-    public static void GenerateHorizontalAttack()
+    // 콤보 제작용 내부 참고 클립 생성. 단독 공격 메뉴/상태는 만들지 않습니다.
+    static void GenerateHorizontalAttack()
     {
         EnsureFolders();
         // 기존 커브/이벤트를 복사하지 않고 새 클립으로 교체합니다.
@@ -325,7 +331,7 @@ public class MidBoss1_AnimGenerators
         SaveOrReplaceClip(clip, FindOrCreateClipPath(HORIZONTAL_ATTACK_NAME));
         AssetDatabase.SaveAssets();
         GenerateAC();
-        Debug.Log("[MidBoss1] HorizontalAttack 생성 및 AC 등록 완료 (1.6초, 임팩트 0.64초, 기존 대비 0.5배속)");
+        Debug.Log("[MidBoss1] 콤보 참고용 HorizontalAttack 갱신 완료 (1.6초, 임팩트 0.64초, 기존 대비 0.5배속)");
     }
 
     static void SetHorizontalPose(AnimationClip clip, string path, float x, float y, float zAngle)
@@ -436,7 +442,13 @@ public class MidBoss1_AnimGenerators
             AnimationClip second = SliceComboClip(vertical, 0.2f, 0.65f, 1.3f);
             temporary.Add(second);
             // 가로공격은 반속 기준 0.48초의 준비 자세부터 마지막 Rest까지.
-            AnimationClip finish = SliceComboClip(horizontal, 0.48f, 1.6f, 1f);
+            // 가로베기 반동까지 재생한 뒤 0.15초 유지, 복귀 구간은 0.20초 연장.
+            AnimationClip swing = SliceComboClip(horizontal, 0.48f, 0.96f, 1f);
+            temporary.Add(swing);
+            AnimationClip recovery = SliceComboClip(horizontal, 0.96f, 1.6f, 0.64f / 0.84f);
+            temporary.Add(recovery);
+            HoldComboStart(recovery, 0.15f);
+            AnimationClip finish = BuildCombo("HorizontalFinish", new[] { swing, recovery }, 1f, 0f);
             temporary.Add(finish);
             HoldComboStart(finish, 5f / 60f);
             // 세로 → 가로: 기존 추가 5프레임에서 총 4프레임 단축, 도착 후 총 5프레임 유지.
@@ -451,7 +463,7 @@ public class MidBoss1_AnimGenerators
             SaveOrReplaceClip(combo3, $"{SAVE_PATH}/{MOB_PREFIX}Combo3.anim");
             AssetDatabase.SaveAssets();
             GenerateAC();
-            Debug.Log("[MidBoss1] 2연격 약 2.22초 / 3연격 약 2.81초 생성 완료. 마지막 가로공격 0.5배속, Rest 복귀.");
+            Debug.Log("[MidBoss1] 2연격 약 2.57초 / 3연격 약 3.16초 생성 완료. 마지막 가로공격 0.5배속, Rest 복귀.");
         }
         finally
         {
@@ -744,7 +756,7 @@ public class MidBoss1_AnimGenerators
         GenerateDash();
         AssetDatabase.SaveAssets();
         GenerateAC();
-        Debug.Log("[MidBoss1] Buff 1.85초 / Dash 0.8초 생성 및 AC 등록 완료. 실제 돌진 이동은 이동 컨트롤러에서 처리합니다.");
+        Debug.Log("[MidBoss1] Buff 약 2.33초 / Dash 0.8초 생성 및 AC 등록 완료. 실제 돌진 이동은 이동 컨트롤러에서 처리합니다.");
     }
 
     static void SavePattern(AnimationClip clip, string action)
@@ -758,7 +770,11 @@ public class MidBoss1_AnimGenerators
 
     static void GenerateBuff()
     {
-        AnimationClip clip = CreatePatternRest("Buff", 1.85f);
+        const float stretchSpeed = 0.7f;
+        const float recoveryExtra = 5f / 60f;
+        const float stretchEnd = 0.36f + (1.28f - 0.36f) / stretchSpeed;
+        const float recoveryDuration = (1.85f - 1.28f) + recoveryExtra;
+        AnimationClip clip = CreatePatternRest("Buff", stretchEnd + recoveryDuration);
         const string sb = "Body/ShoulderJoint_B";
         const string ab = sb + "/Shoulder_B/ArmJoint_B";
         const string hb = ab + "/Arm_B/Hand_B";
@@ -768,8 +784,15 @@ public class MidBoss1_AnimGenerators
         const string tb = "Body/LowerBody/ThighJoint_B";
         const string tf = "Body/LowerBody/ThighJoint_F";
         float[] t = { 0f, 0.18f, 0.36f, 0.44f, 0.62f, 0.72f, 0.90f, 1.00f, 1.18f, 1.28f, 1.56f, 1.85f };
-        // 스트레칭 자세를 잡은 뒤 작게 당겼다 천천히 풀기를 세 번 반복.
-        // 당김 0.08~0.10초 / 풀기 0.18초: 통… 통… 통… 리듬.
+        // 자세를 잡는 구간은 유지하고, 세 번 당기고 푸는 리듬만 0.7배속.
+        // 마지막 자세 복귀는 기존보다 60 FPS 기준 5프레임 길게 보간합니다.
+        for (int i = 0; i < t.Length; i++)
+        {
+            if (t[i] > 1.28f)
+                t[i] = stretchEnd + (t[i] - 1.28f) / (1.85f - 1.28f) * recoveryDuration;
+            else if (t[i] > 0.36f)
+                t[i] = 0.36f + (t[i] - 0.36f) / stretchSpeed;
+        }
         SetHorizontalMotion(clip, sb, "localEulerAnglesRaw.z", t,
             0f, -10f, -105f, -111f, -105f, -110f, -105f, -109f, -105f, -102f, -35f, 0f);
         SetHorizontalMotion(clip, sf, "localEulerAnglesRaw.z", t,
@@ -853,16 +876,30 @@ public class MidBoss1_AnimGenerators
     public static void SetupGameplayAnimator()
     {
         EnsureFolders();
-        // Rest 기준 자세를 가진 대기 클립. 기존 공격/버프/돌진 클립은 재생성하지 않습니다.
-        AnimationClip restClip = CreatePatternRest("Rest", 0.1f);
-        SavePattern(restClip, "Rest");
+        AnimationClip basicAttackClip = LoadClip("양손찍기");
+        if (basicAttackClip == null)
+        {
+            Debug.LogError("[MidBoss1] " + SAVE_PATH + "/MidBoss 1_양손찍기.anim을 먼저 넣어주세요.");
+            return;
+        }
+        // Rest 좌표는 제작 기준일 뿐, 실제 대기는 사용자가 지정한 Idle 클립입니다.
+        AnimationClip idleClip = LoadExactGameplayClip("MidBoss 1_Idle");
+        if (idleClip == null)
+        {
+            Debug.LogError("[MidBoss1] 프로젝트에서 MidBoss 1_Idle 클립을 찾을 수 없습니다.");
+            return;
+        }
+        GenerateDashPhases();
         GenerateAC();
         AnimatorController ac = AssetDatabase.LoadAssetAtPath<AnimatorController>($"{SAVE_PATH}/{AC_NAME}.controller");
-        string[] triggers = { "VerticalAttack", "HorizontalAttack", "Buff", "Combo2", "Combo3", "Dash" };
+        string[] triggers = { "BasicAttack", "Buff", "Combo2", "Combo3", "Dash" };
         // 기존 동명 파라미터의 타입이 다르면 임의 변경하지 않고 알려줍니다.
         foreach (string trigger in triggers) EnsureGameplayParameter(ac, trigger, AnimatorControllerParameterType.Trigger);
-        EnsureGameplayParameter(ac, "IsMoving", AnimatorControllerParameterType.Bool);
+        EnsureGameplayParameter(ac, "MoveSpeed", AnimatorControllerParameterType.Float);
+        EnsureGameplayParameter(ac, "IsChasing", AnimatorControllerParameterType.Bool);
         EnsureGameplayParameter(ac, "IsAttacking", AnimatorControllerParameterType.Bool);
+        EnsureGameplayParameter(ac, "DashMoving", AnimatorControllerParameterType.Bool);
+        EnsureGameplayParameter(ac, "DashFinished", AnimatorControllerParameterType.Bool);
         EnsureGameplayParameter(ac, "AttackSpeed", AnimatorControllerParameterType.Float);
         var parameters = ac.parameters;
         for (int i = 0; i < parameters.Length; i++)
@@ -870,20 +907,46 @@ public class MidBoss1_AnimGenerators
         ac.parameters = parameters;
 
         AnimatorStateMachine sm = ac.layers[0].stateMachine;
-        AnimatorState rest = FindGameplayState(sm, LoadClip("Rest"));
-        sm.defaultState = rest;
-        AnimatorState run = FindGameplayState(sm, LoadClip("Run") ?? LoadClip("Walk"));
-        if (run != null)
+        AnimatorState idle = FindGameplayState(sm, idleClip);
+        if (idle == null) idle = sm.AddState("MidBoss 1_Idle");
+        EnableLocomotionLoop(idleClip);
+        idle.motion = idleClip;
+        idle.speed = 1f;
+        idle.speedParameterActive = false;
+        sm.defaultState = idle;
+        // 이 생성기가 만든 전환만 갱신하여 반복 실행 시 중복을 방지합니다.
+        foreach (var transition in sm.anyStateTransitions)
+            if (transition.name.StartsWith("MidBoss1_Auto_")) sm.RemoveAnyStateTransition(transition);
+        foreach (var child in sm.states)
+            foreach (var transition in child.state.transitions)
+                if (transition.name.StartsWith("MidBoss1_Auto_")) child.state.RemoveTransition(transition);
+
+        AnimatorState walk = FindGameplayState(sm, LoadClip("Walk"));
+        AnimatorState run = FindGameplayState(sm, LoadClip("Run"));
+        if (walk != null && run != null && walk != run)
         {
-            var move = GameplayTransition(rest, run, "MidBoss1_Auto_Move");
-            move.AddCondition(AnimatorConditionMode.If, 0f, "IsMoving");
-            move.AddCondition(AnimatorConditionMode.IfNot, 0f, "IsAttacking");
-            var stop = GameplayTransition(run, rest, "MidBoss1_Auto_Stop");
-            stop.AddCondition(AnimatorConditionMode.IfNot, 0f, "IsMoving");
+            AddLocomotionTransition(idle, walk, "Idle_Walk", false);
+            AddLocomotionTransition(idle, run, "Idle_Run", true);
+            AddLocomotionTransition(walk, run, "Walk_Run", true);
+            AddLocomotionTransition(run, walk, "Run_Walk", false);
+            AddStopTransition(walk, idle, "Walk_Idle");
+            AddStopTransition(run, idle, "Run_Idle");
+        }
+        else
+        {
+            AnimatorState moving = run != null ? run : walk;
+            if (moving != null)
+            {
+                var move = GameplayTransition(idle, moving, "MidBoss1_Auto_Move");
+                move.AddCondition(AnimatorConditionMode.Greater, 0.05f, "MoveSpeed");
+                move.AddCondition(AnimatorConditionMode.IfNot, 0f, "IsAttacking");
+                AddStopTransition(moving, idle, "Move_Idle");
+            }
         }
         foreach (string trigger in triggers)
         {
-            AnimationClip clip = trigger == "VerticalAttack" ? (LoadClip("세로공격") ?? LoadClip(trigger)) : LoadClip(trigger);
+            AnimationClip clip = trigger == "Dash" ? LoadClip("DashPrepare") :
+                trigger == "BasicAttack" ? basicAttackClip : LoadClip(trigger);
             AnimatorState state = FindGameplayState(sm, clip);
             if (state == null) { Debug.LogWarning("[MidBoss1] 클립이 없어 전환을 생략했습니다: " + trigger); continue; }
             state.speedParameter = "AttackSpeed";
@@ -897,13 +960,125 @@ public class MidBoss1_AnimGenerators
             ConfigureGameplayTransition(enter);
             enter.canTransitionToSelf = true;
             enter.AddCondition(AnimatorConditionMode.If, 0f, trigger);
-            var leave = GameplayTransition(state, rest, transitionName + "_End");
+            if (trigger == "Dash")
+            {
+                ConfigureDashPhases(sm, state, idle);
+                continue;
+            }
+            var leave = GameplayTransition(state, idle, transitionName + "_End");
             leave.hasExitTime = true;
             leave.exitTime = 1f;
         }
         EditorUtility.SetDirty(ac);
         AssetDatabase.SaveAssets();
-        Debug.Log("[MidBoss1] Trigger 6개, 이동/공격 Bool, AttackSpeed 및 전환 연결 완료. 보스 Animator에 MidBoss 1_AC를 연결하세요.");
+        Debug.Log("[MidBoss1] BasicAttack(양손찍기), 패턴 Trigger, MoveSpeed, IsChasing, IsAttacking, AttackSpeed 및 전환 연결 완료. 보스 Animator에 MidBoss 1_AC를 연결하세요.");
+    }
+
+    // 대기/걷기/달리기는 반복 재생, 공격/버프/돌진의 루프 설정은 건드리지 않습니다.
+    static void EnableLocomotionLoop(AnimationClip clip)
+    {
+        if (clip == null) return;
+        bool locomotion = false;
+        foreach (string action in new[] { "Idle", "Walk", "Run" })
+            if (string.Equals(clip.name, action, System.StringComparison.OrdinalIgnoreCase) || IsNamedClip(clip.name, action))
+                locomotion = true;
+        if (!locomotion) return;
+        var settings = AnimationUtility.GetAnimationClipSettings(clip);
+        settings.loopTime = true;
+        AnimationUtility.SetAnimationClipSettings(clip, settings);
+        EditorUtility.SetDirty(clip);
+    }
+
+    static AnimationClip LoadExactGameplayClip(string clipName)
+    {
+        AnimationClip match = null;
+        foreach (string guid in AssetDatabase.FindAssets("t:AnimationClip"))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(path))
+            {
+                AnimationClip clip = asset as AnimationClip;
+                if (clip == null || clip.name != clipName) continue;
+                if (match != null && match != clip)
+                    throw new System.InvalidOperationException("동일한 이름의 클립이 여러 개 있습니다: " + clipName);
+                match = clip;
+            }
+        }
+        return match;
+    }
+
+    static void GenerateDashPhases()
+    {
+        // 기존 대쉬 자세를 준비·이동 루프·제동으로 나눕니다.
+        GenerateDash();
+        AnimationClip source = LoadClip("Dash");
+        AnimationClip prepare = SliceComboClip(source, 0f, 0.22f, 1f);
+        prepare.name = MOB_PREFIX + "DashPrepare";
+        SavePattern(prepare, "DashPrepare");
+        AnimationClip move = SliceComboClip(source, 0.30f, 0.50f, 1f);
+        move.name = MOB_PREFIX + "DashMove";
+        // 전경 자세로 작게 움직이는 루프. 끝 자세와 시작 자세를 일치시킵니다.
+        foreach (var binding in AnimationUtility.GetCurveBindings(move))
+        {
+            var sourceCurve = AnimationUtility.GetEditorCurve(source, binding);
+            float first = sourceCurve.Evaluate(0.30f);
+            float middle = sourceCurve.Evaluate(0.40f);
+            SetHorizontalMotion(move, binding.path, binding.propertyName,
+                new[] { 0f, 0.10f, 0.20f }, first, middle, first);
+        }
+        var settings = AnimationUtility.GetAnimationClipSettings(move);
+        settings.loopTime = true;
+        AnimationUtility.SetAnimationClipSettings(move, settings);
+        SaveOrReplaceClip(move, $"{SAVE_PATH}/{MOB_PREFIX}DashMove.anim");
+        AnimationClip end = SliceComboClip(source, 0.50f, 0.80f, 1f);
+        end.name = MOB_PREFIX + "DashEnd";
+        // 이동 자세에 가까운 전경 자세에서 제동을 시작합니다.
+        foreach (var binding in AnimationUtility.GetCurveBindings(end))
+        {
+            var curve = AnimationUtility.GetEditorCurve(end, binding);
+            var key = curve[0];
+            key.value = AnimationUtility.GetEditorCurve(source, binding).Evaluate(0.30f);
+            key.inTangent = 0f; key.outTangent = 0f;
+            curve.MoveKey(0, key);
+            AnimationUtility.SetEditorCurve(end, binding, curve);
+        }
+        SavePattern(end, "DashEnd");
+    }
+
+    static void ConfigureDashPhases(AnimatorStateMachine sm, AnimatorState prepare, AnimatorState idle)
+    {
+        AnimatorState move = FindGameplayState(sm, LoadClip("DashMove"));
+        AnimatorState end = FindGameplayState(sm, LoadClip("DashEnd"));
+        move.speedParameterActive = false;
+        move.speed = 1f;
+        end.speedParameter = "AttackSpeed";
+        end.speedParameterActive = true;
+        var begin = GameplayTransition(prepare, move, "MidBoss1_Auto_Dash_Move");
+        begin.duration = 0f;
+        begin.AddCondition(AnimatorConditionMode.If, 0f, "DashMoving");
+        var stop = GameplayTransition(move, end, "MidBoss1_Auto_Dash_Stop");
+        stop.duration = 0f;
+        stop.AddCondition(AnimatorConditionMode.IfNot, 0f, "DashMoving");
+        var cancelled = GameplayTransition(prepare, end, "MidBoss1_Auto_Dash_Cancel");
+        cancelled.AddCondition(AnimatorConditionMode.If, 0f, "DashFinished");
+        var finish = GameplayTransition(end, idle, "MidBoss1_Auto_Dash_Idle");
+        finish.hasExitTime = true;
+        finish.exitTime = 1f;
+    }
+
+    static void AddLocomotionTransition(AnimatorState from, AnimatorState to, string name, bool chasing)
+    {
+        var transition = GameplayTransition(from, to, "MidBoss1_Auto_" + name);
+        transition.AddCondition(AnimatorConditionMode.Greater, 0.05f, "MoveSpeed");
+        transition.AddCondition(chasing ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0f, "IsChasing");
+        transition.AddCondition(AnimatorConditionMode.IfNot, 0f, "IsAttacking");
+    }
+
+    static void AddStopTransition(AnimatorState from, AnimatorState rest, string name)
+    {
+        var transition = GameplayTransition(from, rest, "MidBoss1_Auto_" + name);
+        transition.AddCondition(AnimatorConditionMode.Less, 0.05f, "MoveSpeed");
+        transition.AddCondition(AnimatorConditionMode.IfNot, 0f, "IsAttacking");
     }
 
     static void EnsureGameplayParameter(AnimatorController ac, string name, AnimatorControllerParameterType type)
@@ -943,6 +1118,43 @@ public class MidBoss1_AnimGenerators
         transition.duration = 0.04f;
         transition.offset = 0f;
         transition.interruptionSource = TransitionInterruptionSource.None;
+    }
+
+    static bool IsReferenceAttackParameter(string name)
+        => name == "VerticalAttack" || name == "HorizontalAttack";
+
+    static bool IsReferenceAttackName(string name)
+    {
+        foreach (string action in new[] { "VerticalAttack", "HorizontalAttack", "세로공격", "가로공격" })
+            if (string.Equals(name, action, System.StringComparison.OrdinalIgnoreCase) || IsNamedClip(name, action))
+                return true;
+        return false;
+    }
+
+    static bool UsesReferenceAttackParameter(AnimatorStateTransition transition)
+    {
+        foreach (var condition in transition.conditions)
+            if (IsReferenceAttackParameter(condition.parameter)) return true;
+        return false;
+    }
+
+    static void RemoveReferenceAttackStates(AnimatorStateMachine sm)
+    {
+        foreach (var transition in sm.anyStateTransitions)
+            if (UsesReferenceAttackParameter(transition)) sm.RemoveAnyStateTransition(transition);
+        foreach (var transition in sm.entryTransitions)
+            foreach (var condition in transition.conditions)
+                if (IsReferenceAttackParameter(condition.parameter))
+                { sm.RemoveEntryTransition(transition); break; }
+        foreach (var child in sm.states)
+        {
+            foreach (var transition in child.state.transitions)
+                if (UsesReferenceAttackParameter(transition)) child.state.RemoveTransition(transition);
+            AnimationClip clip = child.state.motion as AnimationClip;
+            if (IsReferenceAttackName(child.state.name) || (clip != null && IsReferenceAttackName(clip.name)))
+                sm.RemoveState(child.state);
+        }
+        foreach (var child in sm.stateMachines) RemoveReferenceAttackStates(child.stateMachine);
     }
 
     static string FindOrCreateClipPath(string actionName)

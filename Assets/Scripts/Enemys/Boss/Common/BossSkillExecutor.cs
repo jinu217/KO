@@ -19,6 +19,14 @@ public interface IBossSkillContext
     void ApplySkillBuff(BossBuffSkillData buff);
 }
 
+// 선택적 대쉬 알림: 기존 IBossSkillContext 구현을 변경할 필요가 없습니다.
+public interface IBossDashAnimationContext
+{
+    void OnDashMovementStarted();
+    void OnDashMovementStopped();
+    IEnumerator WaitForDashRecovery();
+}
+
 public interface IBossSpawnedSkillObject
 {
     void Init(int direction, float damage, LayerMask playerLayer, float sizeMultiplier = 1f, float projectileSpeed = 0f);
@@ -128,6 +136,52 @@ public static class BossSkillExecutor
     }
 
     private static IEnumerator ExecuteMove(BossAttackStepData step, IBossSkillContext context, bool attackDuringMove)
+    {
+        float timer = 0f;
+        int remainingHits = step.attackCount;
+        Rigidbody2D body = context.BossBody;
+        IBossDashAnimationContext animation = attackDuringMove ? context as IBossDashAnimationContext : null;
+        if (animation == null)
+        {
+            yield return ExecuteMoveWithoutDashAnimation(step, context, attackDuringMove);
+            yield break;
+        }
+        float startX = body != null ? body.position.x : context.BossTransform.position.x;
+        animation?.OnDashMovementStarted();
+        try
+        {
+            while (timer < step.duration && body != null)
+            {
+                if (step.stopAtWall && context.IsWallAhead()) break;
+                float remainingDistance = step.maxMoveDistance > 0f
+                    ? step.maxMoveDistance - Mathf.Abs(body.position.x - startX)
+                    : float.PositiveInfinity;
+                if (remainingDistance <= 0.001f) break;
+                float dt = Time.fixedDeltaTime;
+                float travelTime = Mathf.Min(dt, step.duration - timer);
+                float distance = Mathf.Min(Mathf.Abs(step.moveSpeed) * travelTime, remainingDistance);
+                float velocity = context.LookDirection * Mathf.Sign(step.moveSpeed) * distance / dt;
+                body.linearVelocity = new Vector2(velocity, body.linearVelocity.y);
+
+                if (attackDuringMove && remainingHits > 0 && HitPlayer(step, context))
+                {
+                    remainingHits--;
+                    if (step.stopOnPlayerHit) break;
+                }
+                yield return new WaitForFixedUpdate();
+                timer += dt;
+            }
+        }
+        finally
+        {
+            StopHorizontal(body);
+            animation?.OnDashMovementStopped();
+        }
+        // 제동 모션이 끝날 때까지 이 스킬의 실행 상태를 유지합니다.
+        if (animation != null) yield return animation.WaitForDashRecovery();
+    }
+
+    private static IEnumerator ExecuteMoveWithoutDashAnimation(BossAttackStepData step, IBossSkillContext context, bool attackDuringMove)
     {
         float timer = 0f;
         int remainingHits = step.attackCount;

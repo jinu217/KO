@@ -716,6 +716,10 @@ public class PlayerController : MonoBehaviour, IDamageable
         }
 
         moveInput = context.ReadValue<Vector2>();
+        // 키보드 2D Vector가 대각선에서 정규화되어도 횡이동 속도는 유지합니다.
+        // 아날로그 스틱의 입력 세기는 그대로 둡니다.
+        if (context.control != null && context.control.device is Keyboard)
+            moveInput.x = Mathf.Abs(moveInput.x) > 0.01f ? Mathf.Sign(moveInput.x) : 0f;
 
         if (isInventoryOpen)
         {
@@ -896,6 +900,10 @@ public class PlayerController : MonoBehaviour, IDamageable
         rb.gravityScale = 0f;
 
         float dashDir = moveInput.x != 0 ? Mathf.Sign(moveInput.x) : lastHorizontalDirection;
+        if (Mathf.Approximately(dashDir, 0f)) dashDir = 1f;
+        // 대쉬 동안에는 시작 방향으로 고정합니다. 반대 입력은 종료 후 적용됩니다.
+        lastHorizontalDirection = dashDir;
+        transform.localScale = new Vector3(-dashDir, 1f, 1f);
         float effectiveDashDistance = dashDistance * (playerStatus != null ? playerStatus.DashDistanceMultiplier : 1f);
         float effectiveDashSpeed = dashSpeed * (playerStatus != null ? playerStatus.DashSpeedMultiplier : 1f);
         float moved = 0f;
@@ -918,6 +926,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         rb.gravityScale = prevGravity;
         isDashing = false;
         dashRoutine = null;
+        // 입력 콜백이 다시 발생하지 않아도 누르고 있는 방향을 즉시 반영합니다.
+        UpdateFacingDirection();
 
         StartCoroutine(RestoreDashCharge());
     }
@@ -1419,6 +1429,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 바라보는 방향 갱신(입력 기준)
     private void UpdateFacingDirection()
     {
+        if (isDashing || isKnockback || isMoveDelayed || isMeditating || isKeyboardControlPaused ||
+            isInventoryOpen || ChestRewardPanel.IsAnyOpen ||
+            (playerStatus != null && !playerStatus.CanMove) || Mathf.Abs(moveInput.x) <= 0.01f)
+            return;
         lastHorizontalDirection = Mathf.Sign(moveInput.x);
         transform.localScale = new Vector3(-Mathf.Sign(moveInput.x), 1, 1);
     }
@@ -1885,6 +1899,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         float maxSpeed = stats.moveSpeed;
         if (playerStatus != null)
             maxSpeed *= playerStatus.MoveSpeedMultiplier;
+        // 대쉬/피격/이동 지연이 풀린 뒤에도 이동 입력과 보는 방향이 일치하게 합니다.
+        UpdateFacingDirection();
         float targetSpeedX = moveInput.x * maxSpeed;
 
         // 관성/미끄러짐 완전 제거: 항상 즉시 목표 속도로 고정
