@@ -316,8 +316,11 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         RaycastHit2D hit = Physics2D.Raycast(new Vector2(bounds.center.x, bounds.min.y + 0.03f), Vector2.down, 100f, wallLayer);
         return hit.collider != null ? hit.distance : 0f;
     }
-    public void RefreshSkillDirection()
+    public virtual void RefreshSkillDirection()
     {
+        // 보스 공통: 시전 시작 방향을 유지. 추적 이동은 Update/FixedUpdate의
+        // isAttacking 검사로 차단하며 돌진 등 실행기 자체 이동은 허용합니다.
+        if (isAttacking) return;
         if (playerTransform != null) FacePlayer();
     }
     public virtual void OnSkillAttackHit(BossAttackStepData step) { }

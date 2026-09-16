@@ -68,10 +68,17 @@ public sealed class Stage1_DesireSkill : MonoBehaviour
 
         enhancedSkill2 = MakeSkill("욕망 2스킬", 5f, new BossAttackStepData
         {
-            stepName = "검기 발사", actionType = BossActionType.SpawnPrefab, damage = 15f,
-            spawnPrefab = wavePrefab, spawnCount = 2, spawnOffset = new Vector2(1.2f, 0.2f),
-            spawnInterval = 0.15f, spawnVerticalSpacing = 0.35f,
-            spawnScaleMultiplier = 1.35f, projectileSpeed = 11f
+            stepName = "검기 발사",
+            actionType = BossActionType.SpawnPrefab,
+            damage = 15f,
+            preDelay = 1f, // 12 FPS / 12프레임: 첫 검기 발사
+            spawnPrefab = wavePrefab,
+            spawnCount = 2,
+            spawnOffset = new Vector2(1.2f, 0.2f),
+            spawnInterval = 0.15f,
+            spawnVerticalSpacing = 0.35f,
+            spawnScaleMultiplier = 1.35f,
+            projectileSpeed = 11f
         });
         enhancedSkill2.castRange = 9f;
     }
@@ -88,11 +95,14 @@ public sealed class Stage1_DesireSkill : MonoBehaviour
     public IEnumerator Activate(System.Action resetCooldowns)
     {
         lastUseTime = Time.time;
+        MainBossController animationOwner = GetComponent<MainBossController>();
+        if (animationOwner != null) animationOwner.PlayDesireAnimation();
         if (preDelay > 0f) yield return new WaitForSeconds(preDelay);
         resetCooldowns?.Invoke();
         StartCoroutine(MainBuffRoutine());
         StartCoroutine(SkillEnhanceRoutine());
         if (postDelay > 0f) yield return new WaitForSeconds(postDelay);
+        if (animationOwner != null) yield return animationOwner.WaitForDesireAnimation();
     }
 
     private IEnumerator MainBuffRoutine()
@@ -131,8 +141,10 @@ public sealed class Stage1_DesireSkill : MonoBehaviour
     {
         BossSkillData skill = new BossSkillData
         {
-            skillName = name, skillType = BossSkillType.Active,
-            cooldown = skillCooldown, castRange = 4f
+            skillName = name,
+            skillType = BossSkillType.Active,
+            cooldown = skillCooldown,
+            castRange = 4f
         };
         skill.active.attackSteps.AddRange(steps);
         return skill;
@@ -141,15 +153,24 @@ public sealed class Stage1_DesireSkill : MonoBehaviour
     private static BossAttackStepData Hit(string name, float damage, float width, float height, float offset, Vector2 knockback)
         => new BossAttackStepData
         {
-            stepName = name, actionType = BossActionType.MeleeAttack, attackCount = 1, damage = damage,
-            hitboxSize = new Vector2(width, height), hitboxOffset = new Vector2(offset, 0f),
-            knockbackForce = knockback, preDelay = 0.16f, postDelay = 0.16f
+            stepName = name,
+            actionType = BossActionType.MeleeAttack,
+            attackCount = 1,
+            damage = damage,
+            hitboxSize = new Vector2(width, height),
+            hitboxOffset = new Vector2(offset, 0f),
+            knockbackForce = knockback,
+            preDelay = 0.16f,
+            postDelay = 0.16f
         };
 
     private static BossAttackStepData Track()
         => new BossAttackStepData
         {
-            stepName = "플레이어 추적", actionType = BossActionType.MoveForward,
-            moveSpeed = 2.5f, duration = 0.1f, stopAtWall = true
+            stepName = "플레이어 추적",
+            actionType = BossActionType.MoveForward,
+            moveSpeed = 2.5f,
+            duration = 0.1f,
+            stopAtWall = true
         };
 }

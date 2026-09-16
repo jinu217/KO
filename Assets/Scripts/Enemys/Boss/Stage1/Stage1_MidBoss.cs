@@ -62,6 +62,14 @@ public sealed class Stage1_MidBoss : MidBossController, IBossDashAnimationContex
         RefreshAnimationParameters();
     }
 
+    // 패턴 시작 직전에 정한 방향을 연격/마무리까지 유지합니다.
+    // 실행기가 매 타격 전 방향 갱신을 요청해도 lookDirection 자체를 바꾸지 않습니다.
+    public override void RefreshSkillDirection()
+    {
+        if (isAttacking) return;
+        base.RefreshSkillDirection();
+    }
+
     protected override void ApplyFacingDirection()
     {
         if (visualRoot == null) return;
