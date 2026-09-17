@@ -5376,7 +5376,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &396153152
 Transform:
   m_ObjectHideFlags: 0
@@ -11630,7 +11630,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1756117263892283272, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.24
+      value: 2.6
       objectReference: {fileID: 0}
     - target: {fileID: 1756117263892283272, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
       propertyPath: m_LocalPosition.z
@@ -11675,6 +11675,10 @@ PrefabInstance:
     - target: {fileID: 4422395347486997663, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
       propertyPath: attackGizmoSelection
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4422395347486997663, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
+      propertyPath: stoneWaveHeightOffset
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 5874163920461783204, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
       propertyPath: fieldPrefab
@@ -42815,7 +42819,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
@@ -43057,7 +43061,7 @@ Transform:
   m_GameObject: {fileID: 1763610816959778360}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -66.19131, y: 6.1191998, z: 0}
+  m_LocalPosition: {x: -18, y: -4.3, z: 0}
   m_LocalScale: {x: -1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -43580,7 +43584,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatus
   playerController: {fileID: 679155541641703030}
-  currentHp: 70
+  currentHp: 1000000
   currentSp: 100
   maxSp: 100
   dashCost: 20

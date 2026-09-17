@@ -16,12 +16,19 @@ public class MainBossController : MidBossController
     private string activeAnimation;
     private bool desireOwnsAttackLock;
     protected MainBossData MainData => data as MainBossData;
+    protected virtual string AnimationPrefix => "MainBoss1_";
+    protected virtual string VisualRootName => "MainBoss 1";
+    protected virtual bool HasPhaseEntryAnimations => true;
+    protected virtual bool UsesPhase3ActionStates => true;
+    protected virtual string DesireAnimationAction => "Dskill";
+    protected virtual string SkillAnimationAction(int index) => index < 0 ? "Attack" : "skill" + (index + 1);
+
 
     protected override void Awake()
     {
         base.Awake();
         if (bossAnimator == null) bossAnimator = GetComponentInChildren<Animator>(true);
-        if (visualRoot == null) visualRoot = transform.Find("MainBoss 1");
+        if (visualRoot == null) visualRoot = transform.Find(VisualRootName);
         if (visualRoot != null && visualRoot != transform)
         {
             visualScaleX = Mathf.Abs(visualRoot.localScale.x);
@@ -51,12 +58,17 @@ public class MainBossController : MidBossController
             bossAnimator.SetFloat("LocomotionSpeed", Mathf.Clamp(moveSpeed / (isChasing ? 2.8f : 1.4f), 0.5f, 2f));
     }
 
-    private bool HasParameter(string parameter, AnimatorControllerParameterType type)
+    protected bool HasParameter(string parameter, AnimatorControllerParameterType type)
     {
         if (bossAnimator == null || bossAnimator.runtimeAnimatorController == null) return false;
         foreach (var p in bossAnimator.parameters)
             if (p.name == parameter && p.type == type) return true;
         return false;
+    }
+
+    protected void SetChasingAnimation(bool value)
+    {
+        if (HasParameter("IsChasing", AnimatorControllerParameterType.Bool)) bossAnimator.SetBool("IsChasing", value);
     }
 
     private void SetBusy(bool value)
@@ -65,14 +77,14 @@ public class MainBossController : MidBossController
             bossAnimator.SetBool("IsAttacking", value);
     }
 
-    private bool PlayAction(string action, bool scaleWithAttackSpeed = true)
+    protected bool PlayAction(string action, bool scaleWithAttackSpeed = true)
     {
         if (!HasParameter(action, AnimatorControllerParameterType.Trigger)) return false;
-        string state = "MainBoss1_" + action;
-        if (shownPhase >= 3 && action != "P2E" && action != "P3E") state += "_Phase3";
+        string state = AnimationPrefix + action;
+        if (UsesPhase3ActionStates && shownPhase >= 3 && action != "P2E" && action != "P3E") state += "_Phase3";
         if (!bossAnimator.HasState(0, Animator.StringToHash("Base Layer." + state))) return false;
-        foreach (string trigger in new[] { "Attack", "skill1", "skill2", "skill3", "skill4", "skill5", "Dskill", "P2E", "P3E" })
-            if (HasParameter(trigger, AnimatorControllerParameterType.Trigger)) bossAnimator.ResetTrigger(trigger);
+        foreach (var parameter in bossAnimator.parameters)
+            if (parameter.type == AnimatorControllerParameterType.Trigger) bossAnimator.ResetTrigger(parameter.name);
         if (HasParameter("AttackSpeed", AnimatorControllerParameterType.Float))
             bossAnimator.SetFloat("AttackSpeed", scaleWithAttackSpeed ? 1f / Mathf.Max(0.01f, GetSkillDelay(1f)) : 1f);
         activeAnimation = state;
@@ -82,7 +94,7 @@ public class MainBossController : MidBossController
     }
 
     // 실행기와 애니메이션 양쪽이 끝날 때까지 다음 행동을 막습니다.
-    private IEnumerator WaitForAction(string state)
+    protected IEnumerator WaitForAction(string state)
     {
         if (bossAnimator == null || string.IsNullOrEmpty(state)) yield break;
         int hash = Animator.StringToHash(state);
@@ -110,7 +122,7 @@ public class MainBossController : MidBossController
     {
         base.OnSkillExecutionStarted(skill, index);
         activeAnimation = null;
-        PlayAction(index < 0 ? "Attack" : "skill" + (index + 1));
+        PlayAction(SkillAnimationAction(index));
     }
 
     protected override IEnumerator WaitForSkillAnimation(BossSkillData skill, int index)
@@ -131,7 +143,7 @@ public class MainBossController : MidBossController
         desireOwnsAttackLock = !isAttacking;
         isAttacking = true;
         StopMove();
-        PlayAction("Dskill", false);
+        PlayAction(DesireAnimationAction, false);
     }
     public IEnumerator WaitForDesireAnimation()
     {
@@ -147,6 +159,12 @@ public class MainBossController : MidBossController
         if (MainData == null || MainData.maxHp <= 0f) { currentPhase = 1; return; }
         float hpRate = currentHp / MainData.maxHp;
         currentPhase = hpRate <= MainData.phase3HpPercent ? 3 : hpRate <= MainData.phase2HpPercent ? 2 : 1;
+        if (!HasPhaseEntryAnimations)
+        {
+            shownPhase = currentPhase;
+            if (HasParameter("Phase", AnimatorControllerParameterType.Int)) bossAnimator.SetInteger("Phase", shownPhase);
+            return;
+        }
         if (!isDead && !isAttacking && !phaseAnimationPlaying && shownPhase < currentPhase)
             StartCoroutine(EnterPhases());
     }
