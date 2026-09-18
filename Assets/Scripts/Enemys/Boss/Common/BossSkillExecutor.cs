@@ -110,6 +110,11 @@ public static class BossSkillExecutor
                 case BossActionType.PersistentHitbox:
                     yield return ExecutePersistentHitbox(step, context);
                     break;
+
+                case BossActionType.PullPlayer:
+                    yield return ExecutePullPlayer(step, context);
+                    break;
+
             }
 
             if (step.postDelay > 0f)
@@ -306,6 +311,44 @@ public static class BossSkillExecutor
         }
     }
 
+    private static IEnumerator ExecutePullPlayer(BossAttackStepData step, IBossSkillContext context)
+    {
+        if (step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f)
+            yield break;
+
+        Vector2 center = (Vector2)context.BossTransform.position + new Vector2(
+            context.LookDirection * step.hitboxOffset.x,
+            step.hitboxOffset.y
+        );
+        Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer);
+        Rigidbody2D playerBody = hit != null ? hit.GetComponentInParent<Rigidbody2D>() : null;
+        if (playerBody == null)
+            yield break;
+
+        float elapsed = 0f;
+        float pullSpeed = Mathf.Max(0f, step.moveSpeed);
+        float pullDuration = Mathf.Max(0f, context.GetSkillDelay(step.duration));
+        while (elapsed < pullDuration)
+        {
+            Vector2 target = (Vector2)context.BossTransform.position + new Vector2(
+                context.LookDirection * step.pullTargetOffset.x,
+                step.pullTargetOffset.y
+            );
+            if (Vector2.Distance(playerBody.position, target) <= 0.05f)
+                break;
+
+            playerBody.MovePosition(Vector2.MoveTowards(
+                playerBody.position,
+                target,
+                pullSpeed * Time.fixedDeltaTime
+            ));
+            elapsed += Time.fixedDeltaTime;
+            yield return new WaitForFixedUpdate();
+        }
+
+        playerBody.linearVelocity = Vector2.zero;
+    }
+
     private static bool IsPlayerInHitbox(BossAttackStepData step, IBossSkillContext context)
     {
         Vector2 center = (Vector2)context.BossTransform.position + new Vector2(
@@ -342,9 +385,15 @@ public static class BossSkillExecutor
             Rigidbody2D playerBody = hit.GetComponentInParent<Rigidbody2D>();
             if (playerBody != null)
             {
+                float knockbackDirection = context.LookDirection;
+                if (step.knockbackAwayFromCenter)
+                {
+                    knockbackDirection = Mathf.Sign(playerBody.position.x - center.x);
+                    if (knockbackDirection == 0f) knockbackDirection = context.LookDirection;
+                }
                 playerBody.linearVelocity = Vector2.zero;
                 playerBody.AddForce(
-                    new Vector2(context.LookDirection * step.knockbackForce.x, step.knockbackForce.y),
+                    new Vector2(knockbackDirection * step.knockbackForce.x, step.knockbackForce.y),
                     ForceMode2D.Impulse
                 );
             }

@@ -41,7 +41,8 @@ public enum BossActionType
     Jump,
     Slam,
     SpawnPrefab,
-    PersistentHitbox
+    PersistentHitbox,
+    PullPlayer
 }
 
 public enum BossBuffStat
@@ -91,6 +92,8 @@ public class BossAttackStepData
     public Vector2 hitboxOffset;
     [Tooltip("적중한 플레이어에게 적용할 X/Y 넉백 힘입니다. (0, 0)이면 넉백하지 않습니다.")]
     public Vector2 knockbackForce;
+    [Tooltip("활성화하면 보스가 보는 방향 대신 공격 판정 중심에서 플레이어가 있는 바깥 방향으로 넉백합니다.")]
+    public bool knockbackAwayFromCenter;
 
     [Header("이동")]
     [Tooltip("전진 또는 돌진 속도입니다. 0이면 이동하지 않습니다.")]
@@ -105,6 +108,8 @@ public class BossAttackStepData
     public bool stopAtWall;
     [Tooltip("활성화하면 돌진 공격이 플레이어에게 적중한 순간 해당 돌진 단계를 종료합니다.")]
     public bool stopOnPlayerHit;
+    [Tooltip("끌어오기 행동에서 플레이어를 이동시킬 보스 기준 목표 위치입니다. X는 보스가 보는 방향에 맞춰 반전됩니다.")]
+    public Vector2 pullTargetOffset;
 
     [Header("생성")]
     [Tooltip("투사체 또는 소환 단계에서 생성할 프리팹입니다. 비어 있으면 아무것도 생성하지 않습니다.")]
