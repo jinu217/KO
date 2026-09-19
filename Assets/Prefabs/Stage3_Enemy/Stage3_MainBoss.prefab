@@ -43,7 +43,8 @@ GameObject:
   - component: {fileID: 3046384067877955756}
   - component: {fileID: 4048134802029589269}
   - component: {fileID: 1221640104977840777}
-  - component: {fileID: 4422395347486997663}
+  - component: {fileID: 6828079844074179072}
+  - component: {fileID: 2924873007192052447}
   m_Layer: 11
   m_Name: Stage3_MainBoss
   m_TagString: MainBoss
@@ -60,8 +61,8 @@ Transform:
   m_GameObject: {fileID: 4196881363146405425}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 81.27, y: 6.22, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3228055168137781608}
@@ -192,7 +193,7 @@ CapsuleCollider2D:
   m_Offset: {x: 0.013645172, y: -0.257873}
   m_Size: {x: 0.3816967, y: 0.5289165}
   m_Direction: 0
---- !u!114 &4422395347486997663
+--- !u!114 &6828079844074179072
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -201,10 +202,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 4196881363146405425}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f10f23be865c4f44bb37a3e138fa2e6, type: 3}
+  m_Script: {fileID: 11500000, guid: d6bec189d77e2f24da6b496154501f92, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Stage2_MainBoss
-  data: {fileID: 11400000, guid: 4d0e4523ffecca145963bbd8dd14ea8e, type: 2}
+  m_EditorClassIdentifier: Assembly-CSharp::Stage3_MainBoss
+  data: {fileID: 11400000, guid: 8e51a1f00b4a99c49928df4ec659b2e4, type: 2}
   playerLayer:
     serializedVersion: 2
     m_Bits: 8
@@ -214,7 +215,72 @@ MonoBehaviour:
   wallCheck: {fileID: 9133239407048182343}
   turnDeadZone: 0.2
   showGizmos: 1
+  attackGizmoSelection: 0
+  showDetectionGizmos: 0
+  logSkillUsage: 1
   currentHp: 0
+  bossAnimator: {fileID: 0}
+  visualRoot: {fileID: 0}
+  artworkFacesLeft: 0
+  desireSkill: {fileID: 0}
+--- !u!114 &2924873007192052447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a6dc6d58cd4b8d4c88cd3257a901e33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Stage3_MainBossDesireSkill
+  duration: 20
+  cooldown: 50
+  castDelay: 0.8
+  damageMultiplier: 1.1
+  attackSpeedMultiplier: 1.15
+  moveSpeedMultiplier: 1.15
+  achievedCooldownMultiplier: 0.9
+  enhancedBasicAttack:
+    skillName: 
+    skillType: 0
+    executionOrder: 0
+    cooldown: 0
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 0
+      effects: []
+  enhancedSkill4:
+    skillName: 
+    skillType: 0
+    executionOrder: 0
+    cooldown: 0
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps: []
+    buff:
+      duration: 0
+      effects: []
+  finisherChargeDelay: 1.2
+  finisherJumpForce: 13
+  finisherSlamDamage: 25
+  followupTelegraphDelay: 0.5
+  followupDamage: 20
+  missedFinisherGroggy: 5
+  timeoutGroggy: 3
 --- !u!1 &7738030062326856143
 GameObject:
   m_ObjectHideFlags: 0
