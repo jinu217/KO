@@ -286,10 +286,18 @@ public class MobLayerSetter : EditorWindow
 
         if (bottom != null)
         {
-            changed += SetSortingLayerRecursiveIgnoringGripPoint(
+            changed += SetSortingLayer(
               bottom,
-              BACK_LAYER
+              BODY_LAYER
             );
+
+            foreach (Transform child in bottom)
+            {
+                changed += SetSortingLayerRecursiveIgnoringGripPoint(
+                  child,
+                  BACK_LAYER
+                );
+            }
         }
 
         return changed;
