@@ -42,11 +42,13 @@ public static class BasicMob3_AnimGenerators
         Generate("BasicMob3_Walk", 1.0f, true, t => Locomotion(t, 1.0f, false));
         Generate("BasicMob3_Run", 0.6f, true, t => Locomotion(t, 0.6f, true));
         AnimationClip attack = Generate("BasicMob3_Attack", 1.4f, false, Attack);
+        Generate("BasicMob3_Hit", 0.30f, false, Hit);
+        Generate("BasicMob3_Death", 0.65f, false, Death);
         SetupAnimator();
         AssetDatabase.SaveAssets();
         Selection.activeObject = attack;
         EditorGUIUtility.PingObject(attack);
-        Debug.Log("BasicMob 3: Idle / Walk / Run / Attack 생성 완료. 공격 임팩트 0.68초. " + OutputFolder);
+        Debug.Log("BasicMob 3: Idle / Walk / Run / Attack / Hit / Death 생성 완료. 공격 임팩트 0.68초. " + OutputFolder);
     }
 
     [MenuItem("Tools/BasicMob 3/Clips/Idle")]
@@ -57,6 +59,11 @@ public static class BasicMob3_AnimGenerators
     public static void GenerateRun() => GenerateSingle("BasicMob3_Run", 0.6f, true, t => Locomotion(t, 0.6f, true));
     [MenuItem("Tools/BasicMob 3/Clips/Attack")]
     public static void GenerateAttack() => GenerateSingle("BasicMob3_Attack", 1.4f, false, Attack);
+
+    [MenuItem("Tools/BasicMob 3/Clips/Hit")]
+    public static void GenerateHit() => GenerateSingle("BasicMob3_Hit", 0.30f, false, Hit);
+    [MenuItem("Tools/BasicMob 3/Clips/Death")]
+    public static void GenerateDeath() => GenerateSingle("BasicMob3_Death", 0.65f, false, Death);
 
     private static void GenerateSingle(string name, float duration, bool loop, Func<float, Pose> evaluate)
     {
@@ -89,8 +96,10 @@ public static class BasicMob3_AnimGenerators
         EnsureParameter(controller, "MoveSpeed", AnimatorControllerParameterType.Float);
         EnsureParameter(controller, "IsChasing", AnimatorControllerParameterType.Bool);
         EnsureParameter(controller, "Attack", AnimatorControllerParameterType.Trigger);
-        string[] names = { "BasicMob3_Idle", "BasicMob3_Walk", "BasicMob3_Run", "BasicMob3_Attack" };
-        var clips = new AnimationClip[4];
+        EnsureParameter(controller, "Hit", AnimatorControllerParameterType.Trigger);
+        EnsureParameter(controller, "IsDead", AnimatorControllerParameterType.Bool);
+        string[] names = { "BasicMob3_Idle", "BasicMob3_Walk", "BasicMob3_Run", "BasicMob3_Attack", "BasicMob3_Hit", "BasicMob3_Death" };
+        var clips = new AnimationClip[names.Length];
         for (int i = 0; i < names.Length; i++)
         {
             clips[i] = AssetDatabase.LoadAssetAtPath<AnimationClip>(OutputFolder + "/" + names[i] + ".anim");
@@ -100,9 +109,11 @@ public static class BasicMob3_AnimGenerators
             if (i == 1) clips[i] = Generate(names[i], 1f, true, t => Locomotion(t, 1f, false));
             if (i == 2) clips[i] = Generate(names[i], 0.6f, true, t => Locomotion(t, 0.6f, true));
             if (i == 3) clips[i] = Generate(names[i], 1.4f, false, Attack);
+            if (i == 4) clips[i] = Generate(names[i], 0.30f, false, Hit);
+            if (i == 5) clips[i] = Generate(names[i], 0.65f, false, Death);
         }
         var machine = controller.layers[0].stateMachine;
-        var states = new AnimatorState[4];
+        var states = new AnimatorState[names.Length];
         for (int i = 0; i < states.Length; i++)
         {
             foreach (var child in machine.states)
@@ -115,13 +126,31 @@ public static class BasicMob3_AnimGenerators
             foreach (var transition in states[i].transitions)
                 if (transition.name.StartsWith(TransitionPrefix, StringComparison.Ordinal)) states[i].RemoveTransition(transition);
             var settings = AnimationUtility.GetAnimationClipSettings(clips[i]);
-            settings.loopTime = i != 3;
+            settings.loopTime = i < 3;
             AnimationUtility.SetAnimationClipSettings(clips[i], settings);
             EditorUtility.SetDirty(clips[i]);
         }
         foreach (var transition in machine.anyStateTransitions)
             if (transition.name.StartsWith(TransitionPrefix, StringComparison.Ordinal)) machine.RemoveAnyStateTransition(transition);
         machine.defaultState = states[0];
+        ApplyStateLayout(machine, states);
+        var death = machine.AddAnyStateTransition(states[5]);
+        death.name = TransitionPrefix + "Death";
+        death.hasExitTime = false;
+        death.duration = 0.04f;
+        death.hasFixedDuration = true;
+        death.canTransitionToSelf = false;
+        death.AddCondition(AnimatorConditionMode.If, 0, "IsDead");
+        var hit = machine.AddAnyStateTransition(states[4]);
+        hit.name = TransitionPrefix + "Hit";
+        hit.hasExitTime = false;
+        hit.duration = 0.025f;
+        hit.hasFixedDuration = true;
+        hit.canTransitionToSelf = true;
+        hit.AddCondition(AnimatorConditionMode.If, 0, "Hit");
+        hit.AddCondition(AnimatorConditionMode.IfNot, 0, "IsDead");
+        for (int to = 0; to < 3; to++)
+            AddLocomotionConditions(AddTransition(states[4], states[to], true), to);
         // Locomotion에서만 공격 진입: 공격 도중 트리거로 공격이 재시작되지 않는다.
         for (int from = 0; from < 3; from++)
         {
@@ -139,6 +168,34 @@ public static class BasicMob3_AnimGenerators
         Selection.activeObject = controller;
         EditorGUIUtility.PingObject(controller);
         Debug.Log("BasicMob3_AC 설정 완료: MoveSpeed(float), IsChasing(bool), Attack(trigger). 프리팹 자동 연결 결과는 Console에서 확인하세요.");
+    }
+
+    // 사진 기준 고정 배치. 기존 상태도 재셋업할 때 같은 위치로 정렬합니다.
+    private static void ApplyStateLayout(AnimatorStateMachine machine, AnimatorState[] states)
+    {
+        Vector3[] positions = {
+            new Vector3(320, 160, 0), // Idle: 중앙 위
+            new Vector3(320, 260, 0), // Walk: 중앙
+            new Vector3(320, 360, 0), // Run: 중앙 아래
+            new Vector3(620, 260, 0), // Attack: 오른쪽
+            new Vector3(20, 260, 0),  // Hit: 왼쪽
+            new Vector3(20, -20, 0)   // Death: 왼쪽 위
+        };
+        ChildAnimatorState[] children = machine.states;
+        for (int i = 0; i < children.Length; i++)
+        {
+            for (int j = 0; j < states.Length; j++)
+            {
+                if (children[i].state != states[j]) continue;
+                children[i].position = positions[j];
+                break;
+            }
+        }
+        machine.states = children;
+        machine.anyStatePosition = new Vector3(20, 70, 0);
+        machine.entryPosition = new Vector3(320, 70, 0);
+        machine.exitPosition = new Vector3(920, 360, 0);
+        EditorUtility.SetDirty(machine);
     }
 
     private const string PrefabFolder = "Assets/Prefab/3";
@@ -222,6 +279,7 @@ public static class BasicMob3_AnimGenerators
         transition.offset = 0f;
         transition.canTransitionToSelf = false;
         transition.interruptionSource = TransitionInterruptionSource.None;
+        transition.AddCondition(AnimatorConditionMode.IfNot, 0, "IsDead");
         return transition;
     }
 
@@ -328,6 +386,43 @@ public static class BasicMob3_AnimGenerators
         return p;
     }
 
+    private static Pose Hit(float t)
+    {
+        var p = new Pose();
+        float kick = t < 0.06f ? Smooth(Mathf.Clamp01(t / 0.06f))
+            : 1f - Smooth(Mathf.Clamp01((t - 0.06f) / 0.24f));
+        p.position[Body].x -= 0.055f * kick;
+        p.position[Body].y -= 0.015f * kick;
+        p.angle[Body] = 10f * kick;
+        p.angle[Head] = 5f * kick;
+        p.angle[SF] = -12f * kick;
+        p.angle[HF] = 8f * kick;
+        p.angle[SB] = -7f * kick;
+        p.angle[HB] += 10f * kick;
+        p.angle[Bottom] = -6f * kick;
+        GroundFoot(p, FF, RestPositions[FF].x, 0, 0);
+        GroundFoot(p, FB, RestPositions[FB].x, 0, 0);
+        return p;
+    }
+
+    private static Pose Death(float t)
+    {
+        var p = new Pose();
+        float fall = Smooth(Mathf.Clamp01((t - 0.05f) / 0.43f));
+        float settle = Smooth(Mathf.Clamp01((t - 0.48f) / 0.17f));
+        p.position[Body] = new Vector3(-0.19f * fall, -0.30f * fall - 0.025f * settle, 0);
+        p.angle[Body] = 72f * fall - 4f * settle;
+        p.angle[Head] = 12f * fall;
+        p.angle[SF] = -22f * fall;
+        p.angle[HF] = 18f * fall;
+        p.angle[SB] = -28f * fall;
+        p.angle[HB] = 60f - 35f * fall;
+        p.angle[Bottom] = -22f * fall;
+        GroundFoot(p, FF, RestPositions[FF].x - 0.06f * fall, 0, 18f * fall);
+        GroundFoot(p, FB, RestPositions[FB].x + 0.06f * fall, 0, -12f * fall);
+        return p; // 마지막 쓰러진 자세 유지. 사망 클립은 Rest로 복귀하지 않는다.
+    }
+
     private static float Track(float t, float[] times, float[] values)
     {
         for (int i = 1; i < times.Length; i++)
@@ -355,7 +450,7 @@ public static class BasicMob3_AnimGenerators
         var timeSet = new SortedSet<float> { 0, duration };
         int count = Mathf.RoundToInt(duration * SampleRate);
         for (int i = 1; i < count; i++) timeSet.Add(duration * i / count);
-        if (!loop)
+        if (name == "BasicMob3_Attack")
             foreach (float t in new[] { 0.30f, 0.48f, 0.56f, AttackImpactTime, 0.76f, 0.90f, 1.12f }) timeSet.Add(t);
         var times = new List<float>(timeSet);
         var poses = new Pose[times.Count];
