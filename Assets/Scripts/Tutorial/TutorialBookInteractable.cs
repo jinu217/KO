@@ -26,6 +26,7 @@ public class TutorialBookInteractable : MonoBehaviour
     private PlayerInput playerInput;
     private InventoryUI inventoryUI;
     private InputAction tutorialBookAction;
+    private PauseManager pauseManager;
     private bool isReading;
     private bool completedFirstRead;
 
@@ -41,6 +42,7 @@ public class TutorialBookInteractable : MonoBehaviour
         player = playerObj.transform;
         playerInput = playerObj.GetComponent<PlayerInput>();
         inventoryUI = FindInventoryUIAnyState();
+        pauseManager = FindFirstObjectByType<PauseManager>();
         if (playerInput == null || playerInput.actions == null)
         {
             enabled = false;
@@ -81,6 +83,9 @@ public class TutorialBookInteractable : MonoBehaviour
 
         bool bookIsOpen = bookUI != null ? bookUI.IsOpen : isReading;
         if (bookIsOpen)
+            return;
+
+        if (ShouldBlockTutorialBookOpen())
             return;
 
         OpenBook();
@@ -164,6 +169,9 @@ public class TutorialBookInteractable : MonoBehaviour
     private bool ShouldBlockTutorialBookOpen()
     {
         if (bookUI != null && bookUI.IsOpen)
+            return true;
+
+        if (pauseManager != null && pauseManager.IsPaused)
             return true;
 
         if (ChestRewardPanel.IsAnyOpen)

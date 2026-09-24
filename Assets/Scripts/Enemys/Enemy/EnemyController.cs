@@ -119,6 +119,11 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // -------------------- 컴포넌트/대상 --------------------
     protected Rigidbody2D rb;
     protected SpriteRenderer spriteRenderer;
+    protected Animator animator;
+    [Header("비주얼(스프라이트/애니메이션) 연결")]
+    [Tooltip("좌우 반전(Flip) 대상 스프라이트/애니메이션 루트\n비워두면 하이어아키에서 \"Body\"라는 이름의 자식을 자동으로 재귀 탐색함\n(부모/루트 오브젝트 이름이 몹마다 달라도 상관없음)")]
+    [SerializeField] protected Transform visualTransform;
+    protected Transform basicMobTransform;
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
     protected Transform playerTransform;
     protected Collider2D bodyCollider;
@@ -185,6 +190,31 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        animator = GetComponentInChildren<Animator>();
+        // 하이어아키 구조: Root(이름 가변) > GroundCheck/WallCheck/KnockbackCheck, [몹타입 N](이름 가변) > Body(고정)
+        // "Body"라는 이름의 자식만 고정이므로 깊이 상관없이 재귀 탐색으로 찾는다.
+        // 인스펙터에서 visualTransform을 직접 지정했으면 그것을 최우선으로 사용(수동 오버라이드용).
+        // Flip(좌우 반전 Scale)은 "Body"가 아니라 Body의 부모([몹타입 N] 노드)에 적용해야 함.
+        // Unity 로컬 변환은 Scale → Rotate 순으로 계산되므로, 같은 오브젝트에서
+        // Scale(반전)과 Animator가 만드는 Rotation(걷기/달리기 기울기)이 같이 일어나면
+        // 기울기 방향이 반전되지 않고 원래 방향 그대로 남는 문제가 생김.
+        // Scale을 Body의 "부모"에 걸어 바깥쪽에서 감싸면, 안쪽(Body)의 회전이 제대로 함께 반전됨.
+        if (visualTransform != null)
+        {
+            basicMobTransform = visualTransform;
+        }
+        else
+        {
+            Transform bodyNode = FindDeepChild(transform, "Body");
+            basicMobTransform = bodyNode != null ? bodyNode.parent : null;
+        }
+
+        if (basicMobTransform == null)
+            Debug.LogWarning($"[{gameObject.name}] Flip 대상 비주얼 Transform을 찾지 못했습니다. " +
+                "하이어아키에 \"Body\"라는 이름의 자식(및 그 부모)이 있는지 확인하거나, Inspector의 'Visual Transform' 필드에 직접 연결해주세요.");
+        if (basicMobTransform == null)
+            Debug.LogWarning($"[{gameObject.name}] Flip 대상 비주얼 Transform(\"Body\")을 찾지 못했습니다. " +
+                "하이어아키에 \"Body\"라는 이름의 자식이 있는지 확인하거나, Inspector의 'Visual Transform' 필드에 직접 연결해주세요.");
         hitFlash = GetComponent<HitFlashEffect>();
         bodyCollider = GetComponent<Collider2D>();
 
@@ -228,6 +258,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 프레임 로직: 상태 차단 → 플레이어 감지 → 타이머 처리
     protected virtual void Update()
     {
+        UpdateAnimatorParameters();
+
         if (isKnockback || isHitStunned)
         {
             HandleTimers();
@@ -549,10 +581,24 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         }
     }
 
+    protected virtual void UpdateAnimatorParameters()
+    {
+        if (animator == null || rb == null) return;
+
+        animator.SetFloat(
+            "MoveSpeed",
+            Mathf.Abs(rb.linearVelocity.x)
+        );
+    }
+
     // 공격 시작 공통 처리(공격 시각 갱신 + 자식 구현 호출)
     protected void StartAttack()
     {
         lastAttackTime = Time.time;
+
+        if (animator != null)
+            animator.SetTrigger("Attack");
+
         Attack();
     }
 
@@ -756,6 +802,20 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         Flip(walkDirection);
     }
 
+    // 지정한 이름의 자식을 모든 하위 depth에서 재귀 탐색
+    // (Transform.Find는 직계 자식만 찾으므로, 이름이 가변인 중간 부모를 거쳐야 하는 "Body" 탐색에 사용)
+    private static Transform FindDeepChild(Transform parent, string name)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name == name) return child;
+
+            Transform found = FindDeepChild(child, name);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     // 좌우 반전 + groundCheck/wallCheck 센서 위치 보정
     protected void Flip(float dir)
     {
@@ -770,7 +830,12 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             lastFacingDirection = facing;
         }
 
-        spriteRenderer.flipX = (dir < 0);
+        if (basicMobTransform != null)
+        {
+            Vector3 scale = basicMobTransform.localScale;
+            scale.x = Mathf.Abs(scale.x) * (dir < 0 ? -1f : 1f);
+            basicMobTransform.localScale = scale;
+        }
 
         // groundCheck X: 인스펙터에서 설정한 현재 localPosition.x 절댓값으로 방향 미러링
         // 캐싱 없이 매 Flip마다 현재값 직접 읽음 → 씬에서 위치 변경 즉시 반영
@@ -1002,8 +1067,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
 
         currentHp -= damage;
         // 데미지 텍스트 생성
-        DamageTextManager.Instance?.ShowDamage(Mathf.RoundToInt(damage),transform.position + Vector3.up * 1.5f);
-        
+        DamageTextManager.Instance?.ShowDamage(Mathf.RoundToInt(damage), transform.position + Vector3.up * 1.5f);
+
         hitFlash?.Play();
 
         forcedAggroTimer = 2f;

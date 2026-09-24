@@ -87,6 +87,13 @@ public class PauseManager : MonoBehaviour
             if (TutorialBookUI.IsAnyOpen)
                 return;
 
+            // 튜토리얼북을 닫는 데 사용한 ESC라면 처리하지 않음
+            if (TutorialBookUI.EscUsedToClose)
+            {
+                TutorialBookUI.ClearEscUsedToClose();
+                return;
+            }
+
             // 튜토리얼북이 닫혀 있을 때만 정지/재개
             if (IsPaused)
                 Resume();

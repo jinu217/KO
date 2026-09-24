@@ -87,6 +87,8 @@ public sealed class Stage1_MainBoss : MainBossController
             usingEmpoweredSkill1 = false;
             nextSkill1Empowered = false;
         }
+        // 부모의 Animator 공격 상태 해제와 대기 전환 처리도 실행합니다.
+        base.OnSkillExecutionFinished(index);
     }
 
     protected override float GetExternalMoveMultiplier()

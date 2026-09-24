@@ -111,10 +111,11 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         FindAndDetectPlayer();
         UpdatePhase();
         ApplyInitialCooldownsOnFirstDetection();
+        // 스킬 실행 중 이동은 BossSkillExecutor가 담당합니다.
+        if (isAttacking) return;
         if (UpdatePriorityBehavior()) { StopMove(); return; }
         if (!CanRunCombatAI()) { StopMove(); return; }
         if (!isChasing || playerTransform == null) { StopMove(); return; }
-        if (isAttacking) { StopMove(); return; }
 
         FacePlayer();
         BossSkillData skill = GetReadySkill(out int index) ?? GetBasicAttackData();
@@ -184,6 +185,12 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         float delta = playerTransform.position.x - transform.position.x;
         if (Mathf.Abs(delta) <= turnDeadZone) return;
         lookDirection = delta > 0f ? 1 : -1;
+        ApplyFacingDirection();
+    }
+
+    // 보스별 시각 하이어라키에 맞게 방향 전환 방법을 재정의합니다.
+    protected virtual void ApplyFacingDirection()
+    {
         if (spriteRenderer != null) spriteRenderer.flipX = lookDirection < 0;
     }
 
@@ -231,7 +238,9 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             distanceCooldownReduced[index] = false;
         }
         LogSkillDebug(index < 0 ? "기본 공격 시작" : $"{index + 1}스킬 시작", skill);
+        OnSkillExecutionStarted(skill, index);
         yield return BossSkillExecutor.Execute(skill, this);
+        yield return WaitForSkillAnimation(skill, index);
         OnSkillExecutionFinished(index);
         LogSkillDebug(index < 0 ? "기본 공격 종료" : $"{index + 1}스킬 종료", skill);
         currentSkillIndex = -1;
@@ -307,12 +316,18 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         RaycastHit2D hit = Physics2D.Raycast(new Vector2(bounds.center.x, bounds.min.y + 0.03f), Vector2.down, 100f, wallLayer);
         return hit.collider != null ? hit.distance : 0f;
     }
-    public void RefreshSkillDirection()
+    public virtual void RefreshSkillDirection()
     {
+        // 보스 공통: 시전 시작 방향을 유지. 추적 이동은 Update/FixedUpdate의
+        // isAttacking 검사로 차단하며 돌진 등 실행기 자체 이동은 허용합니다.
+        if (isAttacking) return;
         if (playerTransform != null) FacePlayer();
     }
     public virtual void OnSkillAttackHit(BossAttackStepData step) { }
     protected virtual BossSkillData GetBasicAttackData() => data.basicAttack;
+    protected virtual void OnSkillExecutionStarted(BossSkillData skill, int index) { }
+    // 게임플레이 효과 실행이 끝나도 필요한 마무리 모션 동안 AI 잠금을 유지합니다.
+    protected virtual IEnumerator WaitForSkillAnimation(BossSkillData skill, int index) { yield break; }
     protected virtual void OnSkillExecutionFinished(int index) { }
     protected virtual BossSkillData GetSkillData(int index)
     {

@@ -39,9 +39,17 @@ public class Inventory : MonoBehaviour
 
     public void AddItem(ItemData item)
     {
+        if (item == null)
+            return;
+
+        // 인벤토리가 가득 차 있으면 추가하지 않음
+        if (!HasSpace)
+            return;
+
         items.Add(new InventorySlot(item, 1));
         onInventoryChanged?.Invoke();
     }
+
 
     public void ReplaceItems(IEnumerable<ItemData> restoredItems)
     {

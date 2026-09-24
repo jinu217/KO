@@ -19,6 +19,31 @@ public interface IBossSkillContext
     void ApplySkillBuff(BossBuffSkillData buff);
 }
 
+// 선택적 대쉬 알림: 기존 IBossSkillContext 구현을 변경할 필요가 없습니다.
+public interface IBossDashAnimationContext
+{
+    void OnDashMovementStarted();
+    void OnDashMovementStopped();
+    IEnumerator WaitForDashRecovery();
+}
+
+// 선택적으로 생성 높이를 지정한다. 한 파동의 높이는 첫 생성 시 고정한다.
+public interface IBossTimedMovementContext
+{
+    bool UsesTimedMovement(BossAttackStepData step);
+    IEnumerator ExecuteTimedMovement(BossAttackStepData step);
+}
+
+public interface IBossScheduledSpawnContext
+{
+    bool IsScheduledSpawn(BossAttackStepData step);
+}
+
+public interface IBossSpawnHeightContext
+{
+    bool TryGetSpawnHeight(BossAttackStepData step, out float worldY);
+}
+
 public interface IBossSpawnedSkillObject
 {
     void Init(int direction, float damage, LayerMask playerLayer, float sizeMultiplier = 1f, float projectileSpeed = 0f);
@@ -32,12 +57,16 @@ public static class BossSkillExecutor
         if (skill == null || context == null)
             yield break;
 
+        // 공격 시작 시 목표와 방향을 고정한다. 준비 도중 플레이어가 뒤로 넘어가도 재조준하지 않는다.
+        float lockedTargetX = context.PlayerPosition.x;
+        int lockedDirection = context.LookDirection < 0 ? -1 : 1;
+
         if (skill.preDelay > 0f)
             yield return new WaitForSeconds(context.GetSkillDelay(skill.preDelay));
 
         if (skill.skillType == BossSkillType.Active)
         {
-            yield return ExecuteActive(skill.active, context);
+            yield return ExecuteActive(skill.active, context, lockedTargetX, lockedDirection);
         }
         else if (skill.skillType == BossSkillType.Buff)
         {
@@ -45,31 +74,48 @@ public static class BossSkillExecutor
         }
         else if (skill.executionOrder == BossSkillExecutionOrder.ActiveThenBuff)
         {
-            yield return ExecuteActive(skill.active, context);
+            yield return ExecuteActive(skill.active, context, lockedTargetX, lockedDirection);
             context.ApplySkillBuff(skill.buff);
         }
         else
         {
             // 동시 실행은 버프를 활성화한 직후 액티브 단계를 시작한다.
             context.ApplySkillBuff(skill.buff);
-            yield return ExecuteActive(skill.active, context);
+            yield return ExecuteActive(skill.active, context, lockedTargetX, lockedDirection);
         }
 
         if (skill.postDelay > 0f)
             yield return new WaitForSeconds(context.GetSkillDelay(skill.postDelay));
     }
 
-    private static IEnumerator ExecuteActive(BossActiveSkillData active, IBossSkillContext context)
+    private static IEnumerator ExecuteActive(BossActiveSkillData active, IBossSkillContext context, float lockedTargetX, int lockedDirection)
     {
         if (active?.attackSteps == null)
             yield break;
 
-        JumpTargetState jumpTarget = new JumpTargetState();
+        JumpTargetState jumpTarget = new JumpTargetState
+        {
+            lockedTargetX = lockedTargetX,
+            lockedDirection = lockedDirection
+        };
 
         foreach (BossAttackStepData step in active.attackSteps)
         {
             if (step == null || step.actionType == BossActionType.None)
                 continue;
+
+            if (step.actionType == BossActionType.SpawnPrefab
+                && context is IBossScheduledSpawnContext scheduled
+                && scheduled.IsScheduledSpawn(step))
+                continue;
+
+            if (context is IBossTimedMovementContext timed && timed.UsesTimedMovement(step))
+            {
+                yield return timed.ExecuteTimedMovement(step);
+                if (step.postDelay > 0f)
+                    yield return new WaitForSeconds(context.GetSkillDelay(step.postDelay));
+                continue;
+            }
 
             context.RefreshSkillDirection();
 
@@ -122,7 +168,7 @@ public static class BossSkillExecutor
         }
     }
 
-    private static IEnumerator ExecuteRepeatedAttacks(BossAttackStepData step, IBossSkillContext context)
+    public static IEnumerator ExecuteRepeatedAttacks(BossAttackStepData step, IBossSkillContext context)
     {
         for (int i = 0; i < step.attackCount; i++)
         {
@@ -133,6 +179,52 @@ public static class BossSkillExecutor
     }
 
     private static IEnumerator ExecuteMove(BossAttackStepData step, IBossSkillContext context, bool attackDuringMove)
+    {
+        float timer = 0f;
+        int remainingHits = step.attackCount;
+        Rigidbody2D body = context.BossBody;
+        IBossDashAnimationContext animation = attackDuringMove ? context as IBossDashAnimationContext : null;
+        if (animation == null)
+        {
+            yield return ExecuteMoveWithoutDashAnimation(step, context, attackDuringMove);
+            yield break;
+        }
+        float startX = body != null ? body.position.x : context.BossTransform.position.x;
+        animation?.OnDashMovementStarted();
+        try
+        {
+            while (timer < step.duration && body != null)
+            {
+                if (step.stopAtWall && context.IsWallAhead()) break;
+                float remainingDistance = step.maxMoveDistance > 0f
+                    ? step.maxMoveDistance - Mathf.Abs(body.position.x - startX)
+                    : float.PositiveInfinity;
+                if (remainingDistance <= 0.001f) break;
+                float dt = Time.fixedDeltaTime;
+                float travelTime = Mathf.Min(dt, step.duration - timer);
+                float distance = Mathf.Min(Mathf.Abs(step.moveSpeed) * travelTime, remainingDistance);
+                float velocity = context.LookDirection * Mathf.Sign(step.moveSpeed) * distance / dt;
+                body.linearVelocity = new Vector2(velocity, body.linearVelocity.y);
+
+                if (attackDuringMove && remainingHits > 0 && HitPlayer(step, context))
+                {
+                    remainingHits--;
+                    if (step.stopOnPlayerHit) break;
+                }
+                yield return new WaitForFixedUpdate();
+                timer += dt;
+            }
+        }
+        finally
+        {
+            StopHorizontal(body);
+            animation?.OnDashMovementStopped();
+        }
+        // 제동 모션이 끝날 때까지 이 스킬의 실행 상태를 유지합니다.
+        if (animation != null) yield return animation.WaitForDashRecovery();
+    }
+
+    private static IEnumerator ExecuteMoveWithoutDashAnimation(BossAttackStepData step, IBossSkillContext context, bool attackDuringMove)
     {
         float timer = 0f;
         int remainingHits = step.attackCount;
@@ -177,13 +269,15 @@ public static class BossSkillExecutor
         {
             jumpTarget.active = true;
             jumpTarget.startX = startX;
-            jumpTarget.totalDeltaX = context.PlayerPosition.x - startX;
+            // 이미 목표를 지나쳤다면 제자리 점프한다. 뒤쪽 목표로 역주행하지 않는다.
+            float forwardDistance = Mathf.Max(0f, (jumpTarget.lockedTargetX - startX) * jumpTarget.lockedDirection);
+            jumpTarget.totalDeltaX = forwardDistance * jumpTarget.lockedDirection;
             jumpTarget.completedRatio = step.targetDistanceRatio;
             targetX = startX + jumpTarget.totalDeltaX * step.targetDistanceRatio;
         }
 
         body.linearVelocity = new Vector2(
-            useTargetRatio ? 0f : context.LookDirection * step.jumpForce.x,
+            useTargetRatio ? 0f : jumpTarget.lockedDirection * step.jumpForce.x,
             step.jumpForce.y
         );
 
@@ -208,48 +302,107 @@ public static class BossSkillExecutor
     private static IEnumerator ExecuteSlam(BossAttackStepData step, IBossSkillContext context, JumpTargetState jumpTarget)
     {
         Rigidbody2D body = context.BossBody;
-        if (body != null && step.slamSpeed > 0f)
-            body.linearVelocity = new Vector2(body.linearVelocity.x, -step.slamSpeed);
-
-        // 낙하 시작 직후의 기존 지면 접촉값을 건너뛴 뒤 실제 착지를 기다린다.
-        yield return new WaitForFixedUpdate();
-        float timeout = step.duration > 0f ? context.GetSkillDelay(step.duration) : 2f;
-        float elapsed = 0f;
+        if (body == null) yield break;
         bool useTargetRatio = jumpTarget.active && step.targetDistanceRatio > 0f;
-        float startX = body != null ? body.position.x : 0f;
+        float startX = body.position.x;
         float targetX = useTargetRatio
             ? jumpTarget.startX + jumpTarget.totalDeltaX * Mathf.Clamp01(jumpTarget.completedRatio + step.targetDistanceRatio)
             : startX;
-        float startY = body != null ? body.position.y : 0f;
+        float startY = body.position.y;
         float groundDistance = Mathf.Max(0.01f, context.GetDistanceToGround());
-        while (!context.IsGrounded() && elapsed < timeout)
+        float timeout = step.duration > 0f ? context.GetSkillDelay(step.duration) : 2f;
+        var owner = context.BossTransform.GetComponent<MidBossController>();
+        int groundMask = owner != null ? (int)owner.wallLayer
+            : Physics2D.GetLayerCollisionMask(body.gameObject.layer) & ~(int)context.PlayerLayer;
+        var filter = new ContactFilter2D();
+        filter.SetLayerMask(groundMask);
+        filter.useTriggers = false;
+        var hits = new RaycastHit2D[32];
+        CollisionDetectionMode2D previousMode = body.collisionDetectionMode;
+        bool landed = false;
+        try
         {
-            if (useTargetRatio && body != null)
+            body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            if (step.slamSpeed > 0f)
+                body.linearVelocity = new Vector2(useTargetRatio ? 0f : body.linearVelocity.x, -step.slamSpeed);
+            float elapsed = 0f;
+            while (body != null && elapsed < timeout)
             {
-                float progress = Mathf.Clamp01((startY - body.position.y) / groundDistance);
-                body.position = new Vector2(Mathf.Lerp(startX, targetX, progress), body.position.y);
+                float dt = Time.fixedDeltaTime;
+                // 다음 물리 스텝의 중력까지 포함하여 콜라이더 전체 경로를 검사합니다.
+                float nextVy = body.linearVelocity.y + Physics2D.gravity.y * body.gravityScale * dt;
+                float dy = Mathf.Min(0f, nextVy * dt);
+                float dx = body.linearVelocity.x * dt;
+                if (useTargetRatio)
+                {
+                    float progress = Mathf.Clamp01((startY - body.position.y - dy) / groundDistance);
+                    dx = Mathf.Lerp(startX, targetX, progress) - body.position.x;
+                }
+                Vector2 travel = new Vector2(dx, dy);
+                float distance = travel.magnitude;
+                float nearest = float.PositiveInfinity;
+                if (distance > 0.00001f)
+                {
+                    int count = body.Cast(travel / distance, filter, hits, distance + 0.01f);
+                    for (int i = 0; i < count; i++)
+                    {
+                        // 옆벽은 착지로 처리하지 않습니다.
+                        if (hits[i].collider == null || hits[i].normal.y < 0.35f) continue;
+                        nearest = Mathf.Min(nearest, hits[i].distance);
+                    }
+                }
+                if (!float.IsPositiveInfinity(nearest))
+                {
+                    body.position += travel.normalized * Mathf.Clamp(nearest - 0.01f, 0f, distance);
+                    body.linearVelocity = Vector2.zero;
+                    landed = true;
+                    break;
+                }
+                if (context.IsGrounded() && body.linearVelocity.y <= 0f)
+                {
+                    body.linearVelocity = Vector2.zero;
+                    landed = true;
+                    break;
+                }
+                if (useTargetRatio)
+                {
+                    // 수평 이동도 속도로 적용하여 물리 충돌을 우회하지 않습니다.
+                    body.linearVelocity = new Vector2(dx / dt, body.linearVelocity.y);
+                }
+                elapsed += dt;
+                yield return new WaitForFixedUpdate();
             }
-            elapsed += Time.fixedDeltaTime;
-            yield return new WaitForFixedUpdate();
         }
-        if (useTargetRatio && body != null)
-            body.position = new Vector2(targetX, body.position.y);
-
-        yield return ExecuteRepeatedAttacks(step, context);
+        finally
+        {
+            if (body != null)
+            {
+                body.linearVelocity = new Vector2(0f, Mathf.Max(0f, body.linearVelocity.y));
+                body.collisionDetectionMode = previousMode;
+            }
+        }
+        // 타임아웃을 착지로 간주해 공중에서 내려찍기 판정을 만들지 않습니다.
+        if (landed) yield return ExecuteRepeatedAttacks(step, context);
     }
 
     private sealed class JumpTargetState
     {
+        public float lockedTargetX;
+        public int lockedDirection;
         public bool active;
         public float startX;
         public float totalDeltaX;
         public float completedRatio;
     }
 
-    private static IEnumerator ExecuteSpawn(BossAttackStepData step, IBossSkillContext context)
+    public static IEnumerator ExecuteSpawn(BossAttackStepData step, IBossSkillContext context)
     {
         if (step.spawnPrefab == null)
             yield break;
+
+        float spawnHeight = 0f;
+        bool overrideHeight = context is IBossSpawnHeightContext heightContext
+            && heightContext.TryGetSpawnHeight(step, out spawnHeight);
 
         for (int i = 0; i < step.spawnCount; i++)
         {
@@ -258,6 +411,9 @@ public static class BossSkillExecutor
                 step.spawnOffset.y + step.spawnVerticalSpacing * i,
                 0f
             );
+
+            if (overrideHeight)
+                position.y = spawnHeight + step.spawnVerticalSpacing * i;
 
             GameObject spawned = UnityEngine.Object.Instantiate(step.spawnPrefab, position, Quaternion.identity);
             IBossSpawnedSkillObject spawnedSkill = spawned.GetComponent<IBossSpawnedSkillObject>();

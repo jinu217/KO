@@ -121,6 +121,23 @@ public class TreasureChest : MonoBehaviour
             }
         }
 
+        // =============== 인벤토리 가득 참 검사 ===============
+        if (inventoryUI.inventoryDisplay == null ||
+            inventoryUI.inventoryDisplay.inventory == null)
+        {
+            Debug.LogWarning($"[{name}] Inventory 또는 InventoryDisplay를 찾지 못했습니다.");
+            return;
+        }
+
+        if (!inventoryUI.inventoryDisplay.inventory.HasSpace)
+        {
+            if (showDebugLog)
+                Debug.Log($"[{name}] 인벤토리가 가득 차 있어 장비상자를 열 수 없습니다.");
+
+            return;
+        }
+        // =====================================================
+
         List<ItemData> rewards = RollItems();
 
         if (rewards.Count == 0)
@@ -132,13 +149,18 @@ public class TreasureChest : MonoBehaviour
 
         if (showDebugLog)
         {
-            string joined = string.Join(", ", rewards.ConvertAll(item => item != null ? item.itemName : "(null)"));
+            string joined = string.Join(
+                ", ",
+                rewards.ConvertAll(item => item != null ? item.itemName : "(null)")
+            );
+
             Debug.Log($"[{name}] 보물상자 오픈! 랜덤 아이템 {rewards.Count}개: {joined}");
         }
 
         waitingRewardSelect = true;
         rewardUI.Open(rewards, this, inventoryUI);
     }
+
 
     // ChestRewardUI에서 보상 선택 완료 시 호출: 대기 해제 + 오픈 완료 처리
     public void NotifyRewardClaimed()

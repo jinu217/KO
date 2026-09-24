@@ -72,6 +72,7 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     private bool stunned;
 
     public bool FieldActive => fieldActive;
+    public bool IsReturning => returning;
     public bool BlocksCombatAI => fieldActive && (returning || stunned || (IsBossInside() && !IsPlayerInside() && !combatEngaged));
     public float OutgoingDamageMultiplier => fieldActive && IsBossInside() ? fieldAttackMultiplier : 1f;
 
@@ -122,6 +123,7 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
         if (!returning || !fieldActive || owner?.DesireBody == null) return;
         if (IsBossInside()) { FinishReturn(); return; }
         int direction = fieldCenter.x >= transform.position.x ? 1 : -1;
+        owner.DesireFaceDirection(direction);
         Rigidbody2D body = owner.DesireBody;
         body.linearVelocity = new Vector2(direction * returnMoveSpeed, body.linearVelocity.y);
     }
@@ -161,6 +163,7 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
             yield break;
         }
 
+        owner.PlayDesireAnimation();
         fieldEndTime = Time.time + fieldDuration;
         damageEffectEndTime = Time.time + damageEffectDuration;
         fieldActive = true;
@@ -172,6 +175,7 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
         PushPlayer();
         owner.DesireLog("욕망 스킬 시작", "안전에 대한 강박", cooldown);
         if (castDelay > 0f) yield return new WaitForSeconds(castDelay);
+        yield return owner.WaitForDesireAnimation();
         owner.DesireIsAttacking = false;
     }
 
@@ -202,9 +206,10 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     private IEnumerator UseReturnAttack()
     {
         returnAttackAttempted = true;
+        owner.DesireFacePlayer(); // 시전 전에만 방향을 결정합니다.
         owner.DesireIsAttacking = true;
         owner.DesireStop();
-        owner.DesireFacePlayer();
+        owner.PlayReturnAttackAnimation();
         owner.DesireLog("복귀 넉백 공격 시작", "안전지대 확보", 0f);
         if (returnAttackPreDelay > 0f) yield return new WaitForSeconds(returnAttackPreDelay);
 
@@ -221,11 +226,13 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
                 targetBody.linearVelocity = Vector2.zero;
                 targetBody.AddForce(new Vector2(direction * returnAttackKnockback.x, returnAttackKnockback.y), ForceMode2D.Impulse);
             }
+            yield return owner.WaitForReturnAttackAnimation();
             owner.DesireIsAttacking = false;
             BeginReturn();
             yield break;
         }
 
+        yield return owner.WaitForReturnAttackAnimation();
         stunned = true;
         yield return new WaitForSeconds(missedAttackStunDuration);
         stunned = false;

@@ -18,7 +18,6 @@ public class InventoryUI : MonoBehaviour
         characterPreview.SetActive(false);
     }
 
-// ===============임의용=============
     public bool TryAddItemToInventory(ItemData item)
     {
         if (item == null)
@@ -28,6 +27,10 @@ public class InventoryUI : MonoBehaviour
             return false;
 
         if (inventoryDisplay.inventory == null)
+            return false;
+
+        // 인벤토리가 가득 차 있으면 추가하지 않음
+        if (!inventoryDisplay.inventory.HasSpace)
             return false;
 
         inventoryDisplay.inventory.AddItem(item);

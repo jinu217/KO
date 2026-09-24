@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class TutorialBookUI : MonoBehaviour
 {
     public static bool IsAnyOpen { get; private set; }
+    public static bool EscUsedToClose { get; private set; }
 
     [System.Serializable]
     public class TutorialBookEntry
@@ -111,6 +112,7 @@ public class TutorialBookUI : MonoBehaviour
 
         if (ShouldCloseFromTutorialBookInput())
         {
+            EscUsedToClose = true;
             Close();
             return;
         }
@@ -160,6 +162,11 @@ public class TutorialBookUI : MonoBehaviour
         SetRootActive(false);
         playerController?.ResumeKeyboardControl();
         Closed?.Invoke();
+    }
+
+    public static void ClearEscUsedToClose()
+    {
+        EscUsedToClose = false;
     }
 
     private void OnDisable()
