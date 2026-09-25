@@ -35,7 +35,7 @@ public static class EArcher3_AnimGenerators
         public float[] angle = (float[])RestAngles.Clone();
     }
 
-    [MenuItem("Tools/EArcher 3/Generate Animations")]
+    [MenuItem("Tools/3/EArcher 3/Generate Animations")]
     public static void GenerateAll()
     {
         EnsureFolder(OutputFolder);
@@ -52,18 +52,18 @@ public static class EArcher3_AnimGenerators
         Debug.Log("EArcher 3: Idle / Walk / Run / Attack / Hit / Death 생성 완료. 화살 발사 기준 0.72초 (발사 코드는 별도 연결). " + OutputFolder);
     }
 
-    [MenuItem("Tools/EArcher 3/Clips/Idle")]
+    [MenuItem("Tools/3/EArcher 3/Clips/Idle")]
     public static void GenerateIdle() => GenerateSingle("EArcher3_Idle", 2.4f, true, Idle);
-    [MenuItem("Tools/EArcher 3/Clips/Walk")]
+    [MenuItem("Tools/3/EArcher 3/Clips/Walk")]
     public static void GenerateWalk() => GenerateSingle("EArcher3_Walk", 1.0f, true, t => Locomotion(t, 1.0f, false));
-    [MenuItem("Tools/EArcher 3/Clips/Run")]
+    [MenuItem("Tools/3/EArcher 3/Clips/Run")]
     public static void GenerateRun() => GenerateSingle("EArcher3_Run", 0.62f, true, t => Locomotion(t, 0.62f, true));
-    [MenuItem("Tools/EArcher 3/Clips/Attack")]
+    [MenuItem("Tools/3/EArcher 3/Clips/Attack")]
     public static void GenerateAttack() => GenerateSingle("EArcher3_Attack", 1.30f, false, Attack);
 
-    [MenuItem("Tools/EArcher 3/Clips/Hit")]
+    [MenuItem("Tools/3/EArcher 3/Clips/Hit")]
     public static void GenerateHit() => GenerateSingle("EArcher3_Hit", 0.30f, false, Hit);
-    [MenuItem("Tools/EArcher 3/Clips/Death")]
+    [MenuItem("Tools/3/EArcher 3/Clips/Death")]
     public static void GenerateDeath() => GenerateSingle("EArcher3_Death", 0.65f, false, Death);
 
     private static void GenerateSingle(string name, float duration, bool loop, Func<float, Pose> evaluate)
@@ -79,7 +79,7 @@ public static class EArcher3_AnimGenerators
     private const string ControllerName = "EArcher3_AC";
     private const string TransitionPrefix = "EArcher3_Generated_";
 
-    [MenuItem("Tools/EArcher 3/Setup Animator")]
+    [MenuItem("Tools/3/EArcher 3/Setup Animator")]
     public static void SetupAnimator()
     {
         EnsureFolder(OutputFolder);

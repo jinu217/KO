@@ -49,7 +49,7 @@ public class Villager2_AnimGenerators
     static readonly float[] WAVE_HB_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 27.5f, 39.87f, 45.0f, 39.87f, 27.5f, 15.13f, 10.0f, 15.13f, 27.5f, 39.87f, 45.0f, 39.87f, 27.5f, 15.13f, 10.0f, 6.67f, 3.33f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     static readonly float[] WAVE_HEAD_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 3.54f, 5.0f, 3.54f, 0.0f, -3.54f, -5.0f, -3.54f, -0.0f, 3.54f, 5.0f, 3.54f, 0.0f, -3.54f, -5.0f, -3.33f, -1.67f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
-    [MenuItem("Tools/Villager2/Generate All")]
+    [MenuItem("Tools/NPC1/Villager2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle();
@@ -59,7 +59,7 @@ public class Villager2_AnimGenerators
         UnityEngine.Debug.Log("[Villager2] 전체 애니메이션 생성 완료");
     }
 
-    [MenuItem("Tools/Villager2/Generate Idle")]
+    [MenuItem("Tools/NPC1/Villager2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("Villager2_Idle", 48, true);
@@ -88,7 +88,7 @@ public class Villager2_AnimGenerators
         Save(clip, "Villager2_Idle");
     }
 
-    [MenuItem("Tools/Villager2/Generate Walk")]
+    [MenuItem("Tools/NPC1/Villager2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("Villager2_Walk", 32, true);
@@ -117,7 +117,7 @@ public class Villager2_AnimGenerators
         Save(clip, "Villager2_Walk");
     }
 
-    [MenuItem("Tools/Villager2/Generate Wave")]
+    [MenuItem("Tools/NPC1/Villager2/Generate Wave")]
     public static void GenerateWave()
     {
         var clip = MakeClip("Villager2_Wave", 48, false);
@@ -146,7 +146,7 @@ public class Villager2_AnimGenerators
         Save(clip, "Villager2_Wave");
     }
 
-    [MenuItem("Tools/Villager2/Generate IdleWave")]
+    [MenuItem("Tools/NPC1/Villager2/Generate IdleWave")]
     public static void GenerateIdleWave()
     {
         var clip = MakeClip("Villager2_IdleWave", 48, false);

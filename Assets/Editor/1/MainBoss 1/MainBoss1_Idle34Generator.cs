@@ -161,7 +161,7 @@ public class MainBoss1_Idle34Generator
     static readonly float[] I4_TB_ROT = F(0f);
     static readonly float[] I4_CB_ROT = F(0f);
 
-    [MenuItem("Tools/MainBoss 1/Generate Idle3 (Leaning Back)")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Idle3 (Leaning Back)")]
     public static void GenerateIdle3() => Build("MainBoss1_Idle3",
         I3_BODY_ROT, I3_HEAD_ROT, I3_HEAD_X, I3_BOT_ROT,
         I3_SF_ROT, I3_FF_ROT, I3_SB_ROT, I3_FB_ROT, I3_HB_ROT, I3_WP_ROT,
@@ -169,7 +169,7 @@ public class MainBoss1_Idle34Generator
         I3_FTF_ROT, I3_FTB_ROT,
         sfPosX: -0.50f, sfPosY: 0.50f);
 
-    [MenuItem("Tools/MainBoss 1/Generate Idle4 (Hunched Over)")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Idle4 (Hunched Over)")]
     public static void GenerateIdle4() => Build("MainBoss1_Idle4",
         I4_BODY_ROT, I4_HEAD_ROT, I4_HEAD_X, I4_BOT_ROT,
         I4_SF_ROT, I4_FF_ROT, I4_SB_ROT, I4_FB_ROT, I4_HB_ROT, I4_WP_ROT,

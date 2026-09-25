@@ -118,7 +118,7 @@ public class EBasicMob_RunAnimationGenerator
 
     // ================================================================
 
-    [MenuItem("Tools/EBasicMob/Generate Run A (Light Shoulder Swing)")]
+    [MenuItem("Tools/1/EBasicMob/Generate Run A (Light Shoulder Swing)")]
     public static void GenerateA()
     {
         AnimationClip clip = MakeClip();
@@ -150,7 +150,7 @@ public class EBasicMob_RunAnimationGenerator
         SaveClip(clip, "EBasicMob_Run_A");
     }
 
-    [MenuItem("Tools/EBasicMob/Generate Run B (Sword Up Urgency)")]
+    [MenuItem("Tools/1/EBasicMob/Generate Run B (Sword Up Urgency)")]
     public static void GenerateB()
     {
         AnimationClip clip = MakeClip();

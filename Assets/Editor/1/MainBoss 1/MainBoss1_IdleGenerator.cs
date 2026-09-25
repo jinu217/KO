@@ -181,7 +181,7 @@ public class MainBoss1_IdleGenerator
         (26, -5f), (27, -6f), (28, -7f), (29, -8f), (30, -9f), (31, -10f),
         (32, -5f), (33, -4f));
 
-    [MenuItem("Tools/MainBoss 1/Generate Idle")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Idle")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

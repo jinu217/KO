@@ -2,12 +2,12 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
-public class Daughter_SmileGenerator
+public class Daughter_IdleGenerator
 {
     const string SAVE_PATH    = "Assets/Animations/Daughter";
-    const string CLIP_NAME    = "Daughter_Smile";
+    const string CLIP_NAME    = "Daughter_Idle";
     const float  FRAME_RATE   = 12f;
-    const int    TOTAL_FRAMES = 16;
+    const int    TOTAL_FRAMES = 24;
     const float  DURATION     = TOTAL_FRAMES / FRAME_RATE;
 
     const string BODY       = "Body";
@@ -23,80 +23,77 @@ public class Daughter_SmileGenerator
     const string FOOT_B     = "Body/LegJoint_B/Foot_B";
 
     // ================================================================
-    // REST POSE
-    // Body            pos (0.00,   0.00)
-    // Head            pos (-0.04,  0.46)
-    // Head_B          pos (-0.085, 0.17)
-    // ShoulderJoint_F pos (-0.29,  0.353)
-    // ArmJoint_F      pos (0.00,  -0.25)   rot 0 → 140 = 손이 입가
-    // ShoulderJoint_B pos ( 0.08,  0.353)
-    // ArmJoint_B      pos (0.00,  -0.25)
-    // LegJoint_F      pos (-0.26, -0.58)
-    // LegJoint_B      pos ( 0.05, -0.58)
-    //
-    // 웃는 모션 구조 (16프레임):
-    //  f0~f3  : 손이 입가로 올라옴 (AF 0→140)
-    //  f4~f11 : 입가에 손 올린 채 살랑살랑 (숨쉬기+머리카락)
-    //  f12~f15: 살짝 내려갔다 다시 올라오며 루프
+    // REST POSE (2026-07-09 14:21 추출 기준)
+    // ArmJoint_F/B pos Y = -0.25
     // ================================================================
 
-    // Body: 들뜬 느낌 — 살짝 위로 뜨고 앞으로 기울기
+    // Body: 숨쉬기
     static readonly float[] BODY_Y = {
-        0f,  0.005f, 0.010f, 0.014f, 0.016f, 0.018f, 0.018f, 0.017f,
-        0.016f, 0.018f, 0.018f, 0.017f, 0.016f, 0.014f, 0.008f, 0.003f };
+         0f,     0.003f,  0.006f,  0.010f,  0.013f,  0.016f,  0.018f,  0.019f,
+         0.020f, 0.019f,  0.017f,  0.014f,  0.011f,  0.008f,  0.005f,  0.002f,
+         0f,    -0.002f, -0.004f, -0.005f, -0.004f, -0.002f, -0.001f,  0f };
 
     static readonly float[] BODY_ROT = {
-        0f,  -0.5f, -1.0f, -1.5f, -1.8f, -2.0f, -2.0f, -1.9f,
-       -1.8f, -2.0f, -2.0f, -1.9f, -1.8f, -1.5f, -0.8f, -0.3f };
+         0f,    -0.2f,  -0.4f,  -0.6f,  -0.8f,  -1.0f,  -1.1f,  -1.2f,
+        -1.2f,  -1.1f,  -0.9f,  -0.7f,  -0.5f,  -0.3f,  -0.1f,   0f,
+         0f,     0.1f,   0.2f,   0.2f,   0.1f,   0.1f,   0f,      0f };
 
-    // Head: 웃으면서 살짝 기울어짐
+    // Head: 살짝 늦은 위상
     static readonly float[] HEAD_ROT = {
-        0f,   0.5f,  1.0f,  1.5f,  2.0f,  2.2f,  2.0f,  1.8f,
-        2.0f, 2.2f,  2.0f,  1.8f,  2.0f,  1.8f,  1.2f,  0.5f };
+         0f,     0f,     0.2f,   0.5f,   0.8f,   1.0f,   1.1f,   1.0f,
+         0.8f,   0.5f,   0.2f,   0f,    -0.3f,  -0.6f,  -0.8f,  -0.8f,
+        -0.6f,  -0.3f,  -0.1f,   0f,     0.1f,   0.1f,   0f,     0f };
 
-    // Head_B: 찰랑 — 손 올라갈 때 뒤로 처졌다가 살랑거림
+    // Head_B: 찰랑, 가장 늦은 위상, 진폭 큼
     static readonly float[] HEAD_B_ROT = {
-         0f,   1.0f,  2.5f,  4.0f,  5.0f,  5.5f,  5.0f,  4.0f,
-         5.0f, 5.5f,  5.0f,  4.0f,  3.5f,  2.5f,  1.5f,  0.5f };
+         0f,     0.5f,   1.5f,   2.5f,   3.5f,   4.5f,   5.0f,   5.2f,
+         5.0f,   4.5f,   3.5f,   2.0f,   0.5f,  -1.0f,  -2.5f,  -3.5f,
+        -4.0f,  -4.0f,  -3.5f,  -2.5f,  -1.5f,  -0.8f,  -0.3f,   0f };
 
     static readonly float[] HEAD_B_Y = {
-         0f,  -0.002f,-0.004f,-0.006f,-0.007f,-0.008f,-0.007f,-0.006f,
-        -0.007f,-0.008f,-0.007f,-0.006f,-0.005f,-0.004f,-0.002f,-0.001f };
+         0f,    -0.001f,-0.002f,-0.004f,-0.005f,-0.006f,-0.006f,-0.006f,
+        -0.005f,-0.004f,-0.003f,-0.001f, 0.001f, 0.003f, 0.004f, 0.005f,
+         0.005f, 0.004f, 0.003f, 0.002f, 0.001f, 0.001f, 0f,     0f };
 
-    // ShoulderJoint_F: 어깨는 살짝만 올라옴
-    static readonly float[] SF_ROT = {
-         0f,   2f,    5f,    8f,   10f,   11f,   10f,    9f,
-        10f,  11f,   10f,    9f,   10f,    8f,    5f,    2f };
-
+    // ShoulderJoint_F
     static readonly float[] SF_Y = {
-         0f,  0.003f, 0.006f, 0.009f, 0.011f, 0.012f, 0.011f, 0.010f,
-         0.011f, 0.012f, 0.011f, 0.010f, 0.010f, 0.008f, 0.004f, 0.001f };
+         0f,     0.002f,  0.004f,  0.006f,  0.008f,  0.009f,  0.010f,  0.010f,
+         0.010f, 0.009f,  0.008f,  0.006f,  0.004f,  0.002f,  0.001f,  0f,
+         0f,    -0.001f, -0.002f, -0.002f, -0.001f,  0f,       0f,     0f };
 
-    // ArmJoint_F: f9 기준 125, 살랑 유지
+    static readonly float[] SF_ROT = {
+         0f,     0.3f,   0.8f,   1.2f,   1.5f,   1.7f,   1.8f,   1.7f,
+         1.5f,   1.2f,   0.8f,   0.4f,   0f,    -0.3f,  -0.5f,  -0.6f,
+        -0.5f,  -0.3f,  -0.1f,   0f,     0.1f,   0.1f,   0f,     0f };
+
     static readonly float[] AF_ROT = {
-         0f,   30f,   70f,  110f,  124f,  126f,  125f,  124f,
-        125f,  127f,  125f,  123f,  124f,  110f,   65f,   28f };
+         0f,     0.2f,   0.5f,   0.8f,   1.0f,   1.1f,   1.2f,   1.1f,
+         1.0f,   0.8f,   0.5f,   0.2f,   0f,    -0.2f,  -0.3f,  -0.4f,
+        -0.3f,  -0.2f,  -0.1f,   0f,     0f,     0f,     0f,     0f };
 
-    // ShoulderJoint_B: F 반대로 약간, 균형감
-    static readonly float[] SB_ROT = {
-         0f,  -2f,   -4f,   -6f,   -7f,   -8f,   -7f,   -6f,
-        -7f,  -8f,   -7f,   -6f,   -6f,   -5f,   -3f,   -1f };
-
+    // ShoulderJoint_B: 반 박자 늦은 위상
     static readonly float[] SB_Y = {
-         0f,  0.002f, 0.004f, 0.006f, 0.007f, 0.008f, 0.007f, 0.006f,
-         0.007f, 0.008f, 0.007f, 0.006f, 0.006f, 0.005f, 0.003f, 0.001f };
+         0f,     0f,      0.001f,  0.003f,  0.005f,  0.007f,  0.009f,  0.010f,
+         0.010f, 0.010f,  0.009f,  0.007f,  0.005f,  0.003f,  0.001f,  0f,
+        -0.001f,-0.002f, -0.002f, -0.001f,  0f,      0f,      0f,     0f };
 
-    // ArmJoint_B: 자연스럽게 살짝 뒤로
+    static readonly float[] SB_ROT = {
+         0f,     0f,      0.3f,   0.8f,   1.2f,   1.5f,   1.7f,   1.8f,
+         1.7f,   1.5f,   1.2f,   0.8f,   0.4f,   0f,    -0.3f,  -0.5f,
+        -0.6f,  -0.5f,  -0.3f,  -0.1f,   0f,     0.1f,   0.1f,   0f };
+
     static readonly float[] AB_ROT = {
-         0f,  -2f,   -4f,   -6f,   -7f,   -8f,   -7f,   -6f,
-        -7f,  -8f,   -7f,   -6f,   -6f,   -5f,   -3f,   -1f };
+         0f,     0f,      0.2f,   0.5f,   0.8f,   1.0f,   1.1f,   1.2f,
+         1.1f,   1.0f,   0.8f,   0.5f,   0.2f,   0f,    -0.2f,  -0.3f,
+        -0.4f,  -0.3f,  -0.2f,  -0.1f,   0f,     0f,     0f,     0f };
 
-    // 발: Body Y 보정 (지면 고정)
+    // 발: Body Y 보정으로 지면 고정
     static readonly float[] LEG_Y_COMP = {
-         0f,  -0.005f,-0.010f,-0.014f,-0.016f,-0.018f,-0.018f,-0.017f,
-        -0.016f,-0.018f,-0.018f,-0.017f,-0.016f,-0.014f,-0.008f,-0.003f };
+         0f,    -0.003f, -0.006f, -0.010f, -0.013f, -0.016f, -0.018f, -0.019f,
+        -0.020f,-0.019f, -0.017f, -0.014f, -0.011f, -0.008f, -0.005f, -0.002f,
+         0f,     0.002f,  0.004f,  0.005f,  0.004f,  0.002f,  0.001f,  0f };
 
-    [MenuItem("Tools/Daughter/Generate Smile")]
+    [MenuItem("Tools/NPC1/Daughter/Generate Idle")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))
@@ -145,7 +142,7 @@ public class Daughter_SmileGenerator
         L(HEAD, "localPosition.z",    0f);
         C(HEAD, "localEulerAngles.z", HEAD_ROT, 0f);
 
-        // Head_B
+        // Head_B 찰랑
         L(HEAD_B, "localPosition.x",   -0.085f);
         C(HEAD_B, "localPosition.y",    HEAD_B_Y,   0.17f);
         L(HEAD_B, "localPosition.z",    0f);

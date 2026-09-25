@@ -66,7 +66,7 @@ public class Merchant_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/Merchant/Generate Idle")]
+    [MenuItem("Tools/NPC1/Merchant/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("Merchant_Idle", 48, true);
@@ -99,7 +99,7 @@ public class Merchant_AnimGenerators
     // ================================================================
     // Generate Nod
     // ================================================================
-    [MenuItem("Tools/Merchant/Generate IdleNod")]
+    [MenuItem("Tools/NPC1/Merchant/Generate IdleNod")]
     public static void GenerateIdleNod()
     {
         var clip = MakeClip("Merchant_IdleNod", 48, false);
@@ -132,7 +132,7 @@ public class Merchant_AnimGenerators
     // ================================================================
     // Generate Wave
     // ================================================================
-    [MenuItem("Tools/Merchant/Generate IdleWave")]
+    [MenuItem("Tools/NPC1/Merchant/Generate IdleWave")]
     public static void GenerateIdleWave()
     {
         var clip = MakeClip("Merchant_IdleWave", 48, false);
@@ -202,7 +202,7 @@ public class Merchant_AnimGenerators
         Debug.Log($"[Merchant] {name} → {assetPath}");
     }
 
-    [MenuItem("Tools/Merchant/Generate Wave")]
+    [MenuItem("Tools/NPC1/Merchant/Generate Wave")]
     public static void GenerateWave()
     {
         var clip = MakeClip("Merchant_Wave", 48, false);
@@ -240,7 +240,7 @@ public class Merchant_AnimGenerators
     static readonly float[] COIN_HEAD_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4.21f, 7.78f, 10.16f, 11.0f, 10.16f, 7.78f, 4.21f, 0.0f, 4.21f, 7.78f, 10.16f, 11.0f, 10.16f, 7.78f, 4.21f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     static readonly float[] COIN_HF_ROT = { 75.0f, 76.81f, 81.75f, 88.5f, 95.25f, 100.19f, 102.0f, 100.19f, 95.25f, 88.5f, 81.75f, 76.81f, 75.0f, 76.81f, 81.75f, 88.5f, 95.25f, 100.19f, 102.0f, 100.19f, 95.25f, 88.5f, 81.75f, 76.81f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f, 75.0f };
 
-    [MenuItem("Tools/Merchant/Generate CoinPose")]
+    [MenuItem("Tools/NPC1/Merchant/Generate CoinPose")]
     public static void GenerateCoinPose()
     {
         var clip = MakeClip("Merchant_CoinPose", 48, false);
@@ -269,7 +269,7 @@ public class Merchant_AnimGenerators
 
         Save(clip, "Merchant_CoinPose");
     }
-    [MenuItem("Tools/Merchant/Generate IdleCoinPose")]
+    [MenuItem("Tools/NPC1/Merchant/Generate IdleCoinPose")]
     public static void GenerateIdleCoinPose()
     {
         var clip = MakeClip("Merchant_IdleCoinPose", 48, false);
@@ -298,7 +298,7 @@ public class Merchant_AnimGenerators
 
         Save(clip, "Merchant_IdleCoinPose");
     }
-    [MenuItem("Tools/Merchant/Generate Nod")]
+    [MenuItem("Tools/NPC1/Merchant/Generate Nod")]
     public static void GenerateNod()
     {
         var clip = MakeClip("Merchant_Nod", 24, false);

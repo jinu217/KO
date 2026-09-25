@@ -58,31 +58,31 @@ public static class MidBoss3_AnimGenerators
             default: return Death(t);
         }
     }
-    [MenuItem("Tools/MidBoss 3/Generate Animations")]
+    [MenuItem("Tools/3/MidBoss 3/Generate Animations")]
     public static void GenerateAll() { EnsureFolder(OutputFolder); for (int i = 0; i < Names.Length; i++) Make(i); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Idle")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Idle")]
     public static void GenerateIdle() { EnsureFolder(OutputFolder); Make(0); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Walk")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Walk")]
     public static void GenerateWalk() { EnsureFolder(OutputFolder); Make(1); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Run")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Run")]
     public static void GenerateRun() { EnsureFolder(OutputFolder); Make(2); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Attack")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Attack")]
     public static void GenerateAttack() { EnsureFolder(OutputFolder); Make(3); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Skill1")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Skill1")]
     public static void GenerateSkill1() { EnsureFolder(OutputFolder); Make(4); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Skill2")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Skill2")]
     public static void GenerateSkill2() { EnsureFolder(OutputFolder); Make(5); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Skill3")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Skill3")]
     public static void GenerateSkill3() { EnsureFolder(OutputFolder); Make(6); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Hit")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Hit")]
     public static void GenerateHit() { EnsureFolder(OutputFolder); Make(7); SetupAnimator(); }
-    [MenuItem("Tools/MidBoss 3/Clips/Death")]
+    [MenuItem("Tools/3/MidBoss 3/Clips/Death")]
     public static void GenerateDeath() { EnsureFolder(OutputFolder); Make(8); SetupAnimator(); }
     private static AnimationClip Make(int i)
     {
         return Generate("MidBoss3_" + Names[i], Durations[i], i < 3, t => Evaluate(i, t));
     }
-    [MenuItem("Tools/MidBoss 3/Setup Animator")]
+    [MenuItem("Tools/3/MidBoss 3/Setup Animator")]
     public static void SetupAnimator()
     {
         EnsureFolder(OutputFolder);

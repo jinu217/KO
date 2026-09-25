@@ -48,7 +48,7 @@ public class Buffer_WaveGenerator
     static readonly float[] BOT_ROT = F(0f);
     static readonly float[] HEAD_ROT = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 3.54f, 5.0f, 3.54f, 0.0f, -3.54f, -5.0f, -3.54f, 0.0f, 3.54f, 5.0f, 3.54f, 0.0f, -3.54f, -5.0f, -3.33f, -1.67f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
-    [MenuItem("Tools/Buffer/Generate Wave")]
+    [MenuItem("Tools/NPC1/Buffer/Generate Wave")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))
@@ -160,7 +160,7 @@ public class Buffer_WaveGenerator
     static readonly float[] IW_SB_Y = { 0.3286f, 0.3296f, 0.3307f, 0.332f, 0.3334f, 0.335f, 0.3366f, 0.3383f, 0.34f, 0.3417f, 0.3434f, 0.345f, 0.3466f, 0.348f, 0.3493f, 0.3504f, 0.3514f, 0.3521f, 0.3527f, 0.353f, 0.3531f, 0.353f, 0.3527f, 0.3521f, 0.3514f, 0.3504f, 0.3493f, 0.348f, 0.3466f, 0.345f, 0.3434f, 0.3417f, 0.34f, 0.3383f, 0.3366f, 0.335f, 0.3334f, 0.332f, 0.3307f, 0.3296f, 0.3286f, 0.3279f, 0.3273f, 0.327f, 0.3269f, 0.327f, 0.3273f, 0.3279f };
     static readonly float[] IW_BOTTOM_Y = { -0.41f, -0.4149f, -0.4197f, -0.4244f, -0.4287f, -0.4328f, -0.4365f, -0.4398f, -0.4425f, -0.4446f, -0.4462f, -0.4472f, -0.4475f, -0.4472f, -0.4462f, -0.4446f, -0.4425f, -0.4398f, -0.4365f, -0.4328f, -0.4287f, -0.4244f, -0.4197f, -0.4149f, -0.41f, -0.4051f, -0.4003f, -0.3956f, -0.3913f, -0.3872f, -0.3835f, -0.3802f, -0.3775f, -0.3754f, -0.3738f, -0.3728f, -0.3725f, -0.3728f, -0.3738f, -0.3754f, -0.3775f, -0.3802f, -0.3835f, -0.3872f, -0.3912f, -0.3956f, -0.4003f, -0.4051f };
 
-    [MenuItem("Tools/Buffer/Generate IdleWave")]
+    [MenuItem("Tools/NPC1/Buffer/Generate IdleWave")]
     public static void GenerateIdleWave()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

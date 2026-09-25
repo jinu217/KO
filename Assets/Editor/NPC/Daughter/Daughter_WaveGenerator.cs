@@ -123,7 +123,7 @@ public class Daughter_WaveGenerator
        -0.016f,-0.016f,-0.016f,-0.016f,-0.016f,-0.016f,-0.016f,-0.016f,
        -0.016f,-0.013f,-0.007f,-0.002f };
 
-    [MenuItem("Tools/Daughter/Generate Wave")]
+    [MenuItem("Tools/NPC1/Daughter/Generate Wave")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

@@ -9,7 +9,7 @@ public class MobLayerSetter : EditorWindow
 
     GameObject targetRoot;
 
-    [MenuItem("Tools/Mob/Layer Setter")]
+    [MenuItem("Tools/기타/Mob/Layer Setter")]
     public static void ShowWindow()
     {
         var window = GetWindow<MobLayerSetter>("Mob Layer Setter");

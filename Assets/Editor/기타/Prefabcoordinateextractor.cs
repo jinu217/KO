@@ -5,7 +5,7 @@ using System.IO;
 
 public class PrefabCoordinateExtractor : EditorWindow
 {
-    [MenuItem("Tools/Extract Prefab Coordinates")]
+    [MenuItem("Tools/기타/Extract Prefab Coordinates")]
     static void OpenWindow()
     {
         GetWindow<PrefabCoordinateExtractor>("Coordinate Extractor");

@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class AnimatorControllerAssigner
 {
-    [MenuItem("Tools/Assign Animator Controllers to Prefabs")]
+    [MenuItem("Tools/기타/Assign Animator Controllers to Prefabs")]
     public static void Assign()
     {
         int success = 0, fail = 0;

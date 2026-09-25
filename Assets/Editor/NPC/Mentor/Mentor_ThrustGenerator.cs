@@ -124,7 +124,7 @@ public class Mentor_ThrustGenerator
         0f,  -4f,  -7f,  -3f,   2f,   8f,   6f,   4f,
         2f,   1f,   0f,   0f,   0f,   0f };
 
-    [MenuItem("Tools/Mentor/Generate Thrust")]
+    [MenuItem("Tools/NPC1/Mentor/Generate Thrust")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

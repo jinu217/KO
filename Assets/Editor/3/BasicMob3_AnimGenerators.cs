@@ -34,7 +34,7 @@ public static class BasicMob3_AnimGenerators
         public float[] angle = (float[])RestAngles.Clone();
     }
 
-    [MenuItem("Tools/BasicMob 3/Generate Animations")]
+    [MenuItem("Tools/3/BasicMob 3/Generate Animations")]
     public static void GenerateAll()
     {
         EnsureFolder(OutputFolder);
@@ -51,18 +51,18 @@ public static class BasicMob3_AnimGenerators
         Debug.Log("BasicMob 3: Idle / Walk / Run / Attack / Hit / Death 생성 완료. 공격 임팩트 0.68초. " + OutputFolder);
     }
 
-    [MenuItem("Tools/BasicMob 3/Clips/Idle")]
+    [MenuItem("Tools/3/BasicMob 3/Clips/Idle")]
     public static void GenerateIdle() => GenerateSingle("BasicMob3_Idle", 2.4f, true, Idle);
-    [MenuItem("Tools/BasicMob 3/Clips/Walk")]
+    [MenuItem("Tools/3/BasicMob 3/Clips/Walk")]
     public static void GenerateWalk() => GenerateSingle("BasicMob3_Walk", 1f, true, t => Locomotion(t, 1f, false));
-    [MenuItem("Tools/BasicMob 3/Clips/Run")]
+    [MenuItem("Tools/3/BasicMob 3/Clips/Run")]
     public static void GenerateRun() => GenerateSingle("BasicMob3_Run", 0.6f, true, t => Locomotion(t, 0.6f, true));
-    [MenuItem("Tools/BasicMob 3/Clips/Attack")]
+    [MenuItem("Tools/3/BasicMob 3/Clips/Attack")]
     public static void GenerateAttack() => GenerateSingle("BasicMob3_Attack", 1.4f, false, Attack);
 
-    [MenuItem("Tools/BasicMob 3/Clips/Hit")]
+    [MenuItem("Tools/3/BasicMob 3/Clips/Hit")]
     public static void GenerateHit() => GenerateSingle("BasicMob3_Hit", 0.30f, false, Hit);
-    [MenuItem("Tools/BasicMob 3/Clips/Death")]
+    [MenuItem("Tools/3/BasicMob 3/Clips/Death")]
     public static void GenerateDeath() => GenerateSingle("BasicMob3_Death", 0.65f, false, Death);
 
     private static void GenerateSingle(string name, float duration, bool loop, Func<float, Pose> evaluate)
@@ -78,7 +78,7 @@ public static class BasicMob3_AnimGenerators
     private const string ControllerName = "BasicMob3_AC";
     private const string TransitionPrefix = "BasicMob3_Generated_";
 
-    [MenuItem("Tools/BasicMob 3/Setup Animator")]
+    [MenuItem("Tools/3/BasicMob 3/Setup Animator")]
     public static void SetupAnimator()
     {
         EnsureFolder(OutputFolder);

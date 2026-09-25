@@ -34,7 +34,7 @@ public static class SpeedMob3_AnimGenerators
         public float[] angle = (float[])RestAngles.Clone();
     }
 
-    [MenuItem("Tools/SpeedMob 3/Generate Animations")]
+    [MenuItem("Tools/3/SpeedMob 3/Generate Animations")]
     public static void GenerateAll()
     {
         EnsureFolder(OutputFolder);
@@ -51,18 +51,18 @@ public static class SpeedMob3_AnimGenerators
         Debug.Log("SpeedMob 3: Idle / Walk / Run / Attack / Hit / Death 생성 완료. 공격 임팩트 0.34초. " + OutputFolder);
     }
 
-    [MenuItem("Tools/SpeedMob 3/Clips/Idle")]
+    [MenuItem("Tools/3/SpeedMob 3/Clips/Idle")]
     public static void GenerateIdle() => GenerateSingle("SpeedMob3_Idle", 2.4f, true, Idle);
-    [MenuItem("Tools/SpeedMob 3/Clips/Walk")]
+    [MenuItem("Tools/3/SpeedMob 3/Clips/Walk")]
     public static void GenerateWalk() => GenerateSingle("SpeedMob3_Walk", 0.8f, true, t => Locomotion(t, 0.8f, false));
-    [MenuItem("Tools/SpeedMob 3/Clips/Run")]
+    [MenuItem("Tools/3/SpeedMob 3/Clips/Run")]
     public static void GenerateRun() => GenerateSingle("SpeedMob3_Run", 0.46f, true, t => Locomotion(t, 0.46f, true));
-    [MenuItem("Tools/SpeedMob 3/Clips/Attack")]
+    [MenuItem("Tools/3/SpeedMob 3/Clips/Attack")]
     public static void GenerateAttack() => GenerateSingle("SpeedMob3_Attack", 0.82f, false, Attack);
 
-    [MenuItem("Tools/SpeedMob 3/Clips/Hit")]
+    [MenuItem("Tools/3/SpeedMob 3/Clips/Hit")]
     public static void GenerateHit() => GenerateSingle("SpeedMob3_Hit", 0.30f, false, Hit);
-    [MenuItem("Tools/SpeedMob 3/Clips/Death")]
+    [MenuItem("Tools/3/SpeedMob 3/Clips/Death")]
     public static void GenerateDeath() => GenerateSingle("SpeedMob3_Death", 0.65f, false, Death);
 
     private static void GenerateSingle(string name, float duration, bool loop, Func<float, Pose> evaluate)
@@ -78,7 +78,7 @@ public static class SpeedMob3_AnimGenerators
     private const string ControllerName = "SpeedMob3_AC";
     private const string TransitionPrefix = "SpeedMob3_Generated_";
 
-    [MenuItem("Tools/SpeedMob 3/Setup Animator")]
+    [MenuItem("Tools/3/SpeedMob 3/Setup Animator")]
     public static void SetupAnimator()
     {
         EnsureFolder(OutputFolder);

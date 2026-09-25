@@ -52,7 +52,7 @@ public class Buffer_NodGenerators
     static readonly float[] IW_SB_Y = { 0.3248f, 0.3261f, 0.3276f, 0.3293f, 0.3313f, 0.3333f, 0.3355f, 0.3377f, 0.34f, 0.3423f, 0.3445f, 0.3467f, 0.3488f, 0.3507f, 0.3524f, 0.3539f, 0.3552f, 0.3562f, 0.3569f, 0.3574f, 0.3575f, 0.3574f, 0.3569f, 0.3562f, 0.3552f, 0.3539f, 0.3524f, 0.3507f, 0.3488f, 0.3467f, 0.3445f, 0.3423f, 0.34f, 0.3377f, 0.3355f, 0.3333f, 0.3313f, 0.3293f, 0.3276f, 0.3261f, 0.3248f, 0.3238f, 0.3231f, 0.3226f, 0.3225f, 0.3226f, 0.3231f, 0.3238f };
     static readonly float[] IW_BOTTOM_Y = { -0.41f, -0.4149f, -0.4197f, -0.4244f, -0.4287f, -0.4328f, -0.4365f, -0.4398f, -0.4425f, -0.4446f, -0.4462f, -0.4472f, -0.4475f, -0.4472f, -0.4462f, -0.4446f, -0.4425f, -0.4398f, -0.4365f, -0.4328f, -0.4287f, -0.4244f, -0.4197f, -0.4149f, -0.41f, -0.4051f, -0.4003f, -0.3956f, -0.3913f, -0.3872f, -0.3835f, -0.3802f, -0.3775f, -0.3754f, -0.3738f, -0.3728f, -0.3725f, -0.3728f, -0.3738f, -0.3754f, -0.3775f, -0.3802f, -0.3835f, -0.3872f, -0.3912f, -0.3956f, -0.4003f, -0.4051f };
 
-    [MenuItem("Tools/Buffer/Generate Nod")]
+    [MenuItem("Tools/NPC1/Buffer/Generate Nod")]
     public static void GenerateNod()
     {
         var clip = MakeClip("Buffer_Nod", TOTAL_FRAMES, false);
@@ -82,7 +82,7 @@ public class Buffer_NodGenerators
         Save(clip, "Buffer_Nod");
     }
 
-    [MenuItem("Tools/Buffer/Generate IdleNod")]
+    [MenuItem("Tools/NPC1/Buffer/Generate IdleNod")]
     public static void GenerateIdleNod()
     {
         var clip = MakeClip("Buffer_IdleNod", 48, false);

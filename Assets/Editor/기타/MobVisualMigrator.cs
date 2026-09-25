@@ -34,7 +34,7 @@ public class MobVisualMigrator : EditorWindow
     List<string> _log = new List<string>();
     Vector2 _scroll;
 
-    [MenuItem("Tools/Mob/Migrate Visuals (Prefab -> Prefabs)")]
+    [MenuItem("Tools/기타/Mob/Migrate Visuals (Prefab -> Prefabs)")]
     public static void ShowWindow()
     {
         var win = GetWindow<MobVisualMigrator>("Mob Visual Migrator");

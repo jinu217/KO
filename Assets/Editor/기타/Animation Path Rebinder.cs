@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class AnimationPathRebinder : EditorWindow
 {
 
-    [MenuItem("Tools/Animation Path Rebinder")]
+    [MenuItem("Tools/±‚≈∏/Animation Path Rebinder")]
     static void OpenWindow()
     {
         GetWindow<AnimationPathRebinder>("Path Rebinder");

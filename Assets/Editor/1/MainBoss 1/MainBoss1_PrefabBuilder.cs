@@ -44,7 +44,7 @@ public class MainBoss1_PrefabBuilder : EditorWindow
         ("Weapon",      "Body/Shoulder_B/Forearm_B/Hand_B"),
     };
 
-    [MenuItem("Tools/MainBoss 1/Build Prefab & Match Sprites")]
+    [MenuItem("Tools/1/MainBoss 1/Build Prefab & Match Sprites")]
     static void Open() => GetWindow<MainBoss1_PrefabBuilder>("MainBoss 1 Builder");
 
     void OnGUI()

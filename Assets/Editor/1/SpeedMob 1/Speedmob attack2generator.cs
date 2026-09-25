@@ -55,14 +55,14 @@ public class SpeedMob_Attack1Generator
     static readonly float[] A2_LB_X = { 0f, -0.03f, -0.02f, -0.07f, -0.08f, -0.05f, -0.02f, 0f, 0f };
     static readonly float[] A2_LEG_COMP = { 0f, -10f, -18f, 20f, 16f, 8f, 4f, 1f, 0f };
 
-    [MenuItem("Tools/SpeedMob 1/Generate Attack1 (Thrust Only)")]
+    [MenuItem("Tools/1/SpeedMob 1/Generate Attack1 (Thrust Only)")]
     public static void GenerateAttack1() => Build("SpeedMob1_Attack1", 9,
         A1_BODY_ROT, A1_HEAD_ROT,
         A1_SF_ROT, A1_AF_ROT,
         A1_SB_ROT, A1_AB_ROT, A1_WP_ROT,
         A1_LF_X, A1_LB_X, A1_LEG_COMP);
 
-    [MenuItem("Tools/SpeedMob 1/Generate Attack2 (Slash Only)")]
+    [MenuItem("Tools/1/SpeedMob 1/Generate Attack2 (Slash Only)")]
     public static void GenerateAttack2() => Build("SpeedMob1_Attack2", 9,
         A2_BODY_ROT, A2_HEAD_ROT,
         A2_SF_ROT, A2_AF_ROT,

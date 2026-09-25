@@ -45,7 +45,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate All
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate All")]
+    [MenuItem("Tools/2/MainBoss2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle();
@@ -73,7 +73,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Idle")]
+    [MenuItem("Tools/2/MainBoss2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("MainBoss2_Idle", 48, true);
@@ -147,7 +147,7 @@ public class MainBoss2_AnimGenerators
     // Generate Idle2 (한손으로 무기 땅에 세운 자세)
     // SB=10°, FB=75°, HB=5°, Axe pos(0.197,-0.260) rot=-90°
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Idle2")]
+    [MenuItem("Tools/2/MainBoss2/Generate Idle2")]
     public static void GenerateIdle2()
     {
         var clip = MakeClip("MainBoss2_Idle2", 48, true);
@@ -445,7 +445,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Walk")]
+    [MenuItem("Tools/2/MainBoss2/Generate Walk")]
     public static void GenerateWalk()
     {
         const float DUR = 32 / 12f;
@@ -505,7 +505,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Walk2 (Body 회전 없는 버전 — 나머지는 Walk와 동일)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Walk2")]
+    [MenuItem("Tools/2/MainBoss2/Generate Walk2")]
     public static void GenerateWalk2()
     {
         const float DUR = 32 / 12f;
@@ -568,7 +568,7 @@ public class MainBoss2_AnimGenerators
     // 내려찍는 동작은 없음 — 스윙업 후 든 자세에서 클립이 끝남 (Idle 복귀는 Animator 크로스페이드로 처리).
     // 논루프.
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Attack")]
+    [MenuItem("Tools/2/MainBoss2/Generate Attack")]
     public static void GenerateAttack()
     {
         const float DUR = 29 / FRAME_RATE;
@@ -628,7 +628,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Attack2 (Attack 베이스 — scale=-1인 10프레임 동안 새 좌표로 도달, 이후 Attack의 스윙을 이어붙임)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Attack2")]
+    [MenuItem("Tools/2/MainBoss2/Generate Attack2")]
     public static void GenerateAttack2()
     {
         const float DUR = 23 / FRAME_RATE;
@@ -684,7 +684,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Skill1 (front 버전 — 공중 포즈에서 Front 다리가 화면 오른쪽/두드러짐)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Skill1")]
+    [MenuItem("Tools/2/MainBoss2/Generate Skill1")]
     public static void GenerateSkill1()
     {
         GenerateSkill1Variant("MainBoss2_Skill1",
@@ -698,7 +698,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Skill1-1 (back 버전 — 공중 포즈에서 Back 다리가 화면 오른쪽/두드러짐)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Skill1-1")]
+    [MenuItem("Tools/2/MainBoss2/Generate Skill1-1")]
     public static void GenerateSkill1_1()
     {
         GenerateSkill1Variant("MainBoss2_Skill1-1",
@@ -767,7 +767,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Skill1AG (Skill1 구조 재사용, 임팩트1만 실측 좌표로 교체 — Front 프로필 기반)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Skill1AG")]
+    [MenuItem("Tools/2/MainBoss2/Generate Skill1AG")]
     public static void GenerateSkill1AG()
     {
         const float DUR = 34 / FRAME_RATE;
@@ -825,13 +825,13 @@ public class MainBoss2_AnimGenerators
     // 콘티 기반 1차 추측: 빠르게 돌진해 몸으로 들이받고(HIT1), 도끼를 들어 크게 휘두르고(HIT2),
     // 마지막으로 내려찍음(HIT3). 논루프, 마지막 내려찍은 자세로 끝.
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Skill2")]
+    [MenuItem("Tools/2/MainBoss2/Generate Skill2")]
     public static void GenerateSkill2()
     {
         GenerateSkill2Variant("MainBoss2_Skill2", SK2N_HEAD_ROT);
     }
 
-    [MenuItem("Tools/MainBoss2/Generate Skill2-1")]
+    [MenuItem("Tools/2/MainBoss2/Generate Skill2-1")]
     public static void GenerateSkill2_1()
     {
         GenerateSkill2Variant("MainBoss2_Skill2-1", SK2N_HEAD_ROT_V1);
@@ -898,7 +898,7 @@ public class MainBoss2_AnimGenerators
     //   충격파 스폰 스크립트를 트리거하는 방식을 추천.
     // 논루프, 내리찍은 자세로 끝.
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Skill3")]
+    [MenuItem("Tools/2/MainBoss2/Generate Skill3")]
     public static void GenerateSkill3()
     {
         const float DUR = 21 / FRAME_RATE;
@@ -953,7 +953,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Skill3-1 (rest -> 무릎 굽히는 예비동작 -> 점프 -> 임팩트)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Skill3-1")]
+    [MenuItem("Tools/2/MainBoss2/Generate Skill3-1")]
     public static void GenerateSkill3_1()
     {
         const float DUR = 27 / FRAME_RATE;
@@ -1010,13 +1010,13 @@ public class MainBoss2_AnimGenerators
     // 콘티 기반 1차 추측: 깊게 웅크려 힘을 모았다가, 가슴을 펴며 힘차게 일어남.
     // 논루프, 일어난 파워 자세로 끝 (Idle로는 Animator 크로스페이드로 복귀).
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Buff")]
+    [MenuItem("Tools/2/MainBoss2/Generate Buff")]
     public static void GenerateBuff()
     {
         GenerateBuffVariant("MainBoss2_Buff", BUFF2_AXE_POS_X);
     }
 
-    [MenuItem("Tools/MainBoss2/Generate Buff1")]
+    [MenuItem("Tools/2/MainBoss2/Generate Buff1")]
     public static void GenerateBuff1()
     {
         GenerateBuffVariant("MainBoss2_Buff1", BUFF1_AXE_POS_X);
@@ -1076,7 +1076,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Run (추측 기반 1차 버전 — Walk보다 보폭/무릎 굴곡/팔 스윙 확대, 20프레임 사이클)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Run")]
+    [MenuItem("Tools/2/MainBoss2/Generate Run")]
     public static void GenerateRun()
     {
         const float SPEED_MULT = 3f;                 // 모션 속도 3배
@@ -1139,7 +1139,7 @@ public class MainBoss2_AnimGenerators
     // Generate Run2 (Run과 동일한 하체/몸통 리듬 + 뒷팔은 화면 기준 오른쪽 위로
     // 무기를 치켜든 채 고정한 상태로 질주)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Run2")]
+    [MenuItem("Tools/2/MainBoss2/Generate Run2")]
     public static void GenerateRun2()
     {
         const float SPEED_MULT = 3f;                 // 모션 속도 3배
@@ -1202,7 +1202,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate Run3 (Run2와 동일한 느낌, 뒷팔 SB만 120° 기준으로 낮춤)
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate Run3")]
+    [MenuItem("Tools/2/MainBoss2/Generate Run3")]
     public static void GenerateRun3()
     {
         const float SPEED_MULT = 3f;                 // 모션 속도 3배
@@ -1262,7 +1262,7 @@ public class MainBoss2_AnimGenerators
     // ================================================================
     // Generate AC
     // ================================================================
-    [MenuItem("Tools/MainBoss2/Generate AC")]
+    [MenuItem("Tools/2/MainBoss2/Generate AC")]
     public static void GenerateAC()
     {
         string acPath = $"{SAVE_PATH}/MainBoss2_AC.controller";

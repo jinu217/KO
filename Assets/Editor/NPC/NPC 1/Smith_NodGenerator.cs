@@ -62,7 +62,7 @@ public class Smith_NodGenerators
     // Body: 고정 (끄덕임은 Head만)
     // Bottom도 고정 (Body rot=0이라 상쇄 불필요)
 
-    [MenuItem("Tools/Smith/Generate Nod")]
+    [MenuItem("Tools/NPC1/Smith/Generate Nod")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))
@@ -175,7 +175,7 @@ public class Smith_NodGenerators
         (9, -1f), (10, -2f),
         (11, 0f), (23, 0f));
 
-    [MenuItem("Tools/Smith/Generate NodBody")]
+    [MenuItem("Tools/NPC1/Smith/Generate NodBody")]
     public static void GenerateNodBody()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))
@@ -305,7 +305,7 @@ public class Smith_NodGenerators
 
 
 
-    [MenuItem("Tools/Smith/Generate IdleNod")]
+    [MenuItem("Tools/NPC1/Smith/Generate IdleNod")]
     public static void GenerateIdleNod()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

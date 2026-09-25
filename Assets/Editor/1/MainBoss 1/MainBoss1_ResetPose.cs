@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class MainBoss1_ResetPose
 {
-    [MenuItem("Tools/MainBoss 1/Reset to Rest Pose")]
+    [MenuItem("Tools/1/MainBoss 1/Reset to Rest Pose")]
     public static void ResetPose()
     {
         GameObject root = GameObject.Find("MainBoss 1");
@@ -13,7 +13,7 @@ public class MainBoss1_ResetPose
         Debug.Log("[MainBoss 1] Rest pose applied.");
     }
 
-    [MenuItem("Tools/MainBoss 1/Reset to Two-Handed Grip Pose")]
+    [MenuItem("Tools/1/MainBoss 1/Reset to Two-Handed Grip Pose")]
     public static void ResetTwoHandedPose()
     {
         GameObject root = GameObject.Find("MainBoss 1");

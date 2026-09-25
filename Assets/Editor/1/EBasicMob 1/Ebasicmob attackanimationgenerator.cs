@@ -132,7 +132,7 @@ public class EBasicMob_AttackAnimationGenerator
 
     // ================================================================
 
-    [MenuItem("Tools/EBasicMob/Generate Attack A (Slash + Recovery)")]
+    [MenuItem("Tools/1/EBasicMob/Generate Attack A (Slash + Recovery)")]
     public static void GenerateA()
     {
         int frames = 10;
@@ -184,7 +184,7 @@ public class EBasicMob_AttackAnimationGenerator
         SaveClip(clip, "EBasicMob_Attack_A");
     }
 
-    [MenuItem("Tools/EBasicMob/Generate Attack B (Slash + Hold)")]
+    [MenuItem("Tools/1/EBasicMob/Generate Attack B (Slash + Hold)")]
     public static void GenerateB()
     {
         int frames = 7;

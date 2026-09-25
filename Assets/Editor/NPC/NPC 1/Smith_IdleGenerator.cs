@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEditor;
 
-public class Buffer_IdleGenerator
+public class Smith_IdleGenerator
 {
-    const string SAVE_PATH = "Assets/Animations/Buffer";
-    const string CLIP_NAME = "Buffer_Idle";
+    const string SAVE_PATH = "Assets/Animations/Smith";
+    const string CLIP_NAME = "Smith_Idle";
     const float FRAME_RATE = 12f;
     const int TOTAL_FRAMES = 48;
     const float DUR = TOTAL_FRAMES / (float)FRAME_RATE;
@@ -19,26 +19,23 @@ public class Buffer_IdleGenerator
     const string FOOT_F = "Body/Bottom/Foot_F";
     const string FOOT_B = "Body/Bottom/Foot_B";
 
-    // rest 실측값:
-    //   Body pos(0,0), Head pos(-0.093, 0.472)
-    //   SF pos(-0.254, 0.324), HF pos(-0.105, -0.234)
-    //   SB pos(0.043, 0.340), HB pos(0.130, -0.250)
-    //   Bottom pos(0, -0.410), Foot_F pos(-0.255, 0), Foot_B pos(0.041, 0)
+    // 매 프레임 사인파 값 — Auto 탄젠트 오버슈트 없음
+    static readonly float[] BODY_Y = { 0.0f, 0.0065f, 0.0129f, 0.0191f, 0.025f, 0.0304f, 0.0354f, 0.0397f, 0.0433f, 0.0462f, 0.0483f, 0.0496f, 0.05f, 0.0496f, 0.0483f, 0.0462f, 0.0433f, 0.0397f, 0.0354f, 0.0304f, 0.025f, 0.0191f, 0.0129f, 0.0065f, 0.0f, -0.0065f, -0.0129f, -0.0191f, -0.025f, -0.0304f, -0.0354f, -0.0397f, -0.0433f, -0.0462f, -0.0483f, -0.0496f, -0.05f, -0.0496f, -0.0483f, -0.0462f, -0.0433f, -0.0397f, -0.0354f, -0.0304f, -0.025f, -0.0191f, -0.0129f, -0.0065f };
+    static readonly float[] HEAD_Y = { 0.71f, 0.7133f, 0.7165f, 0.7196f, 0.7225f, 0.7252f, 0.7277f, 0.7298f, 0.7317f, 0.7331f, 0.7341f, 0.7348f, 0.735f, 0.7348f, 0.7341f, 0.7331f, 0.7317f, 0.7298f, 0.7277f, 0.7252f, 0.7225f, 0.7196f, 0.7165f, 0.7133f, 0.71f, 0.7067f, 0.7035f, 0.7004f, 0.6975f, 0.6948f, 0.6923f, 0.6902f, 0.6883f, 0.6869f, 0.6859f, 0.6852f, 0.685f, 0.6852f, 0.6859f, 0.6869f, 0.6883f, 0.6902f, 0.6923f, 0.6948f, 0.6975f, 0.7004f, 0.7035f, 0.7067f };
+    // 어깨: 8프레임 딜레이
+    static readonly float[] SF_Y = { 0.51f, 0.5122f, 0.5148f, 0.5177f, 0.521f, 0.5245f, 0.5282f, 0.5321f, 0.536f, 0.5399f, 0.5438f, 0.5475f, 0.551f, 0.5543f, 0.5572f, 0.5598f, 0.562f, 0.5637f, 0.565f, 0.5657f, 0.566f, 0.5657f, 0.565f, 0.5637f, 0.562f, 0.5598f, 0.5572f, 0.5543f, 0.551f, 0.5475f, 0.5438f, 0.5399f, 0.536f, 0.5321f, 0.5282f, 0.5245f, 0.521f, 0.5177f, 0.5148f, 0.5122f, 0.51f, 0.5083f, 0.507f, 0.5063f, 0.506f, 0.5063f, 0.507f, 0.5083f };
+    static readonly float[] SB_Y = { 0.51f, 0.5122f, 0.5148f, 0.5177f, 0.521f, 0.5245f, 0.5282f, 0.5321f, 0.536f, 0.5399f, 0.5438f, 0.5475f, 0.551f, 0.5543f, 0.5572f, 0.5598f, 0.562f, 0.5637f, 0.565f, 0.5657f, 0.566f, 0.5657f, 0.565f, 0.5637f, 0.562f, 0.5598f, 0.5572f, 0.5543f, 0.551f, 0.5475f, 0.5438f, 0.5399f, 0.536f, 0.5321f, 0.5282f, 0.5245f, 0.521f, 0.5177f, 0.5148f, 0.5122f, 0.51f, 0.5083f, 0.507f, 0.5063f, 0.506f, 0.5063f, 0.507f, 0.5083f };
+    // Bottom: Body Y 반대로 상쇄 → 발이 바닥에 고정
+    static readonly float[] BOTTOM_Y = { -0.3f, -0.3065f, -0.3129f, -0.3191f, -0.325f, -0.3304f, -0.3354f, -0.3397f, -0.3433f, -0.3462f, -0.3483f, -0.3496f, -0.35f, -0.3496f, -0.3483f, -0.3462f, -0.3433f, -0.3397f, -0.3354f, -0.3304f, -0.325f, -0.3191f, -0.3129f, -0.3065f, -0.3f, -0.2935f, -0.2871f, -0.2809f, -0.275f, -0.2696f, -0.2646f, -0.2603f, -0.2567f, -0.2538f, -0.2517f, -0.2504f, -0.25f, -0.2504f, -0.2517f, -0.2538f, -0.2567f, -0.2603f, -0.2646f, -0.2696f, -0.275f, -0.2809f, -0.2871f, -0.2935f };
 
-    static readonly float[] BODY_Y = { 0.0f, 0.0049f, 0.0097f, 0.0144f, 0.0187f, 0.0228f, 0.0265f, 0.0298f, 0.0325f, 0.0346f, 0.0362f, 0.0372f, 0.0375f, 0.0372f, 0.0362f, 0.0346f, 0.0325f, 0.0298f, 0.0265f, 0.0228f, 0.0187f, 0.0144f, 0.0097f, 0.0049f, 0.0f, -0.0049f, -0.0097f, -0.0144f, -0.0187f, -0.0228f, -0.0265f, -0.0298f, -0.0325f, -0.0346f, -0.0362f, -0.0372f, -0.0375f, -0.0372f, -0.0362f, -0.0346f, -0.0325f, -0.0298f, -0.0265f, -0.0228f, -0.0188f, -0.0144f, -0.0097f, -0.0049f };
-    static readonly float[] HEAD_Y = { 0.472f, 0.4744f, 0.4769f, 0.4792f, 0.4814f, 0.4834f, 0.4853f, 0.4869f, 0.4882f, 0.4893f, 0.4901f, 0.4906f, 0.4907f, 0.4906f, 0.4901f, 0.4893f, 0.4882f, 0.4869f, 0.4853f, 0.4834f, 0.4814f, 0.4792f, 0.4769f, 0.4744f, 0.472f, 0.4696f, 0.4671f, 0.4648f, 0.4626f, 0.4606f, 0.4587f, 0.4571f, 0.4558f, 0.4547f, 0.4539f, 0.4534f, 0.4532f, 0.4534f, 0.4539f, 0.4547f, 0.4558f, 0.4571f, 0.4587f, 0.4606f, 0.4626f, 0.4648f, 0.4671f, 0.4696f };
-    static readonly float[] SF_Y = { 0.3126f, 0.3136f, 0.3147f, 0.316f, 0.3174f, 0.319f, 0.3206f, 0.3223f, 0.324f, 0.3257f, 0.3274f, 0.329f, 0.3306f, 0.332f, 0.3333f, 0.3344f, 0.3354f, 0.3361f, 0.3367f, 0.337f, 0.3371f, 0.337f, 0.3367f, 0.3361f, 0.3354f, 0.3344f, 0.3333f, 0.332f, 0.3306f, 0.329f, 0.3274f, 0.3257f, 0.324f, 0.3223f, 0.3206f, 0.319f, 0.3174f, 0.316f, 0.3147f, 0.3136f, 0.3126f, 0.3119f, 0.3113f, 0.311f, 0.3109f, 0.311f, 0.3113f, 0.3119f };
-    static readonly float[] SB_Y = { 0.3286f, 0.3296f, 0.3307f, 0.332f, 0.3334f, 0.335f, 0.3366f, 0.3383f, 0.34f, 0.3417f, 0.3434f, 0.345f, 0.3466f, 0.348f, 0.3493f, 0.3504f, 0.3514f, 0.3521f, 0.3527f, 0.353f, 0.3531f, 0.353f, 0.3527f, 0.3521f, 0.3514f, 0.3504f, 0.3493f, 0.348f, 0.3466f, 0.345f, 0.3434f, 0.3417f, 0.34f, 0.3383f, 0.3366f, 0.335f, 0.3334f, 0.332f, 0.3307f, 0.3296f, 0.3286f, 0.3279f, 0.3273f, 0.327f, 0.3269f, 0.327f, 0.3273f, 0.3279f };
-    static readonly float[] BOTTOM_Y = { -0.41f, -0.4149f, -0.4197f, -0.4244f, -0.4287f, -0.4328f, -0.4365f, -0.4398f, -0.4425f, -0.4446f, -0.4462f, -0.4472f, -0.4475f, -0.4472f, -0.4462f, -0.4446f, -0.4425f, -0.4398f, -0.4365f, -0.4328f, -0.4287f, -0.4244f, -0.4197f, -0.4149f, -0.41f, -0.4051f, -0.4003f, -0.3956f, -0.3913f, -0.3872f, -0.3835f, -0.3802f, -0.3775f, -0.3754f, -0.3738f, -0.3728f, -0.3725f, -0.3728f, -0.3738f, -0.3754f, -0.3775f, -0.3802f, -0.3835f, -0.3872f, -0.3912f, -0.3956f, -0.4003f, -0.4051f };
-
-    [MenuItem("Tools/Buffer/Generate Idle")]
+    [MenuItem("Tools/NPC1/Smith/Generate Idle")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))
         {
             if (!AssetDatabase.IsValidFolder("Assets/Animations"))
                 AssetDatabase.CreateFolder("Assets", "Animations");
-            AssetDatabase.CreateFolder("Assets/Animations", "Buffer");
+            AssetDatabase.CreateFolder("Assets/Animations", "Smith");
         }
 
         var clip = new AnimationClip { frameRate = FRAME_RATE };
@@ -47,6 +44,7 @@ public class Buffer_IdleGenerator
         s.loopTime = true;
         AnimationUtility.SetAnimationClipSettings(clip, s);
 
+        // 매 프레임 값 배열 → Auto 탄젠트 커브
         void C(string path, string prop, float[] vals)
         {
             var keys = new Keyframe[TOTAL_FRAMES];
@@ -70,46 +68,46 @@ public class Buffer_IdleGenerator
         L(BODY, "localEulerAngles.z", 0f);
 
         // Head
-        L(HEAD, "localPosition.x", -0.093f);
+        L(HEAD, "localPosition.x", -0.170f);
         C(HEAD, "localPosition.y", HEAD_Y);
         L(HEAD, "localPosition.z", 0f);
         L(HEAD, "localEulerAngles.z", 0f);
 
         // Shoulder_F / Hand_F
-        L(SF, "localPosition.x", -0.254f);
+        L(SF, "localPosition.x", -0.610f);
         C(SF, "localPosition.y", SF_Y);
         L(SF, "localPosition.z", 0f);
         L(SF, "localEulerAngles.z", 0f);
-        L(HF, "localPosition.x", -0.105f);
-        L(HF, "localPosition.y", -0.234f);
+        L(HF, "localPosition.x", 0f);
+        L(HF, "localPosition.y", -0.317f);
         L(HF, "localPosition.z", 0f);
         L(HF, "localEulerAngles.z", 0f);
 
         // Shoulder_B / Hand_B
-        L(SB, "localPosition.x", 0.043f);
+        L(SB, "localPosition.x", 0.137f);
         C(SB, "localPosition.y", SB_Y);
         L(SB, "localPosition.z", 0f);
         L(SB, "localEulerAngles.z", 0f);
-        L(HB, "localPosition.x", 0.130f);
-        L(HB, "localPosition.y", -0.250f);
+        L(HB, "localPosition.x", 0.079f);
+        L(HB, "localPosition.y", -0.300f);
         L(HB, "localPosition.z", 0f);
         L(HB, "localEulerAngles.z", 0f);
 
-        // Bottom
+        // Bottom (Body 상쇄)
         L(BOTTOM, "localPosition.x", 0f);
         C(BOTTOM, "localPosition.y", BOTTOM_Y);
         L(BOTTOM, "localPosition.z", 0f);
         L(BOTTOM, "localEulerAngles.z", 0f);
 
-        // Foot_F
-        L(FOOT_F, "localPosition.x", -0.255f);
-        L(FOOT_F, "localPosition.y", 0f);
+        // Foot_F (고정)
+        L(FOOT_F, "localPosition.x", -0.480f);
+        L(FOOT_F, "localPosition.y", -0.190f);
         L(FOOT_F, "localPosition.z", 0f);
         L(FOOT_F, "localEulerAngles.z", 0f);
 
-        // Foot_B
-        L(FOOT_B, "localPosition.x", 0.041f);
-        L(FOOT_B, "localPosition.y", 0f);
+        // Foot_B (고정)
+        L(FOOT_B, "localPosition.x", 0.005f);
+        L(FOOT_B, "localPosition.y", -0.190f);
         L(FOOT_B, "localPosition.z", 0f);
         L(FOOT_B, "localEulerAngles.z", 0f);
 
@@ -127,7 +125,7 @@ public class Buffer_IdleGenerator
             AssetDatabase.SaveAssets();
         }
         AssetDatabase.Refresh();
-        Debug.Log($"[Buffer] {CLIP_NAME} → {assetPath}");
+        Debug.Log($"[Smith] {CLIP_NAME} → {assetPath}");
         EditorUtility.FocusProjectWindow();
         Selection.activeObject = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
     }

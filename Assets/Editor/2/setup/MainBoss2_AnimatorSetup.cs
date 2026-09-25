@@ -9,7 +9,7 @@ public static class MainBoss2_AnimatorSetup
 {
     const string Auto = "MainBoss2_Auto_";
     static readonly string[] Actions = { "Attack", "Skill1", "Skill2", "Skill3", "Buff" };
-    [MenuItem("Tools/MainBoss2/Setup Animator")]
+    [MenuItem("Tools/2/MainBoss2/Setup Animator")]
     public static void Setup()
     {
         try

@@ -34,7 +34,7 @@ public static class TankMob3_AnimGenerators
         public float[] angle = (float[])RestAngles.Clone();
     }
 
-    [MenuItem("Tools/TankMob 3/Generate Animations")]
+    [MenuItem("Tools/3/TankMob 3/Generate Animations")]
     public static void GenerateAll()
     {
         EnsureFolder(OutputFolder);
@@ -51,18 +51,18 @@ public static class TankMob3_AnimGenerators
         Debug.Log("TankMob 3: Idle / Walk / Run / Attack / Hit / Death 생성 완료. 공격 임팩트 0.88초. " + OutputFolder);
     }
 
-    [MenuItem("Tools/TankMob 3/Clips/Idle")]
+    [MenuItem("Tools/3/TankMob 3/Clips/Idle")]
     public static void GenerateIdle() => GenerateSingle("TankMob3_Idle", 2.4f, true, Idle);
-    [MenuItem("Tools/TankMob 3/Clips/Walk")]
+    [MenuItem("Tools/3/TankMob 3/Clips/Walk")]
     public static void GenerateWalk() => GenerateSingle("TankMob3_Walk", 1.3f, true, t => Locomotion(t, 1.3f, false));
-    [MenuItem("Tools/TankMob 3/Clips/Run")]
+    [MenuItem("Tools/3/TankMob 3/Clips/Run")]
     public static void GenerateRun() => GenerateSingle("TankMob3_Run", 0.86f, true, t => Locomotion(t, 0.86f, true));
-    [MenuItem("Tools/TankMob 3/Clips/Attack")]
+    [MenuItem("Tools/3/TankMob 3/Clips/Attack")]
     public static void GenerateAttack() => GenerateSingle("TankMob3_Attack", 1.7f, false, Attack);
 
-    [MenuItem("Tools/TankMob 3/Clips/Hit")]
+    [MenuItem("Tools/3/TankMob 3/Clips/Hit")]
     public static void GenerateHit() => GenerateSingle("TankMob3_Hit", 0.30f, false, Hit);
-    [MenuItem("Tools/TankMob 3/Clips/Death")]
+    [MenuItem("Tools/3/TankMob 3/Clips/Death")]
     public static void GenerateDeath() => GenerateSingle("TankMob3_Death", 0.65f, false, Death);
 
     private static void GenerateSingle(string name, float duration, bool loop, Func<float, Pose> evaluate)
@@ -78,7 +78,7 @@ public static class TankMob3_AnimGenerators
     private const string ControllerName = "TankMob3_AC";
     private const string TransitionPrefix = "TankMob3_Generated_";
 
-    [MenuItem("Tools/TankMob 3/Setup Animator")]
+    [MenuItem("Tools/3/TankMob 3/Setup Animator")]
     public static void SetupAnimator()
     {
         EnsureFolder(OutputFolder);

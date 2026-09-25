@@ -4,7 +4,7 @@ using System.IO;
 
 public class PivotCopier : EditorWindow
 {
-    [MenuItem("Tools/Pivot Copier")]
+    [MenuItem("Tools/±‚≈∏/Pivot Copier")]
     static void OpenWindow()
     {
         GetWindow<PivotCopier>("Pivot Copier");

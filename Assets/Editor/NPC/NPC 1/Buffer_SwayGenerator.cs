@@ -33,7 +33,7 @@ public class Buffer_SwayGenerator
     static readonly float[] BODY_Y   = {0.0f,0.0077f,0.0141f,0.0185f,0.02f,0.0185f,0.0141f,0.0077f,0.0f,0.0077f,0.0141f,0.0185f,0.02f,0.0185f,0.0141f,0.0077f,0.0f,0.0077f,0.0141f,0.0185f,0.02f,0.0185f,0.0141f,0.0077f,0.0f,0.0077f,0.0141f,0.0185f,0.02f,0.0185f,0.0141f,0.0077f};
     static readonly float[] BOTTOM_Y = {-0.41f,-0.4177f,-0.4241f,-0.4285f,-0.43f,-0.4285f,-0.4241f,-0.4177f,-0.41f,-0.4177f,-0.4241f,-0.4285f,-0.43f,-0.4285f,-0.4241f,-0.4177f,-0.41f,-0.4177f,-0.4241f,-0.4285f,-0.43f,-0.4285f,-0.4241f,-0.4177f,-0.41f,-0.4177f,-0.4241f,-0.4285f,-0.43f,-0.4285f,-0.4241f,-0.4177f};
 
-    [MenuItem("Tools/Buffer/Generate Sway")]
+    [MenuItem("Tools/NPC1/Buffer/Generate Sway")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

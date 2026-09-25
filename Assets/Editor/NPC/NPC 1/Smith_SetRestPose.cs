@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class Smith_SetRestPose
 {
-    [MenuItem("Tools/Smith/Set Rest Pose")]
+    [MenuItem("Tools/NPC1/Smith/Set Rest Pose")]
     public static void SetPose()
     {
         var go = GameObject.Find("Smith");

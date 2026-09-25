@@ -11,7 +11,7 @@ public class PrefabBuilderWindow : EditorWindow
     string _prefabPath = "Assets/Prefab";
     Vector2 _scrollPos;
 
-    [MenuItem("Tools/Prefab/Build Prefab From Sprite Folder")]
+    [MenuItem("Tools/기타/Prefab/Build Prefab From Sprite Folder")]
     public static void ShowWindow()
     {
         var win = GetWindow<PrefabBuilderWindow>("Prefab Builder");

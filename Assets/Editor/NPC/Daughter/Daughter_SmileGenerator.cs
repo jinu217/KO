@@ -2,12 +2,12 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
-public class Daughter_SkipGenerator
+public class Daughter_SmileGenerator
 {
     const string SAVE_PATH    = "Assets/Animations/Daughter";
-    const string CLIP_NAME    = "Daughter_Skip";
+    const string CLIP_NAME    = "Daughter_Smile";
     const float  FRAME_RATE   = 12f;
-    const int    TOTAL_FRAMES = 12; // 1초 사이클
+    const int    TOTAL_FRAMES = 16;
     const float  DURATION     = TOTAL_FRAMES / FRAME_RATE;
 
     const string BODY       = "Body";
@@ -28,100 +28,75 @@ public class Daughter_SkipGenerator
     // Head            pos (-0.04,  0.46)
     // Head_B          pos (-0.085, 0.17)
     // ShoulderJoint_F pos (-0.29,  0.353)
-    // ArmJoint_F      pos (0.00,  -0.25)
+    // ArmJoint_F      pos (0.00,  -0.25)   rot 0 → 140 = 손이 입가
     // ShoulderJoint_B pos ( 0.08,  0.353)
     // ArmJoint_B      pos (0.00,  -0.25)
     // LegJoint_F      pos (-0.26, -0.58)
     // LegJoint_B      pos ( 0.05, -0.58)
     //
-    // 12프레임 사이클:
-    // - Body: 가볍게 위아래로 통...통...
-    // - 팔: 앞뒤 스윙 없이 ArmJoint rot으로 팔꿈치가 위아래 간드러지게
-    //   F랑 B가 반대 위상으로 번갈아 올라갔다 내려와서 살랑살랑
-    // - 다리: 작고 가벼운 스텝
-    // - Head_B: 가볍게 찰랑
+    // 웃는 모션 구조 (16프레임):
+    //  f0~f3  : 손이 입가로 올라옴 (AF 0→140)
+    //  f4~f11 : 입가에 손 올린 채 살랑살랑 (숨쉬기+머리카락)
+    //  f12~f15: 살짝 내려갔다 다시 올라오며 루프
     // ================================================================
 
-    // Body: 가볍게 통통, 착지 꺼짐 없이
+    // Body: 들뜬 느낌 — 살짝 위로 뜨고 앞으로 기울기
     static readonly float[] BODY_Y = {
-        0.00f, 0.02f, 0.04f, 0.05f, 0.04f, 0.02f,
-        0.00f, 0.02f, 0.04f, 0.05f, 0.04f, 0.02f };
+        0f,  0.005f, 0.010f, 0.014f, 0.016f, 0.018f, 0.018f, 0.017f,
+        0.016f, 0.018f, 0.018f, 0.017f, 0.016f, 0.014f, 0.008f, 0.003f };
+
     static readonly float[] BODY_ROT = {
-        -1f, -2f, -3f, -3f, -2f, -1f,
-        -1f, -2f, -3f, -3f, -2f, -1f };
+        0f,  -0.5f, -1.0f, -1.5f, -1.8f, -2.0f, -2.0f, -1.9f,
+       -1.8f, -2.0f, -2.0f, -1.9f, -1.8f, -1.5f, -0.8f, -0.3f };
 
-    // Head: 가볍게 끄덕
+    // Head: 웃으면서 살짝 기울어짐
     static readonly float[] HEAD_ROT = {
-         1f,  0f, -1f, -1f,  0f,  1f,
-         1f,  0f, -1f, -1f,  0f,  1f };
+        0f,   0.5f,  1.0f,  1.5f,  2.0f,  2.2f,  2.0f,  1.8f,
+        2.0f, 2.2f,  2.0f,  1.8f,  2.0f,  1.8f,  1.2f,  0.5f };
 
-    // Head_B: 살랑
+    // Head_B: 찰랑 — 손 올라갈 때 뒤로 처졌다가 살랑거림
     static readonly float[] HEAD_B_ROT = {
-        -2f, -4f, -3f,  0f,  3f,  4f,
-         2f,  0f, -3f, -4f, -2f,  0f };
+         0f,   1.0f,  2.5f,  4.0f,  5.0f,  5.5f,  5.0f,  4.0f,
+         5.0f, 5.5f,  5.0f,  4.0f,  3.5f,  2.5f,  1.5f,  0.5f };
+
     static readonly float[] HEAD_B_Y = {
-         0.002f,  0.001f, -0.001f, -0.003f, -0.001f,  0.001f,
-         0.002f,  0.001f, -0.001f, -0.003f, -0.001f,  0.001f };
+         0f,  -0.002f,-0.004f,-0.006f,-0.007f,-0.008f,-0.007f,-0.006f,
+        -0.007f,-0.008f,-0.007f,-0.006f,-0.005f,-0.004f,-0.002f,-0.001f };
 
-    // ShoulderJoint_F: 위아래 + 앞뒤 살짝 추가
+    // ShoulderJoint_F: 어깨는 살짝만 올라옴
     static readonly float[] SF_ROT = {
-        -6f, -8f, -8f, -6f, -2f,  2f,
-         5f,  7f,  8f,  6f,  2f, -2f };
+         0f,   2f,    5f,    8f,   10f,   11f,   10f,    9f,
+        10f,  11f,   10f,    9f,   10f,    8f,    5f,    2f };
+
     static readonly float[] SF_Y = {
-         0.004f,  0.007f,  0.010f,  0.007f,  0.004f,  0.000f,
-        -0.004f, -0.007f, -0.008f, -0.007f, -0.004f,  0.000f };
+         0f,  0.003f, 0.006f, 0.009f, 0.011f, 0.012f, 0.011f, 0.010f,
+         0.011f, 0.012f, 0.011f, 0.010f, 0.010f, 0.008f, 0.004f, 0.001f };
 
-    // ArmJoint_F: 간드러짐 + 앞뒤 보조
+    // ArmJoint_F: f9 기준 125, 살랑 유지
     static readonly float[] AF_ROT = {
-        -8f, -14f, -20f, -22f, -18f, -10f,
-        -3f,   4f,  10f,  12f,  10f,   4f };
+         0f,   30f,   70f,  110f,  124f,  126f,  125f,  124f,
+        125f,  127f,  125f,  123f,  124f,  110f,   65f,   28f };
 
-    // ShoulderJoint_B: F 반대 위상
+    // ShoulderJoint_B: F 반대로 약간, 균형감
     static readonly float[] SB_ROT = {
-         5f,  7f,  8f,  6f,  2f, -2f,
-        -6f, -8f, -8f, -6f, -2f,  2f };
+         0f,  -2f,   -4f,   -6f,   -7f,   -8f,   -7f,   -6f,
+        -7f,  -8f,   -7f,   -6f,   -6f,   -5f,   -3f,   -1f };
+
     static readonly float[] SB_Y = {
-        -0.004f, -0.007f, -0.008f, -0.007f, -0.004f,  0.000f,
-         0.004f,  0.007f,  0.010f,  0.007f,  0.004f,  0.000f };
+         0f,  0.002f, 0.004f, 0.006f, 0.007f, 0.008f, 0.007f, 0.006f,
+         0.007f, 0.008f, 0.007f, 0.006f, 0.006f, 0.005f, 0.003f, 0.001f };
 
-    // ArmJoint_B: F 반대 위상
+    // ArmJoint_B: 자연스럽게 살짝 뒤로
     static readonly float[] AB_ROT = {
-        -3f,   4f,  10f,  12f,  10f,   4f,
-        -8f, -14f, -20f, -22f, -18f, -10f };
+         0f,  -2f,   -4f,   -6f,   -7f,   -8f,   -7f,   -6f,
+        -7f,  -8f,   -7f,   -6f,   -6f,   -5f,   -3f,   -1f };
 
-    // 다리: 작고 가벼운 스텝 (6프레임 교대)
-    static readonly float[] LF_X = {
-         0.08f,  0.03f, -0.01f, -0.08f, -0.06f, -0.01f,
-         0.04f,  0.08f,  0.03f, -0.01f, -0.08f, -0.01f };
-    static readonly float[] LF_Y = {
-         0.00f,  0.01f,  0.02f,  0.06f,  0.10f,  0.06f,
-         0.02f,  0.00f,  0.01f,  0.02f,  0.06f,  0.02f };
-    static readonly float[] LF_ROT = {
-         9f,   5f,  -1f, -12f,  -8f,  -1f,
-         5f,   9f,   5f,  -1f, -12f,  -1f };
-    static readonly float[] FF_ROT = {
-        -8f,  -4f,   2f,   8f, -10f,  -6f,
-        -4f,  -8f,  -4f,   2f,   8f,  -4f };
-
-    static readonly float[] LB_X = {
-         0.04f,  0.08f,  0.03f, -0.01f, -0.08f, -0.01f,
-         0.08f,  0.03f, -0.01f, -0.08f, -0.06f, -0.01f };
-    static readonly float[] LB_Y = {
-         0.10f,  0.06f,  0.02f,  0.00f,  0.00f,  0.01f,
-         0.02f,  0.06f,  0.10f,  0.06f,  0.02f,  0.00f };
-    static readonly float[] LB_ROT = {
-        -8f,  -1f,   5f,   9f,   9f,   5f,
-        -1f,  -1f,  -8f,  -1f,   5f,  -1f };
-    static readonly float[] FB_ROT = {
-       -10f,  -6f,  -4f,  -8f,  -8f,  -4f,
-        2f,  -4f, -10f,  -4f,  -4f,  -4f };
-
-    // Body Y 보정 — 발 지면 고정
+    // 발: Body Y 보정 (지면 고정)
     static readonly float[] LEG_Y_COMP = {
-         0.00f, -0.02f, -0.04f, -0.05f, -0.04f, -0.02f,
-         0.00f, -0.02f, -0.04f, -0.05f, -0.04f, -0.02f };
+         0f,  -0.005f,-0.010f,-0.014f,-0.016f,-0.018f,-0.018f,-0.017f,
+        -0.016f,-0.018f,-0.018f,-0.017f,-0.016f,-0.014f,-0.008f,-0.003f };
 
-    [MenuItem("Tools/Daughter/Generate Skip")]
+    [MenuItem("Tools/NPC1/Daughter/Generate Smile")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))
@@ -190,26 +165,18 @@ public class Daughter_SkipGenerator
         C(SHOULDER_B, "localEulerAngles.z", SB_ROT, 0f);
         C(ARM_B,      "localEulerAngles.z", AB_ROT, 0f);
 
-        // Legs: Body Y 보정 합산
-        float[] lfYFinal = new float[TOTAL_FRAMES];
-        float[] lbYFinal = new float[TOTAL_FRAMES];
-        for (int i = 0; i < TOTAL_FRAMES; i++)
-        {
-            lfYFinal[i] = LF_Y[i] + LEG_Y_COMP[i];
-            lbYFinal[i] = LB_Y[i] + LEG_Y_COMP[i];
-        }
-
-        C(LEG_F, "localPosition.x",    LF_X,     -0.26f);
-        C(LEG_F, "localPosition.y",    lfYFinal,  -0.58f);
+        // 발: Body Y 보정
+        L(LEG_F, "localPosition.x",   -0.26f);
+        C(LEG_F, "localPosition.y",    LEG_Y_COMP, -0.58f);
         L(LEG_F, "localPosition.z",    0f);
-        C(LEG_F, "localEulerAngles.z", LF_ROT,    0f);
-        C(FOOT_F,"localEulerAngles.z", FF_ROT,    0f);
+        L(LEG_F, "localEulerAngles.z", 0f);
+        L(FOOT_F,"localEulerAngles.z", 0f);
 
-        C(LEG_B, "localPosition.x",    LB_X,      0.05f);
-        C(LEG_B, "localPosition.y",    lbYFinal,  -0.58f);
+        L(LEG_B, "localPosition.x",    0.05f);
+        C(LEG_B, "localPosition.y",    LEG_Y_COMP, -0.58f);
         L(LEG_B, "localPosition.z",    0f);
-        C(LEG_B, "localEulerAngles.z", LB_ROT,    0f);
-        C(FOOT_B,"localEulerAngles.z", FB_ROT,    0f);
+        L(LEG_B, "localEulerAngles.z", 0f);
+        L(FOOT_B,"localEulerAngles.z", 0f);
 
         string assetPath = $"{SAVE_PATH}/{CLIP_NAME}.anim";
         AnimationClip existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);

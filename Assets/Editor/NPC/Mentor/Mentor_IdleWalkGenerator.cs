@@ -95,7 +95,7 @@ public class Mentor_IdleWalkGenerator
 
     // ================================================================
 
-    [MenuItem("Tools/Mentor/Generate Idle")]
+    [MenuItem("Tools/NPC1/Mentor/Generate Idle")]
     public static void GenerateIdle()
     {
         int n = 32;
@@ -134,7 +134,7 @@ public class Mentor_IdleWalkGenerator
         SaveClip(clip, "Mentor_Idle");
     }
 
-    [MenuItem("Tools/Mentor/Generate Walk")]
+    [MenuItem("Tools/NPC1/Mentor/Generate Walk")]
     public static void GenerateWalk()
     {
         int n = 8;

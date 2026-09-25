@@ -74,7 +74,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate All
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate All")]
+    [MenuItem("Tools/2/SpeedMob2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle();
@@ -88,7 +88,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Idle")]
+    [MenuItem("Tools/2/SpeedMob2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("SpeedMob2_Idle", 48, true);
@@ -122,7 +122,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Walk")]
+    [MenuItem("Tools/2/SpeedMob2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("SpeedMob2_Walk", 16, true);
@@ -156,7 +156,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate Run
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Run")]
+    [MenuItem("Tools/2/SpeedMob2/Generate Run")]
     public static void GenerateRun()
     {
         var clip = MakeClip("SpeedMob2_Run", 17, true);
@@ -288,7 +288,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate Attack2
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Attack2")]
+    [MenuItem("Tools/2/SpeedMob2/Generate Attack2")]
     public static void GenerateAttack2()
     {
         var clip = MakeClip("SpeedMob2_Attack2", 18, false);

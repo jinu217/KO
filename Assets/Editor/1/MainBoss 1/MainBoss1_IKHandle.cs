@@ -41,7 +41,7 @@ public class MainBoss1_IKHandle
         SceneView.duringSceneGui += OnSceneGUI;
     }
 
-    [MenuItem("Tools/MainBoss 1/Toggle IK Handle")]
+    [MenuItem("Tools/1/MainBoss 1/Toggle IK Handle")]
     static void Toggle()
     {
         _active = !_active;

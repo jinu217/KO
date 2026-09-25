@@ -48,7 +48,7 @@ public class Smith_LaughGenerator
 
     static readonly float[] SB_ROT = { -0.0f, -2.35f, -3.8f, -3.8f, -2.35f, -0.0f, -2.35f, -3.8f, -3.8f, -2.35f, -0.0f, -2.35f, -3.8f, -3.8f, -2.35f, -0.0f, -0.0f, -0.0f, -0.0f, -0.0f, -0.0f, -0.0f, -0.0f, -0.0f };
 
-    [MenuItem("Tools/Smith/Generate Laugh")]
+    [MenuItem("Tools/NPC1/Smith/Generate Laugh")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

@@ -29,7 +29,7 @@ public class Buffer_RaiseSwayGenerator
     static readonly float[] SB_ROT = { 110.0f, 108.05f, 106.17f, 104.44f, 102.93f, 101.69f, 100.76f, 100.19f, 100.0f, 100.19f, 100.76f, 101.69f, 102.93f, 104.44f, 106.17f, 108.05f, 110.0f, 111.95f, 113.83f, 115.56f, 117.07f, 118.31f, 119.24f, 119.81f, 120.0f, 119.81f, 119.24f, 118.31f, 117.07f, 115.56f, 113.83f, 111.95f };
     static readonly float[] HB_ROT = { 26.0f, 25.22f, 24.47f, 23.78f, 23.17f, 22.67f, 22.3f, 22.08f, 22.0f, 22.08f, 22.3f, 22.67f, 23.17f, 23.78f, 24.47f, 25.22f, 26.0f, 26.78f, 27.53f, 28.22f, 28.83f, 29.33f, 29.7f, 29.92f, 30.0f, 29.92f, 29.7f, 29.33f, 28.83f, 28.22f, 27.53f, 26.78f };
 
-    [MenuItem("Tools/Buffer/Generate RaiseSway")]
+    [MenuItem("Tools/NPC1/Buffer/Generate RaiseSway")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))
@@ -99,7 +99,7 @@ public class Buffer_RaiseSwayGenerator
     static readonly float[] RBS_SB_ROT = { 110.0f, 112.93f, 115.74f, 118.33f, 120.61f, 122.47f, 123.86f, 124.71f, 125.0f, 124.71f, 123.86f, 122.47f, 120.61f, 118.33f, 115.74f, 112.93f, 110.0f, 107.07f, 104.26f, 101.67f, 99.39f, 97.53f, 96.14f, 95.29f, 95.0f, 95.29f, 96.14f, 97.53f, 99.39f, 101.67f, 104.26f, 107.07f };
     static readonly float[] RBS_HB_ROT = { 26.0f, 26.98f, 27.91f, 28.78f, 29.54f, 30.16f, 30.62f, 30.9f, 31.0f, 30.9f, 30.62f, 30.16f, 29.54f, 28.78f, 27.91f, 26.98f, 26.0f, 25.02f, 24.09f, 23.22f, 22.46f, 21.84f, 21.38f, 21.1f, 21.0f, 21.1f, 21.38f, 21.84f, 22.46f, 23.22f, 24.09f, 25.02f };
 
-    [MenuItem("Tools/Buffer/Generate RaiseBodySway")]
+    [MenuItem("Tools/NPC1/Buffer/Generate RaiseBodySway")]
     public static void GenerateRaiseBodySway()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

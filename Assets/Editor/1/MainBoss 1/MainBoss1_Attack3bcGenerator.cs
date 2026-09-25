@@ -245,9 +245,9 @@ public class MainBoss1_Attack3BCGenerator
         Selection.activeObject = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
     }
 
-    [MenuItem("Tools/MainBoss 1/Generate Attack3b")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Attack3b")]
     public static void GenerateB() => DoGenerate("MainBoss1_Attack3b", BODY_ROT_B, BOT_ROT_B);
 
-    [MenuItem("Tools/MainBoss 1/Generate Attack3c")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Attack3c")]
     public static void GenerateC() => DoGenerate("MainBoss1_Attack3c", BODY_ROT_C, BOT_ROT_C);
 }

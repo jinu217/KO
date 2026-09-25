@@ -51,7 +51,7 @@ public class TankMob1_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/TankMob1/Generate Idle")]
+    [MenuItem("Tools/1/TankMob1/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("TankMob1_Idle", 48, true);
@@ -85,7 +85,7 @@ public class TankMob1_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/TankMob1/Generate Walk")]
+    [MenuItem("Tools/1/TankMob1/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("TankMob1_Walk", 32, true);
@@ -169,7 +169,7 @@ public class TankMob1_AnimGenerators
     // ================================================================
     // Generate Run
     // ================================================================
-    [MenuItem("Tools/TankMob1/Generate Run")]
+    [MenuItem("Tools/1/TankMob1/Generate Run")]
     public static void GenerateRun()
     {
         const float DUR_RUN = 8 / 12f;
@@ -219,7 +219,7 @@ public class TankMob1_AnimGenerators
     // ================================================================
     // Generate Attack
     // ================================================================
-    [MenuItem("Tools/TankMob1/Generate Attack")]
+    [MenuItem("Tools/1/TankMob1/Generate Attack")]
     public static void GenerateAttack()
     {
         const float DUR_ATK = 20 / 12f;

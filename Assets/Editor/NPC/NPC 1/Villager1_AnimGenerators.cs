@@ -70,7 +70,7 @@ public class Villager1_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/Villager1/Generate Idle")]
+    [MenuItem("Tools/NPC1/Villager1/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("Villager1_Idle", 48, true);
@@ -102,7 +102,7 @@ public class Villager1_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/Villager1/Generate Walk")]
+    [MenuItem("Tools/NPC1/Villager1/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("Villager1_Walk", 32, true);
@@ -136,7 +136,7 @@ public class Villager1_AnimGenerators
     // ================================================================
     // Generate Wave (손흔들기만)
     // ================================================================
-    [MenuItem("Tools/Villager1/Generate Wave")]
+    [MenuItem("Tools/NPC1/Villager1/Generate Wave")]
     public static void GenerateWave()
     {
         var clip = MakeClip("Villager1_Wave", 48, false);
@@ -168,7 +168,7 @@ public class Villager1_AnimGenerators
     // ================================================================
     // Generate IdleWave (숨쉬기 + 손흔들기)
     // ================================================================
-    [MenuItem("Tools/Villager1/Generate IdleWave")]
+    [MenuItem("Tools/NPC1/Villager1/Generate IdleWave")]
     public static void GenerateIdleWave()
     {
         var clip = MakeClip("Villager1_IdleWave", 48, false);

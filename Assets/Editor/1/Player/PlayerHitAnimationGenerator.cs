@@ -35,7 +35,7 @@ public class PlayerHitAnimationGenerator
     private const float FRAME_RATE = 60f;
 
 
-    [MenuItem("Tools/Player/Generate Hit Animation")]
+    [MenuItem("Tools/1/Player/Generate Hit Animation")]
     public static void GenerateHitAnimation()
     {
         GameObject player = FindPlayer();
