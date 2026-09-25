@@ -11,7 +11,7 @@ using UnityEngine.Rendering;
 // Install in Assets/Editor. Operates on Sorting Layers only, not GameObject.layer.
 public static class PrefabSortingLayerSnapshot
 {
-    private const string Menu = "Tools/기타/Prefab Sorting Layers/";
+    private const string Menu = "Tools/기타/Prefab/Sorting Layers/";
     private const string SnapshotPath = "ProjectSettings/PrefabSortingLayers.snapshot.json";
     [Serializable] private sealed class Snapshot
     {

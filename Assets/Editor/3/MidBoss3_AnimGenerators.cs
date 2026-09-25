@@ -311,18 +311,37 @@ public static class MidBoss3_AnimGenerators
     }
     private static Pose Plant(float t, bool dash)
     {
-        // Rotate through a broad clockwise arc, then plant point down in front.
+        // Local -Y is the blade tip: world 180 = straight up, world 0 = down.
+        // Both skills share the raise, visible pause, turn and deep planting motion.
         float end = dash ? 2.9f : 2.4f, hold = dash ? DashEnd : 1.35f;
-        Pose p = Keys(t, new[]{Rest(0),new Key(.30f,3,-.035f,95,20,0,210,-12,20),
-            new Key(.52f,5,-.045f,150,15,0,265,-5,35),
-            new Key(.72f,-3,-.07f,115,0,0,130,25,40),
-            new Key(.90f,-15,-.15f,65,5,0,0,55,50),
-            new Key(hold,-15,-.15f,65,5,0,0,55,50),
-            new Key(hold+.25f,-9,-.08f,65,10,0,15,35,30),Rest(end)});
-        // Blade extends toward local -Y (pivot Y .85). Lift the grip so its tip reaches the floor.
-        float plant = Smooth((t - .72f) / .18f) * (1 - Smooth((t - hold) / .35f));
+        Pose p = Keys(t, new[]{Rest(0),
+            new Key(.32f,0,0,100,20,0,180,-12,25),
+            new Key(.48f,0,0,100,20,0,180,-12,25),
+            new Key(.66f,0,0,100,20,0,0,-12,25),
+            new Key(.84f,0,0,86,12,0,0,38,42),
+            new Key(BuffImpact,0,0,65,5,0,0,55,50),
+            new Key(hold,0,0,65,5,0,0,55,50),
+            new Key(hold+.25f,0,0,65,10,0,15,35,30),Rest(end)});
+        float runBlend = dash ? Smooth((t - DashStart) / .12f)
+            * (1 - Smooth((t - (DashEnd - .12f)) / .12f)) : 0f;
+        float runPhase = (t - DashStart) / .44f;
+        if (runBlend > 0f)
+        {
+            // Torso leads the rush; alternating impacts compress the body slightly.
+            p.angle[Body] = -34f * runBlend;
+            p.angle[Bottom] = -p.angle[Body] * .8f;
+            p.angle[Head] = -p.angle[Body] * .7f;
+            p.position[Body].y -= (.025f + .035f * Mathf.Cos(runPhase * 4f * Mathf.PI)) * runBlend;
+            Ground(p);
+        }
+        // Set the hands slowly while keeping the blade above the planted height.
+        // The final downward stroke occupies only .06 seconds (about four samples).
+        float plant = Smooth((t - .66f) / .18f) * (1 - Smooth((t - hold) / .35f));
+        float stab = Mathf.Clamp01((t - .84f) / .06f);
+        stab *= stab; // accelerate into the impact instead of easing into the ground
         Vector2 hand = World(p, HB);
-        Vector2 planted = new Vector2(.88f, 1.85f);
+        // Lower the grip and move it forward, away from the torso.
+        Vector2 planted = new Vector2(1.20f + .28f * runBlend, Mathf.Lerp(1.65f, 1.20f, stab));
         float bladeAngle = WorldAngle(p, Sword);
         float oldShoulder = p.angle[SB], oldElbow = p.angle[AB];
         Solve(p, SB, AB, HB, Vector2.Lerp(hand, planted, plant), 1);
@@ -330,26 +349,56 @@ public static class MidBoss3_AnimGenerators
         p.angle[AB] = oldElbow + Mathf.DeltaAngle(oldElbow, p.angle[AB]) * plant;
         p.angle[Sword] = Mathf.Lerp(bladeAngle, 0, plant) - WorldAngle(p, HB);
         // Front hand supports the upper grip without stretching forearm translations.
-        float support = plant * .9f;
+        // Front/right hand approaches the grip slowly, then follows the impact.
+        float support = Smooth((t - .48f) / .36f)
+            * (1 - Smooth((t - hold) / .35f)) * .9f;
         Vector2 front = World(p, HF), grip = World(p, HB) + new Vector2(-.10f, -.04f);
         float oldFront = p.angle[SF], oldForearm = p.angle[AF];
         Solve(p, SF, AF, HF, Vector2.Lerp(front, grip, support), -1);
         p.angle[SF] = oldFront + Mathf.DeltaAngle(oldFront, p.angle[SF]) * support;
         p.angle[AF] = oldForearm + Mathf.DeltaAngle(oldForearm, p.angle[AF]) * support;
-        if (dash && t >= DashStart && t <= DashEnd)
+        if (runBlend > 0f)
         {
-            float blend = Smooth((t - DashStart) / .12f) * (1 - Smooth((t - (DashEnd - .12f)) / .12f));
-            float phase = (t - DashStart) / .40f;
-            DashFoot(p, true, phase, blend); DashFoot(p, false, phase + .5f, blend);
+            DashFoot(p, true, runPhase, runBlend);
+            DashFoot(p, false, runPhase + .5f, runBlend);
+        }
+        if (!dash)
+        {
+            // Cancel torso translation and rotation at the pelvis. Skill1 keeps
+            // the entire lower-body hierarchy at its rest pose in visual-root space.
+            Vector2 restPelvis = World(new Pose(), Bottom);
+            Vector2 pelvisLocal = Rotate(restPelvis - World(p, Body), -WorldAngle(p, Body));
+            p.position[Bottom] = new Vector3(pelvisLocal.x, pelvisLocal.y, RestPositions[Bottom].z);
+            p.angle[Bottom] = RestAngles[Bottom] - WorldAngle(p, Body);
+            for (int part = TF; part <= FB; part++)
+            {
+                p.position[part] = RestPositions[part];
+                p.angle[part] = RestAngles[part];
+            }
         }
         return p;
     }
     private static void DashFoot(Pose p, bool front, float phase, float blend)
     {
-        float u = Mathf.Repeat(phase, 1), x, lift;
-        if (u < .5f) { x = Mathf.Lerp(.26f, -.26f, u * 2); lift = 0; }
-        else { float v = (u - .5f) * 2; x = Mathf.Lerp(-.26f, .26f, Smooth(v)); lift = .12f * Mathf.Pow(Mathf.Sin(v * Mathf.PI), 2); }
+        float u = Mathf.Repeat(phase, 1), x, lift, pitch;
+        if (u < .42f)
+        {
+            float v = u / .42f;
+            x = Mathf.Lerp(.40f, -.38f, v);
+            lift = 0f;
+            pitch = -18f * Smooth((v - .65f) / .35f);
+        }
+        else
+        {
+            float v = (u - .42f) / .58f;
+            x = Mathf.Lerp(-.38f, .40f, Smooth(v));
+            lift = .30f * Mathf.Pow(Mathf.Sin(v * Mathf.PI), 2);
+            pitch = Mathf.Lerp(-18f, 20f, Smooth(v));
+            pitch *= 1f - Smooth((v - .78f) / .22f);
+        }
         Foot(p, front, x * blend, lift * blend);
+        // Allow the toe to push off and the raised foot to rotate through recovery.
+        p.angle[front ? FF : FB] += pitch * blend;
     }
     private static Pose Leap(float t)
     {
