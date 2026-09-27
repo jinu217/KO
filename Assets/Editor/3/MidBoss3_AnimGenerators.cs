@@ -125,6 +125,12 @@ public static class MidBoss3_AnimGenerators
             if (states[i] == null) states[i] = sm.AddState("MidBoss3_" + Names[i], layout[i]);
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(OutputFolder + "/MidBoss3_" + Names[i] + ".anim");
             if (clip == null) clip = Make(i);
+            MidBoss3WeaponSortingState sortingState = null;
+            foreach (var behaviour in states[i].behaviours)
+                if (behaviour is MidBoss3WeaponSortingState found) { sortingState = found; break; }
+            if (sortingState == null) sortingState = states[i].AddStateMachineBehaviour<MidBoss3WeaponSortingState>();
+            sortingState.isSkill3 = i == 6;
+            EditorUtility.SetDirty(sortingState);
             states[i].motion = clip; states[i].speed = i == 2 ? 2f : 1f; states[i].speedParameter = "AttackSpeed"; states[i].speedParameterActive = i >= 3 && i <= 6; states[i].writeDefaultValues = false;
             foreach (var tr in states[i].transitions) if (tr.name.StartsWith("MidBoss3_Generated_")) states[i].RemoveTransition(tr);
             var settings = AnimationUtility.GetAnimationClipSettings(clip); settings.loopTime = i < 3; AnimationUtility.SetAnimationClipSettings(clip, settings); EditorUtility.SetDirty(clip);
@@ -215,6 +221,10 @@ public static class MidBoss3_AnimGenerators
             if (animator == null) animator = visual.gameObject.AddComponent<Animator>();
             animator.runtimeAnimatorController = controller;
             animator.applyRootMotion = false;
+            var sword = visual.Find(Paths[Sword]);
+            if (sword != null && sword.GetComponent<SpriteRenderer>() != null
+                && sword.GetComponent<MidBoss3WeaponSortingPreview>() == null)
+                sword.gameObject.AddComponent<MidBoss3WeaponSortingPreview>();
             PrefabUtility.SaveAsPrefabAsset(root, prefabPath, out bool success);
             if (success) Debug.Log("컨트롤러 자동 연결 완료: " + prefabPath + " → " + MobName + " / " + controller.name);
             else Debug.LogError("프리팹 저장 실패: " + prefabPath);
@@ -415,15 +425,15 @@ public static class MidBoss3_AnimGenerators
         // Carry the blade across the shoulder through most of the jump.
         // Only the rear arm attacks; the front/right arm trails behind for balance.
         Pose p = Keys(t, new[]{Rest(0),
-            new Key(.28f,2,-.025f,25,70,-95,220,-15,12),
-            new Key(.53f,5,-.065f,35,140,-175,270,-25,15),
-            new Key(.67f,5,-.16f,35,140,-175,270,-32,18),
-            new Key(JumpStart,4,-.21f,35,140,-175,270,-38,20),
-            new Key(1.02f,1,-.035f,35,140,-175,270,-40,20),
-            new Key(JumpApex,0,0,35,140,-175,270,-38,18),
-            new Key(1.34f,-3,-.015f,35,140,-175,270,-35,18),
-            new Key(1.44f,-8,-.04f,138,30,-20,250,-30,15),
-            new Key(1.50f,-18,-.14f,105,20,-10,185,-25,12),
+            new Key(.28f,2,-.025f,25,70,0,220,-15,12),
+            new Key(.53f,5,-.065f,35.29025f,116.19000f,0,264.36500f,-25,15),
+            new Key(.67f,5,-.16f,35.29025f,116.19000f,0,264.36500f,-32,18),
+            new Key(JumpStart,4,-.21f,35.29025f,116.19000f,0,264.36500f,-38,20),
+            new Key(1.02f,1,-.035f,35.29025f,116.19000f,0,264.36500f,-40,20),
+            new Key(JumpApex,0,0,35.29025f,116.19000f,0,264.36500f,-38,18),
+            new Key(1.34f,-3,-.015f,35.29025f,116.19000f,0,264.36500f,-35,18),
+            new Key(1.44f,-8,-.04f,138,30,0,250,-30,15),
+            new Key(1.50f,-18,-.14f,105,20,0,185,-25,12),
             new Key(1.55f,-28,-.32f,70,15,0,120,-20,10),
             new Key(JumpLand,-35,-.54f,45,12,0,80,-15,10),
             new Key(1.78f,-35,-.54f,45,12,0,80,-15,10),
@@ -452,14 +462,14 @@ public static class MidBoss3_AnimGenerators
         // Rear hand drives the sword forward. At full impact its tip reaches the
         // rest foot's sprite-bottom height (PPU 64, blade pivot .85 of 256 pixels).
         float bladeAngle = WorldAngle(p, Sword);
-        float wristWorld = WorldAngle(p, HB);
+
         float groundY = World(new Pose(), FF).y - .64f;
         float targetHandY = groundY + (256f / 64f * .85f) * Mathf.Cos(80f * Mathf.Deg2Rad) + .241f;
         float shoulderBefore = p.angle[SB], elbowBefore = p.angle[AB];
         Solve(p, SB, AB, HB, new Vector2(.95f, targetHandY), -1);
         p.angle[SB] = shoulderBefore + Mathf.DeltaAngle(shoulderBefore, p.angle[SB]) * landing;
         p.angle[AB] = Mathf.Max(0, elbowBefore + Mathf.DeltaAngle(elbowBefore, p.angle[AB]) * landing);
-        p.angle[HB] = Mathf.LerpAngle(wristWorld, 0, landing) - WorldAngle(p, AB);
+        p.angle[HB] = RestAngles[HB];
         p.angle[Sword] = bladeAngle - WorldAngle(p, HB);
 
         // Keep the authored negative SF pose; no two-handed grip constraint.
@@ -529,6 +539,7 @@ public static class MidBoss3_AnimGenerators
                 SetCurve(clip, Paths[part], "m_LocalScale." + "xyz"[axis], new[] { new Keyframe(0, 1), new Keyframe(duration, 1) });
             }
         }
+        if (name == "MidBoss3_Skill3") SetWeaponSortingLayer(clip, duration, "Back");
         var settings = AnimationUtility.GetAnimationClipSettings(clip);
         settings.loopTime = loop;
         settings.loopBlend = false;
@@ -548,6 +559,20 @@ public static class MidBoss3_AnimGenerators
         }
         AssetDatabase.CreateAsset(clip, path);
         return clip;
+    }
+
+    private static void SetWeaponSortingLayer(AnimationClip clip, float duration, string layerName)
+    {
+        // Animate a small proxy value, then apply the real sorting layer by name.
+        // OnDidApplyAnimationProperties also runs when sampling in Animation preview.
+        var curve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(duration, 0));
+        for (int key = 0; key < curve.length; key++)
+        {
+            AnimationUtility.SetKeyLeftTangentMode(curve, key, AnimationUtility.TangentMode.Constant);
+            AnimationUtility.SetKeyRightTangentMode(curve, key, AnimationUtility.TangentMode.Constant);
+        }
+        var binding = EditorCurveBinding.FloatCurve(Paths[Sword], typeof(MidBoss3WeaponSortingPreview), "backLayer");
+        AnimationUtility.SetEditorCurve(clip, binding, curve);
     }
 
     private static void SetCurve(AnimationClip clip, string path, string property, Keyframe[] keys)
