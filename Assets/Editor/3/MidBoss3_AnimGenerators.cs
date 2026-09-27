@@ -14,7 +14,7 @@ public static class MidBoss3_AnimGenerators
     private const int SampleRate = 60;
     public const float AttackHit1 = 0.70f, AttackHit2 = 1.42f;
     public const float BuffImpact = 0.90f;
-    public const float DashStart = 0.90f, DashEnd = 1.90f;
+    public const float DashStart = 1.08f, DashEnd = 2.08f;
     public const float JumpStart = 0.85f, JumpApex = 1.20f, JumpLand = 1.60f;
     private const int Body = 0, Head = 1, SF = 2, AF = 3, HF = 4, SB = 5, AB = 6, HB = 7,
         Sword = 8, Bottom = 9, TF = 10, CF = 11, FF = 12, TB = 13, CB = 14, FB = 15;
@@ -42,7 +42,7 @@ public static class MidBoss3_AnimGenerators
         public float[] angle = (float[])RestAngles.Clone();
     }
     private static readonly string[] Names = { "Idle", "Walk", "Run", "Attack", "Skill1", "Skill2", "Skill3", "Hit", "Death" };
-    private static readonly float[] Durations = { 2.8f, 1.2f, .78f, 2.5f, 2.4f, 2.9f, 2.7f, .36f, 1.65f };
+    private static readonly float[] Durations = { 2.8f, 1.2f, .78f, 2.5f, 2.94f, 3.62f, 2.7f, .36f, 1.65f };
     private static Pose Evaluate(int i, float t)
     {
         switch (i)
@@ -69,7 +69,7 @@ public static class MidBoss3_AnimGenerators
     [MenuItem("Tools/3/MidBoss 3/Clips/Attack")]
     public static void GenerateAttack() { EnsureFolder(OutputFolder); Make(3); SetupAnimator(); }
     [MenuItem("Tools/3/MidBoss 3/Clips/Skill1")]
-    public static void GenerateSkill1() { EnsureFolder(OutputFolder); Make(4); SetupAnimator(); }
+    public static void GenerateSkill1() { EnsureFolder(OutputFolder); Make(4); Make(5); SetupAnimator(); }
     [MenuItem("Tools/3/MidBoss 3/Clips/Skill2")]
     public static void GenerateSkill2() { EnsureFolder(OutputFolder); Make(5); SetupAnimator(); }
     [MenuItem("Tools/3/MidBoss 3/Clips/Skill3")]
@@ -313,18 +313,24 @@ public static class MidBoss3_AnimGenerators
     {
         // Local -Y is the blade tip: world 180 = straight up, world 0 = down.
         // Both skills share the raise, visible pause, turn and deep planting motion.
-        float end = dash ? 2.9f : 2.4f, hold = dash ? DashEnd : 1.35f;
+        float end = dash ? 3.62f : 2.94f, hold = dash ? DashEnd : 1.35f;
+        float returnStart = hold + .30f; // stop, then straighten before extracting
+        float liftEnd = returnStart + .25f;
+        float restStart = liftEnd + .36f;
+        float extraction = Smooth((t - returnStart) / .25f);
         Pose p = Keys(t, new[]{Rest(0),
-            new Key(.32f,0,0,100,20,0,180,-12,25),
-            new Key(.48f,0,0,100,20,0,180,-12,25),
-            new Key(.66f,0,0,100,20,0,0,-12,25),
-            new Key(.84f,0,0,86,12,0,0,38,42),
+            new Key(.22f,0,0,100,20,0,180,-12,25),
+            new Key(.34f,0,0,100,20,0,180,-12,25),
+            new Key(.60f,0,0,100,20,0,0,-12,25),
+            new Key(.84f,0,0,100,20,0,0,-12,25),
             new Key(BuffImpact,0,0,65,5,0,0,55,50),
             new Key(hold,0,0,65,5,0,0,55,50),
-            new Key(hold+.25f,0,0,65,10,0,15,35,30),Rest(end)});
+            new Key(returnStart,0,0,65,5,0,0,55,50),
+            new Key(liftEnd,0,0,100,20,0,0,-12,25),
+            new Key(restStart,0,0,100,20,0,0,-12,25),Rest(end)});
         float runBlend = dash ? Smooth((t - DashStart) / .12f)
-            * (1 - Smooth((t - (DashEnd - .12f)) / .12f)) : 0f;
-        float runPhase = (t - DashStart) / .44f;
+            * (1 - Smooth((t - (DashEnd + .12f)) / .18f)) : 0f;
+        float runPhase = (Mathf.Min(t, DashEnd) - DashStart) / .44f;
         if (runBlend > 0f)
         {
             // Torso leads the rush; alternating impacts compress the body slightly.
@@ -336,27 +342,31 @@ public static class MidBoss3_AnimGenerators
         }
         // Set the hands slowly while keeping the blade above the planted height.
         // The final downward stroke occupies only .06 seconds (about four samples).
-        float plant = Smooth((t - .66f) / .18f) * (1 - Smooth((t - hold) / .35f));
+        float plant = Smooth((t - .84f) / .06f) * (1 - extraction);
         float stab = Mathf.Clamp01((t - .84f) / .06f);
-        stab *= stab; // accelerate into the impact instead of easing into the ground
+        stab = stab * stab * (1 - extraction); // fast downstroke, slower extraction
         Vector2 hand = World(p, HB);
         // Lower the grip and move it forward, away from the torso.
         Vector2 planted = new Vector2(1.20f + .28f * runBlend, Mathf.Lerp(1.65f, 1.20f, stab));
         float bladeAngle = WorldAngle(p, Sword);
         float oldShoulder = p.angle[SB], oldElbow = p.angle[AB];
-        Solve(p, SB, AB, HB, Vector2.Lerp(hand, planted, plant), 1);
+        Solve(p, SB, AB, HB, Vector2.Lerp(hand, planted, plant), -1);
         p.angle[SB] = oldShoulder + Mathf.DeltaAngle(oldShoulder, p.angle[SB]) * plant;
-        p.angle[AB] = oldElbow + Mathf.DeltaAngle(oldElbow, p.angle[AB]) * plant;
+        p.angle[AB] = Mathf.Max(0f, oldElbow + Mathf.DeltaAngle(oldElbow, p.angle[AB]) * plant);
         p.angle[Sword] = Mathf.Lerp(bladeAngle, 0, plant) - WorldAngle(p, HB);
-        // Front hand supports the upper grip without stretching forearm translations.
-        // Front/right hand approaches the grip slowly, then follows the impact.
-        float support = Smooth((t - .48f) / .36f)
-            * (1 - Smooth((t - hold) / .35f)) * .9f;
-        Vector2 front = World(p, HF), grip = World(p, HB) + new Vector2(-.10f, -.04f);
-        float oldFront = p.angle[SF], oldForearm = p.angle[AF];
-        Solve(p, SF, AF, HF, Vector2.Lerp(front, grip, support), -1);
-        p.angle[SF] = oldFront + Mathf.DeltaAngle(oldFront, p.angle[SF]) * support;
-        p.angle[AF] = oldForearm + Mathf.DeltaAngle(oldForearm, p.angle[AF]) * support;
+        // Author the front/right arm instead of pinning its hand to the grip.
+        // Approach while the sword turns, hold high, then drive down from SF.
+        // Keep bone translations at rest so the arm never stretches.
+        float rightArmWeight = Smooth((t - .34f) / .26f)
+            * (1 - Smooth((t - restStart) / (end - restStart)));
+        float rightStrike = Mathf.Clamp01((t - .84f) / .06f);
+        rightStrike = rightStrike * rightStrike * (1 - extraction);
+        float rightShoulder = Mathf.Lerp(150f, 110f, rightStrike);
+        float rightForearm = Mathf.Lerp(-28f, -12f, rightStrike);
+        float rightWrist = Mathf.Lerp(-8f, 8f, rightStrike);
+        p.angle[SF] = Mathf.Lerp(p.angle[SF], rightShoulder, rightArmWeight);
+        p.angle[AF] = Mathf.Lerp(p.angle[AF], rightForearm, rightArmWeight);
+        p.angle[HF] = Mathf.Lerp(p.angle[HF], rightWrist, rightArmWeight);
         if (runBlend > 0f)
         {
             DashFoot(p, true, runPhase, runBlend);
@@ -402,16 +412,57 @@ public static class MidBoss3_AnimGenerators
     }
     private static Pose Leap(float t)
     {
-        Pose p = Keys(t, new[]{Rest(0),new Key(.32f,2,-.04f,65,65,-10,255,-10,20),
-            new Key(.65f,5,-.20f,80,60,-10,265,-20,35),
-            new Key(JumpStart,3,-.22f,80,60,-10,265,-25,40),
-            new Key(JumpApex,-2,-.08f,115,35,0,235,5,40),
-            new Key(1.45f,-10,-.07f,100,0,0,170,25,20),
-            new Key(JumpLand,-22,-.22f,58,-40,-5,62,40,15),
-            new Key(1.78f,-21,-.21f,55,-40,-5,60,36,15),
-            new Key(2.08f,-13,-.13f,42,-20,0,83,15,10),Rest(2.7f)});
-        // No root jump keys: gameplay moves the physics root over JumpStart..JumpLand.
-        if (t > JumpStart && t < JumpLand) { float u = (t - JumpStart) / (JumpLand - JumpStart); float tuck = Mathf.Sin(Mathf.PI * u); Foot(p, true, -.10f * tuck, .25f * tuck); Foot(p, false, -.18f * tuck, .38f * tuck); }
+        // Carry the blade across the shoulder through most of the jump.
+        // Only the rear arm attacks; the front/right arm trails behind for balance.
+        Pose p = Keys(t, new[]{Rest(0),
+            new Key(.28f,2,-.025f,25,70,-95,220,-15,12),
+            new Key(.53f,5,-.065f,35,140,-175,270,-25,15),
+            new Key(.67f,5,-.16f,35,140,-175,270,-32,18),
+            new Key(JumpStart,4,-.21f,35,140,-175,270,-38,20),
+            new Key(1.02f,1,-.035f,35,140,-175,270,-40,20),
+            new Key(JumpApex,0,0,35,140,-175,270,-38,18),
+            new Key(1.34f,-3,-.015f,35,140,-175,270,-35,18),
+            new Key(1.44f,-8,-.04f,138,30,-20,250,-30,15),
+            new Key(1.50f,-18,-.14f,105,20,-10,185,-25,12),
+            new Key(1.55f,-28,-.32f,70,15,0,120,-20,10),
+            new Key(JumpLand,-35,-.54f,45,12,0,80,-15,10),
+            new Key(1.78f,-35,-.54f,45,12,0,80,-15,10),
+            new Key(1.94f,-28,-.40f,50,18,0,86,-12,8),
+            new Key(2.18f,-13,-.16f,35,20,0,105,-6,5),Rest(2.7f)});
+
+        float landing = Smooth((t - 1.46f) / (JumpLand - 1.46f))
+            * (1 - Smooth((t - 1.94f) / .35f));
+        // Wide landing stance, with the trailing foot behind and leading knee forward.
+        Foot(p, true, -.22f * landing, 0);
+        Foot(p, false, .30f * landing, 0);
+        // No root translation: gameplay still supplies the jump trajectory.
+        if (t > JumpStart && t < JumpLand)
+        {
+            float airborne = Smooth((t - JumpStart) / .14f)
+                * (1 - Smooth((t - 1.40f) / (JumpLand - 1.40f)));
+            float straightCalf = Mathf.DeltaAngle(Angle(RestPositions[FF]), Angle(RestPositions[CF]));
+            p.angle[TF] = Mathf.Lerp(p.angle[TF], -20f - WorldAngle(p, Bottom), airborne);
+            p.angle[CF] = Mathf.Lerp(p.angle[CF], straightCalf, airborne);
+            p.angle[FF] = Mathf.Lerp(p.angle[FF], 8f - WorldAngle(p, CF), airborne);
+            p.angle[TB] = Mathf.Lerp(p.angle[TB], 65f, airborne);
+            p.angle[CB] = Mathf.Lerp(p.angle[CB], -105f, airborne);
+            p.angle[FB] = Mathf.Lerp(p.angle[FB], 24f, airborne);
+        }
+
+        // Rear hand drives the sword forward. At full impact its tip reaches the
+        // rest foot's sprite-bottom height (PPU 64, blade pivot .85 of 256 pixels).
+        float bladeAngle = WorldAngle(p, Sword);
+        float wristWorld = WorldAngle(p, HB);
+        float groundY = World(new Pose(), FF).y - .64f;
+        float targetHandY = groundY + (256f / 64f * .85f) * Mathf.Cos(80f * Mathf.Deg2Rad) + .241f;
+        float shoulderBefore = p.angle[SB], elbowBefore = p.angle[AB];
+        Solve(p, SB, AB, HB, new Vector2(.95f, targetHandY), -1);
+        p.angle[SB] = shoulderBefore + Mathf.DeltaAngle(shoulderBefore, p.angle[SB]) * landing;
+        p.angle[AB] = Mathf.Max(0, elbowBefore + Mathf.DeltaAngle(elbowBefore, p.angle[AB]) * landing);
+        p.angle[HB] = Mathf.LerpAngle(wristWorld, 0, landing) - WorldAngle(p, AB);
+        p.angle[Sword] = bladeAngle - WorldAngle(p, HB);
+
+        // Keep the authored negative SF pose; no two-handed grip constraint.
         return p;
     }
     private static Pose Hit(float t)
