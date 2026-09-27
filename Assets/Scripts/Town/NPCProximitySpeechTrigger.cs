@@ -70,7 +70,10 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
     [Tooltip("대사가 끝난 후 플레이어가 자동으로 이동하는 속도")]
     [SerializeField, Min(0f)] private float autoMoveSpeed = 5f;
 
-    [Tooltip("로딩 트리거에 도달한 뒤 불러올 씬 이름")]
+    [Tooltip("자동 이동을 시작한 뒤 씬을 전환하기까지 기다리는 시간")]
+    [SerializeField, Min(0f)] private float autoMoveDuration = 3f;
+
+    [Tooltip("자동 이동 시간이 끝난 뒤 불러올 씬 이름")]
     [SerializeField] private string targetSceneName = "Stage1-1";
 
     [SerializeField] private string targetSpawnId;
@@ -174,12 +177,28 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
             yield break;
         }
 
-        SceneTransitionManager.GetOrCreate().PrepareAutoExit(
+        SceneTransitionManager transitionManager = SceneTransitionManager.GetOrCreate();
+
+        // 이전 씬에서 시작된 로딩 연출이 완전히 끝난 뒤 다음 전환을 준비한다.
+        while (transitionManager.IsTransitioning)
+            yield return null;
+
+        transitionManager.PrepareAutoExit(
             player,
             targetSceneName,
             targetSpawnId,
             saveBeforeSceneLoad,
             autoMoveSpeed);
+
+        if (autoMoveDuration > 0f)
+            yield return new WaitForSecondsRealtime(autoMoveDuration);
+
+        if (!transitionManager.TryLoadPendingTransition(player))
+        {
+            Debug.LogError(
+                $"[{name}] {targetSceneName} 씬 전환을 시작하지 못했습니다.",
+                this);
+        }
 
         hideRoutine = null;
     }

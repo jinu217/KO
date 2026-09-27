@@ -144,6 +144,11 @@ public class TutorialNPCSpeaker : MonoBehaviour
     private bool playerIntroCameraFollowWasEnabled;
     private SpeechEvent cameraRestoreSpeechEvent;
 
+    [Header("Animation")]
+    [SerializeField] private Animator npcAnimator;
+    private bool hasMoveSpeedParameter;
+    private TutorialDashInstructor dashInstructor;
+
     private bool hasMoveTarget;
     private Vector3 currentMoveTarget;
     private float currentMoveSpeed;
@@ -163,6 +168,12 @@ public class TutorialNPCSpeaker : MonoBehaviour
 
     private void Awake()
     {
+        if (npcAnimator == null) npcAnimator = GetComponentInChildren<Animator>(true);
+        dashInstructor = GetComponent<TutorialDashInstructor>();
+        if (npcAnimator != null)
+            foreach (var parameter in npcAnimator.parameters)
+                if (parameter.name == "MoveSpeed" && parameter.type == AnimatorControllerParameterType.Float)
+                    hasMoveSpeedParameter = true;
         CacheSpeechText();
         CacheReferences();
         SetSpeechVisible(false);
@@ -201,7 +212,12 @@ public class TutorialNPCSpeaker : MonoBehaviour
 
     private void Update()
     {
-        MoveTowardCurrentTarget();
+        Vector3 previousPosition = transform.position;
+        if (dashInstructor == null || !dashInstructor.IsPerformingAttack)
+            MoveTowardCurrentTarget();
+        if (npcAnimator != null && hasMoveSpeedParameter)
+            npcAnimator.SetFloat("MoveSpeed", Time.deltaTime > 0f
+                ? Vector3.Distance(previousPosition, transform.position) / Time.deltaTime : 0f);
     }
 
     public bool HasFocusForStep(TutorialStep step)
