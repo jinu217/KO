@@ -40,6 +40,12 @@ public class SceneTransitionManager : MonoBehaviour
         }
 
         Instance = this;
+
+        // 씬에 배치된 매니저가 다른 오브젝트의 자식이어도
+        // DontDestroyOnLoad가 정상 작동하도록 독립된 루트로 분리한다.
+        if (transform.parent != null)
+            transform.SetParent(null, true);
+
         DontDestroyOnLoad(gameObject);
     }
 
