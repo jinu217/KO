@@ -43,6 +43,7 @@ GameObject:
   - component: {fileID: 374391619525077188}
   - component: {fileID: 7651865830191268238}
   - component: {fileID: 8106045695799286175}
+  - component: {fileID: 6540630164376928390}
   m_Layer: 8
   m_Name: Stage2_Enemy_3
   m_TagString: Enemy
@@ -195,6 +196,19 @@ MonoBehaviour:
   currentHp: 0
   visualTransform: {fileID: 0}
   showAttackLog: 0
+--- !u!114 &6540630164376928390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4024401769717898578}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5eedb97f8bef444872492dc8767078, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinReward
+  coinAmount: 8
 --- !u!1 &4248578369443856677
 GameObject:
   m_ObjectHideFlags: 0

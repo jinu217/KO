@@ -287,6 +287,13 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     {
         if (isDead) return;
         isDead = true;
+        //====== 코인 지급 ======
+        CoinReward coinReward = GetComponent<CoinReward>();
+        if (coinReward != null)
+        {
+            coinReward.GiveCoin();
+        }
+        //====== 처치 기록 ======
         RecordKill();
         HideHealthUI();
         StopAllCoroutines();

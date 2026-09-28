@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class CurrencyManager : MonoBehaviour
 {
+    public static CurrencyManager Instance { get; private set; }
+
     public int coin;
     public int soul;
 
@@ -23,6 +25,11 @@ public class CurrencyManager : MonoBehaviour
         if (currencyType == CurrencyType.Coin)
         {
             coin -= amount;
+
+            //============== 코인 저장 ==============
+
+            if (SaveData.Instance != null)
+                SaveData.Instance.run.coin = coin;
         }
         else
         {
@@ -36,6 +43,21 @@ public class CurrencyManager : MonoBehaviour
         return true;
     }
 
+    //============== 시작 시 데이터 불러오기 ==============
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        DontDestroyOnLoad(gameObject);
+    }
+
     void Start()
     {
         LoadSoul();
@@ -47,6 +69,8 @@ public class CurrencyManager : MonoBehaviour
         }
     }
 
+    //============== 아이템을 통한 재화 획득 ==============
+
     public void AddCurrency(ItemData item)
     {
         if (item == null)
@@ -56,7 +80,7 @@ public class CurrencyManager : MonoBehaviour
         {
             case CurrencyType.Coin:
 
-                coin += item.currencyAmount;
+                AddCoin(item.currencyAmount);
 
                 break;
 
@@ -66,6 +90,21 @@ public class CurrencyManager : MonoBehaviour
                 break;
         }
     }
+
+    //============== 코인 직접 획득 ==============
+
+    public void AddCoin(int amount)
+    {
+        if (amount <= 0)
+            return;
+
+        coin += amount;
+
+        if (SaveData.Instance != null)
+            SaveData.Instance.run.coin = coin;
+    }
+
+    //============== Soul 저장 ==============
 
     public void SaveSoul()
     {
@@ -81,13 +120,14 @@ public class CurrencyManager : MonoBehaviour
             ? SaveData.Instance.persistent.soul
             : PlayerPrefs.GetInt("SOUL", 0);
     }
+
     //테스트용 코드
     /*
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.C))
         {
-            coin += 100;
+            AddCoin(100);
         }
 
         if (Input.GetKeyDown(KeyCode.V))
