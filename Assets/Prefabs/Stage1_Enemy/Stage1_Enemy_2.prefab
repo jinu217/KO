@@ -564,6 +564,7 @@ GameObject:
   - component: {fileID: 3309282625053842038}
   - component: {fileID: 8224058320869112352}
   - component: {fileID: 942704157620502427}
+  - component: {fileID: 710103919810624167}
   - component: {fileID: 3807078742301177842}
   m_Layer: 8
   m_Name: Stage1_Enemy_2
@@ -655,6 +656,19 @@ CapsuleCollider2D:
   m_Offset: {x: -0.13451272, y: 0.19473732}
   m_Size: {x: 0.7582259, y: 2.1014125}
   m_Direction: 0
+--- !u!114 &710103919810624167
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4631876679815313393}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5eedb97f8bef444872492dc8767078, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinReward
+  coinAmount: 10
 --- !u!114 &3807078742301177842
 MonoBehaviour:
   m_ObjectHideFlags: 0

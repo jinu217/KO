@@ -1148,12 +1148,32 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         if (currentHp <= 0)
         {
             tutorialDummy?.NotifyDefeated();
+
+            //============== 코인 지급 ==============
+            if (tutorialDummy == null)
+            {
+                GiveCoinReward();
+            }
+
+            //============== 처치 횟수 기록 ==============
             // 일반 적 처치 횟수 기록
             if (tutorialDummy == null && SaveData.Instance != null)
             {
                 SaveData.Instance.run.killCount++;
             }
+
             gameObject.SetActive(false);
+        }
+    }
+
+    //============== 적 처치 시 코인 지급 ==============
+    private void GiveCoinReward()
+    {
+        CoinReward coinReward = GetComponent<CoinReward>();
+
+        if (coinReward != null)
+        {
+            coinReward.GiveCoin();
         }
     }
 
@@ -1197,6 +1217,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             currentHp -= totalWallDamage;
             if (currentHp <= 0f)
             {
+                GiveCoinReward();
                 gameObject.SetActive(false);
                 return;
             }
