@@ -3,6 +3,9 @@ using UnityEditor;
 
 public class EBasicMob2_AnimGenerators
 {
+    [MenuItem("Tools/2/EBasicMob2/Generate Hit and Death")]
+    public static void GenerateHitDeath() { MobHitDeathSetup.SetupMob(2, "EBasicMob 2"); }
+
     const string SAVE_PATH = "Assets/Animations/2/EBasicMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
@@ -316,6 +319,7 @@ public class EBasicMob2_AnimGenerators
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[EBasicMob2] AC 저장 완료: {acPath}");
+        MobHitDeathSetup.SetupMob(2, "EBasicMob 2");
     }
     // ── Attack2 배열 (14프레임: 빠른 복귀) ─────────────────────────
     static readonly float[] ATK2_FB_X = { 0.057f, 0.057f, 0.057f, 0.077f, 0.097f, 0.117f, 0.117f, 0.1124f, 0.1078f, 0.1032f, 0.0985f, 0.0847f, 0.0708f, 0.057f };

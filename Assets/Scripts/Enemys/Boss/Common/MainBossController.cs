@@ -47,6 +47,7 @@ public class MainBossController : MidBossController
 
     protected virtual void LateUpdate()
     {
+        if (isDead) return;
         // 클립이 시각 루트 Scale을 기록했더라도 현재 바라보는 방향을 유지합니다.
         ApplyFacingDirection();
         // 종료 훅과 별개로 실제 AI 상태를 반영해 공격 플래그가 남지 않게 합니다.
@@ -79,6 +80,7 @@ public class MainBossController : MidBossController
 
     protected bool PlayAction(string action, bool scaleWithAttackSpeed = true)
     {
+        if (isDead) return false;
         if (!HasParameter(action, AnimatorControllerParameterType.Trigger)) return false;
         string state = AnimationPrefix + action;
         if (UsesPhase3ActionStates && shownPhase >= 3 && action != "P2E" && action != "P3E") state += "_Phase3";
@@ -140,6 +142,7 @@ public class MainBossController : MidBossController
 
     public void PlayDesireAnimation()
     {
+        if (isDead) return;
         desireOwnsAttackLock = !isAttacking;
         isAttacking = true;
         StopMove();
@@ -187,6 +190,20 @@ public class MainBossController : MidBossController
         SetBusy(false);
         phaseAnimationPlaying = false;
         isAttacking = false;
+    }
+
+    protected override Animator GetDeathAnimator()
+    {
+        return bossAnimator != null ? bossAnimator : base.GetDeathAnimator();
+    }
+
+    protected override void Die()
+    {
+        if (isDead) return;
+        phaseAnimationPlaying = false;
+        desireOwnsAttackLock = false;
+        activeAnimation = null;
+        base.Die();
     }
 
     protected override void ShowHealthUI() => MainBossHealthUI.Instance?.Show(name, currentHp, data.maxHp);

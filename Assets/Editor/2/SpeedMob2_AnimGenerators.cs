@@ -3,6 +3,9 @@ using UnityEditor;
 
 public class SpeedMob2_AnimGenerators
 {
+    [MenuItem("Tools/2/SpeedMob2/Generate Hit and Death")]
+    public static void GenerateHitDeath() { MobHitDeathSetup.SetupMob(2, "SpeedMob 2"); }
+
     const string SAVE_PATH = "Assets/Animations/2/SpeedMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
@@ -83,6 +86,7 @@ public class SpeedMob2_AnimGenerators
         GenerateAttack();
         GenerateAttack2();
         Debug.Log("[SpeedMob2] 전체 애니메이션 생성 완료");
+        MobHitDeathSetup.SetupMob(2, "SpeedMob 2");
     }
 
     // ================================================================

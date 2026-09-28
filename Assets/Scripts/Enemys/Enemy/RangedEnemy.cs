@@ -17,6 +17,13 @@ public class RangedEnemy : EnemyController
 
     private Coroutine attackRoutine;
 
+    protected override void CancelAttackForReaction()
+    {
+        if (attackRoutine != null) StopCoroutine(attackRoutine);
+        attackRoutine = null;
+        base.CancelAttackForReaction();
+    }
+
     // 실제 원거리 공격 사거리(rangedAttackRange > 0이면 그 값, 아니면 attackRange로 fallback)
     private float EffectiveRangedAttackRange =>
         (data != null && data.rangedAttackRange > 0f) ? data.rangedAttackRange : data.attackRange;
@@ -24,6 +31,9 @@ public class RangedEnemy : EnemyController
     // 프레임 로직: 상태 차단 → 플레이어 감지 → 사거리 내 정지 + 공격 시도
     protected override void Update()
     {
+        if (isDead) return;
+        if (isHitStunned) { base.Update(); return; }
+        UpdateAnimatorParameters();
         if (isKnockback || isIdle)
         {
             HandleTimers();
@@ -117,6 +127,8 @@ public class RangedEnemy : EnemyController
     // 원거리 전용 동작(사거리 내 정지)만 부모 호출 전에 처리
     protected override void FixedUpdate()
     {
+        if (isDead) return;
+        if (isHitStunned) { base.FixedUpdate(); return; }
         // 사거리 안이면 이동 없이 제자리 정지 (부모 FixedUpdate 호출 전 처리)
         if (!isKnockback && isChasing && playerTransform != null && !isIdle && !isReacting && !isAttacking)
         {
@@ -139,6 +151,7 @@ public class RangedEnemy : EnemyController
     // 원거리 공격 시작: 공격 상태 시간 설정 + 공격 시퀀스 실행(중복 실행 방지)
     protected override void Attack()
     {
+        if (isDead || isHitStunned) return;
         if (attackRoutine != null) return;
 
         attackTimer = data.preAttackDelay + data.postAttackDelay;
@@ -152,6 +165,8 @@ public class RangedEnemy : EnemyController
             Debug.Log($"{gameObject.name}의 원거리 조준 시작...");
 
         yield return new WaitForSeconds(data.preAttackDelay);
+
+        if (isDead || isHitStunned) { attackRoutine = null; yield break; }
 
         if (data.projectilePrefab != null && playerTransform != null)
         {
