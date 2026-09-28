@@ -44,8 +44,8 @@ public static class MainBoss3_AnimGenerators
         public Vector3[] position = (Vector3[])RestPositions.Clone();
         public float[] angle = (float[])RestAngles.Clone();
     }
-    private static readonly string[] Names = { "Idle", "Walk", "Run", "Attack", "Skill1", "Skill2", "Skill3", "Hit", "Death", "Buff" };
-    private static readonly float[] Durations = { 2.8f, 1.1f, .70f, 1.85f, 2.65f, 2.60f, 2.55f, .36f, 1.65f, 2.20f };
+    private static readonly string[] Names = { "Idle", "Walk", "Run", "Attack", "Skill1", "Skill2", "Skill3", "Hit", "Death", "Buff", "Run3" };
+    private static readonly float[] Durations = { 2.8f, 1.1f, .70f, 1.85f, 4.50f, 2.60f, 2.55f, .36f, 1.65f, 2.20f, .70f };
     private static Pose Evaluate(int i, float t)
     {
         switch (i)
@@ -59,6 +59,7 @@ public static class MainBoss3_AnimGenerators
             case 6: return RushRetreat(t);
             case 7: return Hit(t);
             case 8: return Death(t);
+            case 10: return Locomotion(t, .70f, true, true);
             default: return Buff(t);
         }
     }
@@ -84,9 +85,11 @@ public static class MainBoss3_AnimGenerators
     public static void GenerateDeath() { EnsureFolder(OutputFolder); Make(8); SetupAnimator(); }
     [MenuItem("Tools/3/MainBoss 3/Clips/Buff")]
     public static void GenerateBuff() { EnsureFolder(OutputFolder); Make(9); SetupAnimator(); }
+    [MenuItem("Tools/3/MainBoss 3/Clips/Run3")]
+    public static void GenerateRun3() { EnsureFolder(OutputFolder); Make(10); SetupAnimator(); }
     private static AnimationClip Make(int i)
     {
-        return Generate("MainBoss3_" + Names[i], Durations[i], i < 3, t => Evaluate(i, t));
+        return Generate("MainBoss3_" + Names[i], Durations[i], i < 3 || i == 10, t => Evaluate(i, t));
     }
     [MenuItem("Tools/3/MainBoss 3/Setup Animator")]
     public static void SetupAnimator()
@@ -127,6 +130,7 @@ public static class MainBoss3_AnimGenerators
             new Vector3(260, 820, 0), // Hit: recovery
             new Vector3(760, 1040, 0), // Death
             new Vector3(760, 760, 0), // Buff
+            new Vector3(260, 630, 0), // Run3: phase 3 chase
         };
         for (int i = 0; i < states.Length; i++)
         {
@@ -136,7 +140,7 @@ public static class MainBoss3_AnimGenerators
             if (clip == null) clip = Make(i);
             states[i].motion = clip; states[i].speed = 1; states[i].speedParameter = "AttackSpeed"; states[i].speedParameterActive = (i >= 3 && i <= 6) || i == 9; states[i].writeDefaultValues = false;
             foreach (var tr in states[i].transitions) if (tr.name.StartsWith("MainBoss3_Generated_")) states[i].RemoveTransition(tr);
-            var settings = AnimationUtility.GetAnimationClipSettings(clip); settings.loopTime = i < 3; AnimationUtility.SetAnimationClipSettings(clip, settings); EditorUtility.SetDirty(clip);
+            var settings = AnimationUtility.GetAnimationClipSettings(clip); settings.loopTime = i < 3 || i == 10; AnimationUtility.SetAnimationClipSettings(clip, settings); EditorUtility.SetDirty(clip);
         }
         var children = sm.states;
         for (int i = 0; i < children.Length; i++) for (int j = 0; j < states.Length; j++) if (children[i].state == states[j]) children[i].position = layout[j];
@@ -150,16 +154,18 @@ public static class MainBoss3_AnimGenerators
         for (int from = 0; from < states.Length; from++)
         {
             if (from == 8) continue;
-            for (int to = 0; to < 3; to++)
+            foreach (int to in new[] { 0, 1, 2, 10 })
             {
                 if (from == to) continue;
-                var tr = states[from].AddTransition(states[to]); Configure(tr, from >= 3);
+                var tr = states[from].AddTransition(states[to]); Configure(tr, from >= 3 && from != 10);
                 tr.AddCondition(AnimatorConditionMode.IfNot, 0, "IsDead");
                 tr.AddCondition(AnimatorConditionMode.IfNot, 0, "IsAttacking");
                 tr.AddCondition(to == 0 ? AnimatorConditionMode.Less : AnimatorConditionMode.Greater, .01f, "MoveSpeed");
-                if (to != 0) tr.AddCondition(to == 2 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "IsChasing");
+                if (to != 0) tr.AddCondition((to == 2 || to == 10) ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "IsChasing");
+                if (to == 2) tr.AddCondition(AnimatorConditionMode.Less, 3, "Phase");
+                if (to == 10) tr.AddCondition(AnimatorConditionMode.Greater, 2, "Phase");
             }
-            if (from >= 3) continue;
+            if (from >= 3 && from != 10) continue;
             foreach (int to in new[] { 3, 4, 5, 6, 9 })
             {
                 var tr = states[from].AddTransition(states[to]); Configure(tr, false); tr.duration = 0;
@@ -242,10 +248,19 @@ public static class MainBoss3_AnimGenerators
     private static Vector2 World(Pose p, int i) { return Parent[i] < 0 ? (Vector2)p.position[i] : World(p, Parent[i]) + Rotate(p.position[i], WorldAngle(p, Parent[i])); }
     private static float Angle(Vector2 v) { return Mathf.Atan2(v.y, v.x) * Mathf.Rad2Deg; }
     // Analytic two-bone solve: preserves segment local positions and bone lengths.
-    private static void Solve(Pose p, int upper, int lower, int tip, Vector2 target, float bend)
+    private static void Solve(Pose p, int upper, int lower, int tip, Vector2 target, float bend, float softExtension = 0f)
     {
         Vector2 delta = target - World(p, upper); float l1 = ((Vector2)RestPositions[lower]).magnitude, l2 = ((Vector2)RestPositions[tip]).magnitude;
-        float d = Mathf.Clamp(delta.magnitude, Mathf.Abs(l1 - l2) + .0001f, l1 + l2 - .0001f);
+        float distance = delta.magnitude;
+        // Ease into full extension instead of abruptly hitting the IK reach limit.
+        // Only Run opts in; other animations retain their original solve.
+        if (softExtension > 0f)
+        {
+            float start = l1 + l2 - softExtension;
+            if (distance > start)
+                distance = start + softExtension * (1f - Mathf.Exp(-(distance - start) / softExtension));
+        }
+        float d = Mathf.Clamp(distance, Mathf.Abs(l1 - l2) + .0001f, l1 + l2 - .0001f);
         float a = Mathf.Acos(Mathf.Clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1)) * Mathf.Rad2Deg;
         float direction = Angle(delta) + bend * a;
         float parent = Parent[upper] < 0 ? 0 : WorldAngle(p, Parent[upper]);
@@ -254,11 +269,11 @@ public static class MainBoss3_AnimGenerators
         Vector2 clampedTarget = World(p, upper) + (delta.sqrMagnitude > .000001f ? delta.normalized : Vector2.down) * d;
         p.angle[lower] = Mathf.DeltaAngle(0, Angle(clampedTarget - elbow) - Angle(RestPositions[tip]) - WorldAngle(p, upper));
     }
-    private static void Foot(Pose p, bool front, float x, float lift)
+    private static void Foot(Pose p, bool front, float x, float lift, float softExtension = 0f)
     {
         int thigh = front ? TF : TB, calf = front ? CF : CB, foot = front ? FF : FB;
         Vector2 rest = World(new Pose(), foot);
-        Solve(p, thigh, calf, foot, rest + new Vector2(x, lift), 1);
+        Solve(p, thigh, calf, foot, rest + new Vector2(x, lift), 1, softExtension);
         p.angle[foot] = -WorldAngle(p, calf);
     }
     // Standing actions use the rest legs. Counter torso motion at the pelvis
@@ -286,26 +301,93 @@ public static class MainBoss3_AnimGenerators
         p.angle[Cape] = 0.6f * b;
         return p;
     }
-    private static Pose Locomotion(float t, float duration, bool run)
+    private static Pose Locomotion(float t, float duration, bool run, bool phase3 = false)
     {
         var p = new Pose(); float u = t / duration, w = Mathf.Sin(u * 2 * Mathf.PI);
-        p.angle[Body] = (run ? -11 : -4) + 1.3f * w; p.angle[Bottom] = -p.angle[Body] * .8f; p.angle[Head] = -p.angle[Body] * .7f;
+        p.angle[Body] = (phase3 ? -24 : run ? -7 : -4) + (phase3 ? 1f : run ? .7f : 1.3f) * w; p.angle[Bottom] = -p.angle[Body] * .8f; p.angle[Head] = -p.angle[Body] * .7f;
         // Keep an upright pelvis; only the stepping leg bends to clear the floor.
         p.position[Body].y = RestPositions[Body].y;
         Ground(p);
-        p.angle[SF] = -8 + (run ? 15 : 9) * w; p.angle[AF] = 15 - 5 * w; p.angle[SB] = 12 - 4 * w; p.angle[AB] = 20 + 3 * w; p.angle[HB] = RestHandBAngle - 10f;
-        p.angle[Cape] = run ? -6f + 3f * Mathf.Sin(u * 2 * Mathf.PI - .5f) : 0f;
+        if (run)
+        {
+            // Two weight transfers per cycle: settle, push off, brief flight.
+            float beat = Mathf.Repeat(u * 2f, 1f);
+            float bounce;
+            if (beat < .16f) bounce = Mathf.Lerp(0f, -.008f, Smooth(beat / .16f));
+            else if (beat < .76f) bounce = Mathf.Lerp(-.008f, .035f, Smooth((beat - .16f) / .60f));
+            else bounce = Mathf.Lerp(.035f, 0f, Smooth((beat - .76f) / .24f));
+            // Apply after pelvis compensation so hips participate in the stride.
+            p.position[Body].y += bounce;
+        }
+        p.angle[SF] = -8 + (run ? 10 : 9) * w; p.angle[AF] = 15 - 5 * w; p.angle[SB] = 12 - 4 * w; p.angle[AB] = 20 + 3 * w; p.angle[HB] = RestHandBAngle - 10f;
+        if (phase3)
+        {
+            p.angle[SF] = -24f + 9f * w;
+            p.angle[AF] = 22f - 4f * w;
+            p.angle[SB] = 5f - 3f * w;
+            p.angle[AB] = 26f + 2f * w;
+        }
+        p.angle[Cape] = phase3 ? 3f - 6f * w : run ? -6f + 3f * Mathf.Sin(u * 2 * Mathf.PI - .5f) : 0f;
         Step(p, true, u, run); Step(p, false, u + .5f, run);
         if (!run) p.angle[FB] = 0f;
         return p;
     }
     private static void Step(Pose p, bool front, float phase, bool run)
     {
-        float u = Mathf.Repeat(phase, 1), stride = run ? .28f : .19f, x, lift;
-        if (u < .5f) { x = Mathf.Lerp(stride, -stride, u * 2); lift = 0; }
-        else { float v = (u - .5f) * 2; x = Mathf.Lerp(-stride, stride, Smooth(v)); lift = (run ? .14f : .08f) * Mathf.Pow(Mathf.Sin(v * Mathf.PI), 2); }
-        Foot(p, front, x, lift);
+        float u = Mathf.Repeat(phase, 1), stride = run ? .46f : .19f, x, lift;
+        if (!run)
+        {
+            if (u < .5f) { x = Mathf.Lerp(stride, -stride, u * 2); lift = 0; }
+            else { float v = (u - .5f) * 2; x = Mathf.Lerp(-stride, stride, Smooth(v)); lift = .08f * Mathf.Pow(Mathf.Sin(v * Mathf.PI), 2); }
+            Foot(p, front, x, lift);
+            return;
+        }
+
+        // Shorter ground contact leaves an airborne gap between alternate steps.
+        const float stance = .36f;
+        if (u < stance)
+        {
+            x = Mathf.Lerp(stride, -stride, Smooth(u / stance));
+            lift = 0f;
+        }
+        else
+        {
+            float v = (u - stance) / (1f - stance);
+            x = Mathf.Lerp(-stride, stride, Smooth(v));
+            // Recover early, then lower gently into the next light step.
+            lift = v < .42f
+                ? .25f * Smooth(v / .42f)
+                : .25f * (1f - Smooth((v - .42f) / .58f));
+        }
+        Foot(p, front, x, lift, .08f);
+        // Foot articulation in world space; opposite phases share the same roll.
+        // +X facing: negative rolls the toe down for push-off.
+        float footRoll;
+        if (u < stance)
+        {
+            float contact = u / stance;
+            if (contact < .22f)
+                footRoll = Mathf.Lerp(5f, 0f, Smooth(contact / .22f));
+            else if (contact < .55f)
+                footRoll = 0f;
+            else
+                footRoll = Mathf.Lerp(0f, -17f, Smooth((contact - .55f) / .45f));
+        }
+        else
+        {
+            float recovery = (u - stance) / (1f - stance);
+            // Keep the toe down longer before lifting it during recovery.
+            if (recovery < .20f)
+                footRoll = -17f;
+            else if (recovery < .68f)
+                footRoll = Mathf.Lerp(-17f, 10f, Smooth((recovery - .20f) / .48f));
+            else
+                footRoll = Mathf.Lerp(10f, 5f, Smooth((recovery - .68f) / .32f));
+        }
+        int foot = front ? FF : FB, calf = front ? CF : CB;
+        p.angle[foot] = footRoll - WorldAngle(p, calf);
     }
+
     // Key: time, body angle, crouch, rear shoulder/forearm/wrist, sword world angle, front shoulder/forearm.
     private struct Key
     {
@@ -328,49 +410,304 @@ public static class MainBoss3_AnimGenerators
     private static Key RestSpin(float t, float turns) { return new Key(t, 0, 0, 0, 0, 0, 90 + RestHandBAngle + turns * 360, 0, 0); }
     private static Pose Attack(float t)
     {
-        // Extend arm, rotate wrist once, then deliver a broad slash.
-        return Keys(t, new[]{Rest(0),new Key(.25f,-3,-.04f,65,10,0,90,-15,30),
-            new Key(.40f,-3,-.04f,65,10,0,180,-15,30),new Key(.55f,-3,-.04f,65,10,0,300,-15,30),
-            new Key(.70f,-3,-.04f,65,10,0,450,-15,30),new Key(.90f,4,-.08f,125,25,0,570,-20,40),
-            new Key(AttackImpact,-16,-.16f,65,-20,0,420,20,20),new Key(1.28f,-15,-.15f,60,-20,0,410,20,20),RestSpin(1.85f,1)});
+        // Reference pose: hip hand SF=-30/AF=75/HF=30,
+        // sword arm SB=45/AB=45/HB=30/Sword=-30.93 (world 89.07).
+        Pose p = Keys(t, new[]{Rest(0),
+            new Key(.25f,0,0,45,45,0,89.07f,-30,75),
+            new Key(.34f,0,0,45,45,18,135,-30,75),
+            new Key(.47f,0,0,45,45,5,260,-30,75),
+            new Key(.60f,0,0,45,45,0,390,-30,75),
+            new Key(.70f,0,0,45,45,0,449.07f,-30,75),
+            new Key(.90f,7,0,155,65,0,605,-24,22),
+            new Key(.98f,7,0,155,65,0,605,-24,22),
+            new Key(AttackImpact,-19,0,15,0,-60,416,-33,26),
+            new Key(1.28f,-17,0,15,0,-60,418,-30,24),
+            new Key(1.45f,-12,0,15,0,-60,423,-24,22),RestSpin(1.85f,1)});
+
+        // One continuous lift-and-spin instead of easing to rest at each spin key.
+        if (t <= .70f)
+        {
+            float spin = Mathf.Clamp01(t / .70f);
+            float lift = Smooth(t / .42f);
+            p.angle[SB] = 45f * lift;
+            p.angle[AB] = 45f * lift;
+            p.angle[SF] = -30f * lift;
+            p.angle[AF] = 75f * lift;
+            float flick = Mathf.Sin(spin * Mathf.PI);
+            p.angle[HB] = RestHandBAngle + 18f * flick * flick;
+            float bladeWorld = Mathf.Lerp(90f + RestHandBAngle, 449.07f, Smooth(spin));
+            p.angle[Sword] = bladeWorld - WorldAngle(p, HB);
+        }
+        float ready = Smooth(t / .25f);
+        float draw = Smooth((t - .70f) / .20f);
+        float strike = Smooth((t - .98f) / (AttackImpact - .98f));
+        float recover = Smooth((t - 1.45f) / .40f);
+        float active = ready * (1f - recover);
+        p.angle[HF] = 30f * Smooth(t / .42f) * (1f - draw) * (1f - recover);
+
+        // The supplied bent rear leg is intentional for this attack only.
+        p.angle[TB] = 30f * active;
+        p.angle[CB] = -45f * active;
+        p.angle[FB] = -45f * active;
+
+        // Move the hips toward +X as the rear leg takes the forward lunge.
+        // Resolve a separate landing pose, then blend from the reference stance.
+        float transfer = strike * (1f - recover);
+        var landing = new Pose();
+        landing.angle[Body] = p.angle[Body];
+        Ground(landing);
+        landing.position[Body].x += .20f;
+        landing.position[Body].y -= .18f;
+        Foot(landing, true, -.34f, 0f, .06f);
+        Foot(landing, false, .44f, 0f, .06f);
+        p.position[Body].x += .20f * transfer;
+        p.position[Body].y -= .18f * transfer;
+        for (int bone = TF; bone <= FB; bone++)
+            p.angle[bone] = Mathf.LerpAngle(p.angle[bone], landing.angle[bone], transfer);
+        return p;
     }
     private static Pose SpinSkill(float t)
     {
-        // Downward slash, lift back overhead and rotate multiple times before upright finish.
-        return Keys(t, new[]{Rest(0),new Key(.35f,4,-.06f,115,30,0,230,-20,30),
-            new Key(.55f,-17,-.17f,60,-25,0,60,20,25),new Key(.72f,-16,-.16f,60,-25,0,60,20,25),
-            new Key(1.00f,0,-.06f,130,10,0,230,-10,40),
-            new Key(1.16f,0,-.06f,130,10,0,410,-10,40),new Key(1.32f,0,-.06f,130,10,0,590,-10,40),
-            new Key(1.48f,0,-.06f,130,10,0,770,-10,40),new Key(1.64f,0,-.06f,130,10,0,950,-10,40),
-            new Key(1.88f,0,-.04f,70,25,0,900,-5,30),new Key(2.12f,0,-.03f,70,25,0,900,-5,30),RestSpin(2.65f,2)});
+        // Attack-derived windup/strike, then raise the grip while spinning four turns.
+        Pose p = Keys(t, new[]{Rest(0),
+            new Key(.30f,7,0,155,65,0,245,-24,22),
+            new Key(.46f,7,0,155,65,0,245,-24,22),
+            new Key(.60f,-19,0,15,0,-60,56,-33,26),
+            new Key(.72f,-17,0,15,0,-60,58,-30,24),
+            new Key(.96f,0,0,45,45,0,270,-30,75),
+            new Key(2.36f,0,0,45,45,0,1710,-30,75),
+            new Key(2.64f,0,0,45,45,0,1710,-30,75),
+            new Key(3.20f,0,0,45,45,0,1620,-30,75),
+            new Key(3.80f,0,0,45,45,0,1620,-30,75),RestSpin(4.50f,4)});
+
+        float stance = Smooth(t / .30f) * (1f - Smooth((t - 3.80f) / .70f));
+        p.angle[TB] = 30f * stance;
+        p.angle[CB] = -45f * stance;
+        p.angle[FB] = -45f * stance;
+        float slash = Smooth((t - .46f) / .14f) * (1f - Smooth((t - .72f) / .24f));
+        var landing = new Pose();
+        landing.angle[Body] = p.angle[Body];
+        Ground(landing);
+        landing.position[Body].x += .20f;
+        landing.position[Body].y -= .18f;
+        Foot(landing, true, -.34f, 0f, .06f);
+        Foot(landing, false, .44f, 0f, .06f);
+        p.position[Body].x += .20f * slash;
+        p.position[Body].y -= .18f * slash;
+        for (int bone = TF; bone <= FB; bone++)
+            p.angle[bone] = Mathf.LerpAngle(p.angle[bone], landing.angle[bone], slash);
+
+        float gripWeight = Smooth((t - .72f) / .24f) * (1f - Smooth((t - 3.80f) / .70f));
+        float raise = Smooth((t - .96f) / 1.40f);
+        float lower = Smooth((t - 2.64f) / .56f);
+        // Recover outward from the strike instead of pulling straight to the chest.
+        // The lift starts with an extended arm and folds gradually above the head.
+        Vector2 extendedGrip = new Vector2(.94f, .34f);
+        Vector2 overheadGrip = new Vector2(.44f, 1.46f);
+        Vector2 raisedGrip = Vector2.Lerp(extendedGrip, overheadGrip, raise);
+        Vector2 gripLocal = Vector2.Lerp(raisedGrip, new Vector2(.22f, .65f), lower);
+        float bladeWorld = WorldAngle(p, Sword);
+        // A single continuous curve guarantees exactly four turns in the lift.
+        if (t >= .96f && t <= 2.36f)
+            bladeWorld = 270f + 1440f * raise;
+        var arm = new Pose();
+        arm.angle[Body] = p.angle[Body];
+        arm.position[Body] = p.position[Body];
+        Solve(arm, SB, AB, HB, World(p, Body) + Rotate(gripLocal, p.angle[Body]), -1f);
+        p.angle[SB] = Mathf.LerpAngle(p.angle[SB], arm.angle[SB], gripWeight);
+        p.angle[AB] = Mathf.LerpAngle(p.angle[AB], arm.angle[AB], gripWeight);
+        p.angle[Sword] = bladeWorld - WorldAngle(p, HB);
+        p.angle[HF] = 30f * gripWeight;
+        // Frame 36 at 60 fps: hold the strike, then lift the extended arm
+        // mainly through the shoulder, with a gradual positive forearm fold.
+        if (t >= .60f && t <= 2.64f)
+        {
+            float shoulderLift = Smooth((t - .80f) / 1.56f);
+            p.angle[SB] = Mathf.Lerp(15f, 145f, shoulderLift);
+            p.angle[AB] = 20f * shoulderLift;
+            p.angle[HB] = -30f;
+            float blade;
+            if (t <= .80f) blade = 56f;
+            else if (t <= 2.16f)
+                blade = 56f + 1440f * Smooth((t - .80f) / 1.36f);
+            else
+                // After four full turns, align the point backward horizontally.
+                blade = Mathf.Lerp(1496f, 1710f, Smooth((t - 2.16f) / .20f));
+            p.angle[Sword] = blade - WorldAngle(p, HB);
+        }
+        else if (t > 2.64f && t < 3.20f)
+        {
+            // Use one fixed endpoint: a moving IK target can cross the +/-180
+            // shortest-path boundary and flip the interpolation between frames.
+            var returnPose = new Pose();
+            Solve(returnPose, SB, AB, HB, new Vector2(.22f, .65f), -1f);
+            float returnToGrip = Smooth((t - 2.64f) / .56f);
+            float shoulderReturn = Mathf.DeltaAngle(145f, returnPose.angle[SB]);
+            // Explicitly take the opposite arc to the previous shortest-path return.
+            shoulderReturn += shoulderReturn >= 0f ? -360f : 360f;
+            p.angle[SB] = 145f + shoulderReturn * returnToGrip;
+            p.angle[AB] = 20f + Mathf.DeltaAngle(20f, returnPose.angle[AB]) * returnToGrip;
+            p.angle[HB] = Mathf.Lerp(-30f, RestHandBAngle, returnToGrip);
+            p.angle[Sword] = bladeWorld - WorldAngle(p, HB);
+        }
+        return p;
     }
     private static Pose ThrustRush(float t)
     {
-        // Each stab has its own retract/extend pair. Blade remains aimed +X.
-        return Keys(t, new[]{Rest(0),new Key(.22f,3,-.10f,15,45,0,90,-22,45),
-            new Key(.34f,-13,-.14f,70,-10,0,90,-32,45),new Key(.46f,0,-.10f,15,45,0,90,-22,45),
-            new Key(.58f,-13,-.14f,70,-10,0,90,-32,45),new Key(.70f,0,-.10f,15,45,0,90,-22,45),
-            new Key(.82f,-13,-.14f,70,-10,0,90,-32,45),new Key(.94f,0,-.10f,15,45,0,90,-22,45),
-            new Key(1.06f,-13,-.14f,70,-10,0,90,-32,45),new Key(1.22f,-13,-.14f,70,-10,0,90,-32,45),
-            new Key(Skill2DashStart,-28,-.23f,85,-8,0,90,-45,30),new Key(Skill2DashEnd,-28,-.23f,85,-8,0,90,-45,30),
-            new Key(2.06f,-17,-.15f,65,5,0,95,-20,30),Rest(2.60f)});
+        var keys = new List<Key> { Rest(0), new Key(.22f, 3, 0, -12, 105, 0, 90, -24, 35) };
+        // Smooth extension and a slightly longer recovery, without frame-count constraints.
+        float[] impacts = { .34f, .59f, .84f, 1.09f };
+        for (int i = 0; i < impacts.Length; i++)
+        {
+            float impact = impacts[i];
+            keys.Add(new Key(impact - .10f, 3, 0, -12, 105, 0, 90, -24, 35));
+            keys.Add(new Key(impact, -13, 0, 90, 0, 0, 90, -34, 25));
+            keys.Add(new Key(impact + .015f, -13, 0, 90, 0, 0, 90, -34, 25));
+            if (i + 1 < impacts.Length)
+                keys.Add(new Key(impact + .135f, 3, 0, -12, 105, 0, 90, -24, 35));
+        }
+        keys.Add(new Key(1.29f, 3, 0, -12, 105, 0, 90, -24, 35));
+        keys.Add(new Key(Skill2DashStart, -28, 0, 90, 0, 0, 90, -45, 30));
+        keys.Add(new Key(Skill2DashEnd, -28, 0, 90, 0, 0, 90, -45, 30));
+        keys.Add(new Key(2.06f, -17, 0, 65, 5, 0, 95, -20, 30));
+        keys.Add(Rest(2.60f));
+        Pose p = Keys(t, keys.ToArray());
+
+        float stance = Smooth(t / .22f) * (1f - Smooth((t - Skill2DashEnd) / (2.60f - Skill2DashEnd)));
+        float dash = Smooth((t - 1.22f) / (Skill2DashStart - 1.22f))
+            * (1f - Smooth((t - Skill2DashEnd) / (2.60f - Skill2DashEnd)));
+        // Lower the pelvis enough to reach a wide stance, then solve the ankles
+        // at their own rest heights. Horizontal offsets remain fixed during stabs.
+        p.position[Body].y -= .18f * stance + .16f * dash;
+        // Use the supplied front-leg LOCAL angles, rather than solving them away.
+        p.angle[TF] = -20f * stance;
+        p.angle[CF] = -15f * stance;
+        p.angle[FF] = 0f;
+        // Keep the front ankle at its rest height without changing those angles.
+        // Then ground the rear leg against its own rest-height target.
+        p.position[Body].y += World(new Pose(), FF).y - World(p, FF).y;
+        Foot(p, false, .38f * stance, 0f);
+        // Leave the planted thrust stance for the airborne rushing silhouette.
+        float airborne = Smooth((t - 1.29f) / (Skill2DashStart - 1.29f))
+            * (1f - Smooth((t - Skill2DashEnd) / .24f));
+        float pelvisAngle = WorldAngle(p, Bottom);
+        float straightFront = Mathf.DeltaAngle(Angle(RestPositions[FF]), Angle(RestPositions[CF]));
+        p.angle[TF] = Mathf.LerpAngle(p.angle[TF], -48f - pelvisAngle, airborne);
+        p.angle[CF] = Mathf.LerpAngle(p.angle[CF], straightFront, airborne);
+        p.angle[TB] = Mathf.LerpAngle(p.angle[TB], 78f - pelvisAngle, airborne);
+        p.angle[CB] = Mathf.LerpAngle(p.angle[CB], -112f, airborne);
+        p.angle[FF] = Mathf.LerpAngle(p.angle[FF], -18f - WorldAngle(p, CF), airborne);
+        p.angle[FB] = Mathf.LerpAngle(p.angle[FB], 18f - WorldAngle(p, CB), airborne);
+        // Lift the visual pose enough that neither foot touches its rest floor.
+        var rest = new Pose();
+        float clearance = Mathf.Max(0f, Mathf.Max(
+            World(rest, FF).y + .12f - World(p, FF).y,
+            World(rest, FB).y + .12f - World(p, FB).y));
+        p.position[Body].y += clearance * airborne;
+        p.angle[Cape] = Mathf.Lerp(p.angle[Cape], -40f, dash);
+        return p;
     }
     private static Pose RushRetreat(float t)
     {
-        Pose p = Keys(t, new[]{Rest(0),new Key(.25f,5,-.13f,20,40,0,90,-20,40),
-            new Key(Skill3DashStart,-30,-.24f,85,-8,0,90,-45,30),new Key(Skill3DashEnd,-30,-.24f,85,-8,0,90,-45,30),
-            new Key(RetreatStart,4,-.16f,105,20,0,180,20,35),new Key(1.28f,8,-.13f,105,20,0,360,20,35),
-            new Key(1.44f,8,-.13f,105,20,0,540,20,35),new Key(1.60f,8,-.13f,105,20,0,720,20,35),
-            new Key(RetreatEnd,5,-.12f,80,25,0,900,10,30),RestSpin(2.55f,2)});
-        p.angle[Cape] += -12 * Smooth((t - .25f) / .17f) * (1 - Smooth((t - 1.78f) / .4f)); return p;
+        const float land = 1.08f;
+        Pose p = Keys(t, new[]{Rest(0),new Key(.25f,5,0,20,40,0,90,-20,40),
+            new Key(Skill3DashStart,-28,0,90,0,0,90,-45,30),
+            new Key(Skill3DashEnd,-28,0,90,0,0,90,-45,30),
+            new Key(land,-8,0,80,15,0,90,-25,30),
+            new Key(RetreatStart,0,0,105,20,0,90,20,35),
+            new Key(RetreatEnd,0,0,105,20,0,810,20,35),
+            new Key(1.94f,0,0,80,25,0,900,10,30),RestSpin(2.55f,2)});
+
+        // Reuse the exact Skill2 airborne dash silhouette, including both feet.
+        Pose flying = ThrustRush((Skill2DashStart + Skill2DashEnd) * .5f);
+        float flight = Smooth(t / Skill3DashStart)
+            * (1f - Smooth((t - Skill3DashEnd) / (land - Skill3DashEnd)));
+        if (t < Skill3DashStart) p = new Pose();
+        for (int bone = 0; bone < Paths.Length; bone++)
+        {
+            p.position[bone] = Vector3.Lerp(p.position[bone], flying.position[bone], flight);
+            p.angle[bone] = Mathf.LerpAngle(p.angle[bone], flying.angle[bone], flight);
+        }
+
+        // Land, then push backward almost immediately. Local leg rotations
+        // are the supplied reference, not overwritten by grounded leg IK.
+        float back = Smooth((t - land) / .12f)
+            * (1f - Smooth((t - RetreatEnd) / (2.55f - RetreatEnd)));
+        p.position[Bottom] = Vector3.Lerp(p.position[Bottom], RestPositions[Bottom], back);
+        p.angle[Bottom] = Mathf.LerpAngle(p.angle[Bottom], 45f, back);
+        p.angle[TF] = Mathf.LerpAngle(p.angle[TF], 0f, back);
+        p.angle[CF] = Mathf.LerpAngle(p.angle[CF], 0f, back);
+        p.angle[FF] = Mathf.LerpAngle(p.angle[FF], 0f, back);
+        p.angle[TB] = Mathf.LerpAngle(p.angle[TB], 30f, back);
+        p.angle[CB] = Mathf.LerpAngle(p.angle[CB], -90f, back);
+        p.angle[FB] = Mathf.LerpAngle(p.angle[FB], 0f, back);
+        p.angle[Cape] = Mathf.LerpAngle(p.angle[Cape], 30f, back);
+        float bladeBeforeArm = WorldAngle(p, Sword);
+        p.angle[SB] = Mathf.LerpAngle(p.angle[SB], 90f, back);
+        p.angle[AB] = Mathf.LerpAngle(p.angle[AB], 0f, back);
+        p.angle[HB] = Mathf.LerpAngle(p.angle[HB], RestHandBAngle, back);
+        p.angle[Sword] = bladeBeforeArm - WorldAngle(p, HB);
+        if (t >= RetreatStart && t <= RetreatEnd)
+        {
+            float spin = Smooth((t - RetreatStart) / (RetreatEnd - RetreatStart));
+            p.angle[Sword] = 90f + 720f * spin - WorldAngle(p, HB);
+        }
+        return p;
     }
     private static Pose Buff(float t)
     {
-        Pose p = Keys(t, new[]{Rest(0),new Key(.35f,0,-.035f,65,25,0,180,-10,20),
-            new Key(.62f,0,-.025f,65,25,0,180,-75,-15),new Key(1.0f,-2,-.02f,65,25,0,180,-90,-10),
-            new Key(1.40f,-2,-.02f,65,25,0,180,-90,-10),new Key(1.62f,0,-.025f,65,25,0,180,-60,0),Rest(2.20f)});
-        float fan = Smooth((t - .35f) / .65f) * (1 - Smooth((t - 1.40f) / .80f));
-        p.angle[Cape] = -52 * fan + 3 * Mathf.Sin(t * 9) * fan; return p;
+        // Gather the cape, then flick the free arm outward in a short accent.
+        Pose p = Keys(t, new[]{Rest(0),
+            new Key(.38f,0,0,45,45,0,180,-24,65),
+            new Key(.55f,0,0,45,45,0,180,-18,75),
+            new Key(.68f,-2,0,45,45,0,180,-100,-12),
+            new Key(.86f,-2,0,45,45,0,180,-107,-15),
+            new Key(1.15f,-2,0,45,45,0,180,-100,-12),
+            new Key(1.36f,-2,0,45,45,0,180,-100,-12),
+            new Key(1.62f,0,0,45,45,0,180,-60,10),Rest(2.20f)});
+        float poseWeight = Smooth(t / .38f) * (1f - Smooth((t - 1.62f) / .58f));
+        p.angle[TB] = 30f * poseWeight;
+        p.angle[CB] = -45f * poseWeight;
+        p.angle[FB] = -45f * poseWeight;
+
+        // Bring the grip beside the torso without stretching the arm segments.
+        float swordWorld = WorldAngle(p, Sword);
+        var gripPose = new Pose();
+        gripPose.angle[Body] = p.angle[Body];
+        Vector2 grip = World(p, Body) + Rotate(new Vector2(.22f, .65f), p.angle[Body]);
+        // Choose the lower elbow solution while keeping the same grip target.
+        Solve(gripPose, SB, AB, HB, grip, -1f);
+        p.angle[SB] = Mathf.LerpAngle(p.angle[SB], gripPose.angle[SB], poseWeight);
+        p.angle[AB] = Mathf.LerpAngle(p.angle[AB], gripPose.angle[AB], poseWeight);
+        p.angle[Sword] = swordWorld - WorldAngle(p, HB);
+
+        float flick = Smooth((t - .55f) / .13f);
+        p.angle[HF] = Mathf.Lerp(20f * poseWeight, -16f, flick);
+        // Snap open at .68, hold briefly, then use one uninterrupted return.
+        if (t >= .68f)
+        {
+            float armReturn = Smooth((t - .92f) / 1.28f);
+            p.angle[SF] = Mathf.Lerp(-100f, RestAngles[SF], armReturn);
+            p.angle[AF] = Mathf.Lerp(-12f, RestAngles[AF], armReturn);
+            p.angle[HF] = Mathf.Lerp(-16f, RestAngles[HF], armReturn);
+        }
+        // Cape starts after the arm and peaks after the hand has snapped open.
+        float cape;
+        if (t < .62f) cape = 5f * Smooth(t / .38f);
+        else if (t < .90f)
+        {
+            // One uninterrupted rise: slow only at the single peak.
+            float rise = Mathf.Clamp01((t - .62f) / .28f);
+            cape = Mathf.Lerp(5f, -63f, Smooth(rise));
+        }
+        else
+        {
+            // Immediately fall all the way to rest; no intermediate pose or hold.
+            float fall = Mathf.Clamp01((t - .90f) / 1.30f);
+            cape = Mathf.Lerp(-63f, 0f, Smooth(fall));
+        }
+        p.angle[Cape] = cape;
+        return p;
     }
     private static Pose Hit(float t)
     {
