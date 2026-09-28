@@ -261,7 +261,19 @@ public static class MainBoss3_AnimGenerators
         Solve(p, thigh, calf, foot, rest + new Vector2(x, lift), 1);
         p.angle[foot] = -WorldAngle(p, calf);
     }
-    private static void Ground(Pose p) { Foot(p, true, 0, 0); Foot(p, false, 0, 0); }
+    // Standing actions use the rest legs. Counter torso motion at the pelvis
+    // instead of introducing a knee bend through the foot IK solver.
+    private static void Ground(Pose p)
+    {
+        Vector2 pelvis = Rotate(World(new Pose(), Bottom) - World(p, Body), -WorldAngle(p, Body));
+        p.position[Bottom] = new Vector3(pelvis.x, pelvis.y, RestPositions[Bottom].z);
+        p.angle[Bottom] = -WorldAngle(p, Body);
+        for (int bone = TF; bone <= FB; bone++)
+        {
+            p.position[bone] = RestPositions[bone];
+            p.angle[bone] = RestAngles[bone];
+        }
+    }
     private static Pose Idle(float t)
     {
         var p = new Pose();
@@ -278,7 +290,9 @@ public static class MainBoss3_AnimGenerators
     {
         var p = new Pose(); float u = t / duration, w = Mathf.Sin(u * 2 * Mathf.PI);
         p.angle[Body] = (run ? -11 : -4) + 1.3f * w; p.angle[Bottom] = -p.angle[Body] * .8f; p.angle[Head] = -p.angle[Body] * .7f;
-        p.position[Body].y = -.05f - (.5f - .5f * Mathf.Cos(u * 4 * Mathf.PI)) * (run ? .055f : .025f);
+        // Keep an upright pelvis; only the stepping leg bends to clear the floor.
+        p.position[Body].y = RestPositions[Body].y;
+        Ground(p);
         p.angle[SF] = -8 + (run ? 15 : 9) * w; p.angle[AF] = 15 - 5 * w; p.angle[SB] = 12 - 4 * w; p.angle[AB] = 20 + 3 * w; p.angle[HB] = RestHandBAngle - 10f;
         p.angle[Cape] = run ? -6f + 3f * Mathf.Sin(u * 2 * Mathf.PI - .5f) : 0f;
         Step(p, true, u, run); Step(p, false, u + .5f, run);
@@ -303,7 +317,7 @@ public static class MainBoss3_AnimGenerators
     {
         int i = 1; while (i < keys.Length - 1 && t > keys[i].t) i++;
         Key a = keys[i - 1], b = keys[i]; float u = Smooth((t - a.t) / (b.t - a.t));
-        var p = new Pose(); p.angle[Body] = Mathf.Lerp(a.body, b.body, u); p.position[Body].y = Mathf.Lerp(a.y, b.y, u);
+        var p = new Pose(); p.angle[Body] = Mathf.Lerp(a.body, b.body, u); p.position[Body].y = RestPositions[Body].y;
         p.angle[Head] = -p.angle[Body] * .7f; p.angle[Bottom] = -p.angle[Body] * .8f;
         p.angle[SB] = Mathf.Lerp(a.sb, b.sb, u); p.angle[AB] = Mathf.Lerp(a.ab, b.ab, u); p.angle[HB] = RestHandBAngle + Mathf.Lerp(a.hb, b.hb, u);
         p.angle[Sword] = Mathf.Lerp(a.sword, b.sword, u) - WorldAngle(p, HB);
@@ -361,7 +375,7 @@ public static class MainBoss3_AnimGenerators
     private static Pose Hit(float t)
     {
         float k = t < .07f ? Smooth(t / .07f) : 1 - Smooth((t - .07f) / .29f); var p = new Pose();
-        p.angle[Body] = 7 * k; p.position[Body].y = -.045f * k; p.angle[Cape] = -8 * k; p.angle[Head] = 5 * k; p.angle[SF] = -12 * k; p.angle[AB] = 15 * k; Ground(p); return p;
+        p.angle[Body] = 7 * k; p.position[Body].y = RestPositions[Body].y; p.angle[Cape] = -8 * k; p.angle[Head] = 5 * k; p.angle[SF] = -12 * k; p.angle[AB] = 15 * k; Ground(p); return p;
     }
     private static Pose Death(float t)
     {

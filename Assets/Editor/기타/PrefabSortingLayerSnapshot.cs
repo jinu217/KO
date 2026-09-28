@@ -9,28 +9,71 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 // Install in Assets/Editor. Operates on Sorting Layers only, not GameObject.layer.
+[InitializeOnLoad]
 public static class PrefabSortingLayerSnapshot
 {
     private const string Menu = "Tools/기타/Prefab/Sorting Layers/";
     private const string SnapshotPath = "ProjectSettings/PrefabSortingLayers.snapshot.json";
-    [Serializable] private sealed class Snapshot
+    private static string AutoRestoreKey => "PrefabSortingLayers.AutoRestoreOnPlay." + Application.dataPath;
+    private static bool restoringOnPlay;
+
+    static PrefabSortingLayerSnapshot()
+    {
+        EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+        EditorApplication.playModeStateChanged += OnPlayModeChanged;
+    }
+
+    [MenuItem(Menu + "Auto Restore On Play")]
+    private static void ToggleAutoRestore()
+    {
+        EditorPrefs.SetBool(AutoRestoreKey, !EditorPrefs.GetBool(AutoRestoreKey, true));
+    }
+
+    [MenuItem(Menu + "Auto Restore On Play", true)]
+    private static bool ValidateAutoRestore()
+    {
+        UnityEditor.Menu.SetChecked(Menu + "Auto Restore On Play", EditorPrefs.GetBool(AutoRestoreKey, true));
+        return true;
+    }
+
+    private static void OnPlayModeChanged(PlayModeStateChange state)
+    {
+        if (state != PlayModeStateChange.ExitingEditMode || restoringOnPlay
+            || !EditorPrefs.GetBool(AutoRestoreKey, true)) return;
+        if (!File.Exists(SnapshotPath)) return;
+        if (UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage() != null)
+        {
+            Debug.LogWarning("Sorting Layer 자동 복원 생략: Prefab Mode에서 저장 후 빠져나와 주세요.");
+            return;
+        }
+        restoringOnPlay = true;
+        try { Process(Mode.All, true); }
+        catch (Exception ex) { Debug.LogError("Sorting Layer 자동 복원 실패: " + ex.Message); }
+        finally { restoringOnPlay = false; }
+    }
+
+    [Serializable]
+    private sealed class Snapshot
     {
         public int version = 1;
         public string createdUtc;
         public string rootFolder;
         public List<PrefabRecord> prefabs = new List<PrefabRecord>();
     }
-    [Serializable] private sealed class PrefabRecord
+    [Serializable]
+    private sealed class PrefabRecord
     {
         public string guid, path;
         public List<Entry> entries = new List<Entry>();
     }
-    [Serializable] private sealed class Segment
+    [Serializable]
+    private sealed class Segment
     {
         public string name;
         public int sameNameIndex, sameNameCount;
     }
-    [Serializable] private sealed class Entry
+    [Serializable]
+    private sealed class Entry
     {
         public List<Segment> hierarchy = new List<Segment>();
         public string componentType;
@@ -71,11 +114,15 @@ public static class PrefabSortingLayerSnapshot
                             continue;
                         }
                         Component[] peers = component.gameObject.GetComponents(component.GetType());
-                        record.entries.Add(new Entry {
+                        record.entries.Add(new Entry
+                        {
                             hierarchy = Hierarchy(prefab.transform, component.transform),
                             componentType = component.GetType().AssemblyQualifiedName,
-                            componentIndex = Array.IndexOf(peers, component), componentCount = peers.Length,
-                            layerName = SortingLayer.IDToName(id), originalLayerId = id, order = Order(component)
+                            componentIndex = Array.IndexOf(peers, component),
+                            componentCount = peers.Length,
+                            layerName = SortingLayer.IDToName(id),
+                            originalLayerId = id,
+                            order = Order(component)
                         });
                     }
                     snapshot.prefabs.Add(record);
@@ -108,9 +155,9 @@ public static class PrefabSortingLayerSnapshot
     [MenuItem(Menu + "4. Restore All Saved Settings")]
     public static void RestoreAll() { Process(Mode.All); }
 
-    private static void Process(Mode mode)
+    private static void Process(Mode mode, bool automatic = false)
     {
-        if (!Ready()) return;
+        if (!automatic && !Ready()) return;
         if (!File.Exists(SnapshotPath)) { Debug.LogError("정상 브랜치에서 Capture Healthy Branch를 먼저 실행하세요: " + SnapshotPath); return; }
         Snapshot snapshot;
         try { snapshot = JsonUtility.FromJson<Snapshot>(File.ReadAllText(SnapshotPath)); }
@@ -132,7 +179,7 @@ public static class PrefabSortingLayerSnapshot
             {
                 PrefabRecord record = records[i];
                 string path = AssetDatabase.GUIDToAssetPath(record.guid);
-                if (EditorUtility.DisplayCancelableProgressBar("Sorting Layer " + mode, record.path, (float)i / Math.Max(1, records.Length)))
+                if (!automatic && EditorUtility.DisplayCancelableProgressBar("Sorting Layer " + mode, record.path, (float)i / Math.Max(1, records.Length)))
                 { log.Add("사용자가 중단했습니다. 이미 저장된 복원은 유지됩니다."); break; }
                 if (string.IsNullOrEmpty(path) || !path.StartsWith("Assets/", StringComparison.Ordinal)
                     || !path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
