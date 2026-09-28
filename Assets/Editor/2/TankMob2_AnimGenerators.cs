@@ -3,6 +3,9 @@ using UnityEditor;
 
 public class TankMob2_AnimGenerators
 {
+    [MenuItem("Tools/2/TankMob2/Generate Hit and Death")]
+    public static void GenerateHitDeath() { MobHitDeathSetup.SetupMob(2, "TankMob 2"); }
+
     const string SAVE_PATH = "Assets/Animations/2/TankMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
@@ -311,5 +314,6 @@ public class TankMob2_AnimGenerators
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[TankMob2] AC 저장 완료: {acPath}");
+        MobHitDeathSetup.SetupMob(2, "TankMob 2");
     }
 }

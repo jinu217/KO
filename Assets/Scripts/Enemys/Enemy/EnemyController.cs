@@ -183,7 +183,113 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 읽기 전용 상태 프로퍼티
     protected bool isKnockback => knockbackTimer > 0;
     protected bool isAttacking => attackTimer > 0;
-    protected bool isHitStunned => hitStunTimer > 0;
+    protected bool isHitStunned => hitStunTimer > 0 || Time.time < reactionUntil;
+
+    [Header("피격 / 사망 애니메이션 (일괄 설정 도구에서 연결)")]
+    [SerializeField] private AnimationClip hitAnimation;
+    [SerializeField] private AnimationClip deathAnimation;
+    [SerializeField] private string hitAnimationState;
+    [SerializeField] private string deathAnimationState;
+    protected bool isDead;
+    private float reactionUntil;
+    private Collider2D[] deathColliders;
+    private bool[] deathColliderEnabled;
+    private bool deathBodySimulated;
+
+    protected virtual void OnEnable()
+    {
+        if (!isDead) return;
+        isDead = false;
+        if (data != null) currentHp = data.maxHp;
+        attackTimer = hitStunTimer = knockbackTimer = reactionUntil = 0f;
+        hasWallImpactPending = false;
+        isChasing = isReacting = isIdle = isWandering = isPatrolPausing = false;
+        if (deathColliders != null)
+            for (int i = 0; i < deathColliders.Length; i++)
+                if (deathColliders[i] != null) deathColliders[i].enabled = deathColliderEnabled[i];
+        if (rb != null) { rb.simulated = deathBodySimulated; rb.gravityScale = originalGravity; rb.linearVelocity = Vector2.zero; }
+        if (animator != null) { animator.Rebind(); animator.Update(0f); }
+        ScheduleNextPatrolIdle(); ScheduleNextPatrolPause();
+    }
+
+    protected virtual void CancelAttackForReaction() { attackTimer = 0f; }
+
+    private bool HasReactionParameter(string name, AnimatorControllerParameterType type)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return false;
+        foreach (var parameter in animator.parameters)
+            if (parameter.name == name && parameter.type == type) return true;
+        return false;
+    }
+
+    private bool FindReaction(bool death, out AnimationClip clip, out string state)
+    {
+        clip = death ? deathAnimation : hitAnimation;
+        state = death ? deathAnimationState : hitAnimationState;
+        if (animator == null || !animator.isActiveAndEnabled || animator.runtimeAnimatorController == null) return false;
+        if (clip == null)
+        {
+            string suffix = death ? "_Death" : "_Hit";
+            foreach (var candidate in animator.runtimeAnimatorController.animationClips)
+                if (candidate != null && candidate.name.EndsWith(suffix, System.StringComparison.Ordinal))
+                { clip = candidate; state = candidate.name; break; }
+        }
+        if (clip == null || string.IsNullOrEmpty(state)) return false;
+        if (!state.StartsWith("Base Layer.", System.StringComparison.Ordinal)) state = "Base Layer." + state;
+        return animator.HasState(0, Animator.StringToHash(state));
+    }
+
+    private void PlayHitReaction()
+    {
+        if (!FindReaction(false, out var clip, out var state)) return;
+        CancelAttackForReaction();
+        if (HasReactionParameter("Attack", AnimatorControllerParameterType.Trigger)) animator.ResetTrigger("Attack");
+        if (HasReactionParameter("Hit", AnimatorControllerParameterType.Trigger)) animator.ResetTrigger("Hit");
+        animator.Play(state, 0, 0f);
+        reactionUntil = Time.time + clip.length / Mathf.Max(.01f, animator.speed);
+    }
+
+    protected virtual void BeginDeath()
+    {
+        if (isDead) return;
+        isDead = true;
+        CancelAttackForReaction();
+        StopAllCoroutines();
+        hasWallImpactPending = false;
+        deathBodySimulated = rb != null && rb.simulated;
+        var dummy = GetComponent<TutorialTrainingDummy>();
+        dummy?.NotifyDefeated();
+        if (dummy == null && SaveData.Instance != null) SaveData.Instance.run.killCount++;
+        if (!gameObject.activeInHierarchy) return;
+        deathColliders = GetComponentsInChildren<Collider2D>(true);
+        deathColliderEnabled = new bool[deathColliders.Length];
+        for (int i = 0; i < deathColliders.Length; i++)
+        { deathColliderEnabled[i] = deathColliders[i].enabled; deathColliders[i].enabled = false; }
+        if (rb != null)
+        { deathBodySimulated = rb.simulated; rb.linearVelocity = Vector2.zero; rb.simulated = false; }
+        if (!FindReaction(true, out var clip, out var state)) { gameObject.SetActive(false); return; }
+        foreach (var parameter in animator.parameters)
+            if (parameter.type == AnimatorControllerParameterType.Trigger) animator.ResetTrigger(parameter.name);
+        if (HasReactionParameter("IsDead", AnimatorControllerParameterType.Bool)) animator.SetBool("IsDead", true);
+        animator.Play(state, 0, 0f);
+        StartCoroutine(FinishDeath(clip, state));
+    }
+
+    private System.Collections.IEnumerator FinishDeath(AnimationClip clip, string state)
+    {
+        int hash = Animator.StringToHash(state);
+        float elapsed = 0f;
+        float timeout = clip.length / Mathf.Max(.01f, animator.speed) + .5f;
+        yield return null;
+        while (animator != null && animator.isActiveAndEnabled && elapsed < timeout)
+        {
+            var info = animator.GetCurrentAnimatorStateInfo(0);
+            if (info.fullPathHash == hash && info.normalizedTime >= 1f) break;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        gameObject.SetActive(false);
+    }
 
     // 컴포넌트 초기화 + 시작 방향 랜덤 설정
     protected virtual void Awake()
@@ -258,6 +364,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 프레임 로직: 상태 차단 → 플레이어 감지 → 타이머 처리
     protected virtual void Update()
     {
+        if (isDead) return;
         UpdateAnimatorParameters();
 
         if (isKnockback || isHitStunned)
@@ -299,6 +406,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 물리 프레임 로직: 절벽 감지 + 이동 상태 처리
     protected virtual void FixedUpdate()
     {
+        if (isDead) return;
         if (isKnockback)
         {
             PreventKnockbackFallFromLedge();
@@ -587,7 +695,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
 
         animator.SetFloat(
             "MoveSpeed",
-            Mathf.Abs(rb.linearVelocity.x)
+            isDead || isHitStunned ? 0f : Mathf.Abs(rb.linearVelocity.x)
         );
 
         // 공용 AI: 추적 달리기를 지원하는 컨트롤러에만 전달한다.
@@ -608,6 +716,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 공격 시작 공통 처리(공격 시각 갱신 + 자식 구현 호출)
     protected void StartAttack()
     {
+        if (isDead || isHitStunned) return;
         lastAttackTime = Time.time;
 
         if (animator != null)
@@ -622,6 +731,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 근거리 타격 판정(전방 박스)
     protected void CheckHit()
     {
+        if (isDead || isHitStunned) return;
         Vector2 attackPos = (Vector2)transform.position + new Vector2(walkDirection * data.attackOffset, data.attackHeightOffset);
         Vector2 attackSize = new Vector2(data.attackRange, data.attackHeight);
 
@@ -1075,6 +1185,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // applyKnockback: 넉백 적용 여부 / applyIFrame: 적에게는 미적용(무적 없음)
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = true, bool applyIFrame = false)
     {
+        if (isDead) return;
         TutorialTrainingDummy tutorialDummy = GetComponent<TutorialTrainingDummy>();
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDamageTarget(tutorialDummy))
             return;
@@ -1145,16 +1256,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         pendingWallImpactDamage = data != null ? data.wallBonusDamage : 0f;
         pendingWallStunDuration = data != null ? data.wallStunDuration : 0f;
 
-        if (currentHp <= 0)
-        {
-            tutorialDummy?.NotifyDefeated();
-            // 일반 적 처치 횟수 기록
-            if (tutorialDummy == null && SaveData.Instance != null)
-            {
-                SaveData.Instance.run.killCount++;
-            }
-            gameObject.SetActive(false);
-        }
+        if (currentHp <= 0) BeginDeath();
+        else PlayHitReaction();
     }
 
     // 넉백 방향에 낭떠러지가 있는지 확인 (groundCheck를 해당 방향으로 임시 이동해 검사)
@@ -1197,7 +1300,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             currentHp -= totalWallDamage;
             if (currentHp <= 0f)
             {
-                gameObject.SetActive(false);
+                BeginDeath();
                 return;
             }
         }

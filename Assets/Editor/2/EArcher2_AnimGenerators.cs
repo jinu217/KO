@@ -3,6 +3,9 @@ using UnityEditor;
 
 public class EArcher2_AnimGenerators
 {
+    [MenuItem("Tools/2/EArcher2/Generate Hit and Death")]
+    public static void GenerateHitDeath() { MobHitDeathSetup.SetupMob(2, "EArcher 2"); }
+
     const string SAVE_PATH = "Assets/Animations/2/EArcher 2";
     const float FRAME_RATE = 12f;
 
@@ -312,5 +315,6 @@ public class EArcher2_AnimGenerators
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[EArcher2] AC 저장 완료: {acPath}");
+        MobHitDeathSetup.SetupMob(2, "EArcher 2");
     }
 }

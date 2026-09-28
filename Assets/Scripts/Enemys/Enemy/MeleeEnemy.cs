@@ -9,11 +9,20 @@ public class MeleeEnemy : EnemyController
     [Tooltip("공격 단계 디버그 로그 출력")]
     [SerializeField] private bool showAttackLog = false;
 
+    private Coroutine attackRoutine;
+    protected override void CancelAttackForReaction()
+    {
+        if (attackRoutine != null) StopCoroutine(attackRoutine);
+        attackRoutine = null;
+        base.CancelAttackForReaction();
+    }
+
     // 근거리 공격 시작: 선딜/후딜을 포함한 공격 상태 시간 설정
     protected override void Attack()
     {
+        if (isDead || isHitStunned) return;
         attackTimer = data.preAttackDelay + data.postAttackDelay;
-        StartCoroutine(AttackSequenceRoutine());
+        attackRoutine = StartCoroutine(AttackSequenceRoutine());
     }
 
     // 근거리 공격 시퀀스: 선딜 → 실제 타격 판정 → 후딜
@@ -24,6 +33,7 @@ public class MeleeEnemy : EnemyController
 
         yield return new WaitForSeconds(data.preAttackDelay);
 
+        if (isDead || isHitStunned) { attackRoutine = null; yield break; }
         CheckHit();
 
         if (showAttackLog)
@@ -33,5 +43,6 @@ public class MeleeEnemy : EnemyController
 
         if (showAttackLog)
             Debug.Log($"[{gameObject.name}] 근거리 공격 종료");
+        attackRoutine = null;
     }
 }

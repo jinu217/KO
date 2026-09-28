@@ -613,16 +613,34 @@ public static class MainBoss3_AnimGenerators
         Pose p = Keys(t, new[]{Rest(0),new Key(.25f,5,0,20,40,0,90,-20,40),
             new Key(Skill3DashStart,-28,0,90,0,0,90,-45,30),
             new Key(Skill3DashEnd,-28,0,90,0,0,90,-45,30),
-            new Key(land,-8,0,80,15,0,90,-25,30),
-            new Key(RetreatStart,0,0,105,20,0,90,20,35),
-            new Key(RetreatEnd,0,0,105,20,0,810,20,35),
-            new Key(1.94f,0,0,80,25,0,900,10,30),RestSpin(2.55f,2)});
+            new Key(land,-8,0,70,0,0,90,-25,30),
+            new Key(RetreatStart,0,0,70,0,0,90,20,35),
+            new Key(RetreatEnd,0,0,70,0,0,810,20,35),
+            new Key(1.94f,0,0,70,0,0,900,10,30),RestSpin(2.55f,2)});
 
         // Reuse the exact Skill2 airborne dash silhouette, including both feet.
         Pose flying = ThrustRush((Skill2DashStart + Skill2DashEnd) * .5f);
-        float flight = Smooth(t / Skill3DashStart)
+        float flight = Smooth((t - .30f) / .12f)
             * (1f - Smooth((t - Skill3DashEnd) / (land - Skill3DashEnd)));
-        if (t < Skill3DashStart) p = new Pose();
+        if (t < Skill3DashStart)
+        {
+            // Brief grounded coil, then the same fast 0.12-second launch.
+            float prepare = Smooth(t / .22f);
+            p = new Pose();
+            p.angle[Body] = -12f * prepare;
+            p.angle[Head] = 6f * prepare;
+            Ground(p);
+            p.position[Body].y -= .20f * prepare;
+            Foot(p, true, -.12f * prepare, 0f);
+            Foot(p, false, .12f * prepare, 0f);
+            p.angle[SB] = -12f * prepare;
+            p.angle[AB] = 105f * prepare;
+            p.angle[HB] = RestHandBAngle;
+            p.angle[SF] = -24f * prepare;
+            p.angle[AF] = 35f * prepare;
+            p.angle[Sword] = Mathf.Lerp(90f + RestHandBAngle, 90f, prepare) - WorldAngle(p, HB);
+            p.angle[Cape] = -8f * prepare;
+        }
         for (int bone = 0; bone < Paths.Length; bone++)
         {
             p.position[bone] = Vector3.Lerp(p.position[bone], flying.position[bone], flight);
@@ -643,7 +661,7 @@ public static class MainBoss3_AnimGenerators
         p.angle[FB] = Mathf.LerpAngle(p.angle[FB], 0f, back);
         p.angle[Cape] = Mathf.LerpAngle(p.angle[Cape], 30f, back);
         float bladeBeforeArm = WorldAngle(p, Sword);
-        p.angle[SB] = Mathf.LerpAngle(p.angle[SB], 90f, back);
+        p.angle[SB] = Mathf.LerpAngle(p.angle[SB], 70f, back);
         p.angle[AB] = Mathf.LerpAngle(p.angle[AB], 0f, back);
         p.angle[HB] = Mathf.LerpAngle(p.angle[HB], RestHandBAngle, back);
         p.angle[Sword] = bladeBeforeArm - WorldAngle(p, HB);
