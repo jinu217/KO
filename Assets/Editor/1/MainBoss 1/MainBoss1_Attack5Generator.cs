@@ -103,7 +103,7 @@ public class MainBoss1_Attack5Generator
     static readonly float[] CB_ROT = F(0f,
         (0, 4.0f), (12, 4.0f), (13, -2.0f), (14, -4.0f), (15, -2.0f), (16, 4.0f), (26, 5.0f), (27, 5.0f), (30, -3.0f), (32, 0.0f), (34, -3f), (35, -3f), (36, -3f), (37, -3f), (38, -4f), (39, -4f), (40, 2f), (41, 3f), (42, 2f), (43, 0f), (44, 3f), (45, 4f), (46, 4f), (47, 2f), (48, 0f), (49, -2f), (50, -3f), (51, -4f), (52, -4f), (53, -4f), (54, -4f), (55, 3f), (56, 3f), (57, 2f), (58, 2.0f), (59, 2.0f), (60, 2.0f), (61, 0f));
 
-    [MenuItem("Tools/MainBoss 1/Generate Attack5")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Attack5")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

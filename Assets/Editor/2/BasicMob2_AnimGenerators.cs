@@ -70,7 +70,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate All
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate All")]
+    [MenuItem("Tools/2/BasicMob2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle();
@@ -83,7 +83,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate Idle")]
+    [MenuItem("Tools/2/BasicMob2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("BasicMob2_Idle", 48, true);
@@ -117,7 +117,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate Walk")]
+    [MenuItem("Tools/2/BasicMob2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("BasicMob2_Walk", 16, true);
@@ -151,7 +151,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate Run
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate Run")]
+    [MenuItem("Tools/2/BasicMob2/Generate Run")]
     public static void GenerateRun()
     {
         var clip = MakeClip("BasicMob2_Run", 17, true);
@@ -185,7 +185,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate Attack
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate Attack")]
+    [MenuItem("Tools/2/BasicMob2/Generate Attack")]
     public static void GenerateAttack()
     {
         const float DUR_ATK = 20 / 12f;

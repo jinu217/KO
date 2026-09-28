@@ -118,7 +118,7 @@ public class EBasicMob_ThrustAnimationGenerator
 
     // ================================================================
 
-    [MenuItem("Tools/EBasicMob/Generate Thrust A (Thrust + Recovery)")]
+    [MenuItem("Tools/1/EBasicMob/Generate Thrust A (Thrust + Recovery)")]
     public static void GenerateA()
     {
         float dur = 14f / FRAME_RATE;
@@ -167,7 +167,7 @@ public class EBasicMob_ThrustAnimationGenerator
         SaveClip(clip, "EBasicMob_Thrust_A");
     }
 
-    [MenuItem("Tools/EBasicMob/Generate Thrust B (Thrust + Hold)")]
+    [MenuItem("Tools/1/EBasicMob/Generate Thrust B (Thrust + Hold)")]
     public static void GenerateB()
     {
         float dur = 9f / FRAME_RATE;

@@ -70,7 +70,7 @@ public class EArcher2_AnimGenerators
     static readonly float[] ATK_BOTTOM_Y = { -0.559f, -0.564f, -0.569f, -0.574f, -0.579f, -0.579f, -0.579f, -0.549f, -0.539f, -0.549f, -0.559f, -0.559f, -0.559f, -0.559f };
 
     // ================================================================
-    [MenuItem("Tools/EArcher2/Generate All")]
+    [MenuItem("Tools/2/EArcher2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle(); GenerateWalk(); GenerateRun(); GenerateAttack();
@@ -78,7 +78,7 @@ public class EArcher2_AnimGenerators
         Debug.Log("[EArcher2] 전체 애니메이션 생성 완료");
     }
 
-    [MenuItem("Tools/EArcher2/Generate Idle")]
+    [MenuItem("Tools/2/EArcher2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("EArcher2_Idle", 48, true);
@@ -109,7 +109,7 @@ public class EArcher2_AnimGenerators
         Save(clip, "EArcher2_Idle");
     }
 
-    [MenuItem("Tools/EArcher2/Generate Walk")]
+    [MenuItem("Tools/2/EArcher2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("EArcher2_Walk", 16, true);
@@ -140,7 +140,7 @@ public class EArcher2_AnimGenerators
         Save(clip, "EArcher2_Walk");
     }
 
-    [MenuItem("Tools/EArcher2/Generate Run")]
+    [MenuItem("Tools/2/EArcher2/Generate Run")]
     public static void GenerateRun()
     {
         var clip = MakeClip("EArcher2_Run", 17, true);
@@ -258,7 +258,7 @@ public class EArcher2_AnimGenerators
     // ================================================================
     // Generate AC
     // ================================================================
-    [MenuItem("Tools/EArcher2/Generate AC")]
+    [MenuItem("Tools/2/EArcher2/Generate AC")]
     public static void GenerateAC()
     {
         string acPath = $"{SAVE_PATH}/EArcher2_AC.controller";

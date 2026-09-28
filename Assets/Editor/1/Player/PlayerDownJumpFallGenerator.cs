@@ -29,7 +29,7 @@ public static class PlayerDownJumpFallGenerator
     const string HAND_F = "Body/ShoulderJoint_F/Shoulder_F/ArmJoint_F/Hand_F";
     const string HAND_B = "Body/ShoulderJoint_B/Shoulder_B/ArmJoint_B/Hand_B";
 
-    [MenuItem("Tools/Player/Generate DownJump Fall Only")]
+    [MenuItem("Tools/1/Player/Generate DownJump Fall Only")]
     public static void Generate()
     {
         var clip = new AnimationClip { name = "DownJumpFall" };

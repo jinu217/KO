@@ -75,7 +75,7 @@ public class EBasicMob_RunSwordShoulderFastGenerator
     static readonly float[] LB_ROT = { -20f, -7f, 16f, 27f, 25f, 12f, -7f, -30f };
     static readonly float[] FB_ROT = { -25f, -18f, -13f, -22f, -20f, -10f, 7f, 22f };
 
-    [MenuItem("Tools/EBasicMob/Generate Run SwordShoulder Fast")]
+    [MenuItem("Tools/1/EBasicMob/Generate Run SwordShoulder Fast")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

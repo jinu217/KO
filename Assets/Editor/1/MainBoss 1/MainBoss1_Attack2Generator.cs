@@ -222,7 +222,7 @@ public class MainBoss1_Attack2Generator
         (24, 3f), (25, 4f), (26, 3f), (27, 2f),
         (28, 1f), (29, 0f), (30, 0f), (31, 0f));
 
-    [MenuItem("Tools/MainBoss 1/Generate Attack2")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Attack2")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

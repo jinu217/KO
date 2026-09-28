@@ -338,7 +338,7 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Generate Idle (48프레임, 루프)
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate Idle")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Idle")]
     public static void GenerateIdle()
     {
         GenerateIdleVariant("MidBoss2_Idle", IDLE_SB_ROT, IDLE_FB_ROT, IDLE_HB_ROT, IDLE_SF_Y, IDLE_SB_Y);
@@ -396,7 +396,7 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Generate Walk2 (Walkanimationcreator.cs 반영, 32프레임 루프)
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate Walk2")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Walk2")]
     public static void GenerateWalk2()
     {
         GenerateWalkVariant("MidBoss2_Walk2", WALK2_FB_ROT);
@@ -454,7 +454,7 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Generate Walk4 (사인파 기반, 32프레임, 루프)
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate Walk4")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Walk4")]
     public static void GenerateWalk4()
     {
         GenerateWalk4Variant("MidBoss2_Walk4", WALK4_FB_ROT);
@@ -512,7 +512,7 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Generate Attack (19프레임, 논루프)
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate Attack")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Attack")]
     public static void GenerateAttack()
     {
         const float DUR = 16 / FRAME_RATE;
@@ -566,13 +566,13 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Generate Skill1 (버프: 창으로 바닥 두 번 찍기, 19프레임 논루프)
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate Skill1")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Skill1")]
     public static void GenerateSkill1()
     {
         GenerateSkill1Variant("MidBoss2_Skill1", MS1_SB_ROT, MS1_FB_ROT, MS1_HB_ROT);
     }
 
-    [MenuItem("Tools/MidBoss 2/Generate Skill1-1")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Skill1-1")]
     public static void GenerateSkill1_1()
     {
         GenerateSkill1Variant("MidBoss2_Skill1-1", MS1B_SB_ROT, MS1B_FB_ROT, MS1B_HB_ROT);
@@ -631,7 +631,7 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Generate Skill2 (빠르게 5연속 장전+찌르기, 34프레임 논루프)
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate Skill2")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Skill2")]
     public static void GenerateSkill2()
     {
         const float DUR = 34 / FRAME_RATE;
@@ -682,7 +682,7 @@ public class MidBoss2_AnimGenerators
         GenerateAC();
     }
 
-    [MenuItem("Tools/MidBoss 2/Generate Skill2-1")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Skill2-1")]
     public static void GenerateSkill2_1()
     {
         const float DUR = 29 / FRAME_RATE;
@@ -733,7 +733,7 @@ public class MidBoss2_AnimGenerators
         GenerateAC();
     }
 
-    [MenuItem("Tools/MidBoss 2/Generate Skill2-1a")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Skill2-1a")]
     public static void GenerateSkill2_1a()
     {
         const float DUR = 34 / FRAME_RATE;
@@ -787,7 +787,7 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Generate Skill3 (기 끌어와 내리찍기 -> 정면으로 들고 돌진), 24프레임 논루프
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate Skill3")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Skill3")]
     public static void GenerateSkill3()
     {
         const float DUR = 34 / FRAME_RATE;
@@ -838,7 +838,7 @@ public class MidBoss2_AnimGenerators
         GenerateAC();
     }
 
-    [MenuItem("Tools/MidBoss 2/Generate Skill3-1")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Skill3-1")]
     public static void GenerateSkill3_1()
     {
         const float DUR = 34 / FRAME_RATE;
@@ -889,7 +889,7 @@ public class MidBoss2_AnimGenerators
         GenerateAC();
     }
 
-    [MenuItem("Tools/MidBoss 2/Generate Skill3-2")]
+    [MenuItem("Tools/2/MidBoss 2/Generate Skill3-2")]
     public static void GenerateSkill3_2()
     {
         const float DUR = 34 / FRAME_RATE;
@@ -945,7 +945,7 @@ public class MidBoss2_AnimGenerators
     // ================================================================
     // Generate All
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate All")]
+    [MenuItem("Tools/2/MidBoss 2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle();
@@ -1042,7 +1042,7 @@ public class MidBoss2_AnimGenerators
     // Generate AC (AnimatorController에 클립 자동 등록 — SAVE_PATH 폴더를 스캔해서
     // 새 클립이 생기면 자동으로 상태(state)로 추가됨)
     // ================================================================
-    [MenuItem("Tools/MidBoss 2/Generate AC")]
+    [MenuItem("Tools/2/MidBoss 2/Generate AC")]
     public static void GenerateAC()
     {
         string acPath = $"{SAVE_PATH}/MidBoss2_AC.controller";

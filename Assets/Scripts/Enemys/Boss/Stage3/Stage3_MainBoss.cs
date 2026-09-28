@@ -4,6 +4,30 @@ using UnityEngine;
 // 일반 전투와 자아실현 욕망 스킬 사이의 연결을 담당한다.
 public sealed class Stage3_MainBoss : MainBossController
 {
+    protected override string AnimationPrefix => "MainBoss3_";
+    protected override string VisualRootName => "MainBoss 3";
+    protected override bool HasPhaseEntryAnimations => false;
+    protected override bool UsesPhase3ActionStates => false;
+    protected override string DesireAnimationAction => "Buff";
+    protected override string SkillAnimationAction(int index)
+    {
+        switch (index)
+        {
+            case -1: return "Attack";
+            case 0: return "Skill1";
+            case 1: return "Skill2";
+            case 2: return "Buff";
+            case 3: return "Skill3";
+            default: return "Skill" + (index + 1);
+        }
+    }
+
+    public override void RefreshSkillDirection()
+    {
+        if (isAttacking) return;
+        base.RefreshSkillDirection();
+    }
+
     [Header("욕망 스킬")]
     [SerializeField, InspectorName("욕망 스킬 컴포넌트"), Tooltip("3스테이지 메인보스의 성취와 자아의 완성을 관리하는 전용 컴포넌트입니다.")]
     private Stage3_MainBossDesireSkill desireSkill;

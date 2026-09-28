@@ -15,7 +15,7 @@ public class MB2_PoseApplier : EditorWindow
     Vector2 _scroll;
     string _status = "";
 
-    [MenuItem("Tools/MainBoss2/Pose Applier (붙여넣기)")]
+    [MenuItem("Tools/2/MainBoss2/Pose Applier (붙여넣기)")]
     static void Open()
     {
         var win = GetWindow<MB2_PoseApplier>("MB2 Pose Applier");

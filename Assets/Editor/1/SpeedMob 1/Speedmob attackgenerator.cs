@@ -85,7 +85,7 @@ public class SpeedMob_AttackGenerator
     static readonly float[] LEG_ROT_COMP = {
         0f, -5f, -8f,  10f,  12f,   2f, -10f, -18f,  20f,  16f,  8f,  4f,  1f,  0f };
 
-    [MenuItem("Tools/SpeedMob 1/Generate Attack")]
+    [MenuItem("Tools/1/SpeedMob 1/Generate Attack")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

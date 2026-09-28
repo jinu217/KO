@@ -22,7 +22,7 @@ public class BasicMob1AnimatorControllerTool : EditorWindow
     private const float TRANSITION_DURATION = 0.05f;
     private const float ATTACK_TRANSITION_DURATION = 0.02f;
 
-    [MenuItem("Tools/BasicMob 1/Animator Controller Tool")]
+    [MenuItem("Tools/1/BasicMob 1/Animator Controller Tool")]
     public static void OpenWindow()
     {
         GetWindow<BasicMob1AnimatorControllerTool>(

@@ -3,7 +3,6 @@ using UnityEditor;
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
 /// Assets/Prefab/{스테이지번호}/{몹이름} {스테이지번호}.prefab  (스프라이트/애니메이션이 세팅됨)
@@ -16,7 +15,7 @@ using System.Linq;
 /// </summary>
 public class MobVisualMigrator : EditorWindow
 {
-    string _sourceFolder = "Assets/Prefab";
+    string _sourceFolder = "Assets/Prefab/1";
     string _targetFolder = "Assets/Prefabs";
     bool _dryRun = true;
 
@@ -35,7 +34,7 @@ public class MobVisualMigrator : EditorWindow
     List<string> _log = new List<string>();
     Vector2 _scroll;
 
-    [MenuItem("Tools/Mob/Migrate Visuals (Prefab -> Prefabs)")]
+    [MenuItem("Tools/기타/Mob/Migrate Visuals (Prefab -> Prefabs)")]
     public static void ShowWindow()
     {
         var win = GetWindow<MobVisualMigrator>("Mob Visual Migrator");
@@ -61,8 +60,9 @@ public class MobVisualMigrator : EditorWindow
         GUILayout.Space(5);
 
         EditorGUILayout.HelpBox(
-            "매핑: EBasicMob→Elite_1, EArcher→Elite_2, BasicMob→Enemy_1, TankMob→Enemy_2, SpeedMob→Enemy_3, MidBoss→MidBoss, MainBoss→MainBoss\n" +
-            $"(예) {_sourceFolder}/1/BasicMob 1.prefab  →  {_targetFolder}/Stage1_Enemy/Stage1_Enemy_1.prefab",
+            "소스 폴더에 스테이지 폴더를 직접 입력하세요. 예: Assets/Prefab/3\n" +
+            "입력한 폴더 안의 프리팹만 처리합니다. 하위 숫자 폴더는 검색하지 않습니다.\n" +
+            "매핑: EBasicMob→Elite_1, EArcher→Elite_2, BasicMob→Enemy_1, TankMob→Enemy_2, SpeedMob→Enemy_3, MidBoss→MidBoss, MainBoss→MainBoss",
             MessageType.Info
         );
 
@@ -105,61 +105,55 @@ public class MobVisualMigrator : EditorWindow
             return;
         }
 
-        // Prefab 폴더 바로 아래, 이름이 숫자인 폴더들을 스테이지 폴더로 인식
-        var stageFolders = AssetDatabase.GetSubFolders(_sourceFolder)
-            .Where(p => int.TryParse(Path.GetFileName(p), out _))
-            .OrderBy(p => int.Parse(Path.GetFileName(p)))
-            .ToList();
+        // 소스 폴더 자체의 이름을 스테이지 번호로 사용
+        // 예: Assets/Prefab/3 -> stage = 3
+        string stageFolderName = Path.GetFileName(_sourceFolder.TrimEnd('/', '\\'));
 
-        if (stageFolders.Count == 0)
+        if (!int.TryParse(stageFolderName, out int stage))
         {
-            _log.Add($"[오류] {_sourceFolder} 안에 숫자 이름 스테이지 폴더가 없습니다.");
+            _log.Add($"[오류] 소스 폴더의 마지막 이름이 숫자가 아닙니다: {_sourceFolder}");
+            _log.Add("예: Assets/Prefab/3");
             return;
         }
 
         int success = 0, skipped = 0, failed = 0;
 
-        foreach (string stageFolder in stageFolders)
+        foreach (var (mobName, targetSuffix) in Mapping)
         {
-            int stage = int.Parse(Path.GetFileName(stageFolder));
+            string sourcePath = $"{_sourceFolder}/{mobName} {stage}.prefab";
+            string targetPath =
+                $"{_targetFolder}/Stage{stage}_Enemy/Stage{stage}_{targetSuffix}.prefab";
 
-            foreach (var (mobName, targetSuffix) in Mapping)
+            if (!File.Exists(sourcePath))
             {
-                string sourcePath = $"{stageFolder}/{mobName} {stage}.prefab";
-                string targetPath =
-                    $"{_targetFolder}/Stage{stage}_Enemy/Stage{stage}_{targetSuffix}.prefab";
+                _log.Add($"[건너뜀] 소스 없음: {sourcePath}");
+                skipped++;
+                continue;
+            }
 
-                if (!File.Exists(sourcePath))
-                {
-                    _log.Add($"[건너뜀] 소스 없음: {sourcePath}");
-                    skipped++;
-                    continue;
-                }
+            if (!File.Exists(targetPath))
+            {
+                _log.Add($"[건너뜀] 타겟 없음: {targetPath}");
+                skipped++;
+                continue;
+            }
 
-                if (!File.Exists(targetPath))
-                {
-                    _log.Add($"[건너뜀] 타겟 없음: {targetPath}");
-                    skipped++;
-                    continue;
-                }
+            try
+            {
+                int addedCount = MigrateOne(sourcePath, targetPath, _dryRun);
 
-                try
-                {
-                    int addedCount = MigrateOne(sourcePath, targetPath, _dryRun);
+                _log.Add(
+                    $"[{(_dryRun ? "미리보기" : "완료")}] {sourcePath}  →  {targetPath}  " +
+                    $"(독립 복사본으로 자식 삽입, {addedCount}개)"
+                );
 
-                    _log.Add(
-                        $"[{(_dryRun ? "미리보기" : "완료")}] {sourcePath}  →  {targetPath}  " +
-                        $"(독립 복사본으로 자식 삽입, {addedCount}개)"
-                    );
-
-                    success++;
-                }
-                catch (Exception e)
-                {
-                    _log.Add($"[실패] {sourcePath} → {targetPath} : {e.Message}");
-                    failed++;
-                    Debug.LogError($"[MobVisualMigrator] {sourcePath} → {targetPath} 실패:\n{e}");
-                }
+                success++;
+            }
+            catch (Exception e)
+            {
+                _log.Add($"[실패] {sourcePath} → {targetPath} : {e.Message}");
+                failed++;
+                Debug.LogError($"[MobVisualMigrator] {sourcePath} → {targetPath} 실패:\n{e}");
             }
         }
 

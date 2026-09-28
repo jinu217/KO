@@ -16,7 +16,7 @@ public class SpriteMatcher : EditorWindow
     GameObject  _targetPrefab;
     string      _spriteFolderPath = "Assets/Sprites";
 
-    [MenuItem("Tools/Sprite Matcher/Match Sprites to Prefab")]
+    [MenuItem("Tools/기타/Sprite Matcher/Match Sprites to Prefab")]
     static void Open() => GetWindow<SpriteMatcher>("Sprite Matcher");
 
     void OnGUI()

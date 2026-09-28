@@ -26,7 +26,7 @@ public class GenericMobAnimatorControllerTool : EditorWindow
     private const float TRANSITION_DURATION = 0.05f;
     private const float ATTACK_TRANSITION_DURATION = 0.02f;
 
-    [MenuItem("Tools/Animation/Animator Controller Tool")]
+    [MenuItem("Tools/기타/Animation/Animator Controller Tool")]
     public static void OpenWindow()
     {
         GetWindow<GenericMobAnimatorControllerTool>(

@@ -51,7 +51,7 @@ public class TankMob2_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/TankMob2/Generate All")]
+    [MenuItem("Tools/2/TankMob2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle(); GenerateWalk(); GenerateRun(); GenerateAttack();
@@ -59,7 +59,7 @@ public class TankMob2_AnimGenerators
         Debug.Log("[TankMob2] 전체 애니메이션 생성 완료");
     }
 
-    [MenuItem("Tools/TankMob2/Generate Idle")]
+    [MenuItem("Tools/2/TankMob2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("TankMob2_Idle", 48, true);
@@ -93,7 +93,7 @@ public class TankMob2_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/TankMob2/Generate Walk")]
+    [MenuItem("Tools/2/TankMob2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("TankMob2_Walk", 32, true);
@@ -196,7 +196,7 @@ public class TankMob2_AnimGenerators
     // ================================================================
     // Generate Run
     // ================================================================
-    [MenuItem("Tools/TankMob2/Generate Run")]
+    [MenuItem("Tools/2/TankMob2/Generate Run")]
     public static void GenerateRun()
     {
         var clip = MakeClip("TankMob2_Run", 17, true);
@@ -283,7 +283,7 @@ public class TankMob2_AnimGenerators
 
         Save(clip, "TankMob2_Attack");
     }
-    [MenuItem("Tools/TankMob2/Generate AC")]
+    [MenuItem("Tools/2/TankMob2/Generate AC")]
     public static void GenerateAC()
     {
         string acPath = $"{SAVE_PATH}/TankMob2_AC.controller";

@@ -92,7 +92,7 @@ public class MainBoss1_Buff1Generator
     static readonly float[] CB_ROT = F(0f,
         (0, 4.0f), (1, 4.0f), (2, 4.0f), (3, 4.0f), (4, 4.0f), (5, 4.0f), (6, 4.0f), (7, 4.0f), (8, 4.0f), (9, 4.0f), (10, 4.0f), (11, 4.0f), (12, 4.0f), (13, -2f), (14, -4f), (15, -2f), (16, 0f));
 
-    [MenuItem("Tools/MainBoss 1/Generate Buff1")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Buff1")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

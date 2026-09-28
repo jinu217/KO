@@ -130,7 +130,7 @@ public class MainBoss1_Idle2Generator
     static readonly float[] CF_ROT = F(6f);
     static readonly float[] CB_ROT = F(-5f);
 
-    [MenuItem("Tools/MainBoss 1/Generate Idle2")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Idle2")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

@@ -5,7 +5,7 @@ using System.IO;
 
 public class AnimationRelativeCopier : EditorWindow
 {
-    [MenuItem("Tools/Animation Relative Copier")]
+    [MenuItem("Tools/±‚≈∏/Animation Relative Copier")]
     static void OpenWindow()
     {
         GetWindow<AnimationRelativeCopier>("Animation Relative Copier");

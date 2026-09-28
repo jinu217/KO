@@ -7,7 +7,7 @@ public class PrefabStructureConverter : EditorWindow
     Object _sourcePrefab;
     Object _targetPrefab;
 
-    [MenuItem("Tools/Prefab/Convert Prefab Structure")]
+    [MenuItem("Tools/기타/Prefab/Convert Prefab Structure")]
     public static void ShowWindow()
     {
         var win = GetWindow<PrefabStructureConverter>("Prefab Structure Converter");

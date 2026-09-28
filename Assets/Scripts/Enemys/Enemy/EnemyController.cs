@@ -589,6 +589,20 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             "MoveSpeed",
             Mathf.Abs(rb.linearVelocity.x)
         );
+
+        // 공용 AI: 추적 달리기를 지원하는 컨트롤러에만 전달한다.
+        // 기존 MoveSpeed/Attack만 사용하는 다른 몹의 컨트롤러도 그대로 호환된다.
+        if (animator.runtimeAnimatorController != null)
+        {
+            foreach (AnimatorControllerParameter parameter in animator.parameters)
+            {
+                if (parameter.name == "IsChasing" && parameter.type == AnimatorControllerParameterType.Bool)
+                {
+                    animator.SetBool("IsChasing", isChasing && !isWandering);
+                    break;
+                }
+            }
+        }
     }
 
     // 공격 시작 공통 처리(공격 시각 갱신 + 자식 구현 호출)
