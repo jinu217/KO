@@ -6828,7 +6828,7 @@ GameObject:
   - component: {fileID: 1051760553}
   - component: {fileID: 1051760552}
   m_Layer: 0
-  m_Name: GameData
+  m_Name: SaveData
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6846,12 +6846,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 52f1a366886ee3841ac4949fb6eea495, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameData
-  itemDatabase: {fileID: 0}
+  itemDatabase: {fileID: 11400000, guid: 19d7fbd9bba369341b090d8690cd2565, type: 2}
   persistent:
     playTime: 0
     deathCount: 0
     nextStage: 
     soul: 0
+    bonusAttackDamage: 0
+    bonusMaxHp: 0
+    bonusAttackSpeed: 0
+    bonusMoveSpeed: 0
+    bonusDashCount: 0
+    dashCooldownReduction: 0
+    startingCoinBonus: 0
+    attackDamageUpgradeCount: 0
+    maxHpUpgradeCount: 0
+    attackSpeedUpgradeCount: 0
+    dashCountUpgradeCount: 0
+    dashCooldownUpgradeCount: 0
+    startingCoinUpgradeCount: 0
+    equipmentRerollBonus: 0
+    equipmentRerollUpgradeCount: 0
   run:
     initialized: 0
     hp: 0
@@ -6867,6 +6882,22 @@ MonoBehaviour:
     healPotionCount: 0
     bpmPotionCount: 0
     coin: 0
+    blacksmithRound: -1
+    blacksmithPurchaseCount: 0
+    equipmentShopRound: -1
+    equipmentOffersInitialized: 0
+    offeredHeadItemId: -1
+    offeredBodyItemId: -1
+    offeredHandItemId: -1
+    offeredFootItemId: -1
+    offeredHeadSold: 0
+    offeredBodySold: 0
+    offeredHandSold: 0
+    offeredFootSold: 0
+    equipmentRerollUsedCount: 0
+    shamanPurchasedProductIds: 
+    shamanHpPotionPurchasedCount: 0
+    shamanBpmPotionPurchasedCount: 0
     currentScene: 
     spawnId: 
     inBossFight: 0

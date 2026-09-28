@@ -3,17 +3,27 @@ using UnityEngine;
 public class EquipmentManager : MonoBehaviour
 {
     public Inventory inventory;
+
     public EquipmentSlot weaponSlot;
     public EquipmentSlot handSlot;
     public EquipmentSlot headSlot;
     public EquipmentSlot bodySlot;
     public EquipmentSlot footSlot;
+
+    [Header("새 런 시작 장비")]
     public ItemData[] startEquipItems;
+
     public CharacterPreviewUI previewUI;
     public PlayerStats stats = new PlayerStats();
     public System.Action onStatsChanged;
+
     [SerializeField] private PlayerController playerController;
-    public PlayerAppearance playerAppearance; //플레이어 외형 장비연결
+
+    // 플레이어 외형 장비 연결
+    public PlayerAppearance playerAppearance;
+
+
+    //============== 초기화 ==============
 
     void Awake()
     {
@@ -21,29 +31,162 @@ public class EquipmentManager : MonoBehaviour
             playerController = GetComponent<PlayerController>();
     }
 
+
     void Start()
     {
-        if (SaveData.Instance != null && SaveData.Instance.run.initialized)
+        if (SaveData.Instance == null)
         {
-            RefreshStats();
+            Debug.LogError("[EquipmentManager] SaveData.Instance가 NULL입니다.");
+            EquipStartItems();
             return;
         }
 
-        foreach(ItemData item in startEquipItems)
+        RunData run = SaveData.Instance.run;
+
+        Debug.Log(
+            $"[EquipmentManager] Start / " +
+            $"initialized={run.initialized}, " +
+            $"weapon={run.weaponItemId}, " +
+            $"hand={run.handItemId}, " +
+            $"head={run.headItemId}, " +
+            $"body={run.bodyItemId}, " +
+            $"foot={run.footItemId}"
+        );
+
+        if (run.initialized)
         {
-            if(item != null)
+            Debug.Log("[EquipmentManager] 저장된 장비 복원");
+            RestoreEquipmentFromRunData();
+            return;
+        }
+
+        Debug.Log("[EquipmentManager] 초기 장비 장착");
+        EquipStartItems();
+
+        SaveCurrentEquipmentToRunData();
+
+        run.initialized = true;
+
+        Debug.Log(
+            $"[EquipmentManager] 초기 장비 저장 완료 / " +
+            $"weapon={run.weaponItemId}, " +
+            $"hand={run.handItemId}, " +
+            $"head={run.headItemId}, " +
+            $"body={run.bodyItemId}, " +
+            $"foot={run.footItemId}"
+        );
+    }
+
+    //============== 새 런 초기 장비 ==============
+
+    private void EquipStartItems()
+    {
+        if (startEquipItems == null)
+            return;
+
+        foreach (ItemData item in startEquipItems)
+        {
+            if (item != null)
                 Equip(item);
         }
     }
 
-    public void RestoreEquipment(ItemData weapon, ItemData hand, ItemData head, ItemData body, ItemData foot)
+    //============== RunData → 현재 장비 복원 ==============
+    private void RestoreEquipmentFromRunData()
     {
+        RunData run = SaveData.Instance.run;
+
+        Debug.Log(
+            $"[EquipmentManager] 장비 복원 시작 / " +
+            $"weaponID={run.weaponItemId}, " +
+            $"handID={run.handItemId}, " +
+            $"headID={run.headItemId}, " +
+            $"bodyID={run.bodyItemId}, " +
+            $"footID={run.footItemId}"
+        );
+
+        ItemData weapon = SaveData.Instance.GetItemById(run.weaponItemId);
+        ItemData hand = SaveData.Instance.GetItemById(run.handItemId);
+        ItemData head = SaveData.Instance.GetItemById(run.headItemId);
+        ItemData body = SaveData.Instance.GetItemById(run.bodyItemId);
+        ItemData foot = SaveData.Instance.GetItemById(run.footItemId);
+
+        Debug.Log(
+            $"[EquipmentManager] 복원할 장비 / " +
+            $"weapon={GetItemName(weapon)}, " +
+            $"hand={GetItemName(hand)}, " +
+            $"head={GetItemName(head)}, " +
+            $"body={GetItemName(body)}, " +
+            $"foot={GetItemName(foot)}"
+        );
+
+        RestoreEquipment(
+            weapon,
+            hand,
+            head,
+            body,
+            foot
+        );
+    }
+
+    //============== 디버그용 아이템 이름 ==============
+    private string GetItemName(ItemData item)
+    {
+        return item != null
+            ? $"{item.itemName}(ID={item.id})"
+            : "NULL";
+    }
+
+
+    //============== 현재 장비 → RunData 저장 ==============
+
+    private void SaveCurrentEquipmentToRunData()
+    {
+        if (SaveData.Instance == null)
+            return;
+
+        RunData run = SaveData.Instance.run;
+
+        ItemData weapon = GetItem(weaponSlot);
+        ItemData hand = GetItem(handSlot);
+        ItemData head = GetItem(headSlot);
+        ItemData body = GetItem(bodySlot);
+        ItemData foot = GetItem(footSlot);
+
+        run.weaponItemId = GetItemId(weapon);
+        run.handItemId = GetItemId(hand);
+        run.headItemId = GetItemId(head);
+        run.bodyItemId = GetItemId(body);
+        run.footItemId = GetItemId(foot);
+    }
+
+
+    private int GetItemId(ItemData item)
+    {
+        if (item == null)
+            return -1;
+
+        return item.id;
+    }
+
+
+    //============== 장비 복원 ==============
+
+    public void RestoreEquipment(
+        ItemData weapon,
+        ItemData hand,
+        ItemData head,
+        ItemData body,
+        ItemData foot)
+    {
+        // 인벤토리에 넣지 않고 장비 슬롯만 직접 변경
         SetSlotWithoutInventory(weaponSlot, weapon);
         SetSlotWithoutInventory(handSlot, hand);
         SetSlotWithoutInventory(headSlot, head);
         SetSlotWithoutInventory(bodySlot, body);
         SetSlotWithoutInventory(footSlot, foot);
 
+        // 캐릭터 외형 적용
         ApplyAppearance(weapon);
         ApplyAppearance(hand);
         ApplyAppearance(head);
@@ -56,11 +199,15 @@ public class EquipmentManager : MonoBehaviour
         RefreshStats();
     }
 
-    private void SetSlotWithoutInventory(EquipmentSlot slot, ItemData item)
+
+    private void SetSlotWithoutInventory(
+        EquipmentSlot slot,
+        ItemData item)
     {
         if (slot != null)
             slot.SetItem(item);
     }
+
 
     private void ApplyAppearance(ItemData item)
     {
@@ -68,9 +215,13 @@ public class EquipmentManager : MonoBehaviour
             playerAppearance.Equip(item);
     }
 
+
+    //============== 장비 장착 ==============
+
     public void Equip(ItemData item)
     {
-        if (item == null) return;
+        if (item == null)
+            return;
 
         switch (item.equipType)
         {
@@ -95,25 +246,44 @@ public class EquipmentManager : MonoBehaviour
                 break;
         }
 
-        if (playerAppearance != null){
-            playerAppearance.Equip(item);}
+        // 플레이어 외형 적용
+        if (playerAppearance != null)
+        {
+            playerAppearance.Equip(item);
+        }
 
         if (previewUI != null)
             previewUI.Refresh();
+
         RefreshStats();
+
+        // 현재 장비를 RunData에 저장
+        SaveCurrentEquipmentToRunData();
     }
 
-    void ReplaceIfDifferent(EquipmentSlot slot, ItemData newItem)
+
+    //============== 기존 장비 교체 ==============
+
+    void ReplaceIfDifferent(
+        EquipmentSlot slot,
+        ItemData newItem)
     {
+        if (slot == null)
+            return;
+
         ItemData current = slot.GetItem();
 
-        if (current != null)
+        if (current != null && current != newItem)
         {
-            inventory.AddItem(current);
+            if (inventory != null)
+                inventory.AddItem(current);
         }
 
         slot.SetItem(newItem);
     }
+
+
+    //============== 장비 해제 ==============
 
     public void Unequip(int index)
     {
@@ -121,20 +291,46 @@ public class EquipmentManager : MonoBehaviour
 
         switch (index)
         {
-            case 0: item = weaponSlot.GetItem(); weaponSlot.SetItem(null); break;
-            case 1: item = handSlot.GetItem(); handSlot.SetItem(null); break;
-            case 2: item = headSlot.GetItem(); headSlot.SetItem(null); break;
-            case 3: item = bodySlot.GetItem(); bodySlot.SetItem(null); break;
-            case 4: item = footSlot.GetItem(); footSlot.SetItem(null); break;
+            case 0:
+                item = weaponSlot.GetItem();
+                weaponSlot.SetItem(null);
+                break;
+
+            case 1:
+                item = handSlot.GetItem();
+                handSlot.SetItem(null);
+                break;
+
+            case 2:
+                item = headSlot.GetItem();
+                headSlot.SetItem(null);
+                break;
+
+            case 3:
+                item = bodySlot.GetItem();
+                bodySlot.SetItem(null);
+                break;
+
+            case 4:
+                item = footSlot.GetItem();
+                footSlot.SetItem(null);
+                break;
         }
 
-        if (item != null)
+        if (item != null && inventory != null)
             inventory.AddItem(item);
-        
+
         if (previewUI != null)
             previewUI.Refresh();
+
         RefreshStats();
+
+        // 장비 해제 상태도 RunData에 저장
+        SaveCurrentEquipmentToRunData();
     }
+
+
+    //============== 능력치 갱신 ==============
 
     public void RefreshStats()
     {
@@ -149,17 +345,32 @@ public class EquipmentManager : MonoBehaviour
 
         if (playerController != null)
         {
-            playerController.RecalculateEquipmentStats(weapon, head, body, hand, foot);
+            playerController.RecalculateEquipmentStats(
+                weapon,
+                head,
+                body,
+                hand,
+                foot
+            );
+
             stats = playerController.Stats;
         }
 
         onStatsChanged?.Invoke();
     }
 
+
+    //============== 장비 슬롯 아이템 가져오기 ==============
+
     private ItemData GetItem(EquipmentSlot slot)
     {
-        return slot != null ? slot.GetItem() : null;
+        return slot != null
+            ? slot.GetItem()
+            : null;
     }
+
+
+    //============== 디버그용 ==============
 
     void Add(EquipmentSlot slot)
     {
