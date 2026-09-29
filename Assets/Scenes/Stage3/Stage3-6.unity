@@ -4477,6 +4477,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 09519ce466f12114a9858f1dd4963d80, type: 3}
+--- !u!114 &301338261 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6828079844074179072, guid: 09519ce466f12114a9858f1dd4963d80, type: 3}
+  m_PrefabInstance: {fileID: 301338260}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6bec189d77e2f24da6b496154501f92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Stage3_MainBoss
 --- !u!1 &329770696
 GameObject:
   m_ObjectHideFlags: 0
@@ -8100,7 +8111,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossDoor
   openHeight: 2
   moveSpeed: 7
-  boss: {fileID: 0}
+  boss: {fileID: 301338261}
 --- !u!61 &615832577
 BoxCollider2D:
   m_ObjectHideFlags: 0
