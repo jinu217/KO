@@ -147,7 +147,7 @@ public class MainBoss1_Attack4aGenerator
         (12, -3f), (13, -1f), (14, 0f), (15, 2f), (16, 4f), (17, 5f), (18, 5f), (19, 4f),
         (20, 2f), (21, 1f), (22, 0f));
 
-    [MenuItem("Tools/MainBoss 1/Generate Attack4a")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Attack4a")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

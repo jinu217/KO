@@ -9,7 +9,7 @@ public static class MidBoss2_AnimatorSetup
 {
     const string Auto = "MidBoss2_Auto_";
     static readonly string[] Actions = { "Attack", "Skill1", "Skill2", "Skill3" };
-    [MenuItem("Tools/MidBoss 2/Setup Animator")]
+    [MenuItem("Tools/2/MidBoss 2/Setup Animator")]
     public static void Setup()
     {
         try
@@ -106,7 +106,7 @@ public static class MidBoss2_AnimatorSetup
         }
         catch (Exception error) { Debug.LogError("[MidBoss2] " + error.Message); }
     }
-    [MenuItem("Tools/MidBoss 2/Apply Chase Walk Speed 2.5")]
+    [MenuItem("Tools/2/MidBoss 2/Apply Chase Walk Speed 2.5")]
     public static void ApplyChaseWalkSpeed()
     {
         try

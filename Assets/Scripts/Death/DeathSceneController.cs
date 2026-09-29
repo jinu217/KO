@@ -480,7 +480,7 @@ public class DeathSceneController : MonoBehaviour
 
         //================== 다음 회차 시작 ====================
 
-        SaveData.Instance.persistent.nextStage = "Stage1-1";
+        SaveData.Instance.persistent.nextStage = "Tutorial_N";
 
         SaveData.Instance.ResetRun();
 
@@ -488,7 +488,7 @@ public class DeathSceneController : MonoBehaviour
             SaveData.Instance.currentSlot
         );
 
-        SceneManager.LoadScene("Stage1-1");
+        SceneManager.LoadScene("Tutorial_N");
     }
 
 

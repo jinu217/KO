@@ -32,7 +32,7 @@ public static class MainBoss1_LocomotionGenerator
         new Joint("Body/Bottom/Thigh_B/Calf_B/Foot_B",-.14f,-.91f,0)
     };
 
-    [MenuItem("Tools/MainBoss 1/Generate Walk and Chase")]
+    [MenuItem("Tools/1/MainBoss 1/Generate Walk and Chase")]
     public static void Generate()
     {
         string folder = null;

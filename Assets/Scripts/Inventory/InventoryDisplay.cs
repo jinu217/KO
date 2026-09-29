@@ -1,68 +1,123 @@
 using UnityEngine;
 
+//============== 인벤토리 표시 ==============
+
 public class InventoryDisplay : MonoBehaviour
 {
     public Inventory inventory;
     public ItemTooltipUI tooltip;
+
     private InventorySlotUI[] slots;
 
     private int selectedIndex = 0;
+
     private const int COLUMN_COUNT = 3;
+
     public int GetSlotCount()
     {
         return slots != null ? slots.Length : 0;
     }
 
-    void Awake()
+    //============== 초기화 ==============
+
+    private void Awake()
     {
         slots = GetComponentsInChildren<InventorySlotUI>(true);
+
+        FindInventory();
+
         if (inventory != null)
             inventory.SetCapacity(slots.Length);
     }
 
-    void Start()
+    private void Start()
     {
+        FindInventory();
+
         if (inventory == null)
         {
-            Debug.LogError("Inventory 연결 안됨!");
+            Debug.LogError("[InventoryDisplay] Player의 Inventory를 찾을 수 없습니다.");
             return;
         }
 
         inventory.SetCapacity(slots != null ? slots.Length : 0);
 
+        inventory.onInventoryChanged -= UpdateInventory;
         inventory.onInventoryChanged += UpdateInventory;
+
         UpdateInventory();
-
         RefreshSelection();
     }
 
-    void Update()
-    {
+    //============== 현재 플레이어 Inventory 찾기 ==============
 
+    private void FindInventory()
+    {
+        // Inspector에 직접 연결되어 있으면 우선 사용
+        if (inventory != null)
+            return;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+        if (player != null)
+        {
+            inventory = player.GetComponent<Inventory>();
+
+            if (inventory != null)
+            {
+                Debug.Log("[InventoryDisplay] Player의 Inventory 연결 완료");
+                return;
+            }
+        }
+
+        // Player 태그가 없거나 Inventory가 없는 경우
+        Inventory foundInventory = FindFirstObjectByType<Inventory>();
+
+        if (foundInventory != null)
+        {
+            inventory = foundInventory;
+
+            Debug.Log("[InventoryDisplay] Inventory 자동 연결 완료");
+        }
     }
 
-    void MoveSelection(int amount)
+    private void OnDestroy()
     {
-        if (slots == null || slots.Length == 0) return;
-
-        selectedIndex += amount;
-        selectedIndex = Mathf.Clamp(selectedIndex, 0, slots.Length - 1);
-
-        RefreshSelection();
+        if (inventory != null)
+            inventory.onInventoryChanged -= UpdateInventory;
     }
+
+    //============== 인벤토리 갱신 ==============
 
     public void UpdateInventory()
     {
-        if (slots == null) return;
+        if (slots == null)
+            return;
+
+        if (inventory == null)
+        {
+            FindInventory();
+
+            if (inventory == null)
+                return;
+        }
 
         for (int i = 0; i < slots.Length; i++)
             slots[i].Setup(null);
 
-        for (int i = 0; i < inventory.items.Count && i < slots.Length; i++)
-            slots[i].Setup(inventory.items[i].item);
+        if (inventory.items != null)
+        {
+            for (int i = 0; i < inventory.items.Count && i < slots.Length; i++)
+            {
+                if (inventory.items[i] != null)
+                    slots[i].Setup(inventory.items[i].item);
+            }
+        }
 
         RefreshSelection();
     }
+
+    //============== 선택 ==============
 
     public void SetSelectedIndex(int index)
     {
@@ -72,14 +127,20 @@ public class InventoryDisplay : MonoBehaviour
 
     private void RefreshSelection()
     {
-        if (slots == null || slots.Length == 0) return;
+        if (slots == null || slots.Length == 0)
+            return;
 
-        selectedIndex = Mathf.Clamp(selectedIndex, 0, slots.Length - 1);
+        selectedIndex = Mathf.Clamp(
+            selectedIndex,
+            0,
+            slots.Length - 1
+        );
 
         for (int i = 0; i < slots.Length; i++)
             slots[i].SetSelected(i == selectedIndex);
 
-        if (tooltip == null) return;
+        if (tooltip == null)
+            return;
 
         if (inventory == null ||
             inventory.items == null ||
@@ -89,7 +150,8 @@ public class InventoryDisplay : MonoBehaviour
             return;
         }
 
-        if (selectedIndex < 0 || selectedIndex >= inventory.items.Count)
+        if (selectedIndex < 0 ||
+            selectedIndex >= inventory.items.Count)
         {
             tooltip.Hide();
             return;
@@ -105,32 +167,41 @@ public class InventoryDisplay : MonoBehaviour
 
         ItemData item = slotData.item;
 
-        RectTransform slotRect = slots[selectedIndex].GetComponent<RectTransform>();
+        RectTransform slotRect =
+            slots[selectedIndex].GetComponent<RectTransform>();
 
         tooltip.Show(item, slotRect);
     }
 
-    // =========================
-    // 장비
-    // =========================
+    //============== 장비 ==============
 
     public void EquipSelected(int index)
     {
+        if (inventory == null)
+            return;
+
         if (index < 0 || index >= inventory.items.Count)
             return;
 
         ItemData item = inventory.items[index].item;
 
-        if (item == null) return;
+        if (item == null)
+            return;
 
         inventory.EquipItem(item);
 
         inventory.RemoveItem(index);
     }
 
+    //============== 아이템 버리기 ==============
+
     public void DropSelected(int index)
     {
         Debug.Log($"DropSelected 호출 : {index}");
+
+        if (inventory == null)
+            return;
+
         inventory.RemoveItem(index);
 
         selectedIndex = Mathf.Clamp(
@@ -138,5 +209,7 @@ public class InventoryDisplay : MonoBehaviour
             0,
             Mathf.Max(inventory.items.Count - 1, 0)
         );
+
+        RefreshSelection();
     }
 }

@@ -3,6 +3,9 @@ using UnityEditor;
 
 public class BasicMob2_AnimGenerators
 {
+    [MenuItem("Tools/2/BasicMob2/Generate Hit and Death")]
+    public static void GenerateHitDeath() { MobHitDeathSetup.SetupMob(2, "BasicMob 2"); }
+
     const string SAVE_PATH = "Assets/Animations/2/BasicMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
@@ -70,7 +73,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate All
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate All")]
+    [MenuItem("Tools/2/BasicMob2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle();
@@ -78,12 +81,13 @@ public class BasicMob2_AnimGenerators
         GenerateRun();
         GenerateAttack();
         Debug.Log("[BasicMob2] 전체 애니메이션 생성 완료");
+        MobHitDeathSetup.SetupMob(2, "BasicMob 2");
     }
 
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate Idle")]
+    [MenuItem("Tools/2/BasicMob2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("BasicMob2_Idle", 48, true);
@@ -117,7 +121,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate Walk")]
+    [MenuItem("Tools/2/BasicMob2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("BasicMob2_Walk", 16, true);
@@ -151,7 +155,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate Run
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate Run")]
+    [MenuItem("Tools/2/BasicMob2/Generate Run")]
     public static void GenerateRun()
     {
         var clip = MakeClip("BasicMob2_Run", 17, true);
@@ -185,7 +189,7 @@ public class BasicMob2_AnimGenerators
     // ================================================================
     // Generate Attack
     // ================================================================
-    [MenuItem("Tools/BasicMob2/Generate Attack")]
+    [MenuItem("Tools/2/BasicMob2/Generate Attack")]
     public static void GenerateAttack()
     {
         const float DUR_ATK = 20 / 12f;

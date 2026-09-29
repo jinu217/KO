@@ -3,6 +3,9 @@ using UnityEditor;
 
 public class SpeedMob2_AnimGenerators
 {
+    [MenuItem("Tools/2/SpeedMob2/Generate Hit and Death")]
+    public static void GenerateHitDeath() { MobHitDeathSetup.SetupMob(2, "SpeedMob 2"); }
+
     const string SAVE_PATH = "Assets/Animations/2/SpeedMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
@@ -74,7 +77,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate All
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate All")]
+    [MenuItem("Tools/2/SpeedMob2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle();
@@ -83,12 +86,13 @@ public class SpeedMob2_AnimGenerators
         GenerateAttack();
         GenerateAttack2();
         Debug.Log("[SpeedMob2] 전체 애니메이션 생성 완료");
+        MobHitDeathSetup.SetupMob(2, "SpeedMob 2");
     }
 
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Idle")]
+    [MenuItem("Tools/2/SpeedMob2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("SpeedMob2_Idle", 48, true);
@@ -122,7 +126,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Walk")]
+    [MenuItem("Tools/2/SpeedMob2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("SpeedMob2_Walk", 16, true);
@@ -156,7 +160,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate Run
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Run")]
+    [MenuItem("Tools/2/SpeedMob2/Generate Run")]
     public static void GenerateRun()
     {
         var clip = MakeClip("SpeedMob2_Run", 17, true);
@@ -288,7 +292,7 @@ public class SpeedMob2_AnimGenerators
     // ================================================================
     // Generate Attack2
     // ================================================================
-    [MenuItem("Tools/SpeedMob2/Generate Attack2")]
+    [MenuItem("Tools/2/SpeedMob2/Generate Attack2")]
     public static void GenerateAttack2()
     {
         var clip = MakeClip("SpeedMob2_Attack2", 18, false);

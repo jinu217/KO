@@ -26,7 +26,7 @@ public class MidBoss1_AnimGenerators
 
     const float RUN_LOWER_BODY_SPEED = 1.25f;
 
-    [MenuItem("Tools/MidBoss1/Generate AC")]
+    [MenuItem("Tools/1/MidBoss1/Generate AC")]
     public static void GenerateAC()
     {
         string acPath = $"{SAVE_PATH}/{AC_NAME}.controller";
@@ -117,7 +117,7 @@ public class MidBoss1_AnimGenerators
         );
     }
 
-    [MenuItem("Tools/MidBoss1/Generate Walk and Run")]
+    [MenuItem("Tools/1/MidBoss1/Generate Walk and Run")]
     public static void GenerateWalkAndRun()
     {
         EnsureFolders();
@@ -410,7 +410,7 @@ public class MidBoss1_AnimGenerators
         }
     }
 
-    [MenuItem("Tools/MidBoss1/Generate Combo Attacks")]
+    [MenuItem("Tools/1/MidBoss1/Generate Combo Attacks")]
     public static void GenerateComboAttacks()
     {
         EnsureFolders();
@@ -804,7 +804,7 @@ public class MidBoss1_AnimGenerators
         return clip;
     }
 
-    [MenuItem("Tools/MidBoss1/Generate Buff and Dash")]
+    [MenuItem("Tools/1/MidBoss1/Generate Buff and Dash")]
     public static void GenerateBuffAndDash()
     {
         EnsureFolders();
@@ -928,7 +928,7 @@ public class MidBoss1_AnimGenerators
         SavePattern(clip, "Dash");
     }
 
-    [MenuItem("Tools/MidBoss1/Setup Gameplay Animator")]
+    [MenuItem("Tools/1/MidBoss1/Setup Gameplay Animator")]
     public static void SetupGameplayAnimator()
     {
         EnsureFolders();
@@ -1213,7 +1213,7 @@ public class MidBoss1_AnimGenerators
         foreach (var child in sm.stateMachines) RemoveReferenceAttackStates(child.stateMachine);
     }
 
-    [MenuItem("Tools/MidBoss1/Generate Two Hand Slam Versions")]
+    [MenuItem("Tools/1/MidBoss1/Generate Two Hand Slam Versions")]
     public static void GenerateTwoHandSlamVersions()
     {
         EnsureFolders();

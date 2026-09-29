@@ -34,7 +34,7 @@ public static class PlayerLandingGenerator
     const string HAND_F = "Body/ShoulderJoint_F/Shoulder_F/ArmJoint_F/Hand_F";
     const string HAND_B = "Body/ShoulderJoint_B/Shoulder_B/ArmJoint_B/Hand_B";
 
-    [MenuItem("Tools/Player/Generate Landing (Short & Blunt)")]
+    [MenuItem("Tools/1/Player/Generate Landing (Short & Blunt)")]
     public static void Generate()
     {
         var clip = new AnimationClip { name = "Landing" };

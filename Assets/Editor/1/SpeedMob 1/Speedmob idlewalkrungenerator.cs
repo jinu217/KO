@@ -117,7 +117,7 @@ public class SpeedMob_IdleWalkRunGenerator
 
     // ================================================================
 
-    [MenuItem("Tools/SpeedMob 1/Generate Idle")]
+    [MenuItem("Tools/1/SpeedMob 1/Generate Idle")]
     public static void GenerateIdle()
     {
         int n = 16;
@@ -161,7 +161,7 @@ public class SpeedMob_IdleWalkRunGenerator
         SaveClip(clip, "SpeedMob1_Idle");
     }
 
-    [MenuItem("Tools/SpeedMob 1/Generate Walk")]
+    [MenuItem("Tools/1/SpeedMob 1/Generate Walk")]
     public static void GenerateWalk()
     {
         int n = 8;
@@ -211,7 +211,7 @@ public class SpeedMob_IdleWalkRunGenerator
         SaveClip(clip, "SpeedMob1_Walk");
     }
 
-    [MenuItem("Tools/SpeedMob 1/Generate Run")]
+    [MenuItem("Tools/1/SpeedMob 1/Generate Run")]
     public static void GenerateRun()
     {
         int n = 8;

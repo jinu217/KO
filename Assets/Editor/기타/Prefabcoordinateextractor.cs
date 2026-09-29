@@ -1,11 +1,11 @@
-using UnityEditor;
+ï»¿using UnityEditor;
 using UnityEngine;
 using System.Text;
 using System.IO;
 
 public class PrefabCoordinateExtractor : EditorWindow
 {
-    [MenuItem("Tools/Extract Prefab Coordinates")]
+    [MenuItem("Tools/ê¸°íƒ€/Extract Prefab Coordinates")]
     static void OpenWindow()
     {
         GetWindow<PrefabCoordinateExtractor>("Coordinate Extractor");
@@ -23,40 +23,58 @@ public class PrefabCoordinateExtractor : EditorWindow
 
     void OnGUI()
     {
-        GUILayout.Label("Prefab ÁÂÇ¥ ÃßÃâ±â", EditorStyles.boldLabel);
-        GUILayout.Label("¼±ÅÃÇÑ GameObjectÀÇ ¸ğµç ÀÚ½Ä ÁÂÇ¥¸¦ ÅØ½ºÆ®·Î ÃßÃâ", EditorStyles.miniLabel);
+        GUILayout.Label("Prefab ì¢Œí‘œ ì¶”ì¶œê¸°", EditorStyles.boldLabel);
+        GUILayout.Label("ì„ íƒí•œ GameObjectì˜ ëª¨ë“  ìì‹ ì¢Œí‘œë¥¼ í…ìŠ¤íŠ¸ë¡œ ì¶”ì¶œ", EditorStyles.miniLabel);
         GUILayout.Space(10);
 
-        target = (GameObject)EditorGUILayout.ObjectField("´ë»ó (Root)", target, typeof(GameObject), true);
+        target = (GameObject)EditorGUILayout.ObjectField(
+          "ëŒ€ìƒ (Root)",
+          target,
+          typeof(GameObject),
+          true
+        );
 
         GUILayout.Space(5);
-        GUILayout.Label("Æ÷ÇÔ Ç×¸ñ", EditorStyles.boldLabel);
+        GUILayout.Label("í¬í•¨ í•­ëª©", EditorStyles.boldLabel);
+
         includePosition = EditorGUILayout.Toggle("Position", includePosition);
         includeRotation = EditorGUILayout.Toggle("Rotation (Euler Z)", includeRotation);
         includeScale = EditorGUILayout.Toggle("Scale", includeScale);
-        includeSpriteInfo = EditorGUILayout.Toggle("Sprite Á¤º¸ (pivot, Å©±â)", includeSpriteInfo);
-        relativePathFromRoot = EditorGUILayout.Toggle("Root ±âÁØ °æ·Î Ç¥½Ã", relativePathFromRoot);
-        decimalPlaces = EditorGUILayout.IntSlider("¼Ò¼öÁ¡ ÀÚ¸´¼ö", decimalPlaces, 2, 6);
+        includeSpriteInfo = EditorGUILayout.Toggle("Sprite ì •ë³´ (pivot, í¬ê¸°)", includeSpriteInfo);
+        relativePathFromRoot = EditorGUILayout.Toggle("Root ê¸°ì¤€ ê²½ë¡œ í‘œì‹œ", relativePathFromRoot);
+        decimalPlaces = EditorGUILayout.IntSlider("ì†Œìˆ˜ì  ìë¦¿ìˆ˜", decimalPlaces, 2, 6);
 
         GUILayout.Space(10);
 
         EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("ÃßÃâ + Å¬¸³º¸µå º¹»ç", GUILayout.Height(30)))
+
+        if (GUILayout.Button("ì¶”ì¶œ + í´ë¦½ë³´ë“œ ë³µì‚¬", GUILayout.Height(30)))
             Extract(true, false);
-        if (GUILayout.Button("ÃßÃâ + ÅØ½ºÆ® ÆÄÀÏ ÀúÀå", GUILayout.Height(30)))
+
+        if (GUILayout.Button("ì¶”ì¶œ + í…ìŠ¤íŠ¸ íŒŒì¼ ì €ì¥", GUILayout.Height(30)))
             Extract(false, true);
+
         EditorGUILayout.EndHorizontal();
 
-        if (GUILayout.Button("ÃßÃâ (¹Ì¸®º¸±â¸¸)"))
+        if (GUILayout.Button("ì¶”ì¶œ (ë¯¸ë¦¬ë³´ê¸°ë§Œ)"))
             Extract(false, false);
 
         GUILayout.Space(10);
 
         if (!string.IsNullOrEmpty(lastResult))
         {
-            GUILayout.Label("°á°ú ¹Ì¸®º¸±â:", EditorStyles.boldLabel);
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.MinHeight(300));
-            EditorGUILayout.TextArea(lastResult, GUILayout.ExpandHeight(true));
+            GUILayout.Label("ê²°ê³¼ ë¯¸ë¦¬ë³´ê¸°:", EditorStyles.boldLabel);
+
+            scrollPos = EditorGUILayout.BeginScrollView(
+              scrollPos,
+              GUILayout.MinHeight(300)
+            );
+
+            EditorGUILayout.TextArea(
+              lastResult,
+              GUILayout.ExpandHeight(true)
+            );
+
             EditorGUILayout.EndScrollView();
         }
     }
@@ -68,49 +86,86 @@ public class PrefabCoordinateExtractor : EditorWindow
 
         if (target == null)
         {
-            EditorUtility.DisplayDialog("¿À·ù", "Hierarchy¿¡¼­ ´ë»ó GameObject¸¦ ¼±ÅÃÇÏ°Å³ª ÇÊµå¿¡ µå·¡±×ÇÏ¼¼¿ä", "È®ÀÎ");
+            EditorUtility.DisplayDialog(
+              "ì˜¤ë¥˜",
+              "Hierarchyì—ì„œ ëŒ€ìƒ GameObjectë¥¼ ì„ íƒí•˜ê±°ë‚˜ í•„ë“œì— ë“œë˜ê·¸í•˜ì„¸ìš”.",
+              "í™•ì¸"
+            );
             return;
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.AppendLine($"=== {target.name} ÁÂÇ¥ ÃßÃâ ===");
-        sb.AppendLine($"ÃßÃâ ½Ã°¢: {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+        sb.AppendLine($"=== {target.name} ì¢Œí‘œ ì¶”ì¶œ ===");
+        sb.AppendLine($"ì¶”ì¶œ ì‹œê°: {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine();
 
-        WriteTransform(sb, target.transform, target.transform, 0);
+        WriteTransform(
+          sb,
+          target.transform,
+          target.transform,
+          0
+        );
 
         lastResult = sb.ToString();
 
         if (copyToClipboard)
         {
             EditorGUIUtility.systemCopyBuffer = lastResult;
-            EditorUtility.DisplayDialog("¿Ï·á", "Å¬¸³º¸µå¿¡ º¹»çµÊ", "È®ÀÎ");
+
+            EditorUtility.DisplayDialog(
+              "ì™„ë£Œ",
+              "í´ë¦½ë³´ë“œì— ë³µì‚¬ë¨",
+              "í™•ì¸"
+            );
         }
 
         if (saveToFile)
         {
-            string path = EditorUtility.SaveFilePanel("ÁÂÇ¥ ÀúÀå", "", $"{target.name}_coordinates.txt", "txt");
+            string path = EditorUtility.SaveFilePanel(
+              "ì¢Œí‘œ ì €ì¥",
+              "",
+              $"{target.name}_coordinates.txt",
+              "txt"
+            );
+
             if (!string.IsNullOrEmpty(path))
             {
-                File.WriteAllText(path, lastResult);
-                EditorUtility.DisplayDialog("¿Ï·á", $"ÀúÀåµÊ:\n{path}", "È®ÀÎ");
+                File.WriteAllText(
+                  path,
+                  lastResult,
+                  new UTF8Encoding(false)
+                );
+
+                EditorUtility.DisplayDialog(
+                  "ì™„ë£Œ",
+                  $"ì €ì¥ë¨:\n{path}",
+                  "í™•ì¸"
+                );
             }
         }
 
         Repaint();
     }
 
-    void WriteTransform(StringBuilder sb, Transform root, Transform t, int depth)
+    void WriteTransform(
+      StringBuilder sb,
+      Transform root,
+      Transform t,
+      int depth
+    )
     {
         string indent = new string(' ', depth * 2);
-        string path = relativePathFromRoot ? GetRelativePath(root, t) : t.name;
+        string path = relativePathFromRoot
+          ? GetRelativePath(root, t)
+          : t.name;
 
         sb.Append($"{indent}[{path}]");
 
-        // SpriteRenderer: ·¹ÀÌ¾î¸¸ Ç¥½Ã (½ºÇÁ¶óÀÌÆ® ÀÌ¸§ Á¦¿Ü)
-        var sr = t.GetComponent<SpriteRenderer>();
+        SpriteRenderer sr = t.GetComponent<SpriteRenderer>();
+
         if (sr != null && sr.sprite != null)
-            sb.Append($"  (layer: {sr.sortingOrder})");
+            sb.Append($"  (sorting_layer: {sr.sortingLayerName})");
 
         sb.AppendLine();
 
@@ -119,50 +174,90 @@ public class PrefabCoordinateExtractor : EditorWindow
         if (includePosition)
         {
             Vector3 p = t.localPosition;
-            sb.AppendLine($"{indent}  pos: ({p.x.ToString(fmt)}, {p.y.ToString(fmt)}, {p.z.ToString(fmt)})");
+
+            sb.AppendLine(
+              $"{indent}  pos: ({p.x.ToString(fmt)}, {p.y.ToString(fmt)}, {p.z.ToString(fmt)})"
+            );
         }
 
         if (includeRotation)
         {
             Vector3 e = t.localEulerAngles;
             float z = e.z;
-            if (z > 180f) z -= 360f;
-            sb.AppendLine($"{indent}  rot.z: {z.ToString(fmt)}¡Æ");
 
-            if (Mathf.Abs(e.x) > 0.01f || Mathf.Abs(e.y) > 0.01f)
-                sb.AppendLine($"{indent}  rot.xy: ({e.x.ToString(fmt)}, {e.y.ToString(fmt)})¡Æ");
+            if (z > 180f)
+                z -= 360f;
+
+            sb.AppendLine(
+              $"{indent}  rot.z: {z.ToString(fmt)}Â°"
+            );
+
+            if (Mathf.Abs(e.x) > 0.01f ||
+                Mathf.Abs(e.y) > 0.01f)
+            {
+                sb.AppendLine(
+                  $"{indent}  rot.xy: ({e.x.ToString(fmt)}, {e.y.ToString(fmt)})Â°"
+                );
+            }
         }
 
         if (includeScale)
         {
             Vector3 s = t.localScale;
+
             if (s != Vector3.one)
-                sb.AppendLine($"{indent}  scale: ({s.x.ToString(fmt)}, {s.y.ToString(fmt)}, {s.z.ToString(fmt)})");
+            {
+                sb.AppendLine(
+                  $"{indent}  scale: ({s.x.ToString(fmt)}, {s.y.ToString(fmt)}, {s.z.ToString(fmt)})"
+                );
+            }
         }
 
-        // Sprite Á¤º¸: pivot°ú Å©±â¸¸ (ppu, ½ºÇÁ¶óÀÌÆ® ÀÌ¸§ Á¦¿Ü)
-        if (includeSpriteInfo && sr != null && sr.sprite != null)
+        if (includeSpriteInfo &&
+            sr != null &&
+            sr.sprite != null)
         {
             Sprite sprite = sr.sprite;
-            sb.AppendLine($"{indent}  sprite_size: {sprite.rect.width}x{sprite.rect.height} px");
-            sb.AppendLine($"{indent}  pivot_normalized: ({(sprite.pivot.x / sprite.rect.width).ToString(fmt)}, {(sprite.pivot.y / sprite.rect.height).ToString(fmt)})");
+
+            sb.AppendLine(
+              $"{indent}  sprite_size: {sprite.rect.width}x{sprite.rect.height} px"
+            );
+
+            sb.AppendLine(
+              $"{indent}  pivot_normalized: (" +
+              $"{(sprite.pivot.x / sprite.rect.width).ToString(fmt)}, " +
+              $"{(sprite.pivot.y / sprite.rect.height).ToString(fmt)})"
+            );
         }
 
         foreach (Transform child in t)
-            WriteTransform(sb, root, child, depth + 1);
+        {
+            WriteTransform(
+              sb,
+              root,
+              child,
+              depth + 1
+            );
+        }
     }
 
-    string GetRelativePath(Transform root, Transform target)
+    string GetRelativePath(
+      Transform root,
+      Transform target
+    )
     {
-        if (root == target) return target.name;
+        if (root == target)
+            return target.name;
 
         string path = target.name;
         Transform t = target.parent;
+
         while (t != null && t != root)
         {
             path = t.name + "/" + path;
             t = t.parent;
         }
+
         if (t == root)
             path = root.name + "/" + path;
 

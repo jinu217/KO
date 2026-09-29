@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class SpriteSettingsBatchSetter
 {
-    [MenuItem("Tools/Sprites/Set Selected Sprite Settings")]
+    [MenuItem("Tools/기타/Sprites/Set Selected Sprite Settings")]
     public static void SetSelectedSprites()
     {
         int count = 0;
@@ -87,7 +87,7 @@ public class SpriteSettingsBatchSetter
     }
 
     // 선택된 파일이 없으면 메뉴 비활성화
-    [MenuItem("Tools/Sprites/Set Selected Sprite Settings", true)]
+    [MenuItem("Tools/기타/Sprites/Set Selected Sprite Settings", true)]
     private static bool ValidateSetSelectedSprites()
     {
         return Selection.objects != null &&

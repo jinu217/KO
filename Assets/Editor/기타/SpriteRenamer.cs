@@ -25,7 +25,7 @@ public class SpriteRenamer
 
     const string FOOT_KR = "발(앞뒤)";
 
-    [MenuItem("Tools/Sprites/스프라이트 이름 영문 변환")]
+    [MenuItem("Tools/기타/Sprites/스프라이트 이름 영문 변환")]
     static void RenameSelectedFolders()
     {
         string[] guids = Selection.assetGUIDs;

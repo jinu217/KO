@@ -27,7 +27,7 @@ public class PlayerAnimatorControllerTool : EditorWindow
     private const float MOVE_THRESHOLD = 0.1f;
     private const float TRANSITION_DURATION = 0.05f;
 
-    [MenuItem("Tools/Player/Player Animator Controller Tool")]
+    [MenuItem("Tools/1/Player/Player Animator Controller Tool")]
     public static void OpenWindow()
     {
         GetWindow<PlayerAnimatorControllerTool>("Player Animator Tool");

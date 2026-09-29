@@ -144,7 +144,9 @@ public sealed class Stage3_MainBossDesireSkill : MonoBehaviour
         ResetAchievements();
         owner.DesireResetCooldowns();
         owner.DesireLog("욕망 스킬 시작", DesireLogSkill());
+        owner.PlayDesireAnimation();
         if (castDelay > 0f) yield return new WaitForSeconds(castDelay);
+        yield return owner.WaitForDesireAnimation();
         owner.DesireIsAttacking = false;
     }
 

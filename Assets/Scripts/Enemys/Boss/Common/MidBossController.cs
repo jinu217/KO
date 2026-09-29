@@ -40,6 +40,14 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     [SerializeField, Tooltip("실행 중 확인하기 위한 현재 체력입니다. 게임 시작 시 데이터의 최대 체력으로 초기화됩니다.")]
     protected float currentHp;
 
+    [Header("사망 애니메이션")]
+    [SerializeField, Tooltip("비워두면 자식 Animator에서 이름이 _Death로 끝나는 클립/상태를 찾습니다.")]
+    private Animator deathAnimator;
+    [SerializeField, Tooltip("특수한 상태 이름일 때만 입력. 예: Base Layer.MidBoss1_Death")]
+    private string deathStateName;
+    [SerializeField, Min(0f), Tooltip("사망 모션을 끝까지 재생한 뒤 마지막 자세를 유지하는 시간입니다.")]
+    private float deathEndHold = 0.15f;
+
     protected Rigidbody2D rb;
     protected SpriteRenderer spriteRenderer;
     protected Collider2D bossCollider;
@@ -287,10 +295,110 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     {
         if (isDead) return;
         isDead = true;
+        //====== 코인 지급 ======
+        CoinReward coinReward = GetComponent<CoinReward>();
+        if (coinReward != null)
+        {
+            coinReward.GiveCoin();
+        }
+        //====== 처치 기록 ======
+        currentHp = 0f;
+        isChasing = false;
+        isAttacking = false;
+        currentSkillIndex = -1;
         RecordKill();
         HideHealthUI();
+        // 공격, 돌진, 점프, 버프 및 페이즈 진입의 남은 실행을 취소합니다.
         StopAllCoroutines();
-        StopMove();
+        buffRoutine = null;
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.simulated = false;
+        }
+        foreach (Collider2D collider in GetComponentsInChildren<Collider2D>(true))
+            collider.enabled = false;
+        StartCoroutine(PlayDeathAndDeactivate());
+    }
+
+    protected virtual Animator GetDeathAnimator()
+    {
+        if (deathAnimator != null) return deathAnimator;
+        foreach (Animator candidate in GetComponentsInChildren<Animator>(true))
+        {
+            if (candidate.runtimeAnimatorController == null) continue;
+            foreach (AnimationClip clip in candidate.runtimeAnimatorController.animationClips)
+                if (clip != null && clip.name.EndsWith("_Death", System.StringComparison.OrdinalIgnoreCase))
+                    return candidate;
+        }
+        return GetComponentInChildren<Animator>(true);
+    }
+
+    private bool FindDeathState(Animator animator, out int hash, out float length)
+    {
+        hash = 0; length = 0f;
+        if (animator == null || animator.runtimeAnimatorController == null) return false;
+        if (!string.IsNullOrWhiteSpace(deathStateName))
+        {
+            string path = deathStateName.Contains(".") ? deathStateName : "Base Layer." + deathStateName;
+            hash = Animator.StringToHash(path);
+            return animator.HasState(0, hash);
+        }
+        foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+        {
+            if (clip == null || !clip.name.EndsWith("_Death", System.StringComparison.OrdinalIgnoreCase)) continue;
+            int candidate = Animator.StringToHash("Base Layer." + clip.name);
+            if (!animator.HasState(0, candidate)) continue;
+            hash = candidate; length = clip.length;
+            return true;
+        }
+        return false;
+    }
+
+    private IEnumerator PlayDeathAndDeactivate()
+    {
+        Animator animator = GetDeathAnimator();
+        if (FindDeathState(animator, out int stateHash, out float clipLength)
+            && animator.gameObject.activeInHierarchy)
+        {
+            animator.enabled = true;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.speed = 1f;
+            animator.applyRootMotion = false;
+            foreach (var parameter in animator.parameters)
+            {
+                if (parameter.type == AnimatorControllerParameterType.Trigger)
+                    animator.ResetTrigger(parameter.nameHash);
+                else if (parameter.type == AnimatorControllerParameterType.Bool)
+                {
+                    if (parameter.name == "IsDead") animator.SetBool(parameter.nameHash, true);
+                    else if (parameter.name == "IsAttacking" || parameter.name == "IsChasing")
+                        animator.SetBool(parameter.nameHash, false);
+                }
+                else if (parameter.type == AnimatorControllerParameterType.Float)
+                {
+                    if (parameter.name == "MoveSpeed") animator.SetFloat(parameter.nameHash, 0f);
+                    else if (parameter.name == "AttackSpeed") animator.SetFloat(parameter.nameHash, 1f);
+                }
+            }
+            // Direct entry avoids pending attack transitions. Setup disables Death self-transitions.
+            animator.Play(stateHash, 0, 0f);
+            yield return null;
+            float elapsed = 0f;
+            while (animator != null && animator.isActiveAndEnabled)
+            {
+                var state = animator.GetCurrentAnimatorStateInfo(0);
+                if (state.fullPathHash == stateHash && state.normalizedTime >= 1f) break;
+                // Fallback only for a controller that unexpectedly exits/interrupts Death.
+                if (state.fullPathHash != stateHash && elapsed > Mathf.Max(clipLength, 1f) + 1f) break;
+                elapsed += animator.updateMode == AnimatorUpdateMode.UnscaledTime
+                    ? Time.unscaledDeltaTime : Time.deltaTime;
+                yield return null;
+            }
+            if (deathEndHold > 0f) yield return new WaitForSeconds(deathEndHold);
+        }
+        // Retain the original event order: deactivate first, then notify room clear/rewards.
         gameObject.SetActive(false);
         Defeated?.Invoke();
     }
@@ -320,7 +428,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     {
         // 보스 공통: 시전 시작 방향을 유지. 추적 이동은 Update/FixedUpdate의
         // isAttacking 검사로 차단하며 돌진 등 실행기 자체 이동은 허용합니다.
-        if (isAttacking) return;
+        if (isDead || isAttacking) return;
         if (playerTransform != null) FacePlayer();
     }
     public virtual void OnSkillAttackHit(BossAttackStepData step) { }
@@ -407,7 +515,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
     public void ApplySkillBuff(BossBuffSkillData buff)
     {
-        if (buff == null || buff.duration <= 0f || buff.effects == null || buff.effects.Count == 0) return;
+        if (isDead || buff == null || buff.duration <= 0f || buff.effects == null || buff.effects.Count == 0) return;
         if (buffRoutine != null) StopCoroutine(buffRoutine);
         buffRoutine = StartCoroutine(BuffRoutine(buff));
     }

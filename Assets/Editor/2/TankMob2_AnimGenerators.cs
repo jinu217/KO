@@ -3,6 +3,9 @@ using UnityEditor;
 
 public class TankMob2_AnimGenerators
 {
+    [MenuItem("Tools/2/TankMob2/Generate Hit and Death")]
+    public static void GenerateHitDeath() { MobHitDeathSetup.SetupMob(2, "TankMob 2"); }
+
     const string SAVE_PATH = "Assets/Animations/2/TankMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
@@ -51,7 +54,7 @@ public class TankMob2_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/TankMob2/Generate All")]
+    [MenuItem("Tools/2/TankMob2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle(); GenerateWalk(); GenerateRun(); GenerateAttack();
@@ -59,7 +62,7 @@ public class TankMob2_AnimGenerators
         Debug.Log("[TankMob2] 전체 애니메이션 생성 완료");
     }
 
-    [MenuItem("Tools/TankMob2/Generate Idle")]
+    [MenuItem("Tools/2/TankMob2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("TankMob2_Idle", 48, true);
@@ -93,7 +96,7 @@ public class TankMob2_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/TankMob2/Generate Walk")]
+    [MenuItem("Tools/2/TankMob2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("TankMob2_Walk", 32, true);
@@ -196,7 +199,7 @@ public class TankMob2_AnimGenerators
     // ================================================================
     // Generate Run
     // ================================================================
-    [MenuItem("Tools/TankMob2/Generate Run")]
+    [MenuItem("Tools/2/TankMob2/Generate Run")]
     public static void GenerateRun()
     {
         var clip = MakeClip("TankMob2_Run", 17, true);
@@ -283,7 +286,7 @@ public class TankMob2_AnimGenerators
 
         Save(clip, "TankMob2_Attack");
     }
-    [MenuItem("Tools/TankMob2/Generate AC")]
+    [MenuItem("Tools/2/TankMob2/Generate AC")]
     public static void GenerateAC()
     {
         string acPath = $"{SAVE_PATH}/TankMob2_AC.controller";
@@ -311,5 +314,6 @@ public class TankMob2_AnimGenerators
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[TankMob2] AC 저장 완료: {acPath}");
+        MobHitDeathSetup.SetupMob(2, "TankMob 2");
     }
 }

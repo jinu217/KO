@@ -92,7 +92,7 @@ public class EArcher_AttackAnimationGenerator
     static readonly float[] LEG_ROT_COMP = {
         0f,  2f,  4f,  5f,  5f,  5f,  6f, -3f, -5f, -3f, -1f,  0f,  0f,  0f };
 
-    [MenuItem("Tools/EArcher 1/Generate Attack")]
+    [MenuItem("Tools/1/EArcher 1/Generate Attack")]
     public static void Generate()
     {
         if (!AssetDatabase.IsValidFolder(SAVE_PATH))

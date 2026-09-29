@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class TransformScaler
 {
-    [MenuItem("Tools/Scale Children Positions (×0.5)")]
+    [MenuItem("Tools/기타/Scale Children Positions (×0.5)")]
     static void ScaleChildren()
     {
         if (Selection.gameObjects.Length == 0)
@@ -20,7 +20,7 @@ public class TransformScaler
         Debug.Log("완료: 자식 파츠들 Position이 1/2로 변환됨");
     }
 
-    [MenuItem("Tools/Scale Selected + Children Positions (×0.5)")]
+    [MenuItem("Tools/기타/Scale Selected + Children Positions (×0.5)")]
     static void ScaleSelectedAndChildren()
     {
         if (Selection.gameObjects.Length == 0) return;

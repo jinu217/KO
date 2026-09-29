@@ -3,6 +3,9 @@ using UnityEditor;
 
 public class EBasicMob2_AnimGenerators
 {
+    [MenuItem("Tools/2/EBasicMob2/Generate Hit and Death")]
+    public static void GenerateHitDeath() { MobHitDeathSetup.SetupMob(2, "EBasicMob 2"); }
+
     const string SAVE_PATH = "Assets/Animations/2/EBasicMob 2";
     const float FRAME_RATE = 12f;
     const float DUR_48 = 48 / 12f;
@@ -72,7 +75,7 @@ public class EBasicMob2_AnimGenerators
     // ================================================================
     // Generate All
     // ================================================================
-    [MenuItem("Tools/EBasicMob2/Generate All")]
+    [MenuItem("Tools/2/EBasicMob2/Generate All")]
     public static void GenerateAll()
     {
         GenerateIdle();
@@ -87,7 +90,7 @@ public class EBasicMob2_AnimGenerators
     // ================================================================
     // Generate Idle
     // ================================================================
-    [MenuItem("Tools/EBasicMob2/Generate Idle")]
+    [MenuItem("Tools/2/EBasicMob2/Generate Idle")]
     public static void GenerateIdle()
     {
         var clip = MakeClip("EBasicMob2_Idle", 48, true);
@@ -121,7 +124,7 @@ public class EBasicMob2_AnimGenerators
     // ================================================================
     // Generate Walk
     // ================================================================
-    [MenuItem("Tools/EBasicMob2/Generate Walk")]
+    [MenuItem("Tools/2/EBasicMob2/Generate Walk")]
     public static void GenerateWalk()
     {
         var clip = MakeClip("EBasicMob2_Walk", 16, true);
@@ -155,7 +158,7 @@ public class EBasicMob2_AnimGenerators
     // ================================================================
     // Generate Run
     // ================================================================
-    [MenuItem("Tools/EBasicMob2/Generate Run")]
+    [MenuItem("Tools/2/EBasicMob2/Generate Run")]
     public static void GenerateRun()
     {
         var clip = MakeClip("EBasicMob2_Run", 17, true);
@@ -275,7 +278,7 @@ public class EBasicMob2_AnimGenerators
     // ================================================================
     // Generate AC
     // ================================================================
-    [MenuItem("Tools/EBasicMob2/Generate AC")]
+    [MenuItem("Tools/2/EBasicMob2/Generate AC")]
     public static void GenerateAC()
     {
         string acPath = $"{SAVE_PATH}/EBasicMob2_AC.controller";
@@ -316,6 +319,7 @@ public class EBasicMob2_AnimGenerators
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[EBasicMob2] AC 저장 완료: {acPath}");
+        MobHitDeathSetup.SetupMob(2, "EBasicMob 2");
     }
     // ── Attack2 배열 (14프레임: 빠른 복귀) ─────────────────────────
     static readonly float[] ATK2_FB_X = { 0.057f, 0.057f, 0.057f, 0.077f, 0.097f, 0.117f, 0.117f, 0.1124f, 0.1078f, 0.1032f, 0.0985f, 0.0847f, 0.0708f, 0.057f };
@@ -329,7 +333,7 @@ public class EBasicMob2_AnimGenerators
     static readonly float[] ATK2_BODY_Y = { 0.0f, 0.0f, 0.01f, 0.01f, 0.02f, 0.02f, -0.01f, -0.03f, -0.03f, -0.03f, -0.03f, -0.02f, -0.01f, -0.0f };
     static readonly float[] ATK2_BOTTOM_Y = { -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f, -0.559f };
 
-    [MenuItem("Tools/EBasicMob2/Generate Attack2")]
+    [MenuItem("Tools/2/EBasicMob2/Generate Attack2")]
     public static void GenerateAttack2()
     {
         var clip = MakeClip("EBasicMob2_Attack2", 14, false);

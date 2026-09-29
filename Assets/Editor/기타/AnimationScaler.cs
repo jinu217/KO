@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class AnimationScaler
 {
-    [MenuItem("Tools/Scale Selected Animation Positions (°ø0.5)")]
+    [MenuItem("Tools/±‚≈∏/Scale Selected Animation Positions (°ø0.5)")]
     static void ScaleSelected()
     {
         int clipCount = 0;

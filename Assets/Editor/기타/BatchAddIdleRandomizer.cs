@@ -18,7 +18,7 @@ public class BatchAddIdleRandomizer : EditorWindow
     List<string> _log = new List<string>();
     Vector2 _scroll;
 
-    [MenuItem("Tools/Animation/Batch Add Idle Randomizer")]
+    [MenuItem("Tools/기타/Animation/Batch Add Idle Randomizer")]
     public static void ShowWindow()
     {
         var win = GetWindow<BatchAddIdleRandomizer>("Idle Randomizer 일괄 추가");
