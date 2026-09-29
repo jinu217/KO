@@ -191,6 +191,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     [SerializeField] private string hitAnimationState;
     [SerializeField] private string deathAnimationState;
     protected bool isDead;
+    public bool IsDead => isDead;
     private float reactionUntil;
     private Collider2D[] deathColliders;
     private bool[] deathColliderEnabled;

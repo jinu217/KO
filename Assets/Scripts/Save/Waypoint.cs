@@ -32,6 +32,9 @@ public class Waypoint : MonoBehaviour
         if (isMovingScene)
             return;
 
+        if (!StageClearManager.CanLeave(gameObject.scene))
+            return;
+
         // 플레이어만 동작
         if (!other.CompareTag("Player"))
             return;
