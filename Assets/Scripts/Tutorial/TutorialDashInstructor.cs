@@ -35,7 +35,33 @@ public class TutorialDashInstructor : MonoBehaviour
     [SerializeField] private bool showAttackGizmo = true;
     [SerializeField] private Color gizmoColor = new Color(1f, 0.2f, 0.1f, 0.7f);
 
+    [Header("Animation")]
+    [SerializeField] private Animator npcAnimator;
+    [Tooltip("찌르기 시작부터 타격까지 시간(초). 클립에 맞춰 조절하세요.")]
+    [Min(0f)][SerializeField] private float attackHitDelay = 0.5f;
+    [Tooltip("Animator가 없을 때 사용하는 공격 전체 시간입니다.")]
+    [Min(0f)][SerializeField] private float fallbackAttackDuration = 1.166667f;
+    public bool IsPerformingAttack { get; private set; }
+    private bool hasAttackTrigger;
+    private bool hitApplied;
+    private bool enteredAttackState;
+    private float attackElapsed;
     private float nextAttackTime;
+
+    private void Awake()
+    {
+        if (npcAnimator == null) npcAnimator = GetComponentInChildren<Animator>(true);
+        if (npcAnimator != null)
+            foreach (var p in npcAnimator.parameters)
+                if (p.name == "Attack" && p.type == AnimatorControllerParameterType.Trigger)
+                    hasAttackTrigger = true;
+    }
+
+    private void OnDisable()
+    {
+        IsPerformingAttack = false;
+        if (npcAnimator != null && hasAttackTrigger) npcAnimator.ResetTrigger("Attack");
+    }
 
     private void OnEnable()
     {
@@ -45,13 +71,47 @@ public class TutorialDashInstructor : MonoBehaviour
     private void Update()
     {
         if (!IsActiveStep())
+        {
+            IsPerformingAttack = false;
+            if (npcAnimator != null && hasAttackTrigger) npcAnimator.ResetTrigger("Attack");
+            nextAttackTime = Time.time + Mathf.Max(.01f, attackInterval);
             return;
-
-        if (Time.time < nextAttackTime)
+        }
+        if (IsPerformingAttack)
+        {
+            attackElapsed += Time.deltaTime;
+            bool animated = npcAnimator != null && npcAnimator.isActiveAndEnabled && hasAttackTrigger;
+            var state = animated ? npcAnimator.GetCurrentAnimatorStateInfo(0) : default(AnimatorStateInfo);
+            bool thrust = animated && state.IsName("Mentor_Thrust");
+            if (thrust) enteredAttackState = true;
+            // Use the playing state's time, so its speed also changes hit timing.
+            float motionTime = thrust ? state.normalizedTime * state.length : attackElapsed;
+            if (!hitApplied && (thrust || !animated) && motionTime >= attackHitDelay)
+            {
+                hitApplied = true;
+                Attack();
+            }
+            bool finished = animated
+                ? (enteredAttackState && (!thrust || state.normalizedTime >= 1f))
+                : attackElapsed >= Mathf.Max(attackHitDelay, fallbackAttackDuration);
+            if (animated && !enteredAttackState && attackElapsed > 1f)
+            {
+                npcAnimator.ResetTrigger("Attack");
+                finished = true;
+                Debug.LogWarning("Mentor_Thrust에 진입하지 못했습니다. Setup Mentor Animator와 Animator 연결을 확인하세요.", this);
+            }
+            if (finished)
+            {
+                IsPerformingAttack = false;
+                nextAttackTime = Time.time + Mathf.Max(.01f, attackInterval);
+            }
             return;
-
-        nextAttackTime = Time.time + Mathf.Max(0.01f, attackInterval);
-        Attack();
+        }
+        if (Time.time < nextAttackTime) return;
+        IsPerformingAttack = true;
+        attackElapsed = 0f;
+        hitApplied = enteredAttackState = false;
+        if (npcAnimator != null && hasAttackTrigger) npcAnimator.SetTrigger("Attack");
     }
 
     private void Attack()

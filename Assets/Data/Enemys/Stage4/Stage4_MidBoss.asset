@@ -1,0 +1,316 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdbe770d7a98b23418afef3471c5d301, type: 3}
+  m_Name: Stage4_MidBoss
+  m_EditorClassIdentifier: Assembly-CSharp::MidBossData
+  maxHp: 650
+  chaseSpeed: 2.8
+  detectRange: 10
+  chaseRange: 15
+  positionUpdateDelay: 0.12
+  wallCheckDistance: 0.55
+  basicAttack:
+    skillName: "\uAE30\uBCF8 \uACF5\uACA9 \uB0B4\uB824\uCC0D\uAE30 \uBC00\uCE58\uAE30
+      3\uC5F0\uACA9"
+    skillType: 0
+    executionOrder: 0
+    cooldown: 2.5
+    minimumPhase: 1
+    castRange: 3.4
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps:
+      - stepName: "1\uD0C0 \uC81C\uC790\uB9AC \uB0B4\uB824\uCC0D\uAE30"
+        actionType: 2
+        preDelay: 0.28
+        postDelay: 0.12
+        duration: 0
+        interval: 0
+        attackCount: 1
+        damage: 8
+        hitboxSize: {x: 2.4, y: 2.4}
+        hitboxOffset: {x: 1.35, y: -0.15}
+        knockbackForce: {x: 1.2, y: 0.5}
+        knockbackAwayFromCenter: 0
+        moveSpeed: 0
+        maxMoveDistance: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnVerticalSpacing: 0
+        spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+      - stepName: "2\uD0C0 \uC81C\uC790\uB9AC \uB0B4\uB824\uCC0D\uAE30"
+        actionType: 2
+        preDelay: 0.14
+        postDelay: 0.18
+        duration: 0
+        interval: 0
+        attackCount: 1
+        damage: 8
+        hitboxSize: {x: 2.4, y: 2.4}
+        hitboxOffset: {x: 1.35, y: -0.15}
+        knockbackForce: {x: 1.2, y: 0.5}
+        knockbackAwayFromCenter: 0
+        moveSpeed: 0
+        maxMoveDistance: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnVerticalSpacing: 0
+        spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+      - stepName: "3\uD0C0 \uAE30 \uBAA8\uC544 \uC804\uC9C4 \uBC00\uCE58\uAE30"
+        actionType: 4
+        preDelay: 0.65
+        postDelay: 0.4
+        duration: 0.32
+        interval: 0
+        attackCount: 1
+        damage: 12
+        hitboxSize: {x: 2.9, y: 1.55}
+        hitboxOffset: {x: 1.55, y: -0.05}
+        knockbackForce: {x: 7, y: 3}
+        knockbackAwayFromCenter: 0
+        moveSpeed: 5.5
+        maxMoveDistance: 1.4
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 1
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnVerticalSpacing: 0
+        spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+    buff:
+      duration: 0
+      effects: []
+  skills:
+  - skillName: "1\uC2A4\uD0AC \uD68C\uC804 \uB3C4\uC57D \uB0B4\uB824\uCC0D\uAE30"
+    skillType: 0
+    executionOrder: 0
+    cooldown: 11
+    minimumPhase: 1
+    castRange: 5.5
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0.55
+    active:
+      attackSteps:
+      - stepName: "1\uD0C0 \uB0AB \uD68C\uC804 \uACF5\uACA9"
+        actionType: 2
+        preDelay: 0.5
+        postDelay: 0.2
+        duration: 0
+        interval: 0
+        attackCount: 1
+        damage: 14
+        hitboxSize: {x: 6.2, y: 2.2}
+        hitboxOffset: {x: 0, y: 0}
+        knockbackForce: {x: 13, y: 5}
+        knockbackAwayFromCenter: 1
+        moveSpeed: 0
+        maxMoveDistance: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnVerticalSpacing: 0
+        spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+      - stepName: "\uD50C\uB808\uC774\uC5B4 \uBC29\uD5A5 \uB3C4\uC57D"
+        actionType: 5
+        preDelay: 0
+        postDelay: 0
+        duration: 2
+        interval: 0
+        attackCount: 0
+        damage: 0
+        hitboxSize: {x: 0, y: 0}
+        hitboxOffset: {x: 0, y: 0}
+        knockbackForce: {x: 0, y: 0}
+        knockbackAwayFromCenter: 0
+        moveSpeed: 0
+        maxMoveDistance: 0
+        jumpForce: {x: 0, y: 10}
+        slamSpeed: 0
+        stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnVerticalSpacing: 0
+        spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0.7
+      - stepName: "2\uD0C0 \uB3C4\uC57D \uB0B4\uB824\uCC0D\uAE30"
+        actionType: 6
+        preDelay: 0.1
+        postDelay: 0.55
+        duration: 2
+        interval: 0
+        attackCount: 1
+        damage: 17
+        hitboxSize: {x: 3.6, y: 1.9}
+        hitboxOffset: {x: 0, y: -0.35}
+        knockbackForce: {x: 8, y: 7}
+        knockbackAwayFromCenter: 0
+        moveSpeed: 0
+        maxMoveDistance: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 22
+        stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnVerticalSpacing: 0
+        spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0.3
+    buff:
+      duration: 0
+      effects: []
+  - skillName: "2\uC2A4\uD0AC \uB04C\uC5B4\uC624\uAE30 \uB0AB \uD68C\uC804"
+    skillType: 0
+    executionOrder: 0
+    cooldown: 9.5
+    minimumPhase: 1
+    castRange: 5.5
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0
+    postDelay: 0
+    active:
+      attackSteps:
+      - stepName: "\uC804\uBC29 \uD50C\uB808\uC774\uC5B4 \uB04C\uC5B4\uC624\uAE30"
+        actionType: 9
+        preDelay: 0.45
+        postDelay: 0.12
+        duration: 0.5
+        interval: 0
+        attackCount: 0
+        damage: 0
+        hitboxSize: {x: 5.2, y: 2.4}
+        hitboxOffset: {x: 2.6, y: 0}
+        knockbackForce: {x: 0, y: 0}
+        knockbackAwayFromCenter: 0
+        moveSpeed: 15
+        maxMoveDistance: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 1, y: 0}
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnVerticalSpacing: 0
+        spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+      - stepName: "\uB04C\uC5B4\uC628 \uB4A4 \uC804\uBC29 \uB0AB \uD68C\uC804 \uB3C4\uD2B8"
+        actionType: 8
+        preDelay: 0.15
+        postDelay: 0.5
+        duration: 3
+        interval: 0.6
+        attackCount: 5
+        damage: 4
+        hitboxSize: {x: 3.4, y: 2}
+        hitboxOffset: {x: 1.7, y: 0}
+        knockbackForce: {x: 0, y: 0}
+        knockbackAwayFromCenter: 0
+        moveSpeed: 0
+        maxMoveDistance: 0
+        jumpForce: {x: 0, y: 0}
+        slamSpeed: 0
+        stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
+        spawnPrefab: {fileID: 0}
+        spawnCount: 0
+        spawnOffset: {x: 0, y: 0}
+        spawnSpacing: 0
+        spawnVerticalSpacing: 0
+        spawnInterval: 0
+        spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+    buff:
+      duration: 0
+      effects: []
+  - skillName: "3\uC2A4\uD0AC \uC804\uD22C \uAC00\uC18D \uBC84\uD504"
+    skillType: 1
+    executionOrder: 0
+    cooldown: 18
+    minimumPhase: 1
+    castRange: 0
+    forceCastMinDistance: 0
+    forceCastRemainingCooldown: 0
+    preDelay: 0.8
+    postDelay: 0.4
+    active:
+      attackSteps: []
+    buff:
+      duration: 8
+      effects:
+      - stat: 1
+        valueMode: 1
+        value: 1.15
+      - stat: 0
+        valueMode: 1
+        value: 1.12
+      - stat: 5
+        valueMode: 1
+        value: 0.8

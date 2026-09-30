@@ -40,8 +40,14 @@ public class BreakableObject : MonoBehaviour
     {
         isBroken = true;
 
+        // 코인 지급
+        CoinReward coinReward = GetComponent<CoinReward>();
+
+        if (coinReward != null)
+            coinReward.GiveCoin();
+
         if (showDebugLog)
-            Debug.Log($"[{name}] 파괴 → SetActive(false)");
+            Debug.Log($"[{name}] 파괴 → 코인 지급 후 SetActive(false)");
 
         gameObject.SetActive(false);
     }

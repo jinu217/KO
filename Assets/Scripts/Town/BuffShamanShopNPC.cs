@@ -149,7 +149,7 @@ public class BuffShamanShopNPC : NPCShopBase
         purchaseCount = 1;
         choosingCount = false;
         SelectFirstAvailableProduct();
-        SetFeedback(AreAllProductsSoldOut() ? "모든 물품 구매완료!" : string.Empty);
+        SetFeedback(AreAllProductsSoldOut() ? "모든 물품 구매완료!" : "마음에 드는걸 골라봐");
         RefreshUI();
     }
 
@@ -168,6 +168,7 @@ public class BuffShamanShopNPC : NPCShopBase
         {
             MoveMainSelection(direction);
             purchaseCount = 1;
+            SetFeedback("마음에 드는걸 골라봐");
         }
 
         RefreshUI();
@@ -189,6 +190,11 @@ public class BuffShamanShopNPC : NPCShopBase
         Sprite previousSprite = statDisplayImage != null ? statDisplayImage.sprite : null;
         int navigationDirection = -direction;
         MoveStatSelection(navigationDirection);
+        if (selectedStatIndex != previousStatIndex)
+        {
+            choosingCount = false;
+            SetFeedback("마음에 드는걸 골라봐");
+        }
         purchaseCount = GetMaximumPurchasableCount() > 0 ? 1 : 0;
 
         if (selectedStatIndex != previousStatIndex &&
@@ -226,6 +232,7 @@ public class BuffShamanShopNPC : NPCShopBase
 
             choosingCount = true;
             purchaseCount = 1;
+            SetFeedback($"{GetSelectedName()}을 구매할거야?");
             RefreshUI();
             return;
         }
@@ -240,6 +247,7 @@ public class BuffShamanShopNPC : NPCShopBase
     {
         choosingCount = false;
         purchaseCount = 1;
+        SetFeedback("마음에 드는걸 골라봐");
         RefreshUI();
     }
 
@@ -261,7 +269,7 @@ public class BuffShamanShopNPC : NPCShopBase
         AddSelectedPotionPurchaseCount(purchaseCount);
         if (GetRemainingPotionPurchaseCount(product) <= 0)
             SetSelectedPurchasedForRound();
-        CompletePurchase($"{GetSelectedName()}을 {purchaseCount}개 구입!");
+        CompletePurchase();
     }
 
     private void PurchaseStat()
@@ -289,17 +297,17 @@ public class BuffShamanShopNPC : NPCShopBase
             purchaseCount);
 
         SetSelectedPurchasedForRound();
-        CompletePurchase($"{GetSelectedName()}을 {purchaseCount}개 구입!");
+        CompletePurchase();
     }
 
-    private void CompletePurchase(string message)
+    private void CompletePurchase()
     {
         SaveRuntimeState();
         choosingCount = false;
         purchaseCount = 1;
         if (!IsMainSelectionAvailable(mainSelection))
             MoveToNextAvailableProduct();
-        SetFeedback(AreAllProductsSoldOut() ? "모든 물품 구매완료!" : message);
+        SetFeedback(AreAllProductsSoldOut() ? "모든 물품 구매완료!" : "마음에 드는걸 골라봐");
         RefreshUI();
     }
 

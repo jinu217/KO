@@ -295,6 +295,13 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     {
         if (isDead) return;
         isDead = true;
+        //====== 코인 지급 ======
+        CoinReward coinReward = GetComponent<CoinReward>();
+        if (coinReward != null)
+        {
+            coinReward.GiveCoin();
+        }
+        //====== 처치 기록 ======
         currentHp = 0f;
         isChasing = false;
         isAttacking = false;
@@ -639,8 +646,11 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
     private static bool HasAttackHitbox(BossAttackStepData step)
     {
-        if (step == null || step.attackCount <= 0) return false;
+        if (step == null) return false;
         if (step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f) return false;
+
+        if (step.actionType == BossActionType.PullPlayer) return true;
+        if (step.attackCount <= 0) return false;
 
         return step.actionType == BossActionType.MeleeAttack
             || step.actionType == BossActionType.DashAttack

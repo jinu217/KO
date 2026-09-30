@@ -2146,7 +2146,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: Enter
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: cf885a7f65f24304398bd33bd65c7568, type: 2}
+  m_fontAsset: {fileID: 0}
   m_sharedMaterial: {fileID: -2579999668326467619, guid: cf885a7f65f24304398bd33bd65c7568, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -3129,7 +3129,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1930, y: 1090}
+  m_SizeDelta: {x: 1930, y: 1500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &209826218
 CanvasGroup:
@@ -4270,7 +4270,7 @@ MonoBehaviour:
   bodySlot: {fileID: 1091302888}
   footSlot: {fileID: 686226718}
   startEquipItems:
-  - {fileID: 11400000, guid: 63b20218ce170ad4692206b146a98086, type: 2}
+  - {fileID: 11400000, guid: 3bb44673ea58f7845975edc99a354616, type: 2}
   - {fileID: 11400000, guid: 049f449613ec1094ca655bfc7b7208ff, type: 2}
   - {fileID: 11400000, guid: bee71ba81c42c1c4ab05d765d0c1300b, type: 2}
   - {fileID: 11400000, guid: f559a113447a2734db3b8eb0a4cfd33b, type: 2}
@@ -4303,14 +4303,6 @@ MonoBehaviour:
   capacity: 9
   equipmentManager: {fileID: 310240035}
   items: []
-  startItems:
-  - {fileID: 11400000, guid: e9132db6e9443a34faecb2ccf7e1186c, type: 2}
-  - {fileID: 11400000, guid: d205a7dba5fdc4e48bdac29296b95194, type: 2}
-  - {fileID: 11400000, guid: 21e8714ebf0340047a4bf20bcaa5154f, type: 2}
-  - {fileID: 11400000, guid: 00f777077f4affc409bc46ec22f3f1ed, type: 2}
-  - {fileID: 11400000, guid: 3bb44673ea58f7845975edc99a354616, type: 2}
-  - {fileID: 11400000, guid: fe0ecdbcf384dbe49a81dbe8179311e3, type: 2}
-  - {fileID: 11400000, guid: f2548dc04e9e24a40ba7508c6cefb015, type: 2}
 --- !u!114 &310240037
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13001,6 +12993,9 @@ MonoBehaviour:
   applyIFrame: 0
   showAttackGizmo: 1
   gizmoColor: {r: 1, g: 0.2, b: 0.1, a: 0.7}
+  npcAnimator: {fileID: 0}
+  attackHitDelay: 0.5
+  fallbackAttackDuration: 1.166667
 --- !u!212 &902668505
 SpriteRenderer:
   serializedVersion: 2
@@ -13046,11 +13041,11 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 19065663
+  m_SortingLayer: 8
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -13058,7 +13053,7 @@ SpriteRenderer:
   m_Size: {x: 1, y: 2}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
 --- !u!4 &902668506
 Transform:
@@ -13070,7 +13065,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -8.27939, y: -6.9664497, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: -1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 731627591}
@@ -17748,11 +17743,11 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 19065663
+  m_SortingLayer: 8
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -17760,7 +17755,7 @@ SpriteRenderer:
   m_Size: {x: 1, y: 2}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
 --- !u!4 &1180327454
 Transform:
@@ -17887,6 +17882,7 @@ MonoBehaviour:
   cameraFocusOffset: {x: 0, y: -1, z: -10}
   cameraBlendTime: 0.35
   playerController: {fileID: 0}
+  npcAnimator: {fileID: 0}
 --- !u!1 &1186688833
 GameObject:
   m_ObjectHideFlags: 0
@@ -24721,7 +24717,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1920, y: 1080}
+  m_SizeDelta: {x: 1920, y: 1500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1715301265
 MonoBehaviour:
@@ -26174,7 +26170,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 50, y: 11}
+  m_Offset: {x: -8.195095, y: -9.795103}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -26184,7 +26180,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 155, y: 60}
+  m_Size: {x: 38.60981, y: 16.34679}
   m_EdgeRadius: 0
 --- !u!4 &1785618210
 Transform:
@@ -29847,7 +29843,7 @@ Transform:
   m_GameObject: {fileID: 1937235352}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -29.45939, y: 2.7835503, z: 0}
+  m_LocalPosition: {x: -29.45939, y: 2.39355, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

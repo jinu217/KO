@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3289308386347637607}
   - component: {fileID: 5205473252709221466}
   - component: {fileID: 8206723172380963718}
-  - component: {fileID: 2832934112811560756}
+  - component: {fileID: 2222683491726500463}
   m_Layer: 0
   m_Name: Ex_Stage2_MainBoss_SafetyFiled
   m_TagString: Untagged
@@ -128,7 +128,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0.005947113, y: -0.013589859}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -138,7 +138,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.1, y: 1.8}
+  m_Size: {x: 4.808571, y: 2.6658812}
   m_EdgeRadius: 0
 --- !u!50 &8206723172380963718
 Rigidbody2D:
@@ -167,7 +167,7 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &2832934112811560756
+--- !u!114 &2222683491726500463
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -176,10 +176,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 8399009758184244419}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a461f41df64bdcf42b729caadd5d1265, type: 3}
+  m_Script: {fileID: 11500000, guid: 8fd282323178f014ca59633840e881f0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Stage2_BossRock
-  riseHeight: 1.8
-  riseDuration: 0.18
-  holdDuration: 0.22
-  fallDuration: 0.28
+  m_EditorClassIdentifier: Assembly-CSharp::Stage2_SafetyField
+  effectCollider: {fileID: 5205473252709221466}
