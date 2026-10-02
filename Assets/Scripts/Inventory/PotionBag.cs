@@ -43,7 +43,7 @@ public class PotionBag : MonoBehaviour
         playerStatus.Heal(healPotionData.healAmount);
     }
 
-    // BPM 포션 사용 (o)
+    //============== BPM 포션 사용 ==============
     public void UseBPMPotion()
     {
         if (bpmPotionCount <= 0)
@@ -57,38 +57,23 @@ public class PotionBag : MonoBehaviour
 
         bpmPotionCount--;
 
+        //============== BPM 포션 효과 ==============
+
+        // 포션 사용 즉시 BPM 감소
+        if (bpmPotionData.bpmReduceAmount > 0)
+        {
+            playerStatus.ReduceBPM(bpmPotionData.bpmReduceAmount);
+        }
+
+        // 기존 기능 유지
+        // BPM을 현재 수치로 고정하고 15초 동안 유지
         playerStatus.lockedBpm = playerStatus.currentBpm;
         playerStatus.bpmLocked = true;
-        playerStatus.bpmLockTimer = 15f;
-    }
+        playerStatus.bpmLockTimer = 15f; // bpm 정지 시간
 
-    // 테스트용 코드
-    
-    void Update()
-    {
-        /*
-        // 체력 포션 사용
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            UseHealPotion();
-        }
-
-        // BPM 포션 사용
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            UseBPMPotion();
-        }*/
-
-        // 체력 포션 추가 테스트
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            healPotionCount++;
-        }
-
-        // BPM 포션 추가 테스트
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            bpmPotionCount++;
-        }
+        Debug.Log(
+            $"BPM 포션 사용! BPM -{bpmPotionData.bpmReduceAmount} / " +
+            $"현재 BPM: {playerStatus.currentBpm} / 15초 고정"
+        );
     }
 }
