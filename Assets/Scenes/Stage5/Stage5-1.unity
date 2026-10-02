@@ -1405,6 +1405,8 @@ MonoBehaviour:
   sfxSlider: {fileID: 1354253313}
   resolutionDropdown: {fileID: 452238096}
   displayModeDropdown: {fileID: 503750600}
+  targetWidthRatio: 16
+  targetHeightRatio: 9
 --- !u!4 &111179219
 Transform:
   m_ObjectHideFlags: 0
@@ -45642,8 +45644,6 @@ MonoBehaviour:
   hitStopDuration: 0.03
   hitStopTimeScale: 0.05
   damageInvincibleTime: 0.1
-  meditatingDuration: 4
-  meditatingCooldown: 10
   showWeaponAttackGizmo: 1
   showEmpoweredImpactGizmo: 1
   showGroundCheckGizmo: 1
@@ -46067,11 +46067,35 @@ MonoBehaviour:
     m_ActionId: 6f34604d-b4e4-4be0-a2ad-9b2258ab35ec
     m_ActionName: 'Player/InventoryDrop[/Keyboard/k]'
   - m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 679155541641703030}
+        m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
+        m_MethodName: OnMeditating
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_ActionId: 197faca5-1a7c-4a74-9fe9-a1fbb5b90094
     m_ActionName: 'Player/isMeditating[/Keyboard/f]'
   - m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1763610816959778360}
+        m_TargetAssemblyTypeName: 
+        m_MethodName: 
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_ActionId: d91e6107-d2ef-4aeb-bb05-9713e0c7259e
     m_ActionName: 'Player/TutorialBook[/Keyboard/backquote]'
   - m_PersistentCalls:
@@ -46196,14 +46220,6 @@ MonoBehaviour:
   capacity: 9
   equipmentManager: {fileID: 6406883652304796329}
   items: []
-  startItems:
-  - {fileID: 11400000, guid: e9132db6e9443a34faecb2ccf7e1186c, type: 2}
-  - {fileID: 11400000, guid: d205a7dba5fdc4e48bdac29296b95194, type: 2}
-  - {fileID: 11400000, guid: 21e8714ebf0340047a4bf20bcaa5154f, type: 2}
-  - {fileID: 11400000, guid: 00f777077f4affc409bc46ec22f3f1ed, type: 2}
-  - {fileID: 11400000, guid: 3bb44673ea58f7845975edc99a354616, type: 2}
-  - {fileID: 11400000, guid: fe0ecdbcf384dbe49a81dbe8179311e3, type: 2}
-  - {fileID: 11400000, guid: f2548dc04e9e24a40ba7508c6cefb015, type: 2}
 --- !u!1 &3641426244407705807
 GameObject:
   m_ObjectHideFlags: 0
@@ -47178,6 +47194,8 @@ MonoBehaviour:
   feverBpmDecayMultiplier: 1.15
   isMeditating: 0
   meditateDecreaseSpeed: 15
+  meditationBpmDelay: 1.2
+  meditationBpmRampTime: 1.5
   bpmLocked: 0
   bpmLockTimer: 0
   lockedBpm: 91

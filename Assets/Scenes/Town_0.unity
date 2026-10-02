@@ -5072,8 +5072,6 @@ MonoBehaviour:
   hitStopDuration: 0.03
   hitStopTimeScale: 0.05
   damageInvincibleTime: 0.1
-  meditatingDuration: 4
-  meditatingCooldown: 10
   showWeaponAttackGizmo: 1
   showEmpoweredImpactGizmo: 1
   showGroundCheckGizmo: 1
@@ -5112,6 +5110,8 @@ MonoBehaviour:
   feverBpmDecayMultiplier: 1.15
   isMeditating: 0
   meditateDecreaseSpeed: 15
+  meditationBpmDelay: 1.2
+  meditationBpmRampTime: 1.5
   bpmLocked: 0
   bpmLockTimer: 0
   lockedBpm: 91
@@ -5422,7 +5422,19 @@ MonoBehaviour:
     m_ActionId: 6f34604d-b4e4-4be0-a2ad-9b2258ab35ec
     m_ActionName: 'Player/InventoryDrop[/Keyboard/k]'
   - m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 285381913}
+        m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
+        m_MethodName: OnMeditating
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_ActionId: 197faca5-1a7c-4a74-9fe9-a1fbb5b90094
     m_ActionName: 'Player/isMeditating[/Keyboard/f]'
   - m_PersistentCalls:
