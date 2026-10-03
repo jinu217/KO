@@ -392,6 +392,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         ? Mathf.Max(0, SaveData.Instance.persistent.bonusDashCount)
         : 0);
     public int AvailableDashCount => availableDashCount;
+    public bool IsDodging => isDashing;
     public float EffectiveDashCooldown => dashCooldown * (1f - (SaveData.Instance != null
         ? Mathf.Clamp(SaveData.Instance.persistent.dashCooldownReduction, 0f, 0.8f)
         : 0f));
@@ -1788,7 +1789,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         return hit.GetComponentInChildren<TutorialTrainingDummy>(true);
     }
 
-    private void ApplyMoveDelay(float delay)
+    public void ApplyMoveDelay(float delay)
     {
         float targetEnd = Time.time + Mathf.Max(0f, delay);
         if (!isMoveDelayed)
