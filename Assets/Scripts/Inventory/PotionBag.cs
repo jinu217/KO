@@ -65,15 +65,8 @@ public class PotionBag : MonoBehaviour
             playerStatus.ReduceBPM(bpmPotionData.bpmReduceAmount);
         }
 
-        // 기존 기능 유지
-        // BPM을 현재 수치로 고정하고 15초 동안 유지
-        playerStatus.lockedBpm = playerStatus.currentBpm;
-        playerStatus.bpmLocked = true;
-        playerStatus.bpmLockTimer = 15f; // bpm 정지 시간
-
         Debug.Log(
-            $"BPM 포션 사용! BPM -{bpmPotionData.bpmReduceAmount} / " +
-            $"현재 BPM: {playerStatus.currentBpm} / 15초 고정"
+            $"BPM 포션 사용! BPM -{bpmPotionData.bpmReduceAmount} / "
         );
     }
 }
