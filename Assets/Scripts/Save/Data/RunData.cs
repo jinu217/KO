@@ -51,4 +51,9 @@ public class RunData
     public int killCount;
     public int midBossKillCount;
     public int mainBossKillCount;
+
+    //============== 엔딩 관련 ==============
+    public int machineEquipmentCount = 0;   // 기계장비 갯수
+    public HeroineEndingChoice heroineChoice = HeroineEndingChoice.None;    // 영애 목숨 선택
+    public LastBossEndingChoice lastBossChoice = LastBossEndingChoice.None; // 라스트보스 목숨 선택
 }
