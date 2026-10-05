@@ -392,6 +392,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         ? Mathf.Max(0, SaveData.Instance.persistent.bonusDashCount)
         : 0);
     public int AvailableDashCount => availableDashCount;
+    public bool IsDodging => isDashing;
     public float EffectiveDashCooldown => dashCooldown * (1f - (SaveData.Instance != null
         ? Mathf.Clamp(SaveData.Instance.persistent.dashCooldownReduction, 0f, 0.8f)
         : 0f));
@@ -460,6 +461,9 @@ public class PlayerController : MonoBehaviour, IDamageable
     [Tooltip("현재 장착 무기 타입")]
     public WeaponType currentWeapon = WeaponType.Sword;
 
+    // 지상 넉백으로 떠오른 동안만 점프/하강 애니메이션을 억제합니다.
+    private bool suppressKnockbackAirAnimation;
+    private float knockbackAirAnimationUnlockTime;
     private bool isKnockback;         // 넉백 상태 여부
 
     // -------------------- 넉백 --------------------
@@ -684,9 +688,16 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (animator == null) return;
 
-        animator.SetFloat(AnimMoveSpeed, Mathf.Abs(rb.linearVelocity.x));
-        animator.SetFloat(AnimVerticalVelocity, rb.linearVelocity.y);
-        animator.SetBool(AnimIsGrounded, isGrounded);
+        if (suppressKnockbackAirAnimation && !isKnockback
+            && Time.time >= knockbackAirAnimationUnlockTime
+            && isGrounded && rb.linearVelocity.y <= 0.1f)
+            suppressKnockbackAirAnimation = false;
+
+        bool suppressAir = suppressKnockbackAirAnimation && !isDownJumping;
+        // 물리용 isGrounded/속도는 변경하지 않고, 애니메이터 입력만 보정합니다.
+        animator.SetFloat(AnimMoveSpeed, suppressAir ? 0f : Mathf.Abs(rb.linearVelocity.x));
+        animator.SetFloat(AnimVerticalVelocity, suppressAir ? 0f : rb.linearVelocity.y);
+        animator.SetBool(AnimIsGrounded, suppressAir || isGrounded);
         animator.SetBool(AnimIsDownJumping, isDownJumping);
     }
 
@@ -817,6 +828,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // Ground2 통과용 하향 점프 루틴(시작 발판만 일시적으로 무시)
     private IEnumerator ThinFloorDownJumpRoutine(Collider2D startThinFloor)
     {
+        suppressKnockbackAirAnimation = false;
         isDownJumping = true;
         isEmpoweredDownJump = false;
         downJumpStartTime = Time.time;
@@ -1158,6 +1170,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         isDashing = false;
         isKnockback = false;
+        suppressKnockbackAirAnimation = false;
         canDash = true;
         rb.gravityScale = originalGravity;
 
@@ -1362,6 +1375,12 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (applyKnockback)
         {
+            if (!isDownJumping && (suppressKnockbackAirAnimation
+                || (isGrounded && rb.linearVelocity.y <= 0.1f)))
+            {
+                suppressKnockbackAirAnimation = true;
+                knockbackAirAnimationUnlockTime = Time.time + Mathf.Max(0f, knockbackDuration);
+            }
             isKnockback = true;
             rb.linearVelocity = Vector2.zero;
 
@@ -1569,6 +1588,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (jumpBufferTimer <= 0f) return false;
         if (!CanJumpNow()) return false;
 
+        suppressKnockbackAirAnimation = false;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
         currentJumpCount--;
 
@@ -1784,7 +1804,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         return hit.GetComponentInChildren<TutorialTrainingDummy>(true);
     }
 
-    private void ApplyMoveDelay(float delay)
+    public void ApplyMoveDelay(float delay)
     {
         float targetEnd = Time.time + Mathf.Max(0f, delay);
         if (!isMoveDelayed)

@@ -18677,7 +18677,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1920, y: 1080}
+  m_SizeDelta: {x: 1920, y: 1500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1265445547
 MonoBehaviour:
@@ -20861,7 +20861,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossDoor
   openHeight: 2
   moveSpeed: 7
-  boss: {fileID: 0}
+  boss: {fileID: 8274779572359470744}
 --- !u!61 &1408138537
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -45835,7 +45835,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1756117263892283272, guid: f300550ecd2ae5c4f9c429123a0c4457, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3.07
+      value: 3.79
       objectReference: {fileID: 0}
     - target: {fileID: 1756117263892283272, guid: f300550ecd2ae5c4f9c429123a0c4457, type: 3}
       propertyPath: m_LocalPosition.z
@@ -45875,13 +45875,24 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6149766803792512091, guid: f300550ecd2ae5c4f9c429123a0c4457, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.05
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f300550ecd2ae5c4f9c429123a0c4457, type: 3}
+--- !u!114 &8274779572359470744 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3123086336789103954, guid: f300550ecd2ae5c4f9c429123a0c4457, type: 3}
+  m_PrefabInstance: {fileID: 8274779572359470743}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2987a3c70ad9592439e512b521a8f597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Stage2_MidBoss
 --- !u!4 &8276556332276732592
 Transform:
   m_ObjectHideFlags: 0

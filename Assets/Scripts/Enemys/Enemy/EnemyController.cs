@@ -121,7 +121,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     protected SpriteRenderer spriteRenderer;
     protected Animator animator;
     [Header("비주얼(스프라이트/애니메이션) 연결")]
-    [Tooltip("좌우 반전(Flip) 대상 스프라이트/애니메이션 루트\n비워두면 하이어아키에서 \"Body\"라는 이름의 자식을 자동으로 재귀 탐색함\n(부모/루트 오브젝트 이름이 몹마다 달라도 상관없음)")]
+    [Tooltip("좌우 반전(Flip) 대상 Transform\n비워두면 Body를 찾아 그 부모의 부모를 사용함")]
     [SerializeField] protected Transform visualTransform;
     protected Transform basicMobTransform;
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
@@ -191,6 +191,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     [SerializeField] private string hitAnimationState;
     [SerializeField] private string deathAnimationState;
     protected bool isDead;
+    public bool IsDead => isDead;
     private float reactionUntil;
     private Collider2D[] deathColliders;
     private bool[] deathColliderEnabled;
@@ -297,14 +298,14 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponentInChildren<Animator>();
-        // 하이어아키 구조: Root(이름 가변) > GroundCheck/WallCheck/KnockbackCheck, [몹타입 N](이름 가변) > Body(고정)
+        // 하이어아키 구조: Root(이름 가변) > [몹타입 N](이름 가변) > Body(고정)
         // "Body"라는 이름의 자식만 고정이므로 깊이 상관없이 재귀 탐색으로 찾는다.
         // 인스펙터에서 visualTransform을 직접 지정했으면 그것을 최우선으로 사용(수동 오버라이드용).
-        // Flip(좌우 반전 Scale)은 "Body"가 아니라 Body의 부모([몹타입 N] 노드)에 적용해야 함.
+        // Flip(좌우 반전 Scale)은 Body의 부모의 부모에 적용한다.
         // Unity 로컬 변환은 Scale → Rotate 순으로 계산되므로, 같은 오브젝트에서
         // Scale(반전)과 Animator가 만드는 Rotation(걷기/달리기 기울기)이 같이 일어나면
         // 기울기 방향이 반전되지 않고 원래 방향 그대로 남는 문제가 생김.
-        // Scale을 Body의 "부모"에 걸어 바깥쪽에서 감싸면, 안쪽(Body)의 회전이 제대로 함께 반전됨.
+        // Scale을 Body의 부모의 부모에 걸어 안쪽 Body의 회전까지 함께 반전한다.
         if (visualTransform != null)
         {
             basicMobTransform = visualTransform;
@@ -312,15 +313,12 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         else
         {
             Transform bodyNode = FindDeepChild(transform, "Body");
-            basicMobTransform = bodyNode != null ? bodyNode.parent : null;
+            basicMobTransform = bodyNode?.parent?.parent;
         }
 
         if (basicMobTransform == null)
             Debug.LogWarning($"[{gameObject.name}] Flip 대상 비주얼 Transform을 찾지 못했습니다. " +
-                "하이어아키에 \"Body\"라는 이름의 자식(및 그 부모)이 있는지 확인하거나, Inspector의 'Visual Transform' 필드에 직접 연결해주세요.");
-        if (basicMobTransform == null)
-            Debug.LogWarning($"[{gameObject.name}] Flip 대상 비주얼 Transform(\"Body\")을 찾지 못했습니다. " +
-                "하이어아키에 \"Body\"라는 이름의 자식이 있는지 확인하거나, Inspector의 'Visual Transform' 필드에 직접 연결해주세요.");
+                "Body의 부모의 부모가 있는지 확인하거나, Inspector의 'Visual Transform' 필드에 직접 연결해주세요.");
         hitFlash = GetComponent<HitFlashEffect>();
         bodyCollider = GetComponent<Collider2D>();
 
@@ -961,15 +959,17 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             basicMobTransform.localScale = scale;
         }
 
-        // groundCheck X: 인스펙터에서 설정한 현재 localPosition.x 절댓값으로 방향 미러링
-        // 캐싱 없이 매 Flip마다 현재값 직접 읽음 → 씬에서 위치 변경 즉시 반영
-        if (groundCheck != null)
+        // Flip 대상의 자식은 부모 Scale로 이미 반전되므로 localPosition을 다시 반전하지 않는다.
+        // 대상 바깥에 있는 센서만 위치를 직접 보정한다.
+        if (groundCheck != null &&
+            (basicMobTransform == null || !groundCheck.IsChildOf(basicMobTransform)))
             groundCheck.localPosition = new Vector3(
                 Mathf.Abs(groundCheck.localPosition.x) * Mathf.Sign(dir),
                 groundCheck.localPosition.y,
                 groundCheck.localPosition.z);
 
-        if (wallCheck != null)
+        if (wallCheck != null &&
+            (basicMobTransform == null || !wallCheck.IsChildOf(basicMobTransform)))
         {
             float wallX = wallCheckLocalOffsetX;
             if (Mathf.Approximately(wallX, 0f))
@@ -979,7 +979,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         }
 
         // knockbackCheck: 진행 방향 반대(뒤쪽)에 배치
-        if (knockbackCheck != null)
+        if (knockbackCheck != null &&
+            (basicMobTransform == null || !knockbackCheck.IsChildOf(basicMobTransform)))
         {
             float kbX = knockbackCheckLocalOffsetX > 0f
                 ? knockbackCheckLocalOffsetX

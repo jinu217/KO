@@ -130,6 +130,8 @@ public class BossAttackStepData
     [Min(0f)] public float projectileSpeed;
     [Tooltip("점프 또는 내려찍기 시, 시전 순간 플레이어까지의 가로 거리 중 이 단계에서 이동할 비율입니다. 0이면 기존 속도 방식을 사용합니다.")]
     [Range(0f, 1f)] public float targetDistanceRatio;
+    [Tooltip("지속 공격은 플레이어가 범위를 벗어나도 정해진 시간 동안 유지하고, 정해진 간격마다 공격 횟수를 소비합니다.")]
+    public bool persistentFixedCadence;
 }
 
 [Serializable]

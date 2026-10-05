@@ -20,6 +20,9 @@ public class SceneLoadingTrigger : MonoBehaviour
         if (used)
             return;
 
+        if (!StageClearManager.CanLeave(gameObject.scene))
+            return;
+
         PlayerController player = other.GetComponentInParent<PlayerController>();
         if (player == null || !player.CompareTag("Player"))
             return;

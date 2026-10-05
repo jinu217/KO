@@ -130,9 +130,9 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (!InCastRange(skill)) return;
         StopMove();
 
-        if (index >= 0) StartCoroutine(ExecuteSkill(skill, index));
+        if (index >= 0) runningSkill = StartCoroutine(ExecuteSkill(skill, index));
         else if (skill != null && Time.time >= lastBasicTime + AdjustBasicCooldown(skill.cooldown))
-            StartCoroutine(ExecuteSkill(skill, -1));
+            runningSkill = StartCoroutine(ExecuteSkill(skill, -1));
     }
 
     protected virtual void FixedUpdate()
@@ -232,6 +232,19 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         return skill.castRange <= 0f || Vector2.Distance(transform.position, playerTransform.position) <= skill.castRange;
     }
 
+    private Coroutine runningSkill;
+
+    protected void InterruptCurrentSkill()
+    {
+        if (runningSkill == null) return;
+        StopCoroutine(runningSkill);
+        runningSkill = null;
+        OnSkillExecutionFinished(currentSkillIndex);
+        currentSkillIndex = -1;
+        isAttacking = false;
+        StopMove();
+    }
+
     private IEnumerator ExecuteSkill(BossSkillData skill, int index)
     {
         isAttacking = true;
@@ -253,6 +266,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         LogSkillDebug(index < 0 ? "기본 공격 종료" : $"{index + 1}스킬 종료", skill);
         currentSkillIndex = -1;
         isAttacking = false;
+        runningSkill = null;
     }
 
     private void EnsureTimers()

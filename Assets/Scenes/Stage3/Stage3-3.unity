@@ -9251,7 +9251,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossDoor
   openHeight: 2
   moveSpeed: 7
-  boss: {fileID: 0}
+  boss: {fileID: 2049806784}
 --- !u!61 &707269268
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -15409,7 +15409,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1920, y: 1080}
+  m_SizeDelta: {x: 1920, y: 1500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1189925920
 MonoBehaviour:
@@ -46348,6 +46348,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 489c1ee0b02d0334b9270ea296954876, type: 3}
+--- !u!114 &2049806784 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5698277376260916318, guid: 489c1ee0b02d0334b9270ea296954876, type: 3}
+  m_PrefabInstance: {fileID: 2049806783}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85acb5a9ad7b4a4478a9ba9aa8b8dafe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Stage3_MidBoss
 --- !u!1 &2067084409
 GameObject:
   m_ObjectHideFlags: 0
@@ -48751,7 +48762,7 @@ Transform:
   m_GameObject: {fileID: 4792901569711154390}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.7, z: 0}
+  m_LocalPosition: {x: 0, y: -0.72, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -48914,7 +48925,7 @@ Transform:
   m_GameObject: {fileID: 4230701231302027956}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.1, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
