@@ -59,6 +59,10 @@ public abstract class NPCShopBase : MonoBehaviour
 
         if (activeShop != this)
         {
+            //============== 인벤토리가 열려 있으면 NPC 상호작용 차단 ==============
+            if (IsPlayerInventoryOpen())
+                return;
+
             if (activeShop == null && Pressed(interactAction))
             {
                 OpenShop();
@@ -289,6 +293,14 @@ public abstract class NPCShopBase : MonoBehaviour
         interactAction = playerInput.actions.FindAction(InteractActionName, false);
         moveAction = playerInput.actions.FindAction(MoveActionName, false);
         escapeAction = playerInput.actions.FindAction(EscapeActionName, false);
+    }
+
+    private bool IsPlayerInventoryOpen()
+    {
+        if (PlayerController == null)
+            return false;
+
+        return PlayerController.IsInventoryOpen;
     }
 
     private void OnTriggerEnter2D(Collider2D other)

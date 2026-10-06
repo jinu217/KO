@@ -509,6 +509,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // -------------------- 인벤토리 --------------------
     [Header("인벤토리 설정")]
     private bool isInventoryOpen;     // 인벤토리 UI 열림 상태
+    public bool IsInventoryOpen => isInventoryOpen;
     private InventoryUI inventoryUI;  // 인벤토리 UI 참조
 
     // -------------------- 내부 보조 값 --------------------
