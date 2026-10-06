@@ -1169,7 +1169,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 515}
-  m_SizeDelta: {x: 1000, y: 50}
+  m_SizeDelta: {x: 1200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &114627448
 MonoBehaviour:
@@ -1192,7 +1192,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "\uAC8C\uC784\uC744 \uC2DC\uC791\uD560 \uC138\uC774\uBE0C \uC2AC\uB86F\uC744
-    \uC120\uD0DD\uD558\uC5EC Enter\uB97C \uB204\uB974\uC138\uC694"
+    \uC120\uD0DD\uD558\uC5EC Enter/F\uB97C \uB204\uB974\uC138\uC694"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
   m_sharedMaterial: {fileID: 3768578506340107459, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
@@ -1816,6 +1816,8 @@ MonoBehaviour:
   sfxSlider: {fileID: 1843537409}
   resolutionDropdown: {fileID: 688490933}
   displayModeDropdown: {fileID: 266075617}
+  targetWidthRatio: 16
+  targetHeightRatio: 9
 --- !u!1 &255992830
 GameObject:
   m_ObjectHideFlags: 0
@@ -3359,7 +3361,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Press Enter to start
+  m_text: Press Enter/F to start
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
   m_sharedMaterial: {fileID: 3768578506340107459, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
@@ -6238,7 +6240,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Press Enter to start
+  m_text: Press Enter/F to start
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
   m_sharedMaterial: {fileID: 3768578506340107459, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
@@ -6561,7 +6563,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Press Enter to start
+  m_text: Press Enter/F to start
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
   m_sharedMaterial: {fileID: 3768578506340107459, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
@@ -6905,6 +6907,9 @@ MonoBehaviour:
     killCount: 0
     midBossKillCount: 0
     mainBossKillCount: 0
+    machineEquipmentCount: 0
+    heroineChoice: 0
+    lastBossChoice: 0
   isLoaded: 0
   currentSlot: 0
   isLoadIntro: 0
@@ -11696,7 +11701,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC815\uB9D0 \uC774 \uC138\uC774\uBE0C \uB370\uC774\uD130\uB97C \uC0AD\uC81C\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?\n\nYes(Enter) 
+  m_text: "\uC815\uB9D0 \uC774 \uC138\uC774\uBE0C \uB370\uC774\uD130\uB97C \uC0AD\uC81C\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?\n\nYes(Enter/F) 
     /  No(Esc)"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}

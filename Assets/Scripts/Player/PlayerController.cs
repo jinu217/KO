@@ -960,22 +960,23 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
-        if (!context.started || isDashing || isKnockback || ChestRewardPanel.IsAnyOpen) return;
-
-        if (isInventoryOpen)
-        {
-            if (inventoryUI != null) inventoryUI.ConfirmCurrentSelection();
-            return;
-        }
+        if (!context.started || isDashing || isKnockback || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
 
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanAttack()) return;
 
-        float attackSpeedMultiplier = playerStatus != null ? playerStatus.AttackSpeedMultiplier : 1f;
-        float effectiveAttackSpeed = stats.attackSpeed * attackSpeedMultiplier;
-        if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed)) return;
+        float attackSpeedMultiplier = playerStatus != null
+            ? playerStatus.AttackSpeedMultiplier
+            : 1f;
 
-        if (animator != null) animator.SetTrigger(AnimAttack);
-        playerStatus.OnAttack(); // PlayerStatus 연결
+        float effectiveAttackSpeed = stats.attackSpeed * attackSpeedMultiplier;
+
+        if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed))
+            return;
+
+        if (animator != null)
+            animator.SetTrigger(AnimAttack);
+
+        playerStatus.OnAttack();
         lastAttackTime = Time.time;
     }
 
@@ -1055,12 +1056,25 @@ public class PlayerController : MonoBehaviour, IDamageable
         bag.UseBPMPotion();
     }
 
-    //============== 명상 입력 ==============
+    //============== 명상 / 인벤토리 선택 입력 ==============
     public void OnMeditating(InputAction.CallbackContext context)
     {
-        // F를 누르기 시작했을 때
+        //============== F를 누르기 시작했을 때 ==============
+
         if (context.started)
         {
+            // 인벤토리가 열려 있으면
+            // F = 선택한 아이템 장착
+            if (isInventoryOpen)
+            {
+                if (inventoryUI != null)
+                    inventoryUI.ConfirmCurrentSelection();
+
+                return;
+            }
+
+            //============== 인벤토리가 닫혀 있으면 F = 명상 ==============
+
             if (TutorialManager.Instance != null &&
                 !TutorialManager.Instance.CanUseExtraAction())
                 return;
@@ -1069,7 +1083,6 @@ public class PlayerController : MonoBehaviour, IDamageable
                 isDashing ||
                 isKnockback ||
                 isMoveDelayed ||
-                isInventoryOpen ||
                 ChestRewardPanel.IsAnyOpen)
                 return;
 
@@ -1079,9 +1092,14 @@ public class PlayerController : MonoBehaviour, IDamageable
             meditatingRoutine = StartCoroutine(TryStartMeditatingAfterInteract());
         }
 
-        // F를 떼었을 때
+        //============== F를 떼었을 때 ==============
+
         if (context.canceled)
         {
+            // 인벤토리에서는 명상을 취소하지 않음
+            if (isInventoryOpen)
+                return;
+
             StopMeditating();
         }
     }

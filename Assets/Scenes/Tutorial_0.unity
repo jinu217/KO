@@ -2099,7 +2099,7 @@ GameObject:
   - component: {fileID: 164278946}
   - component: {fileID: 164278945}
   m_Layer: 5
-  m_Name: Enter
+  m_Name: F key
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2144,10 +2144,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Enter
+  m_text: F
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 0}
-  m_sharedMaterial: {fileID: -2579999668326467619, guid: cf885a7f65f24304398bd33bd65c7568, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4335,6 +4335,8 @@ MonoBehaviour:
   feverBpmDecayMultiplier: 1.15
   isMeditating: 0
   meditateDecreaseSpeed: 15
+  meditationBpmDelay: 1.2
+  meditationBpmRampTime: 1.5
   bpmLocked: 0
   bpmLockTimer: 0
   lockedBpm: 91
@@ -4434,8 +4436,6 @@ MonoBehaviour:
   hitStopDuration: 0.03
   hitStopTimeScale: 0.05
   damageInvincibleTime: 0.1
-  meditatingDuration: 4
-  meditatingCooldown: 10
   showWeaponAttackGizmo: 1
   showEmpoweredImpactGizmo: 1
   showGroundCheckGizmo: 1
@@ -7302,13 +7302,13 @@ MonoBehaviour:
   m_text: Button
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
-  m_sharedMaterial: {fileID: -2579999668326467619, guid: cf885a7f65f24304398bd33bd65c7568, type: 2}
+  m_sharedMaterial: {fileID: 3768578506340107459, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
+    rgba: 4294967295
   m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -9905,7 +9905,7 @@ Transform:
   m_GameObject: {fileID: 677394575}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.15, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12475,6 +12475,9 @@ MonoBehaviour:
     killCount: 0
     midBossKillCount: 0
     mainBossKillCount: 0
+    machineEquipmentCount: 0
+    heroineChoice: 0
+    lastBossChoice: 0
   isLoaded: 0
   currentSlot: 0
   isLoadIntro: 0
@@ -15267,7 +15270,7 @@ MonoBehaviour:
   townSpawnId: 
   saveBeforeGoingToTown: 0
   showFloatingText: 1
-  floatingText: "`\uD0A4\uB85C \uCC45\uC77D\uAE30"
+  floatingText: "T\uD0A4\uB85C \uCC45\uC77D\uAE30"
   floatingTextPrefab: {fileID: 662049739900131458, guid: 9a7effc6282f2c84ebac7077d7657cf8, type: 3}
   floatingTextOffset: {x: 0, y: 1.5, z: 0}
   floatingTextFontSize: 4
@@ -17468,13 +17471,13 @@ MonoBehaviour:
   m_text: Button
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
-  m_sharedMaterial: {fileID: -2579999668326467619, guid: cf885a7f65f24304398bd33bd65c7568, type: 2}
+  m_sharedMaterial: {fileID: 3768578506340107459, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
+    rgba: 4294967295
   m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -24318,13 +24321,13 @@ MonoBehaviour:
   m_text: Button
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
-  m_sharedMaterial: {fileID: -2579999668326467619, guid: cf885a7f65f24304398bd33bd65c7568, type: 2}
+  m_sharedMaterial: {fileID: 3768578506340107459, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
+    rgba: 4294967295
   m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -25742,7 +25745,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC7A5\uBE44 \uAD50\uCCB4 : Z   \uBC84\uB9AC\uAE30 : X"
+  m_text: "\uC7A5\uBE44 \uAD50\uCCB4 : F   \uBC84\uB9AC\uAE30 : S"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
   m_sharedMaterial: {fileID: 3768578506340107459, guid: 603ec1a8b1ad5824abd7af1a73a39c14, type: 2}
@@ -25811,7 +25814,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 1
+  m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!222 &1760552413
@@ -25840,7 +25843,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1763636844
 RectTransform:
   m_ObjectHideFlags: 0
@@ -26192,7 +26195,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 39, y: 16}
+  m_Size: {x: 39, y: 16.5}
   m_EdgeRadius: 0
 --- !u!4 &1785618210
 Transform:
@@ -26203,7 +26206,7 @@ Transform:
   m_GameObject: {fileID: 1785618208}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -30.25, y: -1.6, z: 0}
+  m_LocalPosition: {x: 27.8, y: 19, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -32875,8 +32878,8 @@ MonoBehaviour:
     titleParts: []
     screenshot: {fileID: 0}
     descriptionParts:
-    - "Shift\uD0A4\uB85C \uC801\uC758 \uACF5\uACA9\uC744 \uD68C\uD53C\uD558\uACE0
-      \uBE60\uB974\uAC8C \uC804\uBC29\uC73C\uB85C \uC774\uB3D9\uD55C\uB2E4."
+    - "S\uD0A4\uB85C \uC801\uC758 \uACF5\uACA9\uC744 \uD68C\uD53C\uD558\uACE0 \uBE60\uB974\uAC8C
+      \uC804\uBC29\uC73C\uB85C \uC774\uB3D9\uD55C\uB2E4."
   - menuLabel: "\uC0C1\uD638\uC791\uC6A9"
     title: 
     titleParts:
@@ -32886,20 +32889,20 @@ MonoBehaviour:
     descriptionParts:
     - "F\uD0A4\uB85C \uAC01\uC885 \uC0C1\uD638\uC791\uC6A9\uC744 \uD560 \uC218 \uC788\uB2E4."
     - "\uBCF4\uBB3C\uC0C1\uC790\uB294 \uC88C\uC6B0 \uBC29\uD5A5\uD0A4\uB85C \uC544\uC774\uD15C\uC744
-      \uC120\uD0DD \uD6C4 Enter\uD0A4\uB85C \uD655\uC815 \uC9C0\uC744 \uC218 \uC788\uB2E4."
+      \uC120\uD0DD \uD6C4 F\uD0A4\uB85C \uD655\uC815 \uC9C0\uC744 \uC218 \uC788\uB2E4."
   - menuLabel: "\uC778\uBCA4\uD1A0\uB9AC"
     title: "\uC778\uBCA4\uD1A0\uB9AC"
     titleParts: []
     screenshot: {fileID: 0}
     descriptionParts:
-    - "I\uD0A4\uB85C \uC778\uBCA4\uD1A0\uB9AC\uB97C \uC5F4 \uC218 \uC788\uB2E4. z\uD0A4\uB85C
+    - "E\uD0A4\uB85C \uC778\uBCA4\uD1A0\uB9AC\uB97C \uC5F4 \uC218 \uC788\uB2E4. z\uD0A4\uB85C
       \uC544\uC774\uD15C \uC7A5\uCC29\uC774 \uAC00\uB2A5\uD558\uB2E4."
   - menuLabel: "\uACF5\uACA9"
     title: 
     titleParts: []
     screenshot: {fileID: 0}
     descriptionParts:
-    - "Z\uD0A4\uB85C \uACF5\uACA9\uD560 \uC218 \uC788\uB2E4."
+    - "D\uD0A4\uB85C \uACF5\uACA9\uD560 \uC218 \uC788\uB2E4."
   - menuLabel: HP / SP / BPM
     title: 
     titleParts:
@@ -32918,7 +32921,8 @@ MonoBehaviour:
     - "BPM\uC774 \uB192\uC544\uC9C0\uBA74 \uAC01\uC885 \uBC84\uD504\uB97C \uBC1B\uC744
       \uC218 \uC788\uB2E4. \uD558\uC9C0\uB9CC \uB108\uBB34 \uB192\uC544\uC9C0\uBA74
       \uB514\uBC84\uD504\uB97C \uBC1B\uB294\uB2E4. "
-    - "\uBA85\uC0C1\uC744 \uD558\uAC70\uB098 BPM \uD3EC\uC158\uC744 \uC0AC\uC6A9\uD558\uBA74
+    - "F\uD0A4\uB97C \uB204\uB974\uB294 \uB3D9\uC548 \uBA85\uC0C1\uC744 \uD558\uAC70\uB098
+      W\uD0A4\uB97C \uB20C\uB7EC BPM \uD3EC\uC158\uC744 \uC0AC\uC6A9\uD558\uBA74
       BPM\uC774 \uC77C\uC815 \uC218\uCE58\uB9CC\uD07C \uAC10\uC18C\uD55C\uB2E4."
   moveActionName: Move
   closeActionName: ESC
