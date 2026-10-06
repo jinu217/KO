@@ -21,7 +21,6 @@ public abstract class NPCShopBase : MonoBehaviour
 
     private const string InteractActionName = "Interact";
     private const string MoveActionName = "Move";
-    private const string AttackActionName = "Attack";
     private const string EscapeActionName = "ESC";
 
     protected PlayerController PlayerController { get; private set; }
@@ -32,7 +31,6 @@ public abstract class NPCShopBase : MonoBehaviour
     private PlayerInput playerInput;
     private InputAction interactAction;
     private InputAction moveAction;
-    private InputAction attackAction;
     private InputAction escapeAction;
     private int playerColliderCount;
     private bool verticalHeld;
@@ -62,7 +60,10 @@ public abstract class NPCShopBase : MonoBehaviour
         if (activeShop != this)
         {
             if (activeShop == null && Pressed(interactAction))
+            {
                 OpenShop();
+            }
+
             return;
         }
 
@@ -72,10 +73,12 @@ public abstract class NPCShopBase : MonoBehaviour
                 CancelFirstSelection();
             else
                 CloseShop();
+
             return;
         }
 
         Vector2 move = moveAction != null ? moveAction.ReadValue<Vector2>() : Vector2.zero;
+
         int vertical = ReadAxisStep(move.y, ref verticalHeld);
         int horizontal = ReadAxisStep(move.x, ref horizontalHeld);
 
@@ -94,7 +97,9 @@ public abstract class NPCShopBase : MonoBehaviour
         if (vertical != 0)
             OnVerticalInput(vertical);
 
-        if (Pressed(attackAction))
+        //============== NPC 선택 / 구매 ==============
+
+        if (Pressed(interactAction))
             OnAttackInput();
     }
 
@@ -283,7 +288,6 @@ public abstract class NPCShopBase : MonoBehaviour
             return;
         interactAction = playerInput.actions.FindAction(InteractActionName, false);
         moveAction = playerInput.actions.FindAction(MoveActionName, false);
-        attackAction = playerInput.actions.FindAction(AttackActionName, false);
         escapeAction = playerInput.actions.FindAction(EscapeActionName, false);
     }
 

@@ -167,8 +167,8 @@ public class SettingController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.DownArrow)) Move(1);
         if (Input.GetKeyDown(KeyCode.LeftArrow)) ChangeValue(-1);
         if (Input.GetKeyDown(KeyCode.RightArrow)) ChangeValue(1);
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Z)) Confirm();
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.X)) Cancel();
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.F)) Confirm();
+        if (Input.GetKeyDown(KeyCode.Escape)) Cancel();
     }
 
     //====================================================
