@@ -93,7 +93,8 @@ public sealed class Stage3_MainBoss : MainBossController, IBossTimedMovementCont
                 if (!stopped && singleHit != null && hits < damage.attackCount && now >= nextHit)
                 {
                     Vector2 center = (Vector2)transform.position + new Vector2(motionDirection * damage.hitboxOffset.x, damage.hitboxOffset.y);
-                    if (Physics2D.OverlapBox(center, damage.hitboxSize, 0f, PlayerLayer) != null)
+                    Collider2D hit = Physics2D.OverlapBox(center, damage.hitboxSize, 0f, PlayerLayer);
+                    if (BossSkillExecutor.CanDamagePlayer(hit))
                     {
                         yield return BossSkillExecutor.ExecuteRepeatedAttacks(singleHit, this);
                         hits++;
@@ -182,8 +183,14 @@ public sealed class Stage3_MainBoss : MainBossController, IBossTimedMovementCont
     public Rigidbody2D DesireBody => rb;
     public Vector2 DesirePlayerPosition => playerTransform != null ? playerTransform.position : transform.position;
     public bool DesireIsDead => isDead;
+    public bool DesireInCombat => isChasing;
     public bool DesireIsAttacking { get => isAttacking; set => isAttacking = value; }
     public void DesireStop() => StopMove();
+    public void DesireInterruptSkill()
+    {
+        InterruptCurrentSkill();
+        RestoreMotionGravity();
+    }
     public void DesireResetCooldowns() => ResetAllSkillCooldowns();
     public IEnumerator DesireExecute(BossSkillData skill) => BossSkillExecutor.Execute(skill, this);
     public void DesireLog(string state, BossSkillData skill) => LogSkillDebug(state, skill);

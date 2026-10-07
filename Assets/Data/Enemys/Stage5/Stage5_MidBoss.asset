@@ -210,18 +210,24 @@ MonoBehaviour:
     buff:
       duration: 0
       effects: []
-  - skillName: "3\uC2A4\uD0AC \uBC84\uD504 (\uB0B4\uC6A9 \uBBF8\uC815)"
+  - skillName: "3스킬 가까워지는 시간"
     skillType: 1
     executionOrder: 0
     cooldown: 18
-    minimumPhase: 99
+    minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0
-    postDelay: 0
+    preDelay: 0.8
+    postDelay: 0.3
     active:
       attackSteps: []
     buff:
-      duration: 0
-      effects: []
+      duration: 8
+      effects:
+      - stat: 0
+        valueMode: 1
+        value: 1.15
+      - stat: 4
+        valueMode: 1
+        value: 0.92

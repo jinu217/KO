@@ -13,6 +13,9 @@ public sealed class Stage1_MainBoss : MainBossController
     [SerializeField, Min(0f), Tooltip("4스킬 돌진을 한 번 이상 사용한 뒤 이 거리 이상 벌어지면 남은 쿨타임을 한 번 50% 줄입니다.")]
     private float skill4ReductionDistance = 8f;
 
+    protected override float GetDashCooldownReductionDistance(int index)
+        => index == 3 ? skill4ReductionDistance : base.GetDashCooldownReductionDistance(index);
+
     private int skill1FinalHitCount;
     private bool nextSkill1Empowered;
     private bool usingEmpoweredSkill1;
@@ -30,7 +33,7 @@ public sealed class Stage1_MainBoss : MainBossController
         base.Update();
         TryReduceRemainingSkillCooldownByDistance(1, skill2ReductionDistance);
         TryReduceRemainingSkillCooldownByDistance(3, skill4ReductionDistance);
-        if (isDead || isAttacking || desireSkill == null) return;
+        if (isDead || isAttacking || !isChasing || desireSkill == null) return;
         if (desireSkill.CanActivate(currentPhase)) StartCoroutine(UseDesire());
     }
 
@@ -59,11 +62,15 @@ public sealed class Stage1_MainBoss : MainBossController
             if (index == 1 && desireSkill.EnhancedSkill2 != null) return desireSkill.EnhancedSkill2;
         }
         if (index == 0 && nextSkill1Empowered && desireSkill != null && desireSkill.EmpoweredSkill1 != null)
-        {
-            usingEmpoweredSkill1 = true;
             return desireSkill.EmpoweredSkill1;
-        }
         return base.GetSkillData(index);
+    }
+
+    protected override void OnSkillExecutionStarted(BossSkillData skill, int index)
+    {
+        usingEmpoweredSkill1 = index == 0 && nextSkill1Empowered && desireSkill != null
+            && object.ReferenceEquals(skill, desireSkill.EmpoweredSkill1);
+        base.OnSkillExecutionStarted(skill, index);
     }
 
     public override void OnSkillAttackHit(BossAttackStepData step)

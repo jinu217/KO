@@ -223,21 +223,24 @@ MonoBehaviour:
     buff:
       duration: 0
       effects: []
-  - skillName: "3스킬 버프 - 내용 미정"
+  - skillName: "3스킬 철벽"
     skillType: 1
     executionOrder: 0
-    cooldown: 0
-    minimumPhase: 99
+    cooldown: 20
+    minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0
-    postDelay: 0
+    preDelay: 0.8
+    postDelay: 0.3
     active:
       attackSteps: []
     buff:
-      duration: 0
-      effects: []
+      duration: 10
+      effects:
+      - stat: 7
+        valueMode: 2
+        value: 20
   - skillName: "4\uC2A4\uD0AC \uC810\uD504 \uB0B4\uB824\uCC0D\uAE30 \uB3CC \uD30C\uB3D9"
     skillType: 0
     executionOrder: 0
@@ -323,20 +326,26 @@ MonoBehaviour:
     buff:
       duration: 0
       effects: []
-  - skillName: "5스킬 버프 - 내용 미정"
+  - skillName: "5스킬 재정비"
     skillType: 1
     executionOrder: 0
-    cooldown: 0
-    minimumPhase: 99
+    cooldown: 24
+    minimumPhase: 2
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0
-    postDelay: 0
+    preDelay: 0.8
+    postDelay: 0.3
     active:
       attackSteps: []
     buff:
-      duration: 0
-      effects: []
+      duration: 10
+      effects:
+      - stat: 7
+        valueMode: 2
+        value: 15
+      - stat: 8
+        valueMode: 2
+        value: 0.4
   phase2HpPercent: 0.7
   phase3HpPercent: 0.3

@@ -203,7 +203,7 @@ MonoBehaviour:
     buff:
       duration: 0
       effects: []
-  - skillName: "3\uC2A4\uD0AC \uACF5\uC18D \uAC15\uD654"
+  - skillName: "3스킬 명예의 기세"
     skillType: 1
     executionOrder: 0
     cooldown: 20
@@ -211,16 +211,19 @@ MonoBehaviour:
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0
-    postDelay: 0
+    preDelay: 0.8
+    postDelay: 0.3
     active:
       attackSteps: []
     buff:
       duration: 10
       effects:
+      - stat: 2
+        valueMode: 1
+        value: 1.2
       - stat: 1
         valueMode: 1
-        value: 1.5
+        value: 1.25
   - skillName: "4\uC2A4\uD0AC \uB3CC\uC9C4"
     skillType: 0
     executionOrder: 0
@@ -259,23 +262,26 @@ MonoBehaviour:
     buff:
       duration: 0
       effects: []
-  - skillName: "5\uC2A4\uD0AC \uC774\uC18D \uAC15\uD654"
+  - skillName: "5스킬 승자의 자신감"
     skillType: 1
     executionOrder: 0
-    cooldown: 20
+    cooldown: 24
     minimumPhase: 2
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0
-    postDelay: 0
+    preDelay: 0.8
+    postDelay: 0.3
     active:
       attackSteps: []
     buff:
       duration: 10
       effects:
-      - stat: 0
+      - stat: 2
         valueMode: 1
-        value: 1.5
+        value: 1.25
+      - stat: 5
+        valueMode: 1
+        value: 0.8
   phase2HpPercent: 0.7
   phase3HpPercent: 0.3

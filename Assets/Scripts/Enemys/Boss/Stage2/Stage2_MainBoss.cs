@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // 일반 전투 흐름만 담당하며 안전 욕구의 고유 규칙은 전용 컴포넌트에 위임한다.
-public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContext, IBossScheduledSpawnContext, IBossTimedMovementContext
+public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContext, IBossScheduledSpawnContext, IBossTimedMovementContext, IBossHitValidationContext
 {
     protected override string AnimationPrefix => "MainBoss2_";
     protected override string VisualRootName => "MainBoss 2";
@@ -42,6 +42,8 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
     private int timedDirection;
     private Animator timedAnimator;
     private bool timedStateEntered, timedLanded;
+    private float savedTimedGravity;
+    private bool ownsTimedGravity;
 
     private float TimedClipSeconds()
     {
@@ -109,6 +111,8 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
         bool grounded = false;
         try
         {
+            savedTimedGravity = oldGravity;
+            ownsTimedGravity = true;
             rb.gravityScale = 0f;
             rb.linearVelocity = Vector2.zero;
             while (!isDead && rb != null)
@@ -156,9 +160,27 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
             if (rb != null)
             {
                 rb.linearVelocity = Vector2.zero;
-                rb.gravityScale = oldGravity;
+                RestoreTimedGravity();
             }
         }
+    }
+
+    private void RestoreTimedGravity()
+    {
+        if (!ownsTimedGravity) return;
+        if (rb != null) rb.gravityScale = savedTimedGravity;
+        ownsTimedGravity = false;
+    }
+
+    protected override void OnSkillExecutionFinished(int index)
+    {
+        if (stoneSpawnRoutine != null) StopCoroutine(stoneSpawnRoutine);
+        stoneSpawnRoutine = null;
+        stoneSpawnRunning = false;
+        scheduledStoneStep = null;
+        timedSkill = null;
+        RestoreTimedGravity();
+        base.OnSkillExecutionFinished(index);
     }
 
     private BossAttackStepData scheduledStoneStep;
@@ -286,6 +308,11 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
     [SerializeField, Min(0f), Tooltip("4스킬을 한 번 이상 사용한 뒤 이 거리 이상 벌어지면 남은 쿨타임을 한 번 50% 줄입니다.")]
     private float skill4ReductionDistance = 8f;
 
+    protected override float GetDashCooldownReductionDistance(int index)
+        => desireSkill != null && desireSkill.FieldActive ? 0f
+            : index == 1 ? skill2ReductionDistance
+            : index == 3 ? skill4ReductionDistance : base.GetDashCooldownReductionDistance(index);
+
     protected override void Awake()
     {
         base.Awake();
@@ -316,6 +343,9 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
     protected override bool CanRunCombatAI()
         => desireSkill == null || desireSkill.CanRunCombatAI();
 
+    public bool CanHitPlayer(Collider2D player)
+        => desireSkill == null || desireSkill.CanHitPlayer(player);
+
     protected override float GetExternalDamageMultiplier()
         => desireSkill != null ? desireSkill.OutgoingDamageMultiplier : 1f;
 
@@ -328,6 +358,7 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
 
     protected override void Die()
     {
+        RestoreTimedGravity();
         desireSkill?.Cancel();
         base.Die();
     }
@@ -338,10 +369,12 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
     public LayerMask DesirePlayerLayer => playerLayer;
     public int DesireLookDirection => lookDirection;
     public bool DesireIsDead => isDead;
+    public bool DesireInCombat => isChasing;
     public float DesireMaxHp => data != null ? data.maxHp : 0f;
     public bool DesireIsAttacking { get => isAttacking; set => isAttacking = value; }
     public void DesireSetChasing(bool value) => isChasing = value;
     public void DesireStop() => StopMove();
+    public void DesireInterruptSkill() => InterruptCurrentSkill();
     public void DesireFacePlayer() => RefreshSkillDirection();
     public void DesireHeal(float amount)
     {

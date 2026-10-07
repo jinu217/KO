@@ -125,6 +125,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (!CanRunCombatAI()) { StopMove(); return; }
         if (!isChasing || playerTransform == null) { StopMove(); return; }
 
+        ReduceDashSkillCooldownsByDistance();
         FacePlayer();
         BossSkillData skill = GetReadySkill(out int index) ?? GetBasicAttackData();
         if (!InCastRange(skill)) return;
@@ -299,7 +300,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = false, bool applyIFrame = false)
     {
         if (isDead) return;
-        currentHp -= Mathf.Max(0f, damage - defenseBonus);
+        currentHp -= Mathf.Max(0f, damage - defenseBonus) * (1f - buffDamageReduction);
         UpdateHealthUI();
         isChasing = true;
         if (currentHp <= 0f) Die();
@@ -471,7 +472,32 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         for (int i = 0; i < lastSkillTimes.Length; i++) lastSkillTimes[i] = -999f;
     }
 
-    // 보스 전용 규칙에서 호출한다. 해당 스킬을 한 번 이상 사용한 뒤,
+    [Header("돌진 스킬 거리 쿨타임 감소")]
+    [SerializeField, Min(0f), Tooltip("돌진 공격이 포함된 일반 스킬 사용 후, 플레이어가 이 거리 이상 멀어지면 해당 주기의 남은 쿨타임을 한 번 50% 줄입니다. 0이면 공통 자동 감소를 끕니다. 기본 공격과 전용 욕망 스킬은 제외합니다.")]
+    private float dashCooldownReductionDistance = 6f;
+
+    protected virtual float GetDashCooldownReductionDistance(int skillIndex)
+        => dashCooldownReductionDistance;
+
+    private void ReduceDashSkillCooldownsByDistance()
+    {
+        if (data.skills == null) return;
+        for (int i = 0; i < data.skills.Count; i++)
+        {
+            float distance = GetDashCooldownReductionDistance(i);
+            if (distance <= 0f) continue;
+            BossSkillData skill = GetSkillData(i);
+            if (skill == null || skill.excludeDistanceCooldownReduction || !skill.HasActive || skill.active?.attackSteps == null) continue;
+            foreach (BossAttackStepData step in skill.active.attackSteps)
+            {
+                if (step == null || step.actionType != BossActionType.DashAttack) continue;
+                TryReduceRemainingSkillCooldownByDistance(i, distance);
+                break;
+            }
+        }
+    }
+
+    // 보스 전용 규칙에서도 호출한다. 해당 스킬을 한 번 이상 사용한 뒤,
     // 한 쿨타임 주기당 한 번만 현재 남은 쿨타임을 지정 배율로 줄인다.
     protected bool TryReduceRemainingSkillCooldownByDistance(int skillIndex, float minimumDistance, float remainingMultiplier = 0.5f)
     {
@@ -484,7 +510,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             return false;
 
         BossSkillData skill = GetSkillData(skillIndex);
-        if (skill == null || Vector2.Distance(transform.position, playerTransform.position) < minimumDistance)
+        if (skill == null || skill.excludeDistanceCooldownReduction || Vector2.Distance(transform.position, playerTransform.position) < minimumDistance)
             return false;
 
         float cooldown = AdjustCooldown(skill.cooldown);
@@ -534,12 +560,26 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         buffRoutine = StartCoroutine(BuffRoutine(buff));
     }
 
+    private float buffDamageReduction;
+    private float buffRegenPercent;
+
     private IEnumerator BuffRoutine(BossBuffSkillData buff)
     {
         ResetBuff();
         buffActive = true;
         foreach (BossBuffEffectData effect in buff.effects) ApplyEffect(effect);
-        yield return new WaitForSeconds(buff.duration);
+        float end = Time.time + buff.duration;
+        while (!isDead && Time.time < end)
+        {
+            yield return null;
+            if (!isDead && buffRegenPercent > 0f)
+            {
+                float elapsed = Mathf.Min(Time.deltaTime, Mathf.Max(0f, end - (Time.time - Time.deltaTime)));
+                currentHp = Mathf.Min(data.maxHp + maxHpBonus,
+                    currentHp + data.maxHp * buffRegenPercent * .01f * elapsed);
+                UpdateHealthUI();
+            }
+        }
         ResetBuff();
         buffActive = false;
         buffRoutine = null;
@@ -551,6 +591,13 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             : effect.valueMode == BossBuffValueMode.Percent ? 1f + effect.value / 100f : 1f;
         switch (effect.stat)
         {
+            // 이 두 항목의 value는 배율 모드와 관계없이 백분율로 입력한다.
+            case BossBuffStat.DamageReduction:
+                buffDamageReduction = Mathf.Clamp01(buffDamageReduction + effect.value * .01f);
+                break;
+            case BossBuffStat.HealthRegeneration:
+                buffRegenPercent += Mathf.Max(0f, effect.value);
+                break;
             case BossBuffStat.MoveSpeed:
                 if (effect.valueMode == BossBuffValueMode.Add) moveAdd += effect.value; else moveMultiplier *= factor;
                 break;
@@ -588,6 +635,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         moveMultiplier = damageMultiplier = attackSpeedMultiplier = cooldownMultiplier = 1f;
         basicCooldownMultiplier = 1f;
         defenseBonus = 0f;
+        buffDamageReduction = buffRegenPercent = 0f;
         moveAdd = damageAdd = attackSpeedAdd = cooldownAdd = basicCooldownAdd = 0f;
     }
 

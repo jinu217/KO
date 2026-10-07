@@ -76,33 +76,43 @@ public sealed class Stage3_MainBossDesireSkill : MonoBehaviour
         BuildFinisher();
     }
 
+    private void Update() => AdvanceActiveState();
+
+    private bool AdvanceActiveState()
+    {
+        if (owner == null || owner.DesireIsDead) return false;
+        if (finisherRunning || groggy) return true;
+        if (!active || (!finisherQueued && Time.time < endTime)) return false;
+
+        // 적중 콜백 안에서 실행기를 중단하지 않고 다음 Update에서 전환한다.
+        // 일반 연격이나 시전 애니메이션이 남아 있어도 전환 시점을 지킨다.
+        StopAllCoroutines();
+        owner.DesireInterruptSkill();
+        owner.CancelDesireAnimation();
+        if (finisherQueued)
+            StartCoroutine(UseFinisher());
+        else
+        {
+            failureQueued = true;
+            StartCoroutine(FailByTimeout());
+        }
+        return true;
+    }
+
     public bool Tick(int phase)
     {
         if (owner == null || owner.DesireIsDead) return false;
+        if (AdvanceActiveState()) return true;
 
         if (!active)
         {
-            if (!groggy && phase >= 3 && Time.time >= lastUseTime + cooldown && !owner.DesireIsAttacking)
+            if (!groggy && phase >= 3 && owner.DesireInCombat
+                && Time.time >= lastUseTime + cooldown && !owner.DesireIsAttacking)
             {
                 StartCoroutine(Activate());
                 return true;
             }
             return groggy;
-        }
-
-        if (finisherQueued)
-        {
-            if (!finisherRunning && !owner.DesireIsAttacking)
-                StartCoroutine(UseFinisher());
-            return true;
-        }
-
-        if (Time.time >= endTime)
-        {
-            failureQueued = true;
-            if (!owner.DesireIsAttacking)
-                StartCoroutine(FailByTimeout());
-            return true;
         }
 
         return finisherRunning || failureQueued || groggy;
@@ -131,6 +141,7 @@ public sealed class Stage3_MainBossDesireSkill : MonoBehaviour
     {
         StopAllCoroutines();
         EndDesire();
+        finisherRunning = false;
         groggy = false;
     }
 
