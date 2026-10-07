@@ -13,6 +13,9 @@ public sealed class Stage1_MainBoss : MainBossController
     [SerializeField, Min(0f), Tooltip("4스킬 돌진을 한 번 이상 사용한 뒤 이 거리 이상 벌어지면 남은 쿨타임을 한 번 50% 줄입니다.")]
     private float skill4ReductionDistance = 8f;
 
+    protected override float GetDashCooldownReductionDistance(int index)
+        => index == 3 ? skill4ReductionDistance : base.GetDashCooldownReductionDistance(index);
+
     private int skill1FinalHitCount;
     private bool nextSkill1Empowered;
     private bool usingEmpoweredSkill1;

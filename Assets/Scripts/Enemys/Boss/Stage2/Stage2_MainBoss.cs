@@ -308,6 +308,11 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
     [SerializeField, Min(0f), Tooltip("4스킬을 한 번 이상 사용한 뒤 이 거리 이상 벌어지면 남은 쿨타임을 한 번 50% 줄입니다.")]
     private float skill4ReductionDistance = 8f;
 
+    protected override float GetDashCooldownReductionDistance(int index)
+        => desireSkill != null && desireSkill.FieldActive ? 0f
+            : index == 1 ? skill2ReductionDistance
+            : index == 3 ? skill4ReductionDistance : base.GetDashCooldownReductionDistance(index);
+
     protected override void Awake()
     {
         base.Awake();

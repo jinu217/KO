@@ -602,21 +602,27 @@ MonoBehaviour:
     buff:
       duration: 0
       effects: []
-  - skillName: "2\uC2A4\uD0AC \uBC84\uD504 (\uB0B4\uC6A9 \uBBF8\uC815)"
+  - skillName: "2스킬 다가가는 시간"
     skillType: 1
     executionOrder: 0
     cooldown: 20
-    minimumPhase: 99
+    minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0
-    postDelay: 0
+    preDelay: 0.8
+    postDelay: 0.3
     active:
       attackSteps: []
     buff:
-      duration: 0
-      effects: []
+      duration: 10
+      effects:
+      - stat: 0
+        valueMode: 1
+        value: 1.3
+      - stat: 1
+        valueMode: 1
+        value: 1.15
   - skillName: "3\uC2A4\uD0AC \uACF5\uC911 \uB3CC\uC9C4 \uD6C4 \uB4A4\uB85C \uB118\uAE30"
     skillType: 0
     executionOrder: 0
@@ -720,26 +726,33 @@ MonoBehaviour:
     buff:
       duration: 0
       effects: []
-  - skillName: "4\uC2A4\uD0AC \uBC84\uD504 (\uB0B4\uC6A9 \uBBF8\uC815)"
+  - skillName: "4스킬 함께하는 시간"
     skillType: 1
     executionOrder: 0
-    cooldown: 20
-    minimumPhase: 99
+    cooldown: 24
+    minimumPhase: 2
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0
-    postDelay: 0
+    preDelay: 0.8
+    postDelay: 0.3
     active:
       attackSteps: []
     buff:
-      duration: 0
-      effects: []
+      duration: 10
+      effects:
+      - stat: 4
+        valueMode: 1
+        value: 0.8
+      - stat: 1
+        valueMode: 1
+        value: 1.2
   - skillName: "5\uC2A4\uD0AC \uD50C\uB808\uC774\uC5B4 \uC8FC\uBCC0 \uAD50\uCC28
       \uBCA0\uAE30"
     skillType: 0
     executionOrder: 0
     cooldown: 15
+    excludeDistanceCooldownReduction: 1
     minimumPhase: 2
     castRange: 9
     forceCastMinDistance: 0
