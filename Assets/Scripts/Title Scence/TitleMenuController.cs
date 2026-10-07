@@ -11,8 +11,8 @@ using System.Collections;
 
 // [조작키]
 // ↑ / ↓      : 메인 메뉴 이동
-// Enter / Z  : 선택
-// Esc / X    : 뒤로가기 (로드, 옵션, 확인창)
+// Enter / F  : 선택
+// Esc        : 뒤로가기 (로드, 옵션, 확인창)
 // ← / →      : 슬롯 이동
 // Delete     : 저장 데이터 삭제
 
@@ -155,7 +155,7 @@ public class TitleMenuController : MonoBehaviour
         }
 
         // 선택
-        if (Input.GetKeyDown(KeyCode.Return))
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.F))
         {
             SelectMenu();
         }
@@ -228,7 +228,7 @@ public class TitleMenuController : MonoBehaviour
 
         OpenConfirmation(
             ConfirmationType.NewGame,
-            $"SAVE{slot}의 기존 저장 데이터를 삭제하고\n새 게임을 시작하시겠습니까?\n\nYes(Enter)  /  No(Esc)"
+            $"SAVE{slot}의 기존 저장 데이터를 삭제하고\n새 게임을 시작하시겠습니까?\n\nYes(Enter/F)  /  No(Esc)"
         );
     }
 
@@ -373,7 +373,7 @@ public class TitleMenuController : MonoBehaviour
         }
 
         // 슬롯 선택
-        if (Input.GetKeyDown(KeyCode.Return))
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.F))
         {
             int slot = index + 1;
 
@@ -490,8 +490,8 @@ public class TitleMenuController : MonoBehaviour
     // 확인창 입력
     void HandleConfirmationInput()
     {
-        // Enter = 확인
-        if (Input.GetKeyDown(KeyCode.Return))
+        // Enter / F = 확인
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.F))
         {
             ConfirmAction();
             return;
@@ -539,7 +539,7 @@ public class TitleMenuController : MonoBehaviour
 
         OpenConfirmation(
             ConfirmationType.Delete,
-            $"SAVE{slot}의 저장 데이터를 삭제하시겠습니까?\n\nYes(Enter)  /  No(Esc)"
+            $"SAVE{slot}의 저장 데이터를 삭제하시겠습니까?\n\nYes(Enter/F)  /  No(Esc)"
         );
     }
 

@@ -53,7 +53,9 @@ public enum BossBuffStat
     Defense,
     Cooldown,
     BasicAttackCooldown,
-    MaxHp
+    MaxHp,
+    [InspectorName("받는 피해 감소 (%)")] DamageReduction,
+    [InspectorName("초당 최대 체력 회복 (%)")] HealthRegeneration
 }
 
 public enum BossBuffValueMode
@@ -130,6 +132,8 @@ public class BossAttackStepData
     [Min(0f)] public float projectileSpeed;
     [Tooltip("점프 또는 내려찍기 시, 시전 순간 플레이어까지의 가로 거리 중 이 단계에서 이동할 비율입니다. 0이면 기존 속도 방식을 사용합니다.")]
     [Range(0f, 1f)] public float targetDistanceRatio;
+    [Tooltip("지속 공격은 플레이어가 범위를 벗어나도 정해진 시간 동안 유지하고, 정해진 간격마다 공격 횟수를 소비합니다.")]
+    public bool persistentFixedCadence;
 }
 
 [Serializable]
@@ -146,7 +150,7 @@ public class BossBuffEffectData
     public BossBuffStat stat;
     [Tooltip("고정값 증가는 입력값을 더하고, 배율 적용은 입력값을 곱하며, 비율 증가는 입력한 백분율만큼 증가시킵니다.")]
     public BossBuffValueMode valueMode = BossBuffValueMode.Multiply;
-    [Tooltip("능력치에 적용할 값입니다. 배율 적용에서 1은 변화 없음, 비율 증가에서 25는 25% 증가를 뜻합니다.")]
+    [Tooltip("능력치에 적용할 값입니다. 배율 적용에서 1은 변화 없음, 비율 증가에서 25는 25% 증가입니다. 받는 피해 감소와 초당 최대 체력 회복은 모드와 관계없이 백분율을 입력합니다(20=피해감소 20%, 0.5=초당 최대 HP 0.5% 회복).")]
     public float value;
 }
 
@@ -171,6 +175,8 @@ public class BossSkillData
 
     [Tooltip("스킬을 다시 사용할 수 있을 때까지의 시간(초)입니다. 0이면 쿨타임이 없습니다.")]
     [Min(0f)] public float cooldown;
+    [InspectorName("거리 쿨타임 감소 제외"), Tooltip("체크하면 돌진이 포함되어 있어도 거리 기반 쿨타임 감소를 적용하지 않습니다.")]
+    public bool excludeDistanceCooldownReduction;
     [Tooltip("스킬을 사용할 수 있는 최소 페이즈입니다. 중간보스처럼 페이즈가 없으면 1을 사용합니다.")]
     [Min(1)] public int minimumPhase = 1;
     [Tooltip("스킬을 시작할 수 있는 플레이어와의 최대 거리입니다. 0이면 거리 제한이 없습니다.")]

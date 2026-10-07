@@ -288,11 +288,22 @@ public class EquipmentShopNPC : NPCShopBase
             GenerateOffers(run);
         }
 
+        // 예전에 빈 진열(-1)이 저장됐거나 아이템 데이터가 바뀐 경우 해당 슬롯만 복구한다.
+        // 이미 판매한 슬롯과 정상 진열은 그대로 유지한다.
+        if (!run.offeredHeadSold && FindPoolItem(run.offeredHeadItemId, EquipmentType.Head) == null)
+            run.offeredHeadItemId = RollEquipment(EquipmentType.Head)?.id ?? -1;
+        if (!run.offeredBodySold && FindPoolItem(run.offeredBodyItemId, EquipmentType.Body) == null)
+            run.offeredBodyItemId = RollEquipment(EquipmentType.Body)?.id ?? -1;
+        if (!run.offeredHandSold && FindPoolItem(run.offeredHandItemId, EquipmentType.Hand) == null)
+            run.offeredHandItemId = RollEquipment(EquipmentType.Hand)?.id ?? -1;
+        if (!run.offeredFootSold && FindPoolItem(run.offeredFootItemId, EquipmentType.Foot) == null)
+            run.offeredFootItemId = RollEquipment(EquipmentType.Foot)?.id ?? -1;
+
         offers.Clear();
-        offers[EquipmentType.Head] = FindPoolItem(run.offeredHeadItemId);
-        offers[EquipmentType.Body] = FindPoolItem(run.offeredBodyItemId);
-        offers[EquipmentType.Hand] = FindPoolItem(run.offeredHandItemId);
-        offers[EquipmentType.Foot] = FindPoolItem(run.offeredFootItemId);
+        offers[EquipmentType.Head] = FindPoolItem(run.offeredHeadItemId, EquipmentType.Head);
+        offers[EquipmentType.Body] = FindPoolItem(run.offeredBodyItemId, EquipmentType.Body);
+        offers[EquipmentType.Hand] = FindPoolItem(run.offeredHandItemId, EquipmentType.Hand);
+        offers[EquipmentType.Foot] = FindPoolItem(run.offeredFootItemId, EquipmentType.Foot);
     }
 
     private void GenerateOffers(RunData run)
@@ -335,8 +346,7 @@ public class EquipmentShopNPC : NPCShopBase
             foreach (ItemData item in itemDatabase.Items)
             {
                 if (item != null && item.itemType == ItemType.Equipment &&
-                    item.equipType == type && type != EquipmentType.Weapon &&
-                    item.rarity != ItemRarity.None)
+                    item.equipType == type)
                     valid.Add(item);
             }
         }
@@ -350,14 +360,13 @@ public class EquipmentShopNPC : NPCShopBase
         return rarityItems[UnityEngine.Random.Range(0, rarityItems.Count)];
     }
 
-    private ItemData FindPoolItem(int id)
+    private ItemData FindPoolItem(int id, EquipmentType type)
     {
         if (itemDatabase == null)
             return null;
 
         ItemData item = itemDatabase.GetById(id);
-        if (item == null || item.itemType != ItemType.Equipment ||
-            item.equipType == EquipmentType.Weapon || item.rarity == ItemRarity.None)
+        if (item == null || item.itemType != ItemType.Equipment || item.equipType != type)
             return null;
 
         return item;

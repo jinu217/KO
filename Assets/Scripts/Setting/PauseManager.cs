@@ -6,7 +6,7 @@ public static class ShopInteractionState
 {
     public static bool IsOpen { get; set; }
     public static int LastClosedFrame { get; set; } = -1;
-    public static bool BlockPauseThisFrame => IsOpen || Time.frameCount == LastClosedFrame;
+    public static bool BlockPauseThisFrame => IsOpen || Time.frameCount <= LastClosedFrame + 1;
 }
 
 public class PauseManager : MonoBehaviour

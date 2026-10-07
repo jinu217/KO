@@ -19,6 +19,17 @@ public interface IBossSkillContext
     void ApplySkillBuff(BossBuffSkillData buff);
 }
 
+// 보스 전용 조건부 연계. 다른 보스의 실행 순서에는 영향을 주지 않는다.
+public interface IBossConditionalStepContext
+{
+    bool ShouldExecuteStep(BossAttackStepData step);
+}
+
+public interface IBossHitValidationContext
+{
+    bool CanHitPlayer(Collider2D player);
+}
+
 // 선택적 대쉬 알림: 기존 IBossSkillContext 구현을 변경할 필요가 없습니다.
 public interface IBossDashAnimationContext
 {
@@ -102,6 +113,8 @@ public static class BossSkillExecutor
         foreach (BossAttackStepData step in active.attackSteps)
         {
             if (step == null || step.actionType == BossActionType.None)
+                continue;
+            if (context is IBossConditionalStepContext conditional && !conditional.ShouldExecuteStep(step))
                 continue;
 
             if (step.actionType == BossActionType.SpawnPrefab
@@ -448,10 +461,19 @@ public static class BossSkillExecutor
         while (elapsed <= lifetime && hitCount < step.attackCount)
         {
             bool playerInside = IsPlayerInHitbox(step, context);
-            if (playerEntered && !playerInside)
+            if (!step.persistentFixedCadence && playerEntered && !playerInside)
                 yield break;
 
-            if (playerInside)
+            if (step.persistentFixedCadence)
+            {
+                if (elapsed >= nextHitTime)
+                {
+                    if (playerInside) HitPlayer(step, context);
+                    hitCount++;
+                    nextHitTime = elapsed + interval;
+                }
+            }
+            else if (playerInside)
             {
                 playerEntered = true;
                 if (elapsed >= nextHitTime)
@@ -465,6 +487,50 @@ public static class BossSkillExecutor
             elapsed += Time.deltaTime;
             yield return null;
         }
+        if (step.persistentFixedCadence)
+            while (elapsed < lifetime)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+    }
+
+    private static IEnumerator ExecutePullPlayer(BossAttackStepData step, IBossSkillContext context)
+    {
+        if (step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f)
+            yield break;
+
+        Vector2 center = (Vector2)context.BossTransform.position + new Vector2(
+            context.LookDirection * step.hitboxOffset.x,
+            step.hitboxOffset.y
+        );
+        Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer);
+        Rigidbody2D playerBody = hit != null ? hit.GetComponentInParent<Rigidbody2D>() : null;
+        if (playerBody == null)
+            yield break;
+
+        float elapsed = 0f;
+        float pullSpeed = Mathf.Max(0f, step.moveSpeed);
+        float pullDuration = Mathf.Max(0f, context.GetSkillDelay(step.duration));
+        while (elapsed < pullDuration)
+        {
+            Vector2 target = (Vector2)context.BossTransform.position + new Vector2(
+                context.LookDirection * step.pullTargetOffset.x,
+                step.pullTargetOffset.y
+            );
+            if (Vector2.Distance(playerBody.position, target) <= 0.05f)
+                break;
+
+            playerBody.MovePosition(Vector2.MoveTowards(
+                playerBody.position,
+                target,
+                pullSpeed * Time.fixedDeltaTime
+            ));
+            elapsed += Time.fixedDeltaTime;
+            yield return new WaitForFixedUpdate();
+        }
+
+        playerBody.linearVelocity = Vector2.zero;
     }
 
     private static IEnumerator ExecutePullPlayer(BossAttackStepData step, IBossSkillContext context)
@@ -514,6 +580,14 @@ public static class BossSkillExecutor
         return Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer) != null;
     }
 
+    // 피해를 거부하는 회피는 적중 알림과 별도 넉백도 발생시키지 않는다.
+    public static bool CanDamagePlayer(Collider2D hit)
+    {
+        if (hit == null) return false;
+        PlayerController player = hit.GetComponentInParent<PlayerController>();
+        return player == null || !player.IsDodging;
+    }
+
     private static bool HitPlayer(BossAttackStepData step, IBossSkillContext context)
     {
         if (step.damage <= 0f || step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f)
@@ -525,7 +599,10 @@ public static class BossSkillExecutor
         );
 
         Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer);
-        if (hit == null)
+        if (!CanDamagePlayer(hit))
+            return false;
+
+        if (context is IBossHitValidationContext validator && !validator.CanHitPlayer(hit))
             return false;
 
         IDamageable target = hit.GetComponentInParent<IDamageable>();

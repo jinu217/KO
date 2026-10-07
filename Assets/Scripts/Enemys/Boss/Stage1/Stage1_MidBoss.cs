@@ -8,6 +8,9 @@ public sealed class Stage1_MidBoss : MidBossController, IBossDashAnimationContex
     [SerializeField, Min(0f), Tooltip("3스킬을 한 번 이상 사용한 뒤 이 거리 이상 벌어지면 남은 쿨타임을 한 번 50% 줄입니다.")]
     private float skill3ReductionDistance = 6f;
 
+    protected override float GetDashCooldownReductionDistance(int index)
+        => index == 2 ? skill3ReductionDistance : base.GetDashCooldownReductionDistance(index);
+
     protected override void Update()
     {
         base.Update();
