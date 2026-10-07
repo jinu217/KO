@@ -18,6 +18,8 @@ public class RunData
     public int bodyItemId = -1;
     public int footItemId = -1;
 
+    public bool startWeaponGiven;   // 시작 무기 지급 여부
+
     public int healPotionCount;
     public int bpmPotionCount;
     public int coin;

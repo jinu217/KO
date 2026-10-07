@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class EquipmentManager : MonoBehaviour
 {
@@ -21,6 +22,9 @@ public class EquipmentManager : MonoBehaviour
 
     // 플레이어 외형 장비 연결
     public PlayerAppearance playerAppearance;
+
+    private const string FirstTutorialScene = "Tutorial_0";
+    private bool IsFirstTutorialScene => SceneManager.GetActiveScene().name == FirstTutorialScene;
 
 
     //============== 초기화 ==============
@@ -57,11 +61,18 @@ public class EquipmentManager : MonoBehaviour
         {
             Debug.Log("[EquipmentManager] 저장된 장비 복원");
             RestoreEquipmentFromRunData();
+            GiveStartWeaponIfNeeded(run);   // 추가
             return;
         }
 
+        //============== 새 런 초기 장비 처리 ==============
+
         Debug.Log("[EquipmentManager] 초기 장비 장착");
         EquipStartItems();
+
+        // 튜토리얼_0이 아닌 씬에서 시작했다면 무기도 이미 지급된 상태  // 추가
+        if (!IsFirstTutorialScene)
+            run.startWeaponGiven = true;
 
         SaveCurrentEquipmentToRunData();
 
@@ -84,10 +95,58 @@ public class EquipmentManager : MonoBehaviour
         if (startEquipItems == null)
             return;
 
+        bool isTutorialScene = IsFirstTutorialScene;
+
         foreach (ItemData item in startEquipItems)
         {
-            if (item != null)
-                Equip(item);
+            if (item == null)
+                continue;
+
+            //============== 튜토리얼_0 초기 무기 미장착 ==============
+
+            // 튜토리얼_0에서는 무기만 장착하지 않음
+            // 손 / 머리 / 몸 / 발 장비는 정상적으로 장착됨
+            if (isTutorialScene &&
+                item.equipType == EquipmentType.Weapon)
+            {
+                Debug.Log(
+                    $"[EquipmentManager] Tutorial_0 → 초기 무기 미장착: {item.itemName}"
+                );
+
+                continue;
+            }
+
+            Equip(item);
+        }
+    }
+
+    //============== 시작 무기 뒤늦게 지급 (튜토리얼_0 이후 씬) ==============
+    private void GiveStartWeaponIfNeeded(RunData run)
+    {
+        // 튜토리얼_0에서는 지급하지 않음
+        if (IsFirstTutorialScene)
+            return;
+
+        // 이미 한 번 지급했으면 다시 주지 않음
+        if (run.startWeaponGiven)
+            return;
+
+        run.startWeaponGiven = true;
+
+        // 이미 무기를 장착 중이면 그대로 둠
+        if (GetItem(weaponSlot) != null)
+            return;
+
+        if (startEquipItems == null)
+            return;
+
+        foreach (ItemData item in startEquipItems)
+        {
+            if (item != null && item.equipType == EquipmentType.Weapon)
+            {
+                Equip(item);   // 외형, 스탯, RunData 저장까지 처리됨
+                break;
+            }
         }
     }
 

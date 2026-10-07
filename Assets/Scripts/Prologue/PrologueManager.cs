@@ -102,6 +102,11 @@ public class PrologueManager : MonoBehaviour
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.F))
+            Debug.Log("F 감지됨 / isFlashing=" + isFlashing + " / skipPanel=" + skipConfirmPanel.activeSelf);
+
+        if (Input.anyKeyDown)
+            Debug.Log("입력된 문자: [" + Input.inputString + "]");
         // Flash 중에는 입력 받지 않음
         if (isFlashing)
         {
