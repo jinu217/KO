@@ -311,6 +311,13 @@ public class PlayerController : MonoBehaviour, IDamageable
     private static readonly int AnimIsGrounded = Animator.StringToHash("IsGrounded");
     private static readonly int AnimIsDownJumping = Animator.StringToHash("IsDownJumping");
     private static readonly int AnimAttack = Animator.StringToHash("Attack");
+    private float empoweredLandingAnimationUntil;
+    private bool HasPlungeParameter(string name, AnimatorControllerParameterType type)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return false;
+        foreach (var p in animator.parameters) if (p.name == name && p.type == type) return true;
+        return false;
+    }
     private static readonly int AnimDash = Animator.StringToHash("Dash");
 
     // -------------------- 이동/점프 --------------------
@@ -702,6 +709,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         animator.SetFloat(AnimVerticalVelocity, suppressAir ? 0f : rb.linearVelocity.y);
         animator.SetBool(AnimIsGrounded, suppressAir || isGrounded);
         animator.SetBool(AnimIsDownJumping, isDownJumping);
+        if (HasPlungeParameter("IsEmpoweredDownJump", AnimatorControllerParameterType.Bool))
+            animator.SetBool("IsEmpoweredDownJump", isEmpoweredDownJump || Time.time < empoweredLandingAnimationUntil);
     }
 
     // 입력 콜백: 이동(인벤토리 열림 중에는 인벤토리 커서 이동에 사용)
@@ -813,6 +822,12 @@ public class PlayerController : MonoBehaviour, IDamageable
             float fallenDist = Mathf.Max(0f, fallStartY - transform.position.y);
             ApplyEmpoweredDownJumpImpact(fallenDist);
             ApplyMoveDelay(empoweredDownJumpMoveDelay);
+            if (HasPlungeParameter("EmpoweredLand", AnimatorControllerParameterType.Trigger))
+            {
+                empoweredLandingAnimationUntil = Time.time + .35f;
+                animator.ResetTrigger("EmpoweredLand");
+                animator.SetTrigger("EmpoweredLand");
+            }
         }
 
         isEmpoweredDownJump = false;
