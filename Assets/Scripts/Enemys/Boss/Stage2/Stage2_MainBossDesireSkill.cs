@@ -70,37 +70,59 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     private bool returnAttackAttempted;
     private bool returning;
     private bool stunned;
+    private bool casting;
+    private bool returnAttackRunning;
 
     public bool FieldActive => fieldActive;
     public bool IsReturning => returning;
-    public bool BlocksCombatAI => fieldActive && (returning || stunned || (IsBossInside() && !IsPlayerInside() && !combatEngaged));
+    public bool BlocksCombatAI => fieldActive && (returning || stunned || (IsBossInside() && !IsPlayerInside()));
     public float OutgoingDamageMultiplier => fieldActive && IsBossInside() ? fieldAttackMultiplier : 1f;
 
     public void Initialize(Stage2_MainBoss boss) => owner = boss;
 
+    private void Update()
+    {
+        if (owner == null || owner.DesireIsDead || !fieldActive) return;
+        // 보스가 일반 공격/스킬을 실행하는 동안에도 필드 종료와 회복 시간을 갱신한다.
+        UpdateField();
+        if (fieldActive && IsBossInside() && !IsPlayerInside())
+            owner.DesireInterruptSkill();
+        ProcessReturnBehavior();
+    }
+
     public bool Tick(int phase)
     {
         if (owner == null || owner.DesireIsDead) return false;
-        if (phase >= 3 && !fieldActive && Time.time >= lastUseTime + cooldown && !owner.DesireIsAttacking)
+        // 컴포넌트 Update보다 보스 AI가 먼저 호출되는 프레임에도 만료된 필드를 사용하지 않는다.
+        if (fieldActive && (fieldVisual == null || Time.time >= fieldEndTime)) RemoveField();
+        if (phase >= 3 && owner.DesireInCombat && !fieldActive
+            && Time.time >= lastUseTime + cooldown && !owner.DesireIsAttacking)
         {
             StartCoroutine(Activate());
             return true;
         }
         if (!fieldActive) return false;
 
-        UpdateField();
-        if (!fieldActive) return false;
-        if (returning || stunned || owner.DesireIsAttacking) return true;
+        if (ProcessReturnBehavior()) return true;
+        return casting || returning || stunned || returnAttackRunning;
+    }
 
-        if (outsideSince >= 0f)
+    private bool ProcessReturnBehavior()
+    {
+        if (!fieldActive || casting || returning || outsideSince < 0f) return false;
+        float outsideTime = Time.time - outsideSince;
+        // 10초 강제 복귀는 일반 연격 및 복귀 공격/스턴보다 우선한다.
+        if (outsideTime >= forcedReturnDelay)
         {
-            float outsideTime = Time.time - outsideSince;
-            if (outsideTime >= forcedReturnDelay) { BeginReturn(); return true; }
-            if (outsideTime >= returnAttackDelay && !returnAttackAttempted)
-            {
-                StartCoroutine(UseReturnAttack());
-                return true;
-            }
+            BeginReturn();
+            return true;
+        }
+        if (stunned || returnAttackRunning) return true;
+        if (outsideTime >= returnAttackDelay && !returnAttackAttempted)
+        {
+            owner.DesireInterruptSkill();
+            StartCoroutine(UseReturnAttack());
+            return true;
         }
         return false;
     }
@@ -109,14 +131,18 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     {
         if (!fieldActive) return true;
         if (returning || stunned) return false;
-        if (!IsBossInside()) return true;
+        // 필드 밖에서는 플레이어가 진입했거나 보스를 공격한 뒤에만 전투를 이어간다.
+        if (!IsBossInside()) return combatEngaged;
         if (IsPlayerInside())
         {
             combatEngaged = true;
             owner.DesireSetChasing(true);
         }
-        return IsPlayerInside() || combatEngaged;
+        return IsPlayerInside();
     }
+
+    public bool CanHitPlayer(Collider2D player)
+        => player != null && (!fieldActive || !IsBossInside() || IsPlayerInside());
 
     public void FixedTick()
     {
@@ -147,18 +173,20 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
 
     public void Cancel()
     {
-        StopAllCoroutines();
         RemoveField();
+        damageEffectEndTime = 0f;
     }
 
     private IEnumerator Activate()
     {
+        casting = true;
         owner.DesireIsAttacking = true;
         owner.DesireStop();
         lastUseTime = Time.time;
         fieldCenter = (Vector2)transform.position + Vector2.up * fieldSpawnYOffset;
         if (!CreateField())
         {
+            casting = false;
             owner.DesireIsAttacking = false;
             yield break;
         }
@@ -176,6 +204,7 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
         owner.DesireLog("욕망 스킬 시작", "안전에 대한 강박", cooldown);
         if (castDelay > 0f) yield return new WaitForSeconds(castDelay);
         yield return owner.WaitForDesireAnimation();
+        casting = false;
         owner.DesireIsAttacking = false;
     }
 
@@ -205,6 +234,7 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
 
     private IEnumerator UseReturnAttack()
     {
+        returnAttackRunning = true;
         returnAttackAttempted = true;
         owner.DesireFacePlayer(); // 시전 전에만 방향을 결정합니다.
         owner.DesireIsAttacking = true;
@@ -212,12 +242,17 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
         owner.PlayReturnAttackAnimation();
         owner.DesireLog("복귀 넉백 공격 시작", "안전지대 확보", 0f);
         if (returnAttackPreDelay > 0f) yield return new WaitForSeconds(returnAttackPreDelay);
+        if (!fieldActive || Time.time >= fieldEndTime)
+        {
+            RemoveField();
+            yield break;
+        }
 
         int direction = owner.DesireLookDirection;
         Vector2 center = (Vector2)transform.position + new Vector2(direction * returnAttackOffset.x, returnAttackOffset.y);
         Collider2D hit = Physics2D.OverlapBox(center, returnAttackSize, 0f, owner.DesirePlayerLayer);
         IDamageable target = hit != null ? hit.GetComponentInParent<IDamageable>() : null;
-        if (target != null)
+        if (target != null && BossSkillExecutor.CanDamagePlayer(hit) && CanHitPlayer(hit))
         {
             target.TakeDamage(returnAttackDamage, transform.position, false, false);
             Rigidbody2D targetBody = hit.GetComponentInParent<Rigidbody2D>();
@@ -227,12 +262,14 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
                 targetBody.AddForce(new Vector2(direction * returnAttackKnockback.x, returnAttackKnockback.y), ForceMode2D.Impulse);
             }
             yield return owner.WaitForReturnAttackAnimation();
+            returnAttackRunning = false;
             owner.DesireIsAttacking = false;
             BeginReturn();
             yield break;
         }
 
         yield return owner.WaitForReturnAttackAnimation();
+        returnAttackRunning = false;
         stunned = true;
         yield return new WaitForSeconds(missedAttackStunDuration);
         stunned = false;
@@ -244,6 +281,8 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     private void BeginReturn()
     {
         if (!fieldActive) return;
+        CancelFieldAction();
+        owner.DesireInterruptSkill();
         returning = true;
         stunned = false;
         owner.DesireIsAttacking = false;
@@ -284,8 +323,23 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
         return true;
     }
 
+    private void CancelFieldAction()
+    {
+        bool ownsAttackLock = casting || returnAttackRunning || stunned;
+        StopAllCoroutines();
+        casting = returnAttackRunning = stunned = false;
+        if (ownsAttackLock && owner != null)
+        {
+            owner.CancelDesireAnimation();
+            owner.DesireIsAttacking = false;
+            owner.DesireStop();
+        }
+    }
+
     private void RemoveField()
     {
+        CancelFieldAction();
+        if (returning && owner != null) owner.DesireStop();
         fieldActive = returning = stunned = combatEngaged = false;
         outsideSince = -1f;
         if (fieldVisual != null) Destroy(fieldVisual.gameObject);

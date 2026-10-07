@@ -542,6 +542,14 @@ public static class BossSkillExecutor
         return Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer) != null;
     }
 
+    // 피해를 거부하는 회피는 적중 알림과 별도 넉백도 발생시키지 않는다.
+    public static bool CanDamagePlayer(Collider2D hit)
+    {
+        if (hit == null) return false;
+        PlayerController player = hit.GetComponentInParent<PlayerController>();
+        return player == null || !player.IsDodging;
+    }
+
     private static bool HitPlayer(BossAttackStepData step, IBossSkillContext context)
     {
         if (step.damage <= 0f || step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f)
@@ -553,7 +561,7 @@ public static class BossSkillExecutor
         );
 
         Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer);
-        if (hit == null)
+        if (!CanDamagePlayer(hit))
             return false;
 
         if (context is IBossHitValidationContext validator && !validator.CanHitPlayer(hit))

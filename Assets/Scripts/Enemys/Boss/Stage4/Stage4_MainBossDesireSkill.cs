@@ -80,13 +80,18 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
             if (failed) groggyEnd = Time.time + groggyDuration;
         }
         if (BlocksCombat && !owner.Busy) owner.Halt();
-        if (!active && !BlocksCombat && owner.InCombat && owner.Phase >= 3 && Time.time >= nextUse)
+        if (CanActivate(owner.Phase))
             StartCoroutine(Activate());
     }
+    private bool CanActivate(int phase)
+        => owner != null && !owner.IsDead && !active && !BlocksCombat
+            && owner.InCombat && phase >= 3 && Time.time >= nextUse && !owner.Busy;
+
     public bool Tick(int phase)
     {
+        if (owner == null || owner.IsDead) return false;
         if (BlocksCombat) return true;
-        if (!active && phase >= 3 && Time.time >= nextUse && !owner.Busy)
+        if (CanActivate(phase))
         {
             StartCoroutine(Activate());
             return true;
