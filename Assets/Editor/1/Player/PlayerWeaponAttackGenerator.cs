@@ -54,7 +54,7 @@ public static class PlayerWeaponAttackGenerator
         string[] paths = AssetDatabase.FindAssets(ClipName + " t:AnimationClip").Select(AssetDatabase.GUIDToAssetPath)
             .Where(p => Path.GetFileNameWithoutExtension(p) == ClipName && p.EndsWith(".anim", StringComparison.OrdinalIgnoreCase)).Distinct().ToArray();
         if (paths.Length > 1) throw new InvalidOperationException(ClipName + ".anim이 여러 개입니다. 이름이 중복되지 않게 정리하세요.\n" + string.Join("\n", paths));
-        string target = paths.Length == 1 ? paths[0] : "Assets/Animations/Player/" + ClipName + ".anim";
+        string target = paths.Length == 1 ? paths[0] : "Assets/Animations/1/Player/" + ClipName + ".anim";
         EnsureFolder(Path.GetDirectoryName(target).Replace('\\', '/'));
         var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(target);
         // Preserve events and their absolute times. Extend the resting tail if needed.
@@ -103,7 +103,8 @@ public static class PlayerWeaponAttackGenerator
                     Vector3 p = rest[i]; float delta = 0;
                     switch (nodes[i].name)
                     {
-                        // Unflipped source rig faces -X. Root scale handles facing in-game.
+                        // Player authoring convention: +Z is counterclockwise, -Z is clockwise.
+                        // Arm preparation uses negative rotation; the strike increases back toward rest.
                         case "Body": delta = motion.Sample(0, t); p.x += motion.Sample(1, t); p.y += motion.Sample(2, t); break;
                         case "Head": delta = motion.Sample(3, t); break;
                         case "ShoulderJoint_B": delta = motion.Sample(4, t); break;
@@ -116,8 +117,9 @@ public static class PlayerWeaponAttackGenerator
                 }
                 int sword = Array.FindIndex(nodes, n => n == weapon);
                 // Keep the grip/blade local rotation at the prefab's rest value.
-                // Shoulder winds up positively, then decreases for the cut.
-                // The forearm stays folded instead of straightening upward into a thrust.
+                // Shoulder winds up negatively, then increases for the cut.
+                // Forearm supports the shoulder windup; the wrist adds only a small follow-through.
+                // SSword uses a compact raised-arm cut with the same rotation convention.
                 angles[sword] = restAngles[sword];
                 nodes[sword].localRotation = Quaternion.Euler(0, 0, angles[sword]);
                 // Preserve root-space foot pivot heights despite torso rotation.
@@ -163,54 +165,58 @@ public static class PlayerWeaponAttackGenerator
             { float u = Mathf.InverseLerp(times[i - 1], times[i], t); u = i == 3 ? u * u : u * u * (3 - 2 * u); return Mathf.LerpUnclamped(values[i - 1], values[i], u); }
         return values[values.Length - 1];
     }
+    // Rows: body rotation, body X, body Y, head, rear shoulder, rear forearm,
+    // rear wrist, front shoulder, front forearm. Rotation values are rest-relative.
+    // Sword/Sythe/Club: clockwise (-) windup -> counterclockwise (+) strike.
+    // SSword: compact clockwise windup followed by a short counterclockwise cut.
     static Motion GetMotion(WeaponKind kind)
     {
         switch (kind)
         {
             case WeaponKind.Sword:
                 return new Motion(new float[] { 0f, 0.12f, 0.2f, 0.27f, 0.34f, 0.48f, 0.65f },
-                new float[] { 0f, -6f, -8f, 16f, 13f, 5f, 0f },
+                new float[] { 0f, -2f, -3f, 6f, 5f, 2f, 0f },
                 new float[] { 0f, 0.015f, 0.025f, -0.085f, -0.07f, -0.025f, 0f },
                 new float[] { 0f, -0.01f, -0.02f, -0.045f, -0.035f, -0.01f, 0f },
-                new float[] { 0f, 3f, 4f, -7f, -5f, -2f, 0f },
-                new float[] { 0f, 55f, 115f, 15f, -5f, 8f, 0f },
-                new float[] { 0f, -10f, -25f, -40f, -32f, -10f, 0f },
-                new float[] { 0f, 3f, 5f, -18f, -14f, -4f, 0f },
-                new float[] { 0f, 12f, 20f, 32f, 25f, 10f, 0f },
-                new float[] { 0f, -12f, -20f, -8f, -5f, -2f, 0f });
+                new float[] { 0f, 1f, 2f, -3f, -2f, -1f, 0f },
+                new float[] { 0f, -48f, -105f, -32f, -8f, -4f, 0f },
+                new float[] { 0f, -5f, -12f, -8f, -5f, -2f, 0f },
+                new float[] { 0f, 0f, -2f, 3f, 4f, 1f, 0f },
+                new float[] { 0f, -12f, -20f, -32f, -25f, -10f, 0f },
+                new float[] { 0f, 12f, 20f, 8f, 5f, 2f, 0f });
             case WeaponKind.Sythe:
                 return new Motion(new float[] { 0f, 0.19f, 0.32f, 0.44f, 0.57f, 0.78f, 1.05f },
-                new float[] { 0f, -10f, -16f, 20f, 26f, 8f, 0f },
+                new float[] { 0f, -3f, -5f, 8f, 7f, 3f, 0f },
                 new float[] { 0f, 0.025f, 0.055f, -0.09f, -0.12f, -0.03f, 0f },
                 new float[] { 0f, -0.018f, -0.04f, -0.05f, -0.06f, -0.018f, 0f },
-                new float[] { 0f, 5f, 8f, -9f, -12f, -3f, 0f },
-                new float[] { 0f, 60f, 125f, 5f, -42f, -12f, 0f },
-                new float[] { 0f, -8f, -18f, -30f, -42f, -12f, 0f },
-                new float[] { 0f, 4f, 10f, -12f, -22f, -6f, 0f },
-                new float[] { 0f, 18f, 32f, -18f, -35f, -8f, 0f },
-                new float[] { 0f, -15f, -28f, -10f, -5f, -3f, 0f });
+                new float[] { 0f, 2f, 3f, -4f, -3f, -1f, 0f },
+                new float[] { 0f, -55f, -120f, -30f, -5f, -2f, 0f },
+                new float[] { 0f, -4f, -8f, -6f, -4f, -2f, 0f },
+                new float[] { 0f, 0f, -2f, 4f, 5f, 2f, 0f },
+                new float[] { 0f, -18f, -32f, 18f, 35f, 8f, 0f },
+                new float[] { 0f, 15f, 28f, 10f, 5f, 3f, 0f });
             case WeaponKind.Club:
                 return new Motion(new float[] { 0f, 0.25f, 0.43f, 0.55f, 0.64f, 0.92f, 1.25f },
-                new float[] { 0f, -7f, -12f, 24f, 28f, 10f, 0f },
+                new float[] { 0f, -2f, -4f, 10f, 9f, 3f, 0f },
                 new float[] { 0f, 0.02f, 0.035f, -0.065f, -0.085f, -0.025f, 0f },
                 new float[] { 0f, -0.012f, 0.015f, -0.095f, -0.1f, -0.03f, 0f },
-                new float[] { 0f, 3f, 6f, -12f, -14f, -4f, 0f },
-                new float[] { 0f, 70f, 142f, 5f, -18f, -5f, 0f },
-                new float[] { 0f, -12f, -28f, -32f, -38f, -14f, 0f },
-                new float[] { 0f, 4f, 8f, -16f, -20f, -6f, 0f },
-                new float[] { 0f, 16f, 28f, 35f, 30f, 12f, 0f },
-                new float[] { 0f, -18f, -32f, -12f, -8f, -4f, 0f });
+                new float[] { 0f, 1f, 2f, -5f, -4f, -1f, 0f },
+                new float[] { 0f, -60f, -125f, -25f, -4f, -2f, 0f },
+                new float[] { 0f, -8f, -18f, -12f, -8f, -3f, 0f },
+                new float[] { 0f, 0f, -2f, 4f, 5f, 2f, 0f },
+                new float[] { 0f, -16f, -28f, -35f, -30f, -12f, 0f },
+                new float[] { 0f, 18f, 32f, 12f, 8f, 4f, 0f });
             case WeaponKind.SSword:
                 return new Motion(new float[] { 0f, 0.07f, 0.13f, 0.19f, 0.23f, 0.34f, 0.48f },
-                new float[] { 0f, -3f, -5f, 10f, 9f, 3f, 0f },
+                new float[] { 0f, -1f, -2f, 4f, 3f, 1f, 0f },
                 new float[] { 0f, 0.02f, 0.045f, -0.12f, -0.1f, -0.02f, 0f },
                 new float[] { 0f, -0.005f, -0.015f, -0.03f, -0.025f, -0.007f, 0f },
-                new float[] { 0f, 2f, 3f, -5f, -4f, -1f, 0f },
-                new float[] { 0f, 20f, 35f, 70f, 66f, 22f, 0f },
-                new float[] { 0f, -38f, -65f, -5f, -10f, -35f, 0f },
-                new float[] { 0f, 18f, 30f, -65f, -56f, 5f, 0f },
-                new float[] { 0f, 8f, 15f, -18f, -14f, -2f, 0f },
-                new float[] { 0f, -10f, -18f, -8f, -6f, -2f, 0f });
+                new float[] { 0f, 1f, 1f, -2f, -1f, 0f, 0f },
+                new float[] { 0f, -30f, -75f, -22f, -5f, -2f, 0f },
+                new float[] { 0f, -4f, -10f, -6f, -4f, -2f, 0f },
+                new float[] { 0f, 0f, -2f, 2f, 3f, 1f, 0f },
+                new float[] { 0f, -8f, -15f, 18f, 14f, 2f, 0f },
+                new float[] { 0f, 10f, 18f, 8f, 6f, 2f, 0f });
             default: throw new ArgumentOutOfRangeException("kind");
         }
     }
