@@ -533,44 +533,6 @@ public static class BossSkillExecutor
         playerBody.linearVelocity = Vector2.zero;
     }
 
-    private static IEnumerator ExecutePullPlayer(BossAttackStepData step, IBossSkillContext context)
-    {
-        if (step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f)
-            yield break;
-
-        Vector2 center = (Vector2)context.BossTransform.position + new Vector2(
-            context.LookDirection * step.hitboxOffset.x,
-            step.hitboxOffset.y
-        );
-        Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer);
-        Rigidbody2D playerBody = hit != null ? hit.GetComponentInParent<Rigidbody2D>() : null;
-        if (playerBody == null)
-            yield break;
-
-        float elapsed = 0f;
-        float pullSpeed = Mathf.Max(0f, step.moveSpeed);
-        float pullDuration = Mathf.Max(0f, context.GetSkillDelay(step.duration));
-        while (elapsed < pullDuration)
-        {
-            Vector2 target = (Vector2)context.BossTransform.position + new Vector2(
-                context.LookDirection * step.pullTargetOffset.x,
-                step.pullTargetOffset.y
-            );
-            if (Vector2.Distance(playerBody.position, target) <= 0.05f)
-                break;
-
-            playerBody.MovePosition(Vector2.MoveTowards(
-                playerBody.position,
-                target,
-                pullSpeed * Time.fixedDeltaTime
-            ));
-            elapsed += Time.fixedDeltaTime;
-            yield return new WaitForFixedUpdate();
-        }
-
-        playerBody.linearVelocity = Vector2.zero;
-    }
-
     private static bool IsPlayerInHitbox(BossAttackStepData step, IBossSkillContext context)
     {
         Vector2 center = (Vector2)context.BossTransform.position + new Vector2(
