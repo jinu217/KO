@@ -6,11 +6,9 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
     [SerializeField, Tooltip("생존 본능의 강화, 회복 및 종료 판정을 담당하는 컴포넌트입니다.")]
     private Stage4_MainBossDesireSkill desireSkill;
     private BossSkillData executing;
+    private bool enhancedAnimation;
     private bool bodyHit;
     private bool patternHealed, uppercutHealed;
-    private float nextAimTime;
-    [SerializeField, Min(0), Tooltip("러시 연격 중 방향을 다시 확인하는 최소 간격입니다.")]
-    private float comboAimInterval = .35f;
     protected override string AnimationPrefix => "MainBoss4_";
     protected override string VisualRootName => "MainBoss 4";
     protected override bool HasPhaseEntryAnimations => false;
@@ -23,11 +21,8 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
         if (desireSkill == null) desireSkill = gameObject.AddComponent<Stage4_MainBossDesireSkill>();
         desireSkill.Initialize(this);
     }
-    protected override void ApplyFacingDirection()
-    {
-        base.ApplyFacingDirection();
-        if (spriteRenderer != null) spriteRenderer.flipX = lookDirection < 0;
-    }
+    // MainBossController flips the whole MainBoss 4 visual root.
+    // Do not additionally flip one SpriteRenderer.
     public bool CanHitPlayer(Collider2D player)
     {
         var controller = player.GetComponentInParent<PlayerController>();
@@ -45,26 +40,34 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
     protected override void OnSkillExecutionStarted(BossSkillData skill, int index)
     {
         executing = skill;
-        nextAimTime = Time.time + comboAimInterval;
+        enhancedAnimation = desireSkill.Active;
         bodyHit = patternHealed = uppercutHealed = false;
         base.OnSkillExecutionStarted(skill, index);
     }
     public override void RefreshSkillDirection()
     {
-        if (!isAttacking) { base.RefreshSkillDirection(); return; }
-        if (isDead || playerTransform == null || currentSkillIndex != 0 || Time.time < nextAimTime) return;
-        nextAimTime = Time.time + comboAimInterval * (desireSkill.Active ? .6f : 1f);
-        float delta = PlayerPosition.x - transform.position.x;
-        if (Mathf.Abs(delta) < .4f) return;
-        lookDirection = delta > 0 ? 1 : -1;
-        ApplyFacingDirection();
+        if (isAttacking || isDead) return;
+        base.RefreshSkillDirection();
     }
     public bool ShouldExecuteStep(BossAttackStepData step)
     {
         if (desireSkill.BlocksCombat) return false;
-        // 2스킬의 첫 이동/보디 블로 이후 단계는 보디 블로 적중이 필요하다.
-        return currentSkillIndex != 1 || executing.active.attackSteps.IndexOf(step) < 2 || bodyHit;
+        int stepIndex = executing?.active?.attackSteps.IndexOf(step) ?? -1;
+        if (stepIndex < 0) return false;
+        if (currentSkillIndex == 1 && stepIndex >= 2 && !bodyHit) return false;
+        string suffix = enhancedAnimation && (currentSkillIndex < 0 || currentSkillIndex == 1 || currentSkillIndex == 3) ? "_D" : "";
+        PlayAction("Step_" + (currentSkillIndex + 1) + "_" + stepIndex + suffix);
+        return true;
     }
+    protected override IEnumerator WaitForSkillAnimation(BossSkillData skill, int index)
+    {
+        if (skill.skillType == BossSkillType.Buff) { yield return base.WaitForSkillAnimation(skill, index); yield break; }
+        PlayAction("Recover"); yield return WaitForAction("MainBoss4_Recover");
+    }
+    public void BeginDesirePose() { PlayDesireAnimation(); }
+    public IEnumerator FinishDesirePose() { yield return WaitForDesireAnimation(); }
+    public void BeginGroggyPose() { isAttacking = true; PlayAction("Groggy", false); }
+    public void EndGroggyPose() { isAttacking = false; }
     public override void OnSkillAttackHit(BossAttackStepData step)
     {
         int position = executing?.active.attackSteps.IndexOf(step) ?? -1;

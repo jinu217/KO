@@ -11,7 +11,6 @@ public static class MidBoss4_AnimGenerators
 {
     public const string OutputFolder = "Assets/Animations/4/MidBoss 4";
     public const float AttackHit1 = 0.60f, AttackHit2 = 1.30f, AttackHit3 = 2.25f;
-    public const float ThrowTime = 1.7f, CatchTime = 4.1f;
     private const int SampleRate = 60;
     private const int Body = 0, Head = 1, SF = 2, AF = 3, HF = 4, SB = 5, AB = 6, HB = 7,
         Weapon = 8, Bottom = 9, TF = 10, CF = 11, FF = 12, TB = 13, CB = 14, FB = 15;
@@ -37,9 +36,13 @@ public static class MidBoss4_AnimGenerators
         public Vector3[] position = (Vector3[])RestPositions.Clone();
         public float[] angle = (float[])RestAngles.Clone();
         public float frontLift, backLift, frontStep, backStep;
+        public float weaponScale = 1;
+        public float weaponWidth = 1;
+        public float bodyYaw;
+        public bool weaponInFront = false;
     }
     private static readonly string[] Suffixes = { "Idle", "Walk", "Run", "Attack", "Death", "Skill1", "Skill2", "Buff" };
-    private static readonly float[] Lengths = { 2.4f, 1.1f, .72f, 3.1f, 1.9f, 5.1f, 4.5f, 3f };
+    private static readonly float[] Lengths = { 2.4f, 1.1f, .72f, 3.1f, 1.9f, 3.3f, 3.6f, 3f };
     private static Pose Evaluate(int index, float t)
     {
         switch (index)
@@ -100,7 +103,6 @@ public static class MidBoss4_AnimGenerators
         }
         if (controller == null)
             controller = AnimatorController.CreateAnimatorControllerAtPath(OutputFolder + "/" + ControllerName + ".controller");
-        EnsureParameter(controller, "Phase", AnimatorControllerParameterType.Float);
         EnsureParameter(controller, "MoveSpeed", AnimatorControllerParameterType.Float);
         EnsureParameter(controller, "IsChasing", AnimatorControllerParameterType.Bool);
         EnsureParameter(controller, "Attack", AnimatorControllerParameterType.Trigger);
@@ -144,17 +146,14 @@ public static class MidBoss4_AnimGenerators
             AnimationUtility.SetAnimationClipSettings(clips[i], settings);
             EditorUtility.SetDirty(clips[i]);
         }
-        var run2 = Generate("MidBoss4_Run2", .66f, true, t => PhaseRun(t, 2));
-        var run3 = Generate("MidBoss4_Run3", .60f, true, t => PhaseRun(t, 3));
-        var tree = states[2].motion as BlendTree;
-        // Reuse the generated subasset on subsequent setup runs.
+        // Generate future phase clips without connecting them to the Animator.
+        Generate("MidBoss4_Run2", .66f, true, t => PhaseRun(t, 2));
+        Generate("MidBoss4_Run3", .60f, true, t => PhaseRun(t, 3));
+        states[2].motion = clips[2];
+        // Remove only our obsolete generated blend tree.
         foreach (var item in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(controller)))
-            if (item is BlendTree existingTree && existingTree.name == "MidBoss4_PhaseRun") tree = existingTree;
-        if (tree == null) { tree = new BlendTree { name = "MidBoss4_PhaseRun" }; AssetDatabase.AddObjectToAsset(tree, controller); }
-        tree.blendType = BlendTreeType.Simple1D; tree.blendParameter = "Phase"; tree.useAutomaticThresholds = false;
-        tree.children = new[]{new ChildMotion{motion=clips[2],threshold=1,timeScale=1},
-            new ChildMotion{motion=run2,threshold=2,timeScale=1},new ChildMotion{motion=run3,threshold=3,timeScale=1}};
-        states[2].motion = tree; EditorUtility.SetDirty(tree);
+            if (item is BlendTree oldTree && oldTree.name == "MidBoss4_PhaseRun")
+                UnityEngine.Object.DestroyImmediate(oldTree, true);
         foreach (var transition in machine.anyStateTransitions)
             if (transition.name.StartsWith(TransitionPrefix, StringComparison.Ordinal)) machine.RemoveAnyStateTransition(transition);
         machine.defaultState = states[0];
@@ -191,6 +190,13 @@ public static class MidBoss4_AnimGenerators
         EditorUtility.SetDirty(controller);
         AssetDatabase.SaveAssets();
         AssignControllerToPrefab(controller);
+        foreach (var animator in Resources.FindObjectsOfTypeAll<Animator>())
+        {
+            if (!animator.gameObject.scene.IsValid() || animator.runtimeAnimatorController != controller) continue;
+            var weapon = animator.transform.Find(Paths[Weapon]);
+            if (weapon != null && weapon.GetComponent<MidBoss4WeaponLayerPreview>() == null)
+                Undo.AddComponent<MidBoss4WeaponLayerPreview>(weapon.gameObject);
+        }
         ApplyPatternData();
 
         Selection.activeObject = controller;
@@ -276,6 +282,9 @@ public static class MidBoss4_AnimGenerators
             if (animator == null) animator = visual.gameObject.AddComponent<Animator>();
             animator.runtimeAnimatorController = controller;
             animator.applyRootMotion = false;
+            var weapon = visual.Find(Paths[Weapon]);
+            if (weapon != null && weapon.GetComponent<MidBoss4WeaponLayerPreview>() == null)
+                weapon.gameObject.AddComponent<MidBoss4WeaponLayerPreview>();
             foreach (var component in root.GetComponentsInChildren<MonoBehaviour>(true))
             {
                 if (component == null) continue;
@@ -339,27 +348,34 @@ public static class MidBoss4_AnimGenerators
             PatternFloat(step, "postDelay", i == 2 ? 3.1f - AttackHit3 : 0);
             PatternFloat(step, "duration", 0); PatternFloat(step, "moveSpeed", 0); PatternFloat(step, "maxMoveDistance", 0);
         }
-        PatternString(first, "skillName", "낫 투척: 전진 회전 유지 회수");
-        PatternInt(first, "skillType", 0); PatternFloat(first, "preDelay", 0); PatternFloat(first, "postDelay", 1);
-        throwing.arraySize = 1; // remove obsolete Jump / Slam steps
-        var flight = throwing.GetArrayElementAtIndex(0);
-        PatternString(flight, "stepName", "낫 왕복 회전 판정 (Stage4_MidBoss 전용)");
-        PatternInt(flight, "actionType", 8); PatternInt(flight, "attackCount", 6);
-        PatternFloat(flight, "preDelay", ThrowTime); PatternFloat(flight, "postDelay", 0);
-        PatternFloat(flight, "duration", CatchTime - ThrowTime); PatternFloat(flight, "interval", .4f);
-        PatternVector(flight, "hitboxSize", new Vector2(1.2f, 1.8f));
-        PatternVector(flight, "hitboxOffset", Vector2.zero);
-        PatternVector(flight, "knockbackForce", new Vector2(1.5f, .3f));
-        PatternBool(flight, "knockbackAwayFromCenter", false); PatternBool(flight, "persistentFixedCadence", true);
+        PatternString(first, "skillName", "낫 회전 도약 내려찍기");
+        PatternInt(first, "skillType", 0); PatternFloat(first, "preDelay", 0); PatternFloat(first, "postDelay", .8f);
+        throwing.arraySize = 3;
+        var sweep = throwing.GetArrayElementAtIndex(0);
+        PatternInt(sweep, "actionType", 2); PatternInt(sweep, "attackCount", 1);
+        PatternFloat(sweep, "preDelay", .85f); PatternFloat(sweep, "postDelay", .55f); PatternFloat(sweep, "duration", 0);
+        PatternFloat(sweep, "damage", 14); PatternVector(sweep, "hitboxSize", new Vector2(5.5f, 3));
+        PatternVector(sweep, "hitboxOffset", Vector2.zero); PatternVector(sweep, "knockbackForce", new Vector2(5, 2));
+        PatternBool(sweep, "knockbackAwayFromCenter", true);
+        var jump = throwing.GetArrayElementAtIndex(1);
+        PatternInt(jump, "actionType", 5); PatternFloat(jump, "preDelay", 0); PatternFloat(jump, "postDelay", 0);
+        PatternFloat(jump, "duration", .6f); PatternFloat(jump, "damage", 0); PatternVector(jump, "jumpForce", new Vector2(4, 10));
+        var slam = throwing.GetArrayElementAtIndex(2);
+        PatternInt(slam, "actionType", 6); PatternInt(slam, "attackCount", 1); PatternFloat(slam, "preDelay", 0); PatternFloat(slam, "postDelay", 0);
+        PatternFloat(slam, "duration", .5f); PatternFloat(slam, "damage", 17);
+        PatternVector(slam, "hitboxSize", new Vector2(3.5f, 2)); PatternVector(slam, "hitboxOffset", new Vector2(1, 0));
+        PatternVector(slam, "knockbackForce", new Vector2(3, 2));
+        var third = steps.GetArrayElementAtIndex(2);
+        PatternFloat(third, "moveSpeed", 2.4f); PatternFloat(third, "maxMoveDistance", .45f);
         PatternString(second, "skillName", "낫으로 끌어오기 후 전방 회전");
         PatternInt(second, "skillType", 0); PatternFloat(second, "preDelay", 0); PatternFloat(second, "postDelay", 0);
         pulling.arraySize = 2;
         var pull = pulling.GetArrayElementAtIndex(0); var spin = pulling.GetArrayElementAtIndex(1);
         PatternInt(pull, "actionType", 9);
         PatternFloat(pull, "preDelay", .55f); PatternFloat(pull, "duration", .35f); PatternFloat(pull, "postDelay", .45f);
-        PatternInt(spin, "actionType", 8); PatternInt(spin, "attackCount", 4);
-        PatternFloat(spin, "preDelay", 0); PatternFloat(spin, "duration", 2.4f); PatternFloat(spin, "postDelay", .75f);
-        PatternFloat(spin, "interval", .6f); PatternBool(spin, "persistentFixedCadence", true);
+        PatternInt(spin, "actionType", 8); PatternInt(spin, "attackCount", 5);
+        PatternFloat(spin, "preDelay", 0); PatternFloat(spin, "duration", 1.5f); PatternFloat(spin, "postDelay", .75f);
+        PatternFloat(spin, "interval", .3f); PatternBool(spin, "persistentFixedCadence", true);
         // Preserve the merged Hunger buff effects, HP, cooldowns and all damage values.
         PatternFloat(buff, "preDelay", 1.7f); PatternFloat(buff, "postDelay", 1.3f);
         obj.ApplyModifiedProperties(); EditorUtility.SetDirty(asset); AssetDatabase.SaveAssets();
@@ -410,8 +426,8 @@ public static class MidBoss4_AnimGenerators
             transition.AddCondition(destination == 2 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "IsChasing");
     }
 
-    // +X is forward for this boss. Weapon root-space -90 points forward,
-    // exactly as supplied by the author. Hands keep their original local positions.
+    // Keep the scythe at its authored local rest angle except explicit spin sections.
+    // Attack gestures are carried by the arm and torso; hand positions stay attached.
     private static Pose P(float x, float y, float body, float sb, float ab, float hb,
         float sf, float af, float weaponAngle, float lift = 0)
     {
@@ -420,7 +436,7 @@ public static class MidBoss4_AnimGenerators
         p.angle[Head] = -body * .55f; p.angle[Bottom] = -body;
         p.angle[SB] = sb; p.angle[AB] = ab; p.angle[HB] = hb;
         p.angle[SF] = sf; p.angle[AF] = af; p.angle[HF] = -af * .2f;
-        p.angle[Weapon] = weaponAngle - body - sb - ab - hb;
+        p.angle[Weapon] = RestAngles[Weapon];
         p.frontLift = lift; return p;
     }
     private static Pose Mix(Pose a, Pose b, float u)
@@ -430,6 +446,9 @@ public static class MidBoss4_AnimGenerators
         { p.position[i] = Vector3.LerpUnclamped(a.position[i], b.position[i], u); p.angle[i] = Mathf.LerpUnclamped(a.angle[i], b.angle[i], u); }
         p.frontLift = Mathf.Lerp(a.frontLift, b.frontLift, u); p.backLift = Mathf.Lerp(a.backLift, b.backLift, u);
         p.frontStep = Mathf.Lerp(a.frontStep, b.frontStep, u); p.backStep = Mathf.Lerp(a.backStep, b.backStep, u);
+        p.bodyYaw = Mathf.Lerp(a.bodyYaw, b.bodyYaw, u);
+        p.weaponWidth = Mathf.Lerp(a.weaponWidth, b.weaponWidth, u);
+        p.weaponScale = Mathf.Lerp(a.weaponScale, b.weaponScale, u); p.weaponInFront = u < .5f ? a.weaponInFront : b.weaponInFront;
         return p;
     }
     private static Pose Sequence(float t, float[] times, params Pose[] poses)
@@ -467,8 +486,19 @@ public static class MidBoss4_AnimGenerators
         p.angle[calf] = Mathf.DeltaAngle(0, calfWorld - thighWorld);
         p.angle[foot] = -WorldAngle(p, calf);
     }
+    private static void FollowLiftWithPelvis(Pose p)
+    {
+        // Small sagittal pelvic tilt follows the lifted thigh's travel direction.
+        float front = Mathf.Clamp01(p.frontLift / .30f) * Mathf.Clamp(p.frontStep / .18f, -1, 1);
+        float back = Mathf.Clamp01(p.backLift / .30f) * Mathf.Clamp(p.backStep / .18f, -1, 1);
+        p.angle[Bottom] += 7f * Mathf.Clamp(front + back, -1, 1);
+    }
     private static Pose Ground(Pose p)
-    { PlantLeg(p, true, p.frontStep, p.frontLift); PlantLeg(p, false, p.backStep, p.backLift); return p; }
+    {
+        FollowLiftWithPelvis(p);
+        PlantLeg(p, true, p.frontStep, p.frontLift); PlantLeg(p, false, p.backStep, p.backLift);
+        return p;
+    }
     private static Pose Idle(float t)
     {
         // Restrained mechanical idle: a slow, small adjustment, not a frozen pose.
@@ -517,93 +547,163 @@ public static class MidBoss4_AnimGenerators
     }
     private static Pose Attack(float t)
     {
-        var ready = P(-.035f, -.025f, 4, 112, 20, 0, 35, 10, 5);
-        ready.backLift = .34f; ready.backStep = .12f;
-        var impact = P(.23f, -.46f, -35, 104, 7, -8, 30, 8, -115);
-        impact.angle[Bottom] = 17; impact.backStep = .40f; impact.frontStep = -.35f;
-        var retract = P(-.02f, -.10f, 2, 40, 55, -5, 25, 8, -110);
-        var extend = P(.12f, -.14f, -10, 80, 6, 0, 20, 8, -82);
-        var p = Sequence(t, new[] { 0f, .38f, .48f, AttackHit1, .74f, 1.06f, 1.18f, AttackHit2, 1.48f, 1.88f, 2.07f, AttackHit3, 2.52f, 3.1f },
-            new Pose(), ready, ready, impact, impact, ready, ready, impact, impact, retract, retract, extend, extend, new Pose());
+        // A broad angry wind-up: free arm counter-swings behind the torso.
+        var ready = P(-.06f, -.03f, 10, 122, 18, 0, -48, 12, -50);
+        ready.backLift = .23f; ready.backStep = .27f;
+        var impact = P(.25f, -.48f, -38, 45, 0, -45, -66, 16, -50);
+        impact.angle[Bottom] = 20; impact.backStep = .42f; impact.frontStep = -.35f;
+        // Recover through a lower knee lift before the second larger wind-up.
+        var reload = P(-.035f, -.10f, 3, 92, 22, -8, -38, 15, -50);
+        reload.backLift = .12f; reload.backStep = .17f;
+        // Draw the elbow and scythe inward, then load the low forward push.
+        var retract = P(-.07f, -.39f, -8, 12, 78, -122, -35, 18, -50);
+        retract.angle[Bottom] = 8; retract.backStep = .25f;
+        var loaded = P(-.12f, -.48f, -12, 5, 90, -123, -43, 20, -50);
+        loaded.angle[Bottom] = 10; loaded.backStep = .28f;
+        var extend = P(.20f, -.62f, -24, 78, 8, -102, -52, 18, -50);
+        extend.angle[Bottom] = 12; extend.backStep = .48f;
+        // -24 + 78 + 8 - 102 - 50 = -90: scythe faces forward via the wrist.
+        var p = Sequence(t, new[] { 0f, .36f, .48f, AttackHit1, .76f, .93f, 1.08f, 1.18f, AttackHit2, 1.49f, 1.78f, 1.98f, 2.07f, AttackHit3, 2.52f, 3.1f },
+            new Pose(), ready, ready, impact, impact, reload, ready, ready, impact, impact, retract, loaded, loaded, extend, extend, new Pose());
+        FollowLiftWithPelvis(p);
         PlantLeg(p, false, p.backStep, p.backLift);
-        // Front leg stays nearly straight, reaching behind the descending pelvis.
-        float load = Mathf.Clamp01(-p.position[Body].y / .46f);
-        p.angle[TF] = -WorldAngle(p, Bottom) - 36 * load;
-        p.angle[CF] = -3 * load; p.angle[FF] = -WorldAngle(p, CF);
-        return KeepAboveFloor(p, false);
+        // Let the airborne rear foot trail the shin; flatten it gradually on planting.
+        float airborne = Smooth(Mathf.Clamp01(p.backLift / .23f));
+        p.angle[FB] += Mathf.Clamp(WorldAngle(p, CB) * .35f, -16, 12) * airborne;
+        float load = Mathf.Clamp01(-p.position[Body].y / .62f);
+        p.angle[TF] = -WorldAngle(p, Bottom) - 42 * load;
+        p.angle[CF] = -4 * load; p.angle[FF] = -WorldAngle(p, CF);
+        KeepAboveFloor(p, false);
+        SeatRearFootWithCalf(p);
+        return p;
     }
-    private static Pose ThrowCharge()
+    private static void SeatRearFootWithCalf(Pose p)
     {
-        var p = P(-.025f, 0, 4, 142, 38, 0, 30, 12, 30);
-        p.angle[Weapon] = RestAngles[Weapon]; return p;
-    }
-    private static Pose ThrowHold()
-    {
-        var p = P(.12f, -.20f, -12, 82, 8, 0, 22, 12, -90);
-        p.backStep = .32f; p.frontStep = -.16f; return p;
+        // Work after body clearance: front-leg clearance can lift the rear sole.
+        // Keep intentional lift height, and extend the rear shin only in +rotation.
+        float target = SpriteBottom(new Pose(), FB) + Mathf.Max(0, p.backLift);
+        float gap = SpriteBottom(p, FB) - target;
+        if (gap <= .0001f) return;
+        float calf = p.angle[CB], foot = p.angle[FB], best = 0, bestGap = gap;
+        for (int n = 1; n <= 180; n++)
+        {
+            float delta = n * .25f;
+            p.angle[CB] = calf + delta; p.angle[FB] = foot - delta;
+            float error = SpriteBottom(p, FB) - target;
+            if (error < 0)
+            {
+                // First contact, refined without allowing the sole below target.
+                float lo = delta - .25f, hi = delta;
+                for (int j = 0; j < 12; j++)
+                {
+                    float mid = (lo + hi) * .5f; p.angle[CB] = calf + mid; p.angle[FB] = foot - mid;
+                    if (SpriteBottom(p, FB) >= target) lo = mid; else hi = mid;
+                }
+                best = lo; break;
+            }
+            if (error < bestGap) { bestGap = error; best = delta; }
+        }
+        p.angle[CB] = calf + best; p.angle[FB] = foot - best;
     }
     private static Pose Skill1(float t)
     {
-        var charge = ThrowCharge(); var hold = ThrowHold();
-        var catchPose = P(.01f, -.08f, -2, 58, 28, -5, 26, 18, -75);
-        var p = Sequence(t, new[] { 0f, .55f, 1.48f, ThrowTime, CatchTime, 4.27f, 4.46f, 5.1f },
-            new Pose(), charge, charge, hold, hold, catchPose, catchPose, new Pose());
-        if (t > .55f && t < 1.48f)
+        var wind = Ground(P(-.04f, 0, 5, 12.08f, 81.29f, -30, 15, 25, -50));
+        wind.angle[Weapon] = -90 - WorldAngle(wind, HB);
+        var spin = Ground(P(.03f, 0, -6, 12.08f, 81.29f, -30, 15, 25, -50));
+        spin.angle[Weapon] = -90 - WorldAngle(spin, HB);
+        var crouch = Ground(P(-.03f, -.32f, 8, 128, 35, 0, 32, 18, 10));
+        var air = P(.08f, -.10f, -8, 130, 20, 0, 20, 15, 10);
+        air.backLift = .42f; air.frontLift = .12f; Ground(air);
+        var slam = Attack(AttackHit1);
+        // Solve each key pose before blending. At frame 165 (2.75 seconds),
+        // recovery now begins from this same solved slam rather than switching IK.
+        var p = Sequence(t, new[] { 0f, .45f, .60f, 1.05f, 1.20f, 1.4f, 2f, 2.5f, 2.75f, 3.3f },
+            new Pose(), wind, wind, spin, spin, crouch, air, slam, slam, new Pose());
+        if (t >= .60f && t <= 1.05f)
         {
-            float envelope = Mathf.Sin((t - .55f) / .93f * Mathf.PI);
-            p.position[Body].x += .026f * envelope * Mathf.Sin(t * 72);
-            p.angle[Head] += 2.4f * envelope * Mathf.Sin(t * 68);
-            p.angle[SF] += 3f * envelope * Mathf.Sin(t * 64);
+            float u = Mathf.Clamp01((t - .60f) / .45f), turn = Smooth(u);
+            float weight = Smooth(Mathf.Clamp01(u / .16f)) * Smooth(Mathf.Clamp01((1 - u) / .16f));
+            // One full turn around the body's vertical axis, with the weapon
+            // extended radially. All child parts turn together.
+            p.bodyYaw = 360 * turn;
+            p.angle[SB] = Mathf.Lerp(p.angle[SB], 12.08f, weight);
+            p.angle[AB] = Mathf.Lerp(p.angle[AB], 81.29f, weight);
+            p.angle[HB] = Mathf.Lerp(p.angle[HB], -30, weight);
+            p.angle[Weapon] = -90 - WorldAngle(p, HB);
+            // Weapon pivot sits midway up the torso; front hand supports the
+            // inner shaft instead of stretching to the rear hand's grip.
+            Vector2 grip = WorldPosition(p, Weapon) + new Vector2(-1.15f, 0);
+            MatchFrontHand(p, grip, weight);
+            float depth = Mathf.Sin(turn * Mathf.PI * 2);
+            p.weaponScale = 1 + .22f * depth * weight;
+            p.weaponWidth = Mathf.Lerp(1, .60f, weight);
+            p.weaponInFront = depth >= 0;
         }
-        if (t <= 1.48f)
-        {
-            p.angle[Weapon] = RestAngles[Weapon];
-            p.position[Bottom] = Quaternion.Euler(0, 0, -p.angle[Body]) * (RestPositions[Bottom] - p.position[Body]);
-        }
-        else
-        {
-            var straight = Mix(p, p, 0);
-            straight.position[Bottom] = Quaternion.Euler(0, 0, -p.angle[Body]) * (RestPositions[Bottom] - p.position[Body]);
-            Ground(p);
-            p = Mix(straight, p, Mathf.Clamp01((t - 1.48f) / (ThrowTime - 1.48f)));
-        }
-        if (t >= ThrowTime && t <= CatchTime)
-        {
-            Ground(hold);
-            Vector2 start = WorldPosition(hold, Weapon);
-            float elapsed = t - ThrowTime;
-            float distance = elapsed < .7f ? 4f * Smooth(elapsed / .7f) :
-                elapsed < 1.5f ? 4f : 4f * (1 - Smooth((elapsed - 1.5f) / .9f));
-            float u = elapsed / (CatchTime - ThrowTime);
-            Vector2 target = start + new Vector2(distance, .10f * Mathf.Sin(u * Mathf.PI));
-            Vector2 local = Rotate(target - WorldPosition(p, HB), -WorldAngle(p, HB));
-            p.position[Weapon] = new Vector3(local.x, local.y, 0);
-            p.angle[Weapon] = -90 - 1800 * u - WorldAngle(p, HB);
-        }
+        return KeepAboveFloor(p, false);
+    }
+    private static void MatchFrontHand(Pose p, Vector2 target, float weight)
+    {
+        Vector2 a = RestPositions[AF], b = RestPositions[HF], d = target - WorldPosition(p, SF);
+        float length = Mathf.Clamp(d.magnitude, Mathf.Abs(a.magnitude - b.magnitude) + .001f, a.magnitude + b.magnitude - .001f);
+        float bend = Mathf.Acos(Mathf.Clamp((length * length - a.sqrMagnitude - b.sqrMagnitude) / (2 * a.magnitude * b.magnitude), -1, 1));
+        float heading = Mathf.Atan2(d.y, d.x) - Mathf.Atan2(b.magnitude * Mathf.Sin(bend), a.magnitude + b.magnitude * Mathf.Cos(bend));
+        float shoulder = heading * Mathf.Rad2Deg - Mathf.Atan2(a.y, a.x) * Mathf.Rad2Deg - p.angle[Body];
+        float forearm = (heading + bend) * Mathf.Rad2Deg - Mathf.Atan2(b.y, b.x) * Mathf.Rad2Deg - heading * Mathf.Rad2Deg + Mathf.Atan2(a.y, a.x) * Mathf.Rad2Deg;
+        p.angle[SF] = Mathf.LerpAngle(p.angle[SF], shoulder, weight);
+        p.angle[AF] = Mathf.LerpAngle(p.angle[AF], forearm, weight);
+        p.angle[HF] = Mathf.LerpAngle(p.angle[HF], -WorldAngle(p, AF), weight);
+    }
+    private static Pose StationaryUpperBody(Pose p)
+    {
+        // Pelvis and straight legs keep their rest-space placement throughout.
+        p.position[Bottom] = Quaternion.Euler(0, 0, -p.angle[Body]) * (RestPositions[Bottom] - p.position[Body]);
+        p.angle[Bottom] = -p.angle[Body];
+        p.angle[TF] = p.angle[CF] = p.angle[FF] = p.angle[TB] = p.angle[CB] = p.angle[FB] = 0;
         return p;
     }
     private static Pose Skill2(float t)
     {
-        var reach = P(.07f, -.12f, -9, 85, 6, 0, 22, 10, -80);
-        var pull = P(-.12f, -.05f, 6, 8, 92, -22, 30, 15, -165);
-        var spin = P(.01f, -.09f, -4, 60, 20, 0, 25, 12, -90);
-        var p = Sequence(t, new[] { 0f, .30f, .55f, .76f, 1.12f, 1.35f, 3.75f, 3.95f, 4.5f },
-            new Pose(), reach, reach, pull, pull, spin, spin, spin, new Pose());
-        if (t >= 1.35f && t <= 3.75f)
-            p.angle[Weapon] -= 1440 * (t - 1.35f) / 2.4f;
-        p.position[Bottom] = Quaternion.Euler(0, 0, -p.angle[Body]) * (RestPositions[Bottom] - p.position[Body]);
+        // Extend the arm with the blade aligned to the supplied inward-facing grip.
+        var raised = P(-.025f, -.015f, 3, 48, 45, -20, -18, 16, -50);
+        raised.angle[Weapon] = -76; // +Y head vertical above the hand
+        var reach = P(.10f, -.035f, -10, 40, 25, -20, -20, 12, -50);
+        reach.angle[Weapon] = -125; // head forward before the pull
+        // Retract the elbow/forearm, bringing the forward scythe head inward.
+        // Keep the head direction stable while the entire weapon travels back.
+        var pull = P(-.06f, -.025f, 4, -15, 35, -30, -30, 18, -50);
+        pull.angle[Weapon] = -236; // compensate +8 combined arm rotation to retain inward blade direction
+        // Shoulder 30 + forearm 33 preserves the previous combined 45 + 18 angle.
+        var spin = P(.02f, -.02f, -3, 30, 33, -30, -12, 16, -50);
+        spin.angle[Weapon] = -120;
+        var p = Sequence(t, new[] { 0f, .28f, .40f, .55f, .70f, 1.12f, 1.35f, 2.85f, 3.05f, 3.6f },
+            new Pose(), raised, raised, reach, pull, pull, spin, spin, spin, new Pose());
+        if (t >= 1.35f && t <= 2.85f)
+            p.angle[Weapon] -= 3600 * (t - 1.35f) / 1.5f;
+        p.weaponInFront = true;
+        StationaryUpperBody(p);
+        // Add weight through the pelvis/legs only; retain the approved upper body.
+        float recover = 1 - Smooth(Mathf.Clamp01((t - 1.12f) / .23f));
+        float step = Smooth(Mathf.Clamp01((t - .40f) / .30f)) * recover;
+        float load = Smooth(Mathf.Clamp01((t - .55f) / .15f)) * recover;
+        float lift = 0;
+        if (t > .40f && t < .70f) lift = .055f * Mathf.Pow(Mathf.Sin((t - .40f) / .30f * Mathf.PI), 2);
+        p.position[Bottom] += (Vector3)Rotate(new Vector2(.035f * load, -.065f * load), -p.angle[Body]);
+        p.angle[Bottom] += 4f * step;
+        PlantLeg(p, true, 0, 0);
+        PlantLeg(p, false, .16f * step, lift);
         return p;
     }
     private static Pose Buff(float t)
     {
         var raised = P(0, -.03f, 0, 128, 18, 0, 20, 15, 0);
-        // Authored upper-body pose: weapon LOCAL rotation is -85 degrees.
+        // Preserve the pointing direction through the wrist, with scythe local rotation at rest.
         var point = P(.01f, -.04f, -3, 90, 0, -90, 0, 15, -88);
-        point.angle[Weapon] = -85;
+        point.angle[HB] -= 35;
+        point.angle[Weapon] = RestAngles[Weapon];
         point.angle[HF] = -3;
         var p = Sequence(t, new[] { 0f, 1.10f, 1.38f, 1.70f, 2.18f, 3f },
             new Pose(), raised, raised, point, point, new Pose());
-        if (t <= 1.1f) p.angle[Weapon] -= 720 * Smooth(Mathf.Clamp01(t / 1.1f));
+        if (t <= .825f) p.angle[Weapon] -= 1080 * Smooth(Mathf.Clamp01(t / .825f));
         // Keep pelvis and straight legs at their rest-space positions while
         // the upper body translates/leans. No leg IK or knee flex in this buff.
         Vector3 delta = RestPositions[Bottom] - p.position[Body];
@@ -659,7 +759,7 @@ public static class MidBoss4_AnimGenerators
                 var keys = new Keyframe[count + 1];
                 for (int i = 0; i <= count; i++) keys[i] = new Keyframe(times[i], poses[i].position[part][axis]);
                 SetCurve(clip, Paths[part], "m_LocalPosition." + "xyz"[axis], keys);
-                if (part != Weapon)
+                if (part != Weapon && part != Body)
                 {
                     for (int i = 0; i <= count; i++) keys[i] = new Keyframe(times[i], axis == 2 ? poses[i].angle[part] : 0);
                     SetCurve(clip, Paths[part], "localEulerAnglesRaw." + "xyz"[axis], keys);
@@ -667,24 +767,40 @@ public static class MidBoss4_AnimGenerators
                 // The scythe sprite's authored default is mirrored locally.
                 // Preserve this in every clip, including Idle and Death.
                 float restScale = part == Weapon && axis == 0 ? -1f : 1f;
-                SetCurve(clip, Paths[part], "m_LocalScale." + "xyz"[axis],
-                    new[] { new Keyframe(0, restScale), new Keyframe(duration, restScale) });
+                var scaleKeys = new Keyframe[count + 1];
+                for (int i = 0; i <= count; i++) scaleKeys[i] = new Keyframe(times[i], restScale * (part == Weapon ? poses[i].weaponScale * (axis == 0 ? poses[i].weaponWidth : 1) : 1));
+                SetCurve(clip, Paths[part], "m_LocalScale." + "xyz"[axis], scaleKeys);
             }
         }
+        // Serialized renderer curve also works in the Animation window preview.
+        // Reset to the authored Back layer outside the near half of the sweep.
+        // Animate a small flag; large sorting-layer IDs lose precision in float curves.
+        var layerKeys = new Keyframe[count + 1];
+        for (int i = 0; i <= count; i++) layerKeys[i] = new Keyframe(times[i], poses[i].weaponInFront ? 1 : 0);
+        var layerCurve = new AnimationCurve(layerKeys);
+        for (int i = 0; i < layerCurve.length; i++)
+        {
+            AnimationUtility.SetKeyLeftTangentMode(layerCurve, i, AnimationUtility.TangentMode.Constant);
+            AnimationUtility.SetKeyRightTangentMode(layerCurve, i, AnimationUtility.TangentMode.Constant);
+        }
+        AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve(Paths[Weapon], typeof(MidBoss4WeaponLayerPreview), "front"), layerCurve);
         // Quaternion sampling keeps continuous revolutions, then joins the canonical rest
         // without unwinding several turns during the next Animator transition.
-        var rotations = new Quaternion[count + 1];
-        for (int i = 0; i <= count; i++)
+        foreach (int part in new[] { Body, Weapon })
         {
-            Quaternion q = Quaternion.Euler(0, 0, poses[i].angle[Weapon]);
-            if (i > 0 && Quaternion.Dot(rotations[i - 1], q) < 0) q = new Quaternion(-q.x, -q.y, -q.z, -q.w);
-            rotations[i] = q;
-        }
-        for (int axis = 0; axis < 4; axis++)
-        {
-            var keys = new Keyframe[count + 1];
-            for (int i = 0; i <= count; i++) keys[i] = new Keyframe(times[i], rotations[i][axis]);
-            SetCurve(clip, Paths[Weapon], "m_LocalRotation." + "xyzw"[axis], keys);
+            var rotations = new Quaternion[count + 1];
+            for (int i = 0; i <= count; i++)
+            {
+                Quaternion q = Quaternion.Euler(0, part == Body ? poses[i].bodyYaw : 0, poses[i].angle[part]);
+                if (i > 0 && Quaternion.Dot(rotations[i - 1], q) < 0) q = new Quaternion(-q.x, -q.y, -q.z, -q.w);
+                rotations[i] = q;
+            }
+            for (int axis = 0; axis < 4; axis++)
+            {
+                var keys = new Keyframe[count + 1];
+                for (int i = 0; i <= count; i++) keys[i] = new Keyframe(times[i], rotations[i][axis]);
+                SetCurve(clip, Paths[part], "m_LocalRotation." + "xyzw"[axis], keys);
+            }
         }
         var settings = AnimationUtility.GetAnimationClipSettings(clip);
         settings.loopTime = loop; settings.loopBlend = false; AnimationUtility.SetAnimationClipSettings(clip, settings);

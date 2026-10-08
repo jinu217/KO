@@ -19,8 +19,12 @@ public sealed class Stage4_MidBoss : MidBossController
     private float lockedScaleX = 1, actionRate = 1;
     private int lockedDirection = 1;
     private bool actionLock;
+    private Vector2 jumpStart;
+    private float jumpDistance, savedGravity;
+    private bool jumpOwned, slamHit;
+    private float pushTravel;
     private static readonly string[] StateNames = { "MidBoss4_Attack", "MidBoss4_Skill1", "MidBoss4_Skill2", "MidBoss4_Buff" };
-    private static readonly float[] Durations = { 3.1f, 5.1f, 4.5f, 3f };
+    private static readonly float[] Durations = { 3.1f, 3.3f, 3.6f, 3f };
 
     protected override void Awake()
     {
@@ -87,6 +91,8 @@ public sealed class Stage4_MidBoss : MidBossController
         lockedDirection = lookDirection;
         ApplyFacingDirection();
         actionLock = true;
+        slamHit = false; pushTravel = 0;
+        jumpDistance = Mathf.Clamp((PlayerPosition.x - transform.position.x) * lockedDirection, 0, 4);
         actionRate = 1f / Mathf.Max(.01f, GetSkillDelay(1f));
         StopHorizontal();
         if (actionAnimator == null) return;
@@ -109,13 +115,18 @@ public sealed class Stage4_MidBoss : MidBossController
         {
             // Animation has evaluated before reading the moving scythe's world position.
             yield return new WaitForEndOfFrame();
-            if (isDead) yield break;
+            if (isDead) { RestoreJump(); yield break; }
             previous = clock;
             clock = Mathf.Min(length, clock + Time.deltaTime * actionRate);
             StopHorizontal();
             lookDirection = lockedDirection;
             if (index < 0)
             {
+                if (clock >= 2.07f && previous < 2.25f)
+                {
+                    var push = Step(2); float distance = Mathf.Min(push.maxMoveDistance - pushTravel, push.moveSpeed * Time.deltaTime * actionRate);
+                    if (distance > 0) { MoveSafely(new Vector2(lockedDirection * distance, 0)); pushTravel += distance; }
+                }
                 float hitTime = 0;
                 for (int i = 0; i < 3; i++)
                 {
@@ -129,18 +140,17 @@ public sealed class Stage4_MidBoss : MidBossController
             }
             else if (index == 0)
             {
-                BossAttackStepData step = Step(0);
-                if (step != null)
+                if (previous < .85f && clock >= .85f) Damage(Step(0), RootCenter(Step(0)));
+                if (clock >= 1.4f && !slamHit && rb != null)
                 {
-                    float start = sourceSkill.preDelay + step.preDelay;
-                    float interval = Mathf.Max(.01f, step.interval), end = start + step.duration;
-                    while (pulse < step.attackCount && start + pulse * interval <= clock
-                        && start + pulse * interval < end)
-                    {
-                        if (scythe != null)
-                            Damage(step, scythe.TransformPoint(scytheHitboxLocalOffset));
-                        pulse++;
-                    }
+                    if (!jumpOwned) { jumpStart = rb.position; savedGravity = rb.gravityScale; rb.gravityScale = 0; rb.linearVelocity = Vector2.zero; jumpOwned = true; }
+                    float u = Mathf.Clamp01((clock - 1.4f) / 1.1f);
+                    float height = u <= .54545f ? 2.1f * Mathf.Sin(u / .54545f * Mathf.PI * .5f) :
+                        2.1f * Mathf.Cos((u - .54545f) / .45455f * Mathf.PI * .5f);
+                    Vector2 target = jumpStart + new Vector2(lockedDirection * jumpDistance * u, height);
+                    bool blocked = MoveSafely(target - rb.position);
+                    if (clock >= 2.5f || (clock >= 2f && blocked && IsGrounded()))
+                    { Damage(Step(2), RootCenter(Step(2))); slamHit = true; RestoreJump(); }
                 }
             }
             else if (index == 1)
@@ -174,11 +184,25 @@ public sealed class Stage4_MidBoss : MidBossController
 
     protected override void OnSkillExecutionFinished(int index)
     {
+        RestoreJump();
         actionLock = false;
         if (actionAnimator != null && !isDead) actionAnimator.speed = 1;
         StopHorizontal();
     }
 
+    private void RestoreJump()
+    { if (jumpOwned && rb != null) { rb.gravityScale = savedGravity; rb.linearVelocity = Vector2.zero; } jumpOwned = false; }
+    private bool MoveSafely(Vector2 delta)
+    {
+        if (rb == null || delta.magnitude < .00001f) return false;
+        var filter = new ContactFilter2D(); filter.SetLayerMask(wallLayer); filter.useTriggers = false;
+        float distance = delta.magnitude, allowed = distance;
+        int count = rb.Cast(delta / distance, filter, pullHits, distance + .01f);
+        for (int i = 0; i < count; i++) if (Vector2.Dot(pullHits[i].normal, delta) < 0)
+                allowed = Mathf.Min(allowed, Mathf.Max(0, pullHits[i].distance - .01f));
+        rb.position += delta / distance * allowed; return allowed < distance - .001f;
+    }
+    protected override void Die() { RestoreJump(); base.Die(); }
     private void LateUpdate()
     {
         if (isDead) return;
@@ -195,7 +219,6 @@ public sealed class Stage4_MidBoss : MidBossController
         if (actionAnimator == null) return;
         actionAnimator.SetFloat("MoveSpeed", rb == null ? 0 : Mathf.Abs(rb.linearVelocity.x));
         actionAnimator.SetBool("IsChasing", isChasing);
-        actionAnimator.SetFloat("Phase", currentPhase);
     }
     private static float DataDuration(BossSkillData skill)
     {
@@ -236,7 +259,9 @@ public sealed class Stage4_MidBoss : MidBossController
             if (body != null && knockback)
             {
                 body.linearVelocity = Vector2.zero;
-                body.AddForce(new Vector2(lockedDirection * step.knockbackForce.x, step.knockbackForce.y), ForceMode2D.Impulse);
+                float direction = step.knockbackAwayFromCenter ? Mathf.Sign(body.position.x - center.x) : lockedDirection;
+                if (direction == 0) direction = lockedDirection;
+                body.AddForce(new Vector2(direction * step.knockbackForce.x, step.knockbackForce.y), ForceMode2D.Impulse);
             }
         }
     }
