@@ -7,6 +7,7 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
     private Stage4_MainBossDesireSkill desireSkill;
     private BossSkillData executing;
     private bool enhancedAnimation;
+    private string patternAction;
     private bool bodyHit;
     private bool patternHealed, uppercutHealed;
     protected override string AnimationPrefix => "MainBoss4_";
@@ -43,6 +44,9 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
         enhancedAnimation = desireSkill.Active;
         bodyHit = patternHealed = uppercutHealed = false;
         base.OnSkillExecutionStarted(skill, index);
+        patternAction = index < 0 ? "Attack" : "skill" + (index + 1);
+        if (enhancedAnimation && (index < 0 || index == 3)) patternAction += "_Desire";
+        PlayAction(patternAction);
     }
     public override void RefreshSkillDirection()
     {
@@ -55,14 +59,36 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
         int stepIndex = executing?.active?.attackSteps.IndexOf(step) ?? -1;
         if (stepIndex < 0) return false;
         if (currentSkillIndex == 1 && stepIndex >= 2 && !bodyHit) return false;
-        string suffix = enhancedAnimation && (currentSkillIndex < 0 || currentSkillIndex == 1 || currentSkillIndex == 3) ? "_D" : "";
-        PlayAction("Step_" + (currentSkillIndex + 1) + "_" + stepIndex + suffix);
+        string action = patternAction;
+        int start = 0, end = executing.active.attackSteps.Count;
+        float initial = executing.preDelay;
+        if (currentSkillIndex == 1)
+        {
+            if (stepIndex >= 2) { action = "skill2_Uppercut" + (enhancedAnimation ? "_Desire" : ""); start = 2; initial = 0; }
+            else end = Mathf.Min(2, end);
+        }
+        float offset = initial, length = initial + executing.postDelay + .32f;
+        for (int i = start; i < end; i++)
+        {
+            float time = AnimationStepLength(executing.active.attackSteps[i]);
+            length += time; if (i < stepIndex) offset += time;
+        }
+        // Same integrated state, no generated per-hit clips. Seek only at executor boundaries.
+        Animator patternAnimator = GetDeathAnimator();
+        if (patternAnimator != null && PlayAction(action))
+        {
+            patternAnimator.ResetTrigger(action);
+            patternAnimator.Play(Animator.StringToHash("Base Layer.MainBoss4_" + action), 0, offset / length);
+        }
+        patternAction = action;
         return true;
     }
+    private static float AnimationStepLength(BossAttackStepData step)
+        => Mathf.Max(.08f, step.preDelay + (step.actionType == BossActionType.MeleeAttack ? 0 : step.duration) + step.postDelay);
     protected override IEnumerator WaitForSkillAnimation(BossSkillData skill, int index)
     {
         if (skill.skillType == BossSkillType.Buff) { yield return base.WaitForSkillAnimation(skill, index); yield break; }
-        PlayAction("Recover"); yield return WaitForAction("MainBoss4_Recover");
+        yield return WaitForAction("MainBoss4_" + patternAction);
     }
     public void BeginDesirePose() { PlayDesireAnimation(); }
     public IEnumerator FinishDesirePose() { yield return WaitForDesireAnimation(); }
