@@ -173,8 +173,7 @@ public class InventoryDisplay : MonoBehaviour
         tooltip.Show(item, slotRect);
     }
 
-    //============== 장비 ==============
-
+    //============== 장비 장착 ==============
     public void EquipSelected(int index)
     {
         if (inventory == null)
@@ -188,8 +187,52 @@ public class InventoryDisplay : MonoBehaviour
         if (item == null)
             return;
 
+        //============== 이미 같은 장비가 장착되어 있는지 확인 ==============
+
+        if (inventory.equipmentManager != null)
+        {
+            ItemData equippedItem = null;
+
+            switch (item.equipType)
+            {
+                case EquipmentType.Weapon:
+                    if (inventory.equipmentManager.weaponSlot != null)
+                        equippedItem = inventory.equipmentManager.weaponSlot.GetItem();
+                    break;
+
+                case EquipmentType.Hand:
+                    if (inventory.equipmentManager.handSlot != null)
+                        equippedItem = inventory.equipmentManager.handSlot.GetItem();
+                    break;
+
+                case EquipmentType.Head:
+                    if (inventory.equipmentManager.headSlot != null)
+                        equippedItem = inventory.equipmentManager.headSlot.GetItem();
+                    break;
+
+                case EquipmentType.Body:
+                    if (inventory.equipmentManager.bodySlot != null)
+                        equippedItem = inventory.equipmentManager.bodySlot.GetItem();
+                    break;
+
+                case EquipmentType.Foot:
+                    if (inventory.equipmentManager.footSlot != null)
+                        equippedItem = inventory.equipmentManager.footSlot.GetItem();
+                    break;
+            }
+
+            // 이미 같은 장비가 장착되어 있으면 아무것도 하지 않음
+            if (equippedItem == item)
+            {
+                Debug.Log($"[InventoryDisplay] 이미 장착 중인 장비입니다 : {item.itemName}");
+                return;
+            }
+        }
+
+        // 장비 장착
         inventory.EquipItem(item);
 
+        // 장착에 사용한 인벤토리 아이템 제거
         inventory.RemoveItem(index);
     }
 

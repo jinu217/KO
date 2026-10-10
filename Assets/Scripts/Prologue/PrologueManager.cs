@@ -102,6 +102,11 @@ public class PrologueManager : MonoBehaviour
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.F))
+            Debug.Log("F 감지됨 / isFlashing=" + isFlashing + " / skipPanel=" + skipConfirmPanel.activeSelf);
+
+        if (Input.anyKeyDown)
+            Debug.Log("입력된 문자: [" + Input.inputString + "]");
         // Flash 중에는 입력 받지 않음
         if (isFlashing)
         {
@@ -111,8 +116,8 @@ public class PrologueManager : MonoBehaviour
         // 스킵 확인창이 열려 있는 경우
         if (skipConfirmPanel.activeSelf)
         {
-            // Enter를 누르면 프롤로그 스킵
-            if (Input.GetKeyDown(KeyCode.Return))
+            // F를 누르면 프롤로그 스킵
+            if (Input.GetKeyDown(KeyCode.F))
             {
                 SkipPrologue();
             }
@@ -134,8 +139,8 @@ public class PrologueManager : MonoBehaviour
             return;
         }
 
-        // Enter 입력
-        if (Input.GetKeyDown(KeyCode.Return))
+        // F 입력
+        if (Input.GetKeyDown(KeyCode.F))
         {
             if (isTyping)
             {

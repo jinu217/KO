@@ -18,6 +18,8 @@ public class RunData
     public int bodyItemId = -1;
     public int footItemId = -1;
 
+    public bool startWeaponGiven;   // 시작 무기 지급 여부
+
     public int healPotionCount;
     public int bpmPotionCount;
     public int coin;
@@ -51,4 +53,9 @@ public class RunData
     public int killCount;
     public int midBossKillCount;
     public int mainBossKillCount;
+
+    //============== 엔딩 관련 ==============
+    public int machineEquipmentCount = 0;   // 기계장비 갯수
+    public HeroineEndingChoice heroineChoice = HeroineEndingChoice.None;    // 영애 목숨 선택
+    public LastBossEndingChoice lastBossChoice = LastBossEndingChoice.None; // 라스트보스 목숨 선택
 }

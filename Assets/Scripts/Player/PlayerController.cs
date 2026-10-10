@@ -492,14 +492,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     private Coroutine invincibleRoutine;
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
 
+    //============== 명상 ==============
     [Header("명상")]
-    [Tooltip("명상 최대 지속 시간")]
-    public float meditatingDuration = 4f;
-    [Tooltip("명상 쿨타임")]
-    public float meditatingCooldown = 10f;
     private bool isMeditating;
     private Coroutine meditatingRoutine;
-    private float nextMeditatingTime;
 
     // -------------------- 범위 시각화 --------------------
     [Header("범위 시각화")]
@@ -513,6 +509,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // -------------------- 인벤토리 --------------------
     [Header("인벤토리 설정")]
     private bool isInventoryOpen;     // 인벤토리 UI 열림 상태
+    public bool IsInventoryOpen => isInventoryOpen;
     private InventoryUI inventoryUI;  // 인벤토리 UI 참조
 
     // -------------------- 내부 보조 값 --------------------
@@ -710,6 +707,13 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         if (isMeditating)
         {
+            Vector2 meditationMoveInput = context.ReadValue<Vector2>();
+
+            if (meditationMoveInput.sqrMagnitude > 0.01f)
+            {
+                StopMeditating();
+            }
+
             moveInput = Vector2.zero;
             return;
         }
@@ -957,22 +961,23 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
-        if (!context.started || isDashing || isKnockback || ChestRewardPanel.IsAnyOpen) return;
-
-        if (isInventoryOpen)
-        {
-            if (inventoryUI != null) inventoryUI.ConfirmCurrentSelection();
-            return;
-        }
+        if (!context.started || isDashing || isKnockback || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
 
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanAttack()) return;
 
-        float attackSpeedMultiplier = playerStatus != null ? playerStatus.AttackSpeedMultiplier : 1f;
-        float effectiveAttackSpeed = stats.attackSpeed * attackSpeedMultiplier;
-        if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed)) return;
+        float attackSpeedMultiplier = playerStatus != null
+            ? playerStatus.AttackSpeedMultiplier
+            : 1f;
 
-        if (animator != null) animator.SetTrigger(AnimAttack);
-        playerStatus.OnAttack(); // PlayerStatus 연결
+        float effectiveAttackSpeed = stats.attackSpeed * attackSpeedMultiplier;
+
+        if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed))
+            return;
+
+        if (animator != null)
+            animator.SetTrigger(AnimAttack);
+
+        playerStatus.OnAttack();
         lastAttackTime = Time.time;
     }
 
@@ -1052,27 +1057,52 @@ public class PlayerController : MonoBehaviour, IDamageable
         bag.UseBPMPotion();
     }
 
+    //============== 명상 / 인벤토리 선택 입력 ==============
     public void OnMeditating(InputAction.CallbackContext context)
     {
-        if (!context.started) return;
-        if (TutorialManager.Instance != null && !TutorialManager.Instance.CanUseExtraAction()) return;
+        //============== F를 누르기 시작했을 때 ==============
 
-        if (isMeditating)
+        if (context.started)
         {
-            StopMeditating();
-            return;
+            // 인벤토리가 열려 있으면
+            // F = 선택한 아이템 장착
+            if (isInventoryOpen)
+            {
+                if (inventoryUI != null)
+                    inventoryUI.ConfirmCurrentSelection();
+
+                return;
+            }
+
+            //============== 인벤토리가 닫혀 있으면 F = 명상 ==============
+
+            if (TutorialManager.Instance != null &&
+                !TutorialManager.Instance.CanUseExtraAction())
+                return;
+
+            if (isKeyboardControlPaused ||
+                isDashing ||
+                isKnockback ||
+                isMoveDelayed ||
+                ChestRewardPanel.IsAnyOpen)
+                return;
+
+            if (meditatingRoutine != null)
+                StopCoroutine(meditatingRoutine);
+
+            meditatingRoutine = StartCoroutine(TryStartMeditatingAfterInteract());
         }
 
-        if (isKeyboardControlPaused || isDashing || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
-            return;
+        //============== F를 떼었을 때 ==============
 
-        if (Time.time < nextMeditatingTime)
-            return;
+        if (context.canceled)
+        {
+            // 인벤토리에서는 명상을 취소하지 않음
+            if (isInventoryOpen)
+                return;
 
-        if (meditatingRoutine != null)
-            StopCoroutine(meditatingRoutine);
-
-        meditatingRoutine = StartCoroutine(TryStartMeditatingAfterInteract());
+            StopMeditating();
+        }
     }
 
     private IEnumerator TryStartMeditatingAfterInteract()
@@ -1086,6 +1116,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             yield break;
         }
 
+        //============== 명상 시작 ==============
         yield return MeditatingRoutine();
     }
 
@@ -1098,12 +1129,17 @@ public class PlayerController : MonoBehaviour, IDamageable
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
 
         if (playerStatus != null)
+        {
             playerStatus.isMeditating = true;
 
-        float timer = 0f;
-        while (timer < meditatingDuration && isMeditating)
+            Debug.Log(
+                $"[명상 시작] BPM: {playerStatus.currentBpm} / SP: {playerStatus.currentSp}"
+            );
+        }
+
+        // F를 떼거나 이동해서 명상이 취소될 때까지 유지
+        while (isMeditating)
         {
-            timer += Time.deltaTime;
             yield return null;
         }
 
@@ -1119,8 +1155,6 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (playerStatus != null)
             playerStatus.isMeditating = false;
-
-        nextMeditatingTime = Time.time + meditatingCooldown;
 
         if (meditatingRoutine != null)
         {
