@@ -311,6 +311,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     private static readonly int AnimIsGrounded = Animator.StringToHash("IsGrounded");
     private static readonly int AnimIsDownJumping = Animator.StringToHash("IsDownJumping");
     private static readonly int AnimAttack = Animator.StringToHash("Attack");
+    private static readonly int AnimAttackSword = Animator.StringToHash("Base Layer.Attack_Sword");
     private static readonly int AnimDash = Animator.StringToHash("Dash");
 
     // -------------------- 이동/점프 --------------------
@@ -515,6 +516,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     // -------------------- 내부 보조 값 --------------------
     private float lastHorizontalDirection = 1f; // 마지막으로 바라본 좌우 방향
     private float lastAttackTime;               // 마지막 공격 시각
+    private float attackAnimationDuration = 0.75f;
+    private float attackAnimatorBaseSpeed;
+    private bool attackAnimationActive;
+    private bool attackAwaitingHit;
+    private bool attackStateSeen;
+    private int attackStartFrame;
     private float originalGravity;              // 초기 중력 값(대쉬 시 복원용)
 
     // -------------------- 데스시 화면 전환 --------------------
@@ -531,6 +538,17 @@ public class PlayerController : MonoBehaviour, IDamageable
         rb = GetComponent<Rigidbody2D>();
         if (bodyCollider == null) bodyCollider = GetComponent<Collider2D>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+            {
+                if (clip.name == "Attack_Sword")
+                {
+                    attackAnimationDuration = clip.length;
+                    break;
+                }
+            }
+        }
 
         hitFlash = GetComponent<HitFlashEffect>();
         runtimeState = GetComponent<PlayerRuntimeState>();
@@ -682,6 +700,44 @@ public class PlayerController : MonoBehaviour, IDamageable
         wasGrounded = isGrounded;
 
         UpdateAnimatorParameters();
+    }
+
+    private void LateUpdate()
+    {
+        if (!attackAnimationActive || animator == null) return;
+
+        bool inAttack = animator.GetCurrentAnimatorStateInfo(0).fullPathHash == AnimAttackSword;
+        bool enteringAttack = animator.IsInTransition(0)
+            && animator.GetNextAnimatorStateInfo(0).fullPathHash == AnimAttackSword;
+        if (inAttack || enteringAttack)
+        {
+            attackStateSeen = true;
+            return;
+        }
+
+        if (attackStateSeen || Time.frameCount > attackStartFrame + 1)
+            EndAttackAnimation();
+    }
+
+    private void OnDisable()
+    {
+        EndAttackAnimation();
+    }
+
+    private void EndAttackAnimation()
+    {
+        if (!attackAnimationActive) return;
+
+        if (attackAwaitingHit)
+        {
+            lastAttackTime = -999f;
+            if (animator != null) animator.ResetTrigger(AnimAttack);
+        }
+
+        if (animator != null) animator.speed = attackAnimatorBaseSpeed;
+        attackAnimationActive = false;
+        attackAwaitingHit = false;
+        attackStateSeen = false;
     }
 
     // 매 프레임 애니메이터 파라미터 갱신(MoveSpeed/VerticalVelocity/IsGrounded/IsDownJumping)
@@ -910,6 +966,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     private IEnumerator DashAction()
     {
         isDashing = true;
+        EndAttackAnimation();
         if (animator != null) animator.SetTrigger(AnimDash);
 
         float prevGravity = rb.gravityScale;
@@ -969,15 +1026,22 @@ public class PlayerController : MonoBehaviour, IDamageable
             ? playerStatus.AttackSpeedMultiplier
             : 1f;
 
-        float effectiveAttackSpeed = stats.attackSpeed * attackSpeedMultiplier;
+        if (animator == null || attackAnimationActive) return;
 
-        if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed))
+        float effectiveAttackSpeed = Mathf.Max(0.01f, stats.attackSpeed * attackSpeedMultiplier);
+        float baseSpeed = Mathf.Max(0.01f, animator.speed);
+        float attackInterval = Mathf.Max(1f / effectiveAttackSpeed,
+            attackAnimationDuration / (baseSpeed * effectiveAttackSpeed));
+        if (Time.time < lastAttackTime + attackInterval)
             return;
 
-        if (animator != null)
-            animator.SetTrigger(AnimAttack);
-
-        playerStatus.OnAttack();
+        attackAnimatorBaseSpeed = animator.speed;
+        attackAnimationActive = true;
+        attackAwaitingHit = true;
+        attackStateSeen = false;
+        attackStartFrame = Time.frameCount;
+        animator.speed = baseSpeed * effectiveAttackSpeed;
+        animator.SetTrigger(AnimAttack);
         lastAttackTime = Time.time;
     }
 
@@ -1203,6 +1267,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 실제 공격 판정 처리(무기별 박스/넉백 + 일반몹/중간보스/메인보스 모두 적용)
     void Attack()
     {
+        if (!attackAnimationActive || !attackAwaitingHit) return;
+        attackAwaitingHit = false;
+        playerStatus?.OnAttack();
+
         float dmg = stats.attackDamage;
         if (playerStatus != null)
             dmg *= playerStatus.AttackDamageMultiplier;
@@ -1394,6 +1462,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (applyKnockback)
         {
+            EndAttackAnimation();
             if (!isDownJumping && (suppressKnockbackAirAnimation
                 || (isGrounded && rb.linearVelocity.y <= 0.1f)))
             {
