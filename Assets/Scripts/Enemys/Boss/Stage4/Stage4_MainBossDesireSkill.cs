@@ -44,6 +44,7 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
         {
             skills[1].active.attackSteps.Add(new BossAttackStepData { stepName = "점프 스트레이트 도약", actionType = BossActionType.Jump, jumpForce = new Vector2(2, 7), duration = .18f });
             var strike = Stage4BossPatterns.Punch("공중 스트레이트", 22, .04f);
+            strike.postDelay = .40f;
             strike.hitboxSize = new Vector2(2.4f, 3f);
             strike.hitboxOffset = new Vector2(1, .5f);
             strike.knockbackForce = new Vector2(2, -8);
