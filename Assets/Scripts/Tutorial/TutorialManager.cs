@@ -32,6 +32,9 @@ public class TutorialManager : MonoBehaviour
         }
 
         Instance = this;
+
+        if (tutorialActive)
+            LogCurrentStep();
     }
 
     public void SetStep(TutorialStep step)
@@ -43,6 +46,7 @@ public class TutorialManager : MonoBehaviour
             return;
 
         currentStep = step;
+        LogCurrentStep();
         onStepChanged?.Invoke(currentStep);
 
         if (currentStep == TutorialStep.DashUnlocked)
@@ -66,6 +70,11 @@ public class TutorialManager : MonoBehaviour
     public void SetStepByIndex(int stepIndex)
     {
         SetStep((TutorialStep)Mathf.Clamp(stepIndex, 0, (int)TutorialStep.GoTown));
+    }
+
+    private void LogCurrentStep()
+    {
+        Debug.Log($"[Tutorial] Current Step: {(int)currentStep} - {currentStep}", this);
     }
 
     public void AdvanceIfCurrent(TutorialStep expectedStep, TutorialStep nextStep)
