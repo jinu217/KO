@@ -2,6 +2,12 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    [Header("피격 연출")]
+    [Tooltip("플레이어와 몬스터가 피격될 때 깜빡이는 공통 지속 시간(초)")]
+    [Min(0f)] public float hitFlashDuration = 0.2f;
+    [Tooltip("피격 깜빡임의 켜짐/꺼짐 전환 간격(초)")]
+    [Min(0.001f)] public float hitFlashInterval = 0.04f;
+
     public static GameManager Instance;
 
     [Header("Debug")]

@@ -485,12 +485,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     private bool isHitStopRunning;
 
-    [Header("피격 보정")]
-    [Tooltip("피격 직후 추가 피해를 무시하는 무적 시간")]
-    public float damageInvincibleTime = 0.1f;
 
-    private bool isDamageInvincible;
-    private Coroutine invincibleRoutine;
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
 
     //============== 명상 ==============
@@ -1424,10 +1419,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // IDamageable 구현 — applyKnockback/applyIFrame으로 동작 제어
     public void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = true, bool applyIFrame = true)
     {
-        TakeDamageInternal(damage, sourcePos, applyIFrame, applyKnockback);
-        // iFrame 여부와 무관하게 항상 깜빡임 실행
-        // (applyIFrame=true면 DamageInvincibleRoutine에서도 호출되지만 중복 호출 안전)
-        StartHitBlink();
+        TakeDamageInternal(damage, sourcePos, applyKnockback);
     }
 
     // 방향 자동 계산 버전
@@ -1445,10 +1437,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 하위 호환 — 기존 NoIFrame 호출 대체
     public void TakeDamageNoIFrame(float damage, Vector2 sourcePos)
         => TakeDamage(damage, sourcePos, true, false);
-    private void TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame, bool applyKnockback = true)
+    private void TakeDamageInternal(float damage, Vector2 enemyPos, bool applyKnockback = true)
     {
+        if (hitFlash != null && hitFlash.IsFlashing) return;
         if (isDashing) return;
-        if (applyIFrame && isDamageInvincible) return;
         if (isMeditating)
             StopMeditating();
 
@@ -1457,7 +1449,8 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         bool suppressHpDamage = TutorialManager.Instance != null && TutorialManager.Instance.ShouldSuppressPlayerHpDamage();
         if (!suppressHpDamage)
-            playerStatus.TakeDamage(finalDamage, enemyPos);
+        playerStatus.TakeDamage(finalDamage, enemyPos);
+        StartHitBlink();
         Debug.Log(gameObject.name + " 피격! 원래 데미지: " + damage + " -> 최종 데미지: " + finalDamage + " | 남은 HP: " + playerStatus.currentHp);
 
         if (applyKnockback)
@@ -1482,11 +1475,6 @@ public class PlayerController : MonoBehaviour, IDamageable
             StartCoroutine(IgnoreEnemyCollisionRoutine());
         }
 
-        if (applyIFrame)
-        {
-            if (invincibleRoutine != null) StopCoroutine(invincibleRoutine);
-            invincibleRoutine = StartCoroutine(DamageInvincibleRoutine());
-        }
 
         if (playerStatus.currentHp <= 0) GameOver();
     }
@@ -1499,18 +1487,11 @@ public class PlayerController : MonoBehaviour, IDamageable
     }
 
     // 피격 무적 + 깜빡임: HitFlashEffect 컴포넌트에 시각 효과 위임
-    private IEnumerator DamageInvincibleRoutine()
-    {
-        isDamageInvincible = true;
-        yield return new WaitForSeconds(damageInvincibleTime);
-        isDamageInvincible = false;
-        invincibleRoutine = null;
-    }
 
     // 환경 피해(함정 등) 깜빡임: iFrame 없이 시각 효과만
     private void StartHitBlink()
     {
-        hitFlash?.Play(damageInvincibleTime);
+        hitFlash?.Play();
     }
 
     // 공격 적중 시 짧은 히트 스탑(타격감 강화)
@@ -1928,13 +1909,14 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         }
 
-        if (!isDownJumping && fallenHeight >= fallDamageMinHeight)
+        if (!isDownJumping && fallenHeight >= fallDamageMinHeight && (hitFlash == null || !hitFlash.IsFlashing))
         {
             // 낙하 거리 비례 데미지: 기본 데미지 + (초과 낙하 거리 × 거리 계수)
             float excessHeight = fallenHeight - fallDamageMinHeight;
             float totalFallDamage = fallDamageAmount + excessHeight * fallDamagePerUnit;
 
             playerStatus.TakeDamage(totalFallDamage, transform.position);
+            StartHitBlink();
             ApplyMoveDelay(fallDamageStunDelay);
 
             if (debugEmpoweredDownJump)
