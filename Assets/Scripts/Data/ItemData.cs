@@ -6,7 +6,9 @@ public enum ItemRarity
     Normal,
     Rare,
     Epic,
-    Legendary
+    Legendary,
+    [InspectorName("mechanization")]
+    Mechanization
 }
 
 [CreateAssetMenu(menuName = "Items/Item")]

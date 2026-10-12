@@ -320,6 +320,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             Debug.LogWarning($"[{gameObject.name}] Flip 대상 비주얼 Transform을 찾지 못했습니다. " +
                 "Body의 부모의 부모가 있는지 확인하거나, Inspector의 'Visual Transform' 필드에 직접 연결해주세요.");
         hitFlash = GetComponent<HitFlashEffect>();
+        if (hitFlash == null)
+            hitFlash = gameObject.AddComponent<HitFlashEffect>();
         bodyCollider = GetComponent<Collider2D>();
 
         walkDirection = (Random.value < 0.5f) ? -1 : 1;
@@ -1200,7 +1202,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             transform.position + Vector3.up * 1.5f
         );
 
-        hitFlash?.Play();
+        if (GameManager.Instance != null)
+            hitFlash?.Play(GameManager.Instance.enemyHitFlashDuration);
 
         forcedAggroTimer = 2f;
         isChasing = true;

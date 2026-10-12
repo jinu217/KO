@@ -6,42 +6,60 @@ using UnityEngine;
 // - 기존 InvincibleRoutine의 시각 효과만 분리한 독립 컴포넌트
 public class HitFlashEffect : MonoBehaviour
 {
-    [Header("깜빡임 설정")]
-    [Tooltip("깜빡임 총 지속 시간(초)")]
-    [SerializeField] private float flashDuration = 0.2f;
-    [Tooltip("켜짐/꺼짐 전환 간격(초)")]
-    [SerializeField] private float blinkInterval = 0.04f;
 
     private SpriteRenderer[] renderers;
     private Coroutine flashRoutine;
+    private bool isFlashing;
+
+    public bool IsFlashing => isFlashing;
+
+    private void OnDisable()
+    {
+        if (flashRoutine != null)
+            StopCoroutine(flashRoutine);
+
+        flashRoutine = null;
+        isFlashing = false;
+        SetVisible(true);
+    }
 
     private void Awake()
     {
         renderers = GetComponentsInChildren<SpriteRenderer>(true);
     }
 
-    // 외부에서 호출 — duration 미지정 시 인스펙터 기본값 사용
-    public void Play(float duration = -1f)
+    // 지속 시간을 지정하지 않으면 플레이어 설정을 사용한다.
+    public void Play()
     {
-        if (flashRoutine != null) StopCoroutine(flashRoutine);
-        flashRoutine = StartCoroutine(FlashRoutine(duration < 0f ? flashDuration : duration));
+        if (GameManager.Instance == null) return;
+        Play(GameManager.Instance.hitFlashDuration);
     }
 
-    // 깜빡임 루틴: duration 동안 blinkInterval 간격으로 켜기/끄기 반복 후 복구
-    private IEnumerator FlashRoutine(float duration)
+    public void Play(float duration)
     {
-        float timer = 0f;
+        if (!isActiveAndEnabled || GameManager.Instance == null) return;
+        if (flashRoutine != null) StopCoroutine(flashRoutine);
+        duration = Mathf.Max(0f, duration);
+        float interval = Mathf.Max(0.001f, GameManager.Instance.hitFlashInterval);
+        isFlashing = duration > 0f;
+        flashRoutine = StartCoroutine(FlashRoutine(duration, interval));
+    }
+
+    // 공통 설정의 간격으로 깜빡이고, 지정된 시간이 지나면 렌더러를 복구한다.
+    private IEnumerator FlashRoutine(float duration, float interval)
+    {
+        float endTime = Time.time + duration;
         bool visible = true;
 
-        while (timer < duration)
+        while (Time.time < endTime)
         {
-            timer += Time.deltaTime;
             visible = !visible;
             SetVisible(visible);
-            yield return new WaitForSeconds(blinkInterval);
+            yield return new WaitForSeconds(Mathf.Min(interval, endTime - Time.time));
         }
 
         SetVisible(true);
+        isFlashing = false;
         flashRoutine = null;
     }
 
