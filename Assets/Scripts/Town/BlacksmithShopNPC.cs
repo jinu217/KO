@@ -219,7 +219,8 @@ public class BlacksmithShopNPC : NPCShopBase
         foreach (ItemData item in itemDatabase.Items)
         {
             if (item != null && item.itemType == ItemType.Equipment &&
-                item.equipType == EquipmentType.Weapon && item.rarity != ItemRarity.None)
+                item.equipType == EquipmentType.Weapon &&
+                item.rarity != ItemRarity.None && item.rarity != ItemRarity.Mechanization)
                 weapons.Add(item);
         }
 

@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 //============== 인벤토리 표시 ==============
 
@@ -6,10 +8,15 @@ public class InventoryDisplay : MonoBehaviour
 {
     public Inventory inventory;
     public ItemTooltipUI tooltip;
+    [Tooltip("mechanization 장비가 장착된 부위의 교체를 시도할 때 표시할 패널")]
+    [SerializeField] private GameObject mechanizationWarningPanel;
 
     private InventorySlotUI[] slots;
 
     private int selectedIndex = 0;
+    private float warningShownAt;
+    private int warningShownFrame;
+    private bool warningOpen;
 
     private const int COLUMN_COUNT = 3;
 
@@ -32,6 +39,7 @@ public class InventoryDisplay : MonoBehaviour
 
     private void Start()
     {
+        HideMechanizationWarning();
         FindInventory();
 
         if (inventory == null)
@@ -47,6 +55,43 @@ public class InventoryDisplay : MonoBehaviour
 
         UpdateInventory();
         RefreshSelection();
+    }
+
+    private void Update()
+    {
+        if (!warningOpen || mechanizationWarningPanel == null)
+            return;
+
+        if (!mechanizationWarningPanel.activeSelf)
+        {
+            warningOpen = false;
+            return;
+        }
+
+        if (Time.unscaledTime - warningShownAt >= 3f ||
+            (Time.frameCount > warningShownFrame && IsDismissButtonPressed()))
+            HideMechanizationWarning();
+    }
+
+    private static bool IsDismissButtonPressed()
+    {
+        if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame)
+            return true;
+
+        if (Mouse.current != null &&
+            (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame))
+            return true;
+
+        if (Gamepad.current != null)
+        {
+            foreach (var control in Gamepad.current.allControls)
+            {
+                if (control is ButtonControl button && button.wasPressedThisFrame)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     //============== 현재 플레이어 Inventory 찾기 ==============
@@ -227,13 +272,33 @@ public class InventoryDisplay : MonoBehaviour
                 Debug.Log($"[InventoryDisplay] 이미 장착 중인 장비입니다 : {item.itemName}");
                 return;
             }
+
+            if (equippedItem != null && equippedItem.rarity == ItemRarity.Mechanization)
+            {
+                if (mechanizationWarningPanel != null)
+                {
+                    mechanizationWarningPanel.SetActive(true);
+                    warningShownAt = Time.unscaledTime;
+                    warningShownFrame = Time.frameCount;
+                    warningOpen = true;
+                }
+                return;
+            }
         }
 
         // 장비 장착
-        inventory.EquipItem(item);
+        if (!inventory.EquipItem(item))
+            return;
 
         // 장착에 사용한 인벤토리 아이템 제거
         inventory.RemoveItem(index);
+    }
+
+    public void HideMechanizationWarning()
+    {
+        warningOpen = false;
+        if (mechanizationWarningPanel != null)
+            mechanizationWarningPanel.SetActive(false);
     }
 
     //============== 아이템 버리기 ==============

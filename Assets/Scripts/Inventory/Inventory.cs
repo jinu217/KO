@@ -187,22 +187,24 @@ public class Inventory : MonoBehaviour
 
     //============== 장비 장착 ==============
 
-    public void EquipItem(ItemData item)
+    public bool EquipItem(ItemData item)
     {
         if (item == null)
-            return;
+            return false;
 
         if (item.itemType != ItemType.Equipment)
-            return;
+            return false;
 
         if (equipmentManager == null)
         {
             Debug.LogError("[Inventory] EquipmentManager가 연결되지 않았습니다.");
-            return;
+            return false;
         }
 
-        equipmentManager.Equip(item);
+        if (!equipmentManager.Equip(item))
+            return false;
 
         onInventoryChanged?.Invoke();
+        return true;
     }
 }

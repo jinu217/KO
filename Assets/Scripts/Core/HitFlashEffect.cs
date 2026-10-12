@@ -28,12 +28,18 @@ public class HitFlashEffect : MonoBehaviour
         renderers = GetComponentsInChildren<SpriteRenderer>(true);
     }
 
-    // 외부에서 호출 — duration 미지정 시 인스펙터 기본값 사용
+    // 지속 시간을 지정하지 않으면 플레이어 설정을 사용한다.
     public void Play()
+    {
+        if (GameManager.Instance == null) return;
+        Play(GameManager.Instance.hitFlashDuration);
+    }
+
+    public void Play(float duration)
     {
         if (!isActiveAndEnabled || GameManager.Instance == null) return;
         if (flashRoutine != null) StopCoroutine(flashRoutine);
-        float duration = Mathf.Max(0f, GameManager.Instance.hitFlashDuration);
+        duration = Mathf.Max(0f, duration);
         float interval = Mathf.Max(0.001f, GameManager.Instance.hitFlashInterval);
         isFlashing = duration > 0f;
         flashRoutine = StartCoroutine(FlashRoutine(duration, interval));

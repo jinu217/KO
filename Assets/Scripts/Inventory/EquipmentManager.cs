@@ -277,33 +277,25 @@ public class EquipmentManager : MonoBehaviour
 
     //============== 장비 장착 ==============
 
-    public void Equip(ItemData item)
+    public bool Equip(ItemData item)
     {
         if (item == null)
-            return;
+            return false;
 
-        switch (item.equipType)
+        EquipmentSlot slot = item.equipType switch
         {
-            case EquipmentType.Weapon:
-                ReplaceIfDifferent(weaponSlot, item);
-                break;
+            EquipmentType.Weapon => weaponSlot,
+            EquipmentType.Hand => handSlot,
+            EquipmentType.Head => headSlot,
+            EquipmentType.Body => bodySlot,
+            EquipmentType.Foot => footSlot,
+            _ => null
+        };
 
-            case EquipmentType.Hand:
-                ReplaceIfDifferent(handSlot, item);
-                break;
+        if (slot == null || GetItem(slot)?.rarity == ItemRarity.Mechanization)
+            return false;
 
-            case EquipmentType.Head:
-                ReplaceIfDifferent(headSlot, item);
-                break;
-
-            case EquipmentType.Body:
-                ReplaceIfDifferent(bodySlot, item);
-                break;
-
-            case EquipmentType.Foot:
-                ReplaceIfDifferent(footSlot, item);
-                break;
-        }
+        ReplaceIfDifferent(slot, item);
 
         // 플레이어 외형 적용
         if (playerAppearance != null)
@@ -318,6 +310,7 @@ public class EquipmentManager : MonoBehaviour
 
         // 현재 장비를 RunData에 저장
         SaveCurrentEquipmentToRunData();
+        return true;
     }
 
 
@@ -346,35 +339,21 @@ public class EquipmentManager : MonoBehaviour
 
     public void Unequip(int index)
     {
-        ItemData item = null;
-
-        switch (index)
+        EquipmentSlot slot = index switch
         {
-            case 0:
-                item = weaponSlot.GetItem();
-                weaponSlot.SetItem(null);
-                break;
+            0 => weaponSlot,
+            1 => handSlot,
+            2 => headSlot,
+            3 => bodySlot,
+            4 => footSlot,
+            _ => null
+        };
 
-            case 1:
-                item = handSlot.GetItem();
-                handSlot.SetItem(null);
-                break;
+        if (slot == null || GetItem(slot)?.rarity == ItemRarity.Mechanization)
+            return;
 
-            case 2:
-                item = headSlot.GetItem();
-                headSlot.SetItem(null);
-                break;
-
-            case 3:
-                item = bodySlot.GetItem();
-                bodySlot.SetItem(null);
-                break;
-
-            case 4:
-                item = footSlot.GetItem();
-                footSlot.SetItem(null);
-                break;
-        }
+        ItemData item = slot.GetItem();
+        slot.SetItem(null);
 
         if (item != null && inventory != null)
             inventory.AddItem(item);
