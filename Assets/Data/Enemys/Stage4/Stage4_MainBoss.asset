@@ -23,6 +23,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 2
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 2.2
     forceCastMinDistance: 0
@@ -59,6 +60,7 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "2\uD0C0 \uC7BD"
         actionType: 2
         preDelay: 0.1
@@ -87,10 +89,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "3\uD0C0 \uC804\uC9C4 \uC2A4\uD2B8\uB808\uC774\uD2B8"
         actionType: 4
         preDelay: 0.15
-        postDelay: 0.07
+        postDelay: 0.24
         duration: 0.12
         interval: 0
         attackCount: 1
@@ -115,6 +118,7 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
@@ -160,6 +164,7 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uC7BD"
         actionType: 4
         preDelay: 0.07
@@ -188,10 +193,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uD6C5"
         actionType: 4
-        preDelay: 0.08
-        postDelay: 0.07
+        preDelay: 0.28
+        postDelay: 0.14
         duration: 0.12
         interval: 0
         attackCount: 1
@@ -216,10 +222,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uBCF4\uB514 \uBE14\uB85C"
         actionType: 4
-        preDelay: 0.08
-        postDelay: 0.07
+        preDelay: 0.18
+        postDelay: 0.36
         duration: 0.12
         interval: 0
         attackCount: 1
@@ -244,10 +251,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uC2A4\uD2B8\uB808\uC774\uD2B8"
         actionType: 4
         preDelay: 0.12
-        postDelay: 0.07
+        postDelay: 0.24
         duration: 0.12
         interval: 0
         attackCount: 1
@@ -272,6 +280,7 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
@@ -279,6 +288,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 9
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 2.7
     forceCastMinDistance: 0
@@ -315,10 +325,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uBCF4\uB514 \uBE14\uB85C"
         actionType: 2
-        preDelay: 0.08
-        postDelay: 0.07
+        preDelay: 0.18
+        postDelay: 0.36
         duration: 0
         interval: 0
         attackCount: 1
@@ -343,10 +354,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uBCF4\uB514 \uC801\uC911 \uD6C4 \uC5B4\uD37C\uCEF7"
         actionType: 2
-        preDelay: 0.12
-        postDelay: 0.07
+        preDelay: 0.24
+        postDelay: 0.44
         duration: 0
         interval: 0
         attackCount: 1
@@ -371,13 +383,15 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
-  - skillName: "3스킬 굶주린 주먹"
+  - skillName: "3\uC2A4\uD0AC \uAD76\uC8FC\uB9B0 \uC8FC\uBA39"
     skillType: 1
     executionOrder: 0
     cooldown: 20
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
@@ -399,6 +413,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 12
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 2
     castRange: 10
     forceCastMinDistance: 0
@@ -435,10 +450,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uC67C\uCABD \uD6C5"
         actionType: 4
-        preDelay: 0.12
-        postDelay: 0.07
+        preDelay: 0.28
+        postDelay: 0.14
         duration: 0.12
         interval: 0
         attackCount: 1
@@ -463,10 +479,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uC624\uB978\uCABD \uD6C5"
         actionType: 4
-        preDelay: 0.1
-        postDelay: 0.07
+        preDelay: 0.28
+        postDelay: 0.14
         duration: 0.12
         interval: 0
         attackCount: 1
@@ -491,10 +508,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uC67C\uCABD \uD6C5"
         actionType: 4
-        preDelay: 0.1
-        postDelay: 0.07
+        preDelay: 0.28
+        postDelay: 0.14
         duration: 0.12
         interval: 0
         attackCount: 1
@@ -519,10 +537,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uAC15\uD55C \uC624\uB978\uCABD \uD6C5"
         actionType: 4
-        preDelay: 0.16
-        postDelay: 0.07
+        preDelay: 0.62
+        postDelay: 0.21
         duration: 0.12
         interval: 0
         attackCount: 1
@@ -547,13 +566,15 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
-  - skillName: "5스킬 생존 본능"
+  - skillName: "5\uC2A4\uD0AC \uC0DD\uC874 \uBCF8\uB2A5"
     skillType: 1
     executionOrder: 0
     cooldown: 24
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 2
     castRange: 0
     forceCastMinDistance: 0
