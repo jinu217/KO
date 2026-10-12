@@ -52,7 +52,9 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
         }
         if (skills.Length > 3)
         {
-            var finish = Stage4BossPatterns.Punch("최종 스트레이트", 25, .4f, true);
+            skills[3].active.attackSteps[4].postDelay = .10f;
+            var finish = Stage4BossPatterns.Punch("최종 스트레이트", 25, .08f, true);
+            finish.postDelay = .28f;
             finish.knockbackForce = new Vector2(12, 4);
             skills[3].active.attackSteps.Add(finish);
         }

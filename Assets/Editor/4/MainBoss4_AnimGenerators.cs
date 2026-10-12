@@ -30,6 +30,8 @@ public static class MainBoss4_AnimGenerators
         public float frontStep, backStep, frontLift, backLift;
         public bool rearHandGuardFlip;
         public bool rearForearmFlip;
+        public bool frontHandFlip;
+        public float frontForearmScaleY = 1f;
     }
     sealed class ClipSpec
     {
@@ -37,6 +39,25 @@ public static class MainBoss4_AnimGenerators
         public ClipSpec(string n, float l, bool repeat, Func<float, Pose> fn) { name = n; length = l; loop = repeat; pose = fn; }
     }
     static List<ClipSpec> specs;
+    [MenuItem("Tools/4/MainBoss 4/Rebuild Skill4 + Skill5 (20261012 R39)")]
+    public static void RebuildLatestSkill4And5()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        Group(3); One("skill5");
+        AssetDatabase.SaveAssets();
+        var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(Folder + "/MainBoss4_skill5.anim");
+        if (clip == null) throw new InvalidOperationException("Skill5 clip was not generated.");
+        float sampleTime = clip.length * .70f;
+        var x = AnimationUtility.GetEditorCurve(clip, EditorCurveBinding.FloatCurve(Paths[HB], typeof(Transform), "m_LocalPosition.x"));
+        var y = AnimationUtility.GetEditorCurve(clip, EditorCurveBinding.FloatCurve(Paths[HB], typeof(Transform), "m_LocalPosition.y"));
+        var z = AnimationUtility.GetEditorCurve(clip, EditorCurveBinding.FloatCurve(Paths[HB], typeof(Transform), "localEulerAnglesRaw.z"));
+        if (x == null || y == null || z == null || Mathf.Abs(x.Evaluate(sampleTime) + .090f) > .001f || Mathf.Abs(y.Evaluate(sampleTime) + .640f) > .001f || Mathf.Abs(z.Evaluate(sampleTime) + 25f) > .01f)
+            throw new InvalidOperationException("R39: Skill5 Hand_B curve verification failed.");
+        Selection.activeObject = clip;
+        EditorGUIUtility.PingObject(clip);
+        Debug.Log("[MainBoss4 R39] Skill4/Desire/Skill5 regenerated. Skill5 Hand_B verified: (-0.090, -0.640), -25 degrees. Strong hook preDelay: 0.62s; Desire recovery: 0.10s; final straight preDelay: 0.08s. Clip: " + AssetDatabase.GetAssetPath(clip), clip);
+    }
+
     [MenuItem("Tools/4/MainBoss 4/Generate Animations")]
     public static void GenerateAll() { BuildSpecs(); EnsureFolder(Folder); foreach (var spec in specs) Save(spec); SetupAnimator(); }
     [MenuItem("Tools/4/MainBoss 4/Clips/Idle")] public static void IdleMenu() => One("Idle");
@@ -73,17 +94,28 @@ public static class MainBoss4_AnimGenerators
                 if (skillIndex == 1 && n == 2)
                 {
                     var upperStep = skill.active.attackSteps[n];
-                    if (upperStep.preDelay < .24f || upperStep.postDelay < .32f) timingChanged = true;
+                    if (upperStep.preDelay < .24f || upperStep.postDelay < .44f) timingChanged = true;
                     upperStep.preDelay = Mathf.Max(upperStep.preDelay, .24f);
-                    upperStep.postDelay = Mathf.Max(upperStep.postDelay, .32f);
+                    upperStep.postDelay = Mathf.Max(upperStep.postDelay, .44f);
+                }
+                if (skillIndex == 0 && n == 4)
+                {
+                    var straightStep = skill.active.attackSteps[n];
+                    if (straightStep.postDelay < .24f) { straightStep.postDelay = .24f; timingChanged = true; }
                 }
                 if (!heavy) continue;
                 var step = skill.active.attackSteps[n];
-                float pre = Mathf.Max(step.preDelay, skillIndex == 3 && n == 4 ? .78f : .28f), post = Mathf.Max(step.postDelay, skillIndex == 3 && n == 4 ? .21f : .14f);
+                float pre = ((skillIndex == 1 && n == 1) || (skillIndex == 0 && n == 3)) ? .18f : skillIndex == 3 && n == 4 ? .62f : Mathf.Max(step.preDelay, .28f), post = Mathf.Max(step.postDelay, ((skillIndex == 1 && n == 1) || (skillIndex == 0 && n == 3)) ? .36f : skillIndex == 3 && n == 4 ? .21f : .14f);
                 if (pre != step.preDelay || post != step.postDelay) timingChanged = true;
                 step.preDelay = pre; step.postDelay = post;
             }
         }
+        if (data.basicAttack != null && data.basicAttack.active != null)
+            for (int n = 2; n < data.basicAttack.active.attackSteps.Count; n++)
+            {
+                var straightStep = data.basicAttack.active.attackSteps[n];
+                if (straightStep.postDelay < .24f) { straightStep.postDelay = .24f; timingChanged = true; }
+            }
         if (timingChanged) EditorUtility.SetDirty(data);
         specs = new List<ClipSpec>{new ClipSpec("Idle",2.6f,true,Idle),new ClipSpec("Walk",1.1f,true,t=>Walk(t,1.1f,false)),
             new ClipSpec("Run",.36f,true,t=>Walk(t,.36f,true)),new ClipSpec("Death",2f,false,Death),
@@ -99,7 +131,10 @@ public static class MainBoss4_AnimGenerators
         var airStrike = PunchStep("공중 스트레이트", 22, .04f); airStrike.postDelay = .40f;
         second.active.attackSteps.Add(airStrike); AddPattern(second, 1, true);
         var fourth = JsonUtility.FromJson<BossSkillData>(JsonUtility.ToJson(data.skills[3]));
-        fourth.active.attackSteps.Add(PunchStep("최종 스트레이트", 25, .4f, true)); AddPattern(fourth, 3, true);
+        fourth.active.attackSteps[4].postDelay = .10f;
+        var finalStraightStep = PunchStep("최종 스트레이트", 25, .08f, true);
+        finalStraightStep.postDelay = .28f;
+        fourth.active.attackSteps.Add(finalStraightStep); AddPattern(fourth, 3, true);
     }
     static BossAttackStepData PunchStep(string name, float damage, float delay, bool advance = false)
     {
@@ -155,8 +190,10 @@ public static class MainBoss4_AnimGenerators
     static Pose Mix(Pose a, Pose b, float u)
     {
         u = Smooth(Mathf.Clamp01(u)); var p = new Pose();
+        p.frontForearmScaleY = Mathf.Lerp(a.frontForearmScaleY, b.frontForearmScaleY, u);
         p.rearHandGuardFlip = u < .5f ? a.rearHandGuardFlip : b.rearHandGuardFlip;
         p.rearForearmFlip = u < .5f ? a.rearForearmFlip : b.rearForearmFlip;
+        p.frontHandFlip = u < .5f ? a.frontHandFlip : b.frontHandFlip;
         for (int i = 0; i < 15; i++) { p.position[i] = Vector3.Lerp(a.position[i], b.position[i], u); p.angle[i] = Mathf.Lerp(a.angle[i], b.angle[i], u); }
         return p;
     }
@@ -238,7 +275,7 @@ public static class MainBoss4_AnimGenerators
         Ground(p);
         if (heelAngle != 0) p.angle[FF] = heelAngle - WorldAngle(p, CF);
         if (upper) ArmAngles(p, front, front ? 168.8f : 120f, 53f, front ? 18 : -12);
-        else if (hook) ArmAngles(p, front, front ? 78 : 65, -25f, front ? 12 : -12);
+        else if (hook) ArmAngles(p, front, front ? 78 : 65, -10f, front ? 12 : -12);
         else if (body) ArmAngles(p, front, front ? 70 : 52, 12, 0);
         else if (front) ArmAngles(p, true, 110, -20, 3);
         else ArmAngles(p, false, 80, -20, -5); // Preserve jab elbow extension; turn wrist to reduce palm-first silhouette.
@@ -277,11 +314,11 @@ public static class MainBoss4_AnimGenerators
         }
         return p;
     }
-    static void MatchPunchHeight(Pose p, bool front)
+    static void MatchPunchHeight(Pose p, bool front, float heightOffset = 0f)
     {
         int shoulder = front ? SF : SB, forearm = front ? AF : AB, hand = front ? HF : HB;
         Vector2 reach = (Vector2)p.position[forearm] + Rotate(p.position[hand], p.angle[forearm]);
-        float height = WorldPosition(p, Head).y - WorldPosition(p, shoulder).y;
+        float height = WorldPosition(p, Head).y + heightOffset - WorldPosition(p, shoulder).y;
         // Positive horizontal reach; retain elbow angle and attachment positions.
         float heading = Mathf.Asin(Mathf.Clamp(height / Mathf.Max(.001f, reach.magnitude), -.98f, .98f)) * Mathf.Rad2Deg;
         p.angle[shoulder] = heading - Mathf.Atan2(reach.y, reach.x) * Mathf.Rad2Deg - WorldAngle(p, Body);
@@ -299,7 +336,17 @@ public static class MainBoss4_AnimGenerators
                 lowStep.backStep = .30f + .12f * Mathf.Sin(stepProgress * Mathf.PI);
                 lowStep.backLift = .055f * Mathf.Pow(Mathf.Sin(stepProgress * Mathf.PI), 2);
                 lowStep.frontStep = -.78f;
+                float leanPulse = Mathf.Sin(stepProgress * Mathf.PI);
+                lowStep.angle[Body] -= 8f * leanPulse;
+                lowStep.angle[Bottom] += 8f * leanPulse;
+                lowStep.angle[Head] += 8f * leanPulse;
+                float heel = -22f * leanPulse;
+                Vector2 toe = new Vector2((1f - .45f) * 83f / 64f, -.37f * 82f / 64f);
+                Vector2 heelShift = toe - Rotate(toe, heel);
+                lowStep.frontStep += heelShift.x; lowStep.frontLift += heelShift.y;
                 Ground(lowStep);
+                lowStep.angle[FF] = heel - WorldAngle(lowStep, CF);
+                ProtectChin(lowStep, true); ProtectChin(lowStep, false);
                 return lowStep;
             }
             if (skill == 3)
@@ -346,6 +393,7 @@ public static class MainBoss4_AnimGenerators
             hit.position[HF] += RestPositions[HF].normalized * .012f;
             MatchPunchHeight(hit, true);
         }
+        if (skill == 3) MatchPunchHeight(hit, front, -.35f);
         var wind = AttackGuard();
         ArmAngles(wind, front, hook ? -12 : upper ? 5 : 8, upper ? 32 : hook ? 78 : 82, front ? 12 : -12);
         if (!hook && !upper && !body)
@@ -360,6 +408,16 @@ public static class MainBoss4_AnimGenerators
             wind.angle[front ? SF : SB] -= hook ? 28f : 40f;
             wind.angle[front ? AF : AB] += hook ? 12f : 28f;
         }
+        if (body)
+        {
+            // Drop the rear arm beside the torso before driving the body blow upward.
+            ArmAngles(wind, false, 5f, 22f, 35.55f);
+            wind.angle[Body] -= 7f;
+            wind.angle[Bottom] += 7f;
+            wind.angle[Head] += 7f;
+            wind.frontStep = guard.frontStep; wind.backStep = guard.backStep;
+            Ground(wind);
+        }
         bool straightPunch = !hook && !upper && !body;
         if (straightPunch)
         {
@@ -372,7 +430,19 @@ public static class MainBoss4_AnimGenerators
         }
         if (hook)
         {
-            ArmAngles(wind, front, guard.angle[front ? SF : SB] - 30f, 95f, front ? 12 : -12);
+            ArmAngles(wind, front, guard.angle[front ? SF : SB] - 48f, 95f, front ? 12 : -12);
+        }
+        if (!front && hook)
+        {
+            // Preserve the rear hand's guard reflection through the entire hook.
+            wind.rearHandGuardFlip = true;
+            hit.rearHandGuardFlip = true;
+            hit.angle[HB] = 60f;
+            if (skill == 3)
+            {
+                wind.position[HB] = guard.position[HB];
+                hit.position[HB] = guard.position[HB];
+            }
         }
         if (!front && (body || upper))
         {
@@ -380,17 +450,51 @@ public static class MainBoss4_AnimGenerators
             wind.rearHandGuardFlip = true; hit.rearHandGuardFlip = true;
             wind.angle[HB] = 35.55f; hit.angle[HB] = 35.55f;
         }
+        if (body)
+        {
+            ArmAngles(hit, false, 90.559f, .600f, 35.550f);
+            hit.position[HB] = new Vector3(.410f, -.580f, 0);
+        }
+        if (hook && front)
+        {
+            // Start below the ribs; raise shoulder and open elbow together through impact.
+            ArmAngles(wind, true, 12f, 38f, 12f);
+            hit.angle[SF] -= 16f;
+            hit.angle[AF] = 18f;
+            hit.frontForearmScaleY = 1.4f;
+        }
+        if (upper)
+        {
+            hit.position[Body].x += .16f;
+            float heel = -24f;
+            Vector2 toe = new Vector2((1f - .45f) * 83f / 64f, -.37f * 82f / 64f);
+            Vector2 delta = Rotate(toe, -12f) - Rotate(toe, heel);
+            hit.frontStep += delta.x; hit.frontLift += delta.y;
+            Ground(hit); hit.angle[FF] = heel - WorldAngle(hit, CF);
+        }
+        // Skill1: lower jab, hook and straight impacts without changing the body blow.
+        if (skill == 0 && !body) hit.angle[front ? SF : SB] -= 8f;
         bool airborneStrike = skill == 1 && n >= 4;
         if (airborneStrike)
         {
             wind = Mix(hit, hit, 0);
             wind.angle[SF] -= 3f;
         }
+        if (skill == 3 && n == 5)
+        {
+            wind.angle[SF] -= 18f; wind.angle[AF] += 18f;
+        }
         float impact = Mathf.Max(.04f, step.preDelay);
-        if (t < impact * .65f) return ProtectChin(Mix(guard, wind, t / Mathf.Max(.001f, impact * .65f)), !front);
+        bool finalStraight = skill == 3 && n == 5;
+        float launchStart = (finalStraight || hook || body) ? Mathf.Max(0f, impact - .055f) : impact * .65f;
+        if (t < launchStart)
+        {
+            float loadTime = skill == 3 && n == 4 ? Mathf.Max(.01f, launchStart - .045f) : (finalStraight || hook || body) ? Mathf.Min(.12f, launchStart) : launchStart;
+            return FinishPunch(Mix(guard, wind, t / Mathf.Max(.001f, loadTime)), front, hook, upper);
+        }
         if (t < impact)
         {
-            float u = (t - impact * .65f) / Mathf.Max(.01f, impact * .35f);
+            float u = (t - launchStart) / Mathf.Max(.01f, impact - launchStart);
             var pose = Mix(wind, hit, u);
             if (upper)
             {
@@ -401,14 +505,49 @@ public static class MainBoss4_AnimGenerators
             if (hook)
             {
                 int forearm = front ? AF : AB;
-                float whip = Mathf.Clamp01((u - .45f) / .55f);
-                pose.angle[forearm] = Mathf.Lerp(wind.angle[forearm], hit.angle[forearm], whip * whip);
+                float whip = front ? Mathf.Clamp01(u) : Mathf.Clamp01((u - .30f) / .70f);
+                pose.angle[forearm] = Mathf.Lerp(wind.angle[forearm], hit.angle[forearm], front ? Smooth(whip) : whip * whip);
             }
-            return ProtectChin(pose, !front);
+            return FinishPunch(pose, front, hook, upper);
         }
         // Brief impact, then controlled recoil; next step can interrupt early on a wall.
-        float hold = airborneStrike ? .18f : upper ? .12f : .025f;
-        return ProtectChin(Mix(hit, guard, Mathf.Clamp01((t - impact - hold) / Mathf.Max(.001f, duration - impact - hold))), !front);
+        float hold = finalStraight ? .18f : airborneStrike ? .18f : body ? .08f : upper ? .12f : straightPunch && front ? .10f : .025f;
+        float recovery = Mathf.Clamp01((t - impact - hold) / Mathf.Max(.001f, duration - impact - hold));
+        if (body)
+        {
+            // Fold the elbow while withdrawing, then settle directly into the chin guard.
+            var folded = Mix(hit, guard, .55f);
+            folded.angle[AB] = guard.angle[AB] + 12f;
+            var retract = recovery < .55f
+                ? Mix(hit, folded, recovery / .55f)
+                : Mix(folded, guard, (recovery - .55f) / .45f);
+            return FinishPunch(retract, front, hook, upper);
+        }
+        var recovered = FinishPunch(Mix(hit, guard, recovery), front, hook, upper);
+        if (upper)
+        {
+            // Ease the dropped rear shoulder back into guard without a state-boundary snap.
+            float armReturn = Smooth(recovery * recovery);
+            recovered.angle[SB] = Mathf.Lerp(20f, guard.angle[SB], armReturn);
+            recovered.angle[AB] = Mathf.Lerp(recovered.angle[AB], guard.angle[AB], armReturn);
+        }
+        return recovered;
+    }
+    static Pose FinishPunch(Pose p, bool front, bool hook, bool upper)
+    {
+        ProtectChin(p, !front);
+        if (hook)
+        {
+            // Tuck the non-striking elbow while retaining a folded chin guard.
+            int shoulder = front ? SB : SF, forearm = front ? AB : AF;
+            p.angle[shoulder] -= 22f;
+            p.angle[forearm] += 22f;
+        }
+        if (upper)
+        {
+            p.angle[SB] = 20f;
+        }
+        return p;
     }
     static Pose Walk(float t, float duration, bool run)
     {
@@ -495,14 +634,51 @@ public static class MainBoss4_AnimGenerators
         return p;
     }
 
+    static void AimBuffHand(Pose p, bool front, Vector2 target, float bend)
+    {
+        int shoulder = front ? SF : SB, forearm = front ? AF : AB, hand = front ? HF : HB;
+        Vector2 a = p.position[forearm], b = p.position[hand];
+        Vector2 d = target - (Vector2)p.position[shoulder];
+        float cosine = Mathf.Clamp((d.sqrMagnitude - a.sqrMagnitude - b.sqrMagnitude) / (2f * a.magnitude * b.magnitude), -1f, 1f);
+        float elbow = Mathf.Acos(cosine) * bend;
+        float heading = Mathf.Atan2(d.y, d.x) - Mathf.Atan2(b.magnitude * Mathf.Sin(elbow), a.magnitude + b.magnitude * Mathf.Cos(elbow));
+        p.angle[shoulder] = Mathf.DeltaAngle(0f, (heading - Mathf.Atan2(a.y, a.x)) * Mathf.Rad2Deg);
+        p.angle[forearm] = Mathf.DeltaAngle(0f, (elbow + Mathf.Atan2(a.y, a.x) - Mathf.Atan2(b.y, b.x)) * Mathf.Rad2Deg);
+    }
     static Pose Buff(float t, float duration)
     {
-        float u = t / duration; var raised = new Pose();
-        ArmAngles(raised, true, -35, 112, 25); ArmAngles(raised, false, 35, 92, -20);
-        raised.angle[Head] = 5;
-        var p = u < .4f ? Mix(new Pose(), raised, u / .4f) : u < .7f ? raised : Mix(raised, new Pose(), (u - .7f) / .3f);
-        if (u > .4f && u < .7f) { float shake = Mathf.Sin((u - .4f) / .3f * Mathf.PI * 4) * .9f; p.angle[AF] += shake; p.angle[AB] -= shake; }
-        return p;
+        float u = Mathf.Clamp01(t / duration);
+        var powered = new Pose();
+        // Both arms open outward; slightly straighter elbows remain fixed while shoulders lift/lower.
+        ArmAngles(powered, true, 0f, -85f, 12f);
+        ArmAngles(powered, false, 0f, 85f, -25f);
+        powered.position[HB] = new Vector3(-.090f, -.640f, 0f);
+        powered.rearForearmFlip = true;
+        powered.frontHandFlip = true;
+        powered.angle[Head] = 8f;
+        var raised = Mix(powered, powered, 0f);
+        raised.angle[SF] = -65f;
+        raised.angle[SB] = 65f;
+        raised.angle[Head] = 4f;
+        // Upright legs throughout. Lift to the outside, then lower without folding the elbows.
+        if (u < .36f) return Mix(new Pose(), raised, u / .36f);
+        if (u < .48f) return raised;
+        if (u < .57f) return Mix(raised, powered, (u - .48f) / .09f);
+        if (u < .82f)
+        {
+            float flex = (u - .57f) / .25f;
+            float tension = Mathf.Sin(flex * Mathf.PI);
+            // Expand the chest, press elbows down and add a restrained muscular tremor.
+            powered.position[SF].y -= .018f * tension;
+            powered.position[SB].y -= .018f * tension;
+            powered.position[SF].x -= .025f * tension;
+            powered.position[SB].x += .025f * tension;
+            // Keep the outward forearm angles unchanged through the power pose.
+            float tremor = Mathf.Sin(flex * Mathf.PI * 8f) * .65f * tension;
+            powered.angle[SF] += tremor; powered.angle[SB] -= tremor;
+            return powered;
+        }
+        return Mix(powered, new Pose(), (u - .82f) / .18f);
     }
     static Pose Groggy(float t)
     {
@@ -514,7 +690,22 @@ public static class MainBoss4_AnimGenerators
         ArmAngles(p, true, 45, -25, 4);
         ArmAngles(p, false, 45, -25, 15);
         Ground(p); // Forward knee bend; feet retain the rest ground height.
-        return p;
+        // Power cuts out: a short freeze, then head/arms sag ahead of the collapsing stance.
+        var start = AttackGuard();
+        if (t <= .12f) return start;
+        float collapse = Mathf.Clamp01((t - .12f) / 1.08f);
+        var falling = Mix(start, p, collapse);
+        float limbProgress = Smooth(Mathf.Clamp01((t - .12f) / .82f));
+        foreach (int part in new[] { Head, SF, AF, HF, SB, AB, HB })
+        {
+            falling.angle[part] = Mathf.Lerp(start.angle[part], p.angle[part], limbProgress);
+            falling.position[part] = Vector3.Lerp(start.position[part], p.position[part], limbProgress);
+        }
+        // Re-solve planted feet at every intermediate pelvis height.
+        falling.frontStep = Mathf.Lerp(start.frontStep, p.frontStep, Smooth(collapse));
+        falling.backStep = Mathf.Lerp(start.backStep, p.backStep, Smooth(collapse));
+        Ground(falling);
+        return falling;
     }
     static float SpriteBottom(Pose p, int part)
     {
@@ -526,10 +717,11 @@ public static class MainBoss4_AnimGenerators
     }
     static Pose Death(float t)
     {
-        // Hold the established two-handed guard. Only the head moves, then stays tilted back.
-        var p = AttackGuard();
-        float tilt = Smooth(Mathf.Clamp01((t - .15f) / .70f));
-        p.angle[Head] += 35f * tilt;
+        // Raise the guard from an upright rest, then tilt only the head and hold.
+        var uprightGuard = new Pose();
+        ProtectChin(uprightGuard, true); ProtectChin(uprightGuard, false);
+        var p = Mix(new Pose(), uprightGuard, Mathf.Clamp01(t / .65f));
+        p.angle[Head] += 35f * Smooth(Mathf.Clamp01((t - .75f) / .65f));
         return p;
     }
     static AnimationClip Save(ClipSpec spec)
@@ -546,15 +738,21 @@ public static class MainBoss4_AnimGenerators
                 for (int i = 0; i <= count; i++) { float t = spec.length * i / count; pos[i] = new Keyframe(t, poses[i].position[bone][axis]); rot[i] = new Keyframe(t, axis == 2 ? poses[i].angle[bone] : 0); }
                 SetCurve(clip, Paths[bone], "m_LocalPosition." + "xyz"[axis], pos);
                 SetCurve(clip, Paths[bone], "localEulerAnglesRaw." + "xyz"[axis], rot);
-                if ((bone == HB || bone == AB) && axis == 0)
+                if ((bone == HB || bone == AB || bone == HF) && axis == 0)
                 {
                     var scale = new Keyframe[count + 1];
-                    for (int i = 0; i <= count; i++) scale[i] = new Keyframe(spec.length * i / count, (bone == HB ? poses[i].rearHandGuardFlip : poses[i].rearForearmFlip) ? -1f : 1f);
+                    for (int i = 0; i <= count; i++) scale[i] = new Keyframe(spec.length * i / count, (bone == HF ? poses[i].frontHandFlip : bone == HB ? poses[i].rearHandGuardFlip : poses[i].rearForearmFlip) ? -1f : 1f);
                     SetCurve(clip, Paths[bone], "m_LocalScale.x", scale, true);
+                }
+                else if (bone == AF && axis == 1)
+                {
+                    var scaleY = new Keyframe[count + 1];
+                    for (int i = 0; i <= count; i++) scaleY[i] = new Keyframe(spec.length * i / count, poses[i].frontForearmScaleY);
+                    SetCurve(clip, Paths[bone], "m_LocalScale.y", scaleY);
                 }
                 else SetCurve(clip, Paths[bone], "m_LocalScale." + "xyz"[axis], new[] { new Keyframe(0, 1), new Keyframe(spec.length, 1) });
             }
-        float front = spec.name == "Dskill" || spec.name == "skill3" ? 1f : 0f;
+        float front = spec.name == "Dskill" || spec.name == "skill3" || spec.name == "skill5" ? 1f : 0f;
         foreach (int part in new[] { AB, HB })
             AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve(Paths[part], typeof(MainBoss4ArmLayerPreview), "forceFront"),
                 AnimationCurve.Constant(0, spec.length, front));
