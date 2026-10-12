@@ -75,6 +75,7 @@ GameObject:
   - component: {fileID: 8224058320869112352}
   - component: {fileID: 942704157620502427}
   - component: {fileID: 3807078742301177842}
+  - component: {fileID: 5097369619097312022}
   m_Layer: 8
   m_Name: Stage4_Enemy_2
   m_TagString: Enemy
@@ -284,7 +285,24 @@ MonoBehaviour:
   knockbackProbeSize: {x: 0.2, y: 0.5}
   currentHp: 0
   visualTransform: {fileID: 0}
+  hitAnimation: {fileID: 0}
+  deathAnimation: {fileID: 0}
+  hitAnimationState: 
+  deathAnimationState: 
   showAttackLog: 0
+--- !u!114 &5097369619097312022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4631876679815313393}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5eedb97f8bef444872492dc8767078, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinReward
+  coinAmount: 8
 --- !u!1 &4710508761296580608
 GameObject:
   m_ObjectHideFlags: 0

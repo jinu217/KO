@@ -967,6 +967,10 @@ MonoBehaviour:
   showDetectionGizmos: 0
   logSkillUsage: 1
   currentHp: 0
+  deathAnimator: {fileID: 0}
+  deathStateName: 
+  deathEndHold: 0.15
+  dashCooldownReductionDistance: 6
   skill3ReductionDistance: 6
   visualRoot: {fileID: 0}
   artworkFacesLeft: 0
@@ -984,7 +988,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c5eedb97f8bef444872492dc8767078, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CoinReward
-  coinAmount: 100
+  coinAmount: 40
 --- !u!1 &4591527111188279586
 GameObject:
   m_ObjectHideFlags: 0

@@ -930,6 +930,7 @@ MonoBehaviour:
   deathAnimator: {fileID: 0}
   deathStateName: 
   deathEndHold: 0.15
+  dashCooldownReductionDistance: 6
   bossAnimator: {fileID: 0}
   visualRoot: {fileID: 0}
   artworkFacesLeft: 0
@@ -959,6 +960,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 0
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
@@ -976,6 +978,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 0
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
@@ -992,6 +995,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 0
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
@@ -1008,6 +1012,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 0
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
@@ -1031,7 +1036,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c5eedb97f8bef444872492dc8767078, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CoinReward
-  coinAmount: 200
+  coinAmount: 70
 --- !u!1 &6319042723519057792
 GameObject:
   m_ObjectHideFlags: 0
