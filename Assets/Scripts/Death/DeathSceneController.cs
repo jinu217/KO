@@ -75,7 +75,7 @@ public class DeathSceneController : MonoBehaviour
         if (!isWaitingForContinue)
             return;
 
-        if (Input.GetKeyDown(KeyCode.Return))
+        if (Input.GetKeyDown(KeyCode.F))
         {
             canContinue = true;
         }
@@ -418,14 +418,14 @@ public class DeathSceneController : MonoBehaviour
         yield return StartCoroutine(ShowResult());
 
 
-        //================== Enter 입력 대기 ====================
+        //================== F key 입력 대기 ====================
 
-        continueText.text = "ENTER를 눌러 계속";
+        continueText.text = "\" F \" Key를 눌러 계속..";
         canContinue = false;
         isWaitingForContinue = true;
         continueText.gameObject.SetActive(true);
 
-        // ENTER 안내 깜빡임 시작
+        // F key 안내 깜빡임 시작
         continueBlinkCoroutine =
             StartCoroutine(BlinkContinueText());
 

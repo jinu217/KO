@@ -157,6 +157,15 @@ public class MainBossController : MidBossController
         desireOwnsAttackLock = false;
     }
 
+    // 전용 욕망 코루틴을 취소할 때 남은 애니메이션 잠금 정보도 정리한다.
+    // 실제 행동 잠금은 취소를 요청한 욕망 컴포넌트가 다음 상태에 맞게 설정한다.
+    public void CancelDesireAnimation()
+    {
+        activeAnimation = null;
+        desireOwnsAttackLock = false;
+        SetBusy(false);
+    }
+
     protected override void UpdatePhase()
     {
         if (MainData == null || MainData.maxHp <= 0f) { currentPhase = 1; return; }

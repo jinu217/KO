@@ -19,6 +19,7 @@ public class BossSkillDataDrawer : PropertyDrawer
             DrawProperty(ref line, property.FindPropertyRelative("skillType"));
             DrawProperty(ref line, property.FindPropertyRelative("executionOrder"));
             DrawProperty(ref line, property.FindPropertyRelative("cooldown"));
+            DrawProperty(ref line, property.FindPropertyRelative("excludeDistanceCooldownReduction"));
             DrawProperty(ref line, property.FindPropertyRelative("minimumPhase"));
             DrawProperty(ref line, property.FindPropertyRelative("castRange"));
             DrawProperty(ref line, property.FindPropertyRelative("forceCastMinDistance"));
@@ -49,6 +50,7 @@ public class BossSkillDataDrawer : PropertyDrawer
         height += Height(property.FindPropertyRelative("skillType"));
         height += Height(property.FindPropertyRelative("executionOrder"));
         height += Height(property.FindPropertyRelative("cooldown"));
+        height += Height(property.FindPropertyRelative("excludeDistanceCooldownReduction"));
         height += Height(property.FindPropertyRelative("minimumPhase"));
         height += Height(property.FindPropertyRelative("castRange"));
         height += Height(property.FindPropertyRelative("forceCastMinDistance"));

@@ -171,7 +171,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1905774021
   m_SortingLayer: 7
-  m_SortingOrder: 3
+  m_SortingOrder: 4
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 0a63a838c9926894e85d5fc7e39d0c36, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -263,7 +263,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1905774021
   m_SortingLayer: 7
-  m_SortingOrder: 3
+  m_SortingOrder: 5
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 9ec509497d11ce64ea446cb7c1d75b56, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -284,6 +284,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3064616893508061217}
+  - component: {fileID: 5188978259330375066}
   m_Layer: 0
   m_Name: MidBoss 4
   m_TagString: Untagged
@@ -307,6 +308,28 @@ Transform:
   - {fileID: 8887133218652003160}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &5188978259330375066
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1328209014140426160}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 6abcfdd842ca0d14599b37d1a55bc64a, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &2422565233154412017
 GameObject:
   m_ObjectHideFlags: 0
@@ -317,6 +340,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5473787092685786555}
   - component: {fileID: 6312987501495577960}
+  - component: {fileID: 8661334751392160025}
   m_Layer: 0
   m_Name: Scythe
   m_TagString: Untagged
@@ -386,7 +410,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1276993553
   m_SortingLayer: 5
-  m_SortingOrder: -5
+  m_SortingOrder: 4
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 5208daa418e981146a9e664d8a138855, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -398,6 +422,19 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &8661334751392160025
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2422565233154412017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68acd28c9809e074b9d07e5b3a8752c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MidBoss4WeaponLayerPreview
+  front: 0
 --- !u!1 &2429375429098288973
 GameObject:
   m_ObjectHideFlags: 0
@@ -1124,7 +1161,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1276993553
   m_SortingLayer: 5
-  m_SortingOrder: 1
+  m_SortingOrder: -3
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 1c5685fb7b26b5540b6c32b31123b7d5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1307,7 +1344,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1276993553
   m_SortingLayer: 5
-  m_SortingOrder: 3
+  m_SortingOrder: -1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 0ea70d0845d5a574d80c9ee5098bbaa6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1399,7 +1436,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1276993553
   m_SortingLayer: 5
-  m_SortingOrder: 2
+  m_SortingOrder: -2
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 348c3f8a8d572544e8acf239fc0085a3, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

@@ -70,6 +70,11 @@ public class PlayerStatus : MonoBehaviour
     public bool isMeditating = false;
     [Tooltip("명상 중 추가 BPM 감소량")]
     public float meditateDecreaseSpeed = 3f;
+    [Tooltip("명상 시작 후 BPM 감소를 시작하기 전 대기 시간")]
+    public float meditationBpmDelay = 1.2f;
+    [Tooltip("BPM 감소 속도가 0에서 최대값까지 올라가는 시간")]
+    public float meditationBpmRampTime = 1.5f;
+    private float meditationBpmTimer = 0f;
 
     [Header("BPM Lock Potion")]
     [Tooltip("true이면 BPM을 lockedBpm 값으로 고정")]
@@ -239,6 +244,34 @@ public class PlayerStatus : MonoBehaviour
             StartExhaustion();
     }
 
+    //============== BPM 감소 ==============
+    public void ReduceBPM(float amount)
+    {
+        if (amount <= 0f)
+            return;
+
+        // 탈진 중에는 BPM을 변경하지 않음
+        if (isExhausted)
+            return;
+
+        currentBpm -= amount;
+
+        if (currentBpm < MinBpm)
+            currentBpm = MinBpm;
+    }
+
+    //============== BPM 지속 감소(명상) ==============
+    public void ReduceBPMOverTime(float amountPerSecond)
+    {
+        if (amountPerSecond <= 0f)
+            return;
+
+        if (isExhausted)
+            return;
+
+        ReduceBPM(amountPerSecond * Time.deltaTime);
+    }
+
     private void HandleBPMDecrease()
     {
         if (isExhausted)
@@ -247,7 +280,6 @@ public class PlayerStatus : MonoBehaviour
         if (bpmLocked)
         {
             currentBpm = lockedBpm;
-
             bpmLockTimer -= Time.deltaTime;
 
             if (bpmLockTimer <= 0)
@@ -256,17 +288,43 @@ public class PlayerStatus : MonoBehaviour
             return;
         }
 
+        //============== 기본 BPM 감소 ==============
         if (currentBpm > MinBpm)
         {
             float decayMultiplier = CurrentBpmRank == BpmRank.C ? feverBpmDecayMultiplier : 1f;
-            currentBpm -= bpmDecreaseSpeed * decayMultiplier * Time.deltaTime;
+            ReduceBPMOverTime(bpmDecreaseSpeed * decayMultiplier);
         }
 
+        //============== 명상 BPM 감소 ==============
         if (isMeditating)
-            currentBpm -= meditateDecreaseSpeed * Time.deltaTime;
+        {
+            meditationBpmTimer += Time.deltaTime;
 
-        if (currentBpm < MinBpm)
-            currentBpm = MinBpm;
+            // 명상 시작 후 잠시 대기
+            if (meditationBpmTimer >= meditationBpmDelay)
+            {
+                float rampElapsed =
+                    meditationBpmTimer - meditationBpmDelay;
+
+                float rampT =
+                    Mathf.Clamp01(
+                        rampElapsed / meditationBpmRampTime
+                    );
+
+                // 0 → 1로 부드럽게 증가
+                float meditationMultiplier =
+                    Mathf.SmoothStep(0f, 1f, rampT);
+
+                ReduceBPMOverTime(
+                    meditateDecreaseSpeed * meditationMultiplier
+                );
+            }
+        }
+        else
+        {
+            // 명상이 끝나면 다음 명상을 위해 초기화
+            meditationBpmTimer = 0f;
+        }
     }
 
     public string GetBPMRank()

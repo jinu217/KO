@@ -11,6 +11,9 @@ public sealed class Stage2_MidBoss : MidBossController
     [Header("거리 쿨타임 감소")]
     [SerializeField, Min(0f), Tooltip("3스킬 사용 후 이 거리 이상 벌어지면 남은 쿨타임을 한 번 50% 줄입니다.")]
     private float skill3ReductionDistance = 6.5f;
+
+    protected override float GetDashCooldownReductionDistance(int index)
+        => index == 2 ? skill3ReductionDistance : base.GetDashCooldownReductionDistance(index);
     private float visualScaleX = 1f;
     private string activeState;
 

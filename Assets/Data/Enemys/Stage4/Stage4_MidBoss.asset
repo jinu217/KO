@@ -19,11 +19,12 @@ MonoBehaviour:
   positionUpdateDelay: 0.12
   wallCheckDistance: 0.55
   basicAttack:
-    skillName: "\uAE30\uBCF8 \uACF5\uACA9 \uB0B4\uB824\uCC0D\uAE30 \uBC00\uCE58\uAE30
-      3\uC5F0\uACA9"
+    skillName: "\uAE30\uBCF8 \uACF5\uACA9: \uB0B4\uB824\uCC0D\uAE30 2\uD68C + \uC804\uBC29
+      \uBC00\uC5B4\uBCA0\uAE30"
     skillType: 0
     executionOrder: 0
     cooldown: 2.5
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 3.4
     forceCastMinDistance: 0
@@ -34,8 +35,8 @@ MonoBehaviour:
       attackSteps:
       - stepName: "1\uD0C0 \uC81C\uC790\uB9AC \uB0B4\uB824\uCC0D\uAE30"
         actionType: 2
-        preDelay: 0.28
-        postDelay: 0.12
+        preDelay: 0.6
+        postDelay: 0
         duration: 0
         interval: 0
         attackCount: 1
@@ -60,10 +61,11 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "2\uD0C0 \uC81C\uC790\uB9AC \uB0B4\uB824\uCC0D\uAE30"
         actionType: 2
-        preDelay: 0.14
-        postDelay: 0.18
+        preDelay: 0.6999999
+        postDelay: 0
         duration: 0
         interval: 0
         attackCount: 1
@@ -88,11 +90,12 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "3\uD0C0 \uAE30 \uBAA8\uC544 \uC804\uC9C4 \uBC00\uCE58\uAE30"
-        actionType: 4
-        preDelay: 0.65
-        postDelay: 0.4
-        duration: 0.32
+        actionType: 2
+        preDelay: 0.95000005
+        postDelay: 0.8499999
+        duration: 0
         interval: 0
         attackCount: 1
         damage: 12
@@ -100,8 +103,8 @@ MonoBehaviour:
         hitboxOffset: {x: 1.55, y: -0.05}
         knockbackForce: {x: 7, y: 3}
         knockbackAwayFromCenter: 0
-        moveSpeed: 5.5
-        maxMoveDistance: 1.4
+        moveSpeed: 2.4
+        maxMoveDistance: 0.45
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
         stopAtWall: 1
@@ -116,33 +119,35 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
   skills:
-  - skillName: "1\uC2A4\uD0AC \uD68C\uC804 \uB3C4\uC57D \uB0B4\uB824\uCC0D\uAE30"
+  - skillName: "\uB0AB \uD68C\uC804 \uB3C4\uC57D \uB0B4\uB824\uCC0D\uAE30"
     skillType: 0
     executionOrder: 0
     cooldown: 11
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 5.5
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
     preDelay: 0
-    postDelay: 0.55
+    postDelay: 0.8
     active:
       attackSteps:
       - stepName: "1\uD0C0 \uB0AB \uD68C\uC804 \uACF5\uACA9"
         actionType: 2
-        preDelay: 0.5
-        postDelay: 0.2
+        preDelay: 0.85
+        postDelay: 0.55
         duration: 0
         interval: 0
         attackCount: 1
         damage: 14
-        hitboxSize: {x: 6.2, y: 2.2}
+        hitboxSize: {x: 5.5, y: 3}
         hitboxOffset: {x: 0, y: 0}
-        knockbackForce: {x: 13, y: 5}
+        knockbackForce: {x: 5, y: 2}
         knockbackAwayFromCenter: 1
         moveSpeed: 0
         maxMoveDistance: 0
@@ -160,11 +165,12 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uD50C\uB808\uC774\uC5B4 \uBC29\uD5A5 \uB3C4\uC57D"
         actionType: 5
         preDelay: 0
         postDelay: 0
-        duration: 2
+        duration: 0.6
         interval: 0
         attackCount: 0
         damage: 0
@@ -174,7 +180,7 @@ MonoBehaviour:
         knockbackAwayFromCenter: 0
         moveSpeed: 0
         maxMoveDistance: 0
-        jumpForce: {x: 0, y: 10}
+        jumpForce: {x: 4, y: 10}
         slamSpeed: 0
         stopAtWall: 0
         stopOnPlayerHit: 0
@@ -188,17 +194,18 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0.7
+        persistentFixedCadence: 0
       - stepName: "2\uD0C0 \uB3C4\uC57D \uB0B4\uB824\uCC0D\uAE30"
         actionType: 6
-        preDelay: 0.1
-        postDelay: 0.55
-        duration: 2
+        preDelay: 0
+        postDelay: 0
+        duration: 0.5
         interval: 0
         attackCount: 1
         damage: 17
-        hitboxSize: {x: 3.6, y: 1.9}
-        hitboxOffset: {x: 0, y: -0.35}
-        knockbackForce: {x: 8, y: 7}
+        hitboxSize: {x: 3.5, y: 2}
+        hitboxOffset: {x: 1, y: 0}
+        knockbackForce: {x: 3, y: 2}
         knockbackAwayFromCenter: 0
         moveSpeed: 0
         maxMoveDistance: 0
@@ -216,13 +223,15 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0.3
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
-  - skillName: "2\uC2A4\uD0AC \uB04C\uC5B4\uC624\uAE30 \uB0AB \uD68C\uC804"
+  - skillName: "\uB0AB\uC73C\uB85C \uB04C\uC5B4\uC624\uAE30 \uD6C4 \uC804\uBC29 \uD68C\uC804"
     skillType: 0
     executionOrder: 0
     cooldown: 9.5
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 5.5
     forceCastMinDistance: 0
@@ -233,9 +242,9 @@ MonoBehaviour:
       attackSteps:
       - stepName: "\uC804\uBC29 \uD50C\uB808\uC774\uC5B4 \uB04C\uC5B4\uC624\uAE30"
         actionType: 9
-        preDelay: 0.45
-        postDelay: 0.12
-        duration: 0.5
+        preDelay: 0.55
+        postDelay: 0.45
+        duration: 0.35
         interval: 0
         attackCount: 0
         damage: 0
@@ -259,12 +268,13 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uB04C\uC5B4\uC628 \uB4A4 \uC804\uBC29 \uB0AB \uD68C\uC804 \uB3C4\uD2B8"
         actionType: 8
-        preDelay: 0.15
-        postDelay: 0.5
-        duration: 3
-        interval: 0.6
+        preDelay: 0
+        postDelay: 0.75
+        duration: 1.5
+        interval: 0.3
         attackCount: 5
         damage: 4
         hitboxSize: {x: 3.4, y: 2}
@@ -287,30 +297,29 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0
+        persistentFixedCadence: 1
     buff:
       duration: 0
       effects: []
-  - skillName: "3\uC2A4\uD0AC \uC804\uD22C \uAC00\uC18D \uBC84\uD504"
+  - skillName: "3\uC2A4\uD0AC \uD5C8\uAE30"
     skillType: 1
     executionOrder: 0
     cooldown: 18
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0.8
-    postDelay: 0.4
+    preDelay: 1.7
+    postDelay: 1.3
     active:
       attackSteps: []
     buff:
       duration: 8
       effects:
-      - stat: 1
+      - stat: 2
         valueMode: 1
         value: 1.15
-      - stat: 0
-        valueMode: 1
-        value: 1.12
-      - stat: 5
-        valueMode: 1
-        value: 0.8
+      - stat: 8
+        valueMode: 2
+        value: 0.25

@@ -8,6 +8,7 @@ public static class Stage2MainBossFactory
     private const string DataPath = DataFolder + "/Stage2_MainBoss.asset";
     private const string PrefabPath = "Assets/Prefabs/Stage2_Enemy/Stage2_MainBoss.prefab";
     private const string RockPath = DataFolder + "/Ex_Stage2_MainBoss_Rock.prefab";
+    private const string SafetyFieldPath = DataFolder + "/Ex_Stage2_MainBoss_SafetyFiled.prefab";
 
     [MenuItem("Tools/Boss/Create Stage2 MainBoss")]
     public static void CreateOrUpdate()
@@ -24,14 +25,24 @@ public static class Stage2MainBossFactory
         ConfigureData(data, rockPrefab);
         EditorUtility.SetDirty(data);
 
+        GameObject fieldPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SafetyFieldPath);
+        if (fieldPrefab == null)
+            throw new System.InvalidOperationException("2스테이지 안전 필드 프리팹을 찾지 못했습니다: " + SafetyFieldPath);
+
         GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
         if (root != null)
         {
             Stage2_MainBoss boss = root.GetComponent<Stage2_MainBoss>();
             if (boss == null)
                 boss = root.AddComponent<Stage2_MainBoss>();
-            if (root.GetComponent<Stage2_MainBossDesireSkill>() == null)
-                root.AddComponent<Stage2_MainBossDesireSkill>();
+            Stage2_MainBossDesireSkill desire = root.GetComponent<Stage2_MainBossDesireSkill>();
+            if (desire == null) desire = root.AddComponent<Stage2_MainBossDesireSkill>();
+            SerializedObject desireSettings = new SerializedObject(desire);
+            desireSettings.FindProperty("fieldPrefab").objectReferenceValue = fieldPrefab;
+            desireSettings.ApplyModifiedPropertiesWithoutUndo();
+            SerializedObject bossSettings = new SerializedObject(boss);
+            bossSettings.FindProperty("desireSkill").objectReferenceValue = desire;
+            bossSettings.ApplyModifiedPropertiesWithoutUndo();
             boss.data = data;
             EditorUtility.SetDirty(boss);
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);

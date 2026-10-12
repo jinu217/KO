@@ -70,8 +70,7 @@ public class PauseController : MonoBehaviour
 
         // 선택
         if (Input.GetKeyDown(KeyCode.Return) ||
-            Input.GetKeyDown(KeyCode.Space) ||
-            Input.GetKeyDown(KeyCode.Z))
+            Input.GetKeyDown(KeyCode.F))
         {
             ExecuteMenu();
         }
