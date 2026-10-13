@@ -22,7 +22,7 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
     private Stage4_MainBoss owner;
     private BossSkillData[] skills;
     private float nextUse, end, startHp, groggyEnd;
-    private bool active, casting;
+    private bool active, casting, groggyPose;
     public bool Active => active && Time.time < end;
     public bool BlocksCombat => casting || Time.time < groggyEnd;
     public float DamageMultiplier => damageMultiplier;
@@ -44,6 +44,7 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
         {
             skills[1].active.attackSteps.Add(new BossAttackStepData { stepName = "점프 스트레이트 도약", actionType = BossActionType.Jump, jumpForce = new Vector2(2, 7), duration = .18f });
             var strike = Stage4BossPatterns.Punch("공중 스트레이트", 22, .04f);
+            strike.postDelay = .40f;
             strike.hitboxSize = new Vector2(2.4f, 3f);
             strike.hitboxOffset = new Vector2(1, .5f);
             strike.knockbackForce = new Vector2(2, -8);
@@ -51,7 +52,9 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
         }
         if (skills.Length > 3)
         {
-            var finish = Stage4BossPatterns.Punch("최종 스트레이트", 25, .4f, true);
+            skills[3].active.attackSteps[4].postDelay = .10f;
+            var finish = Stage4BossPatterns.Punch("최종 스트레이트", 25, .08f, true);
+            finish.postDelay = .28f;
             finish.knockbackForce = new Vector2(12, 4);
             skills[3].active.attackSteps.Add(finish);
         }
@@ -77,9 +80,10 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
             bool failed = gain < target && !Mathf.Approximately(gain, target);
             owner.DesireLog($"종료: HP 증가 {owner.Hp - startHp:F1}, 필요 {owner.data.maxHp * requiredHpGain:F1}, 그로기 {failed}");
             owner.InterruptAttack();
-            if (failed) groggyEnd = Time.time + groggyDuration;
+            if (failed) { groggyEnd = Time.time + groggyDuration; groggyPose = true; owner.BeginGroggyPose(); }
         }
-        if (BlocksCombat && !owner.Busy) owner.Halt();
+        if (groggyPose && Time.time >= groggyEnd) { groggyPose = false; owner.EndGroggyPose(); }
+        if (BlocksCombat) owner.Halt();
         if (CanActivate(owner.Phase))
             StartCoroutine(Activate());
     }
@@ -107,6 +111,7 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
         owner.InterruptAttack();
         owner.Busy = true;
         owner.Halt();
+        owner.BeginDesirePose();
         owner.DesireLog("시작");
         // 포효는 피해 없이 밀어내므로 피해가 필요한 공통 공격 판정과 별도로 처리한다.
         var seen = new System.Collections.Generic.HashSet<Rigidbody2D>();
@@ -120,9 +125,10 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
             body.AddForce(new Vector2(direction * roar.knockbackForce.x, roar.knockbackForce.y), ForceMode2D.Impulse);
         }
         yield return new WaitForSeconds(castDelay);
+        yield return owner.FinishDesirePose();
         casting = false;
         owner.Busy = false;
     }
-    public void Cancel() { StopAllCoroutines(); active = casting = false; groggyEnd = 0; }
+    public void Cancel() { StopAllCoroutines(); active = casting = false; groggyEnd = 0; groggyPose = false; }
     private void OnDisable() { Cancel(); }
 }
