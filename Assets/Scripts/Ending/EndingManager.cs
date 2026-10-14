@@ -16,7 +16,7 @@ public class EndingManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    //============== 기계장비 획득 ==============
+    //============== 기계장비(기계이식) 획득 ==============
     public void AddMachineEquipment()
     {
         if (SaveData.Instance == null)

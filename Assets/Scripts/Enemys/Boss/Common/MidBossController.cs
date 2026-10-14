@@ -185,29 +185,50 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (playerTransform == null)
         {
             GameObject player = GameObject.FindWithTag("Player");
-            if (player != null) playerTransform = player.transform;
+            if (player != null)
+                playerTransform = player.transform;
         }
-        if (playerTransform == null) return;
-        float distance = Vector2.Distance(transform.position, playerTransform.position);
+
+        if (playerTransform == null)
+            return;
+
+        float distance = Vector2.Distance(
+            transform.position,
+            playerTransform.position
+        );
+
         if (!isChasing && distance <= data.detectRange)
         {
             isChasing = true;
 
-            // 메인보스의 조우 대화 등 최초 감지 이벤트
+            //============== 최초 감지 이벤트 ==============
             OnPlayerDetected();
 
-            // 처음 조우했을 때 HP UI 표시
-            if (!healthUIShown)
-            {
-                healthUIShown = true;
-                ShowHealthUI();
-            }
+            // 보스별 조건을 통과한 경우에만 HP UI를 표시합니다.
+            ShowHealthUIIfAllowed();
         }
         else if (isChasing && distance > data.chaseRange)
         {
             isChasing = false;
         }
     }
+
+    // 일반 미드보스는 즉시 표시합니다.
+    // 메인보스는 조우 대사가 끝날 때까지 표시를 보류할 수 있습니다.
+    protected virtual bool CanShowHealthUIOnDetection()
+    {
+        return true;
+    }
+
+    protected void ShowHealthUIIfAllowed()
+    {
+        if (healthUIShown || !CanShowHealthUIOnDetection())
+            return;
+
+        healthUIShown = true;
+        ShowHealthUI();
+    }
+
 
     // 최초 인식 시 일반 공격은 즉시 준비하고, 나머지 스킬은 쿨타임이 50% 지난 상태로 시작한다.
     private void ApplyInitialCooldownsOnFirstDetection()

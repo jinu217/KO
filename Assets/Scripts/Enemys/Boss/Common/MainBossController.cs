@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class MainBossController : MidBossController
 {
@@ -24,6 +25,18 @@ public class MainBossController : MidBossController
     private bool encounterDialogueStarted;
     private bool encounterDialogueRunning;
 
+    //============== 처치 후 선택지 ==============
+    [Header("처치 후 선택지")]
+    [Tooltip("선택 결과(true=획득, false=거부)를 받을 이벤트.")]
+    [SerializeField]
+    private UnityEvent<bool> onEquipmentChoiceMade;
+
+    // 모든 메인보스는 처치 후 기계이식 선택지를 표시합니다.
+    protected virtual bool ShouldOfferEquipmentChoice()
+    {
+        return true;
+    }
+
     protected MainBossData MainData => data as MainBossData;
     protected virtual string AnimationPrefix => "MainBoss1_";
     protected virtual string VisualRootName => "MainBoss 1";
@@ -39,6 +52,11 @@ public class MainBossController : MidBossController
         base.Awake();
         if (bossAnimator == null) bossAnimator = GetComponentInChildren<Animator>(true);
         if (visualRoot == null) visualRoot = transform.Find(VisualRootName);
+
+        //============== 대화 컨트롤러 자동 연결 ==============
+        // Inspector에서 연결하지 않았을 때 씬에서 찾아 연결합니다.
+        if (dialogueController == null)
+            dialogueController = FindFirstObjectByType<MainBossDialogueController>();
 
         //============== 처음 바라볼 방향: 왼쪽 고정 ==============
         lookDirection = -1;
@@ -60,26 +78,23 @@ public class MainBossController : MidBossController
         visualRoot.localScale = scale;
     }
     
-    //============== 조우 대화 ==============
-    protected override void OnPlayerDetected()
+    //============== 조우 대화 시작 (감지/트리거 공통 진입점) ==============
+    // 보스 감지와 BossDialogueTrigger 양쪽에서 이 메서드로만 조우 대화를 시작합니다.
+    // 보스당 한 번만 시도하며, 대화가 실제로 시작되면 true를 반환합니다.
+    public bool TryStartEncounterDialogue()
     {
-        // 조우 대화가 진행 중이면 감지 처리를 대화가 끝날 때까지 미룹니다.
-        if (encounterDialogueRunning)
-            return;
+        if (isDead || !playEncounterDialogue)
+            return false;
 
-        // 대화를 이미 했거나 쓰지 않는 보스는 기존처럼 바로 감지 처리합니다.
-        if (encounterDialogueStarted || !playEncounterDialogue)
-        {
-            base.OnPlayerDetected();
-            return;
-        }
+        // 이미 시도했거나 진행 중이면 다시 시작하지 않습니다.
+        if (encounterDialogueStarted || encounterDialogueRunning)
+            return false;
 
         if (dialogueController == null)
         {
             Debug.LogWarning(
                 $"[{name}] MainBossDialogueController가 연결되지 않았습니다.", this);
-            base.OnPlayerDetected();
-            return;
+            return false;
         }
 
         // 한 보스의 조우 대화는 한 번만 시도합니다.
@@ -89,35 +104,83 @@ public class MainBossController : MidBossController
         {
             // 대화가 시작되면 감지 처리(HP바 표시 등)는 대화가 끝난 뒤로 미룹니다.
             encounterDialogueRunning = true;
+            return true;
         }
-        else
-        {
-            // 대사가 없어서 대화가 시작되지 않으면 바로 감지 처리합니다.
-            base.OnPlayerDetected();
-        }
+
+        return false;
     }
 
-    //============== 조우 대화 종료 후 감지 처리 ==============
+    //============== 조우 대화 ==============
+    protected override void OnPlayerDetected()
+    {
+        // 조우 대화가 진행 중이면 감지 처리를 대화가 끝날 때까지 미룹니다.
+        if (encounterDialogueRunning)
+            return;
+
+        // 대화가 시작되면 감지 처리는 OnEncounterDialogueFinished에서 실행됩니다.
+        if (TryStartEncounterDialogue())
+            return;
+
+        // 대화를 이미 했거나, 쓰지 않거나, 대사가 없으면 기존처럼 바로 감지 처리합니다.
+        base.OnPlayerDetected();
+    }
+
+    //============== 조우 대사 종료 후 감지 처리 ==============
     // MainBossDialogueController가 조우 대화가 끝났을 때 호출합니다.
     public void OnEncounterDialogueFinished()
     {
         encounterDialogueRunning = false;
 
-        // 대화 중 이미 죽은 경우에는 감지 처리를 하지 않습니다.
-        if (isDead) return;
+        // 대화 중 이미 죽은 경우에는 아무것도 하지 않습니다.
+        if (isDead)
+            return;
 
-        // 미뤄 둔 감지 처리를 이제 실행합니다. (추격 시작, HP바 표시 등)
+        // 조우 대사가 끝난 뒤 HP UI를 표시합니다.
+        ShowHealthUIIfAllowed();
+
+        // 미뤄 둔 감지 처리를 실행합니다.
         base.OnPlayerDetected();
     }
 
     //============== 사망 후 대화 ==============
     protected override IEnumerator BeforeDeactivateAfterDeath()
     {
-        // 처치 후 대화가 나오기 전에 HP바를 먼저 숨깁니다.
+        // HP UI는 처치 후 보스 대화가 시작되기 전에 숨깁니다.
         HideHealthUI();
 
-        if (dialogueController != null)
-            yield return dialogueController.PlayAfterDefeat(this, bossId);
+        if (dialogueController == null)
+        {
+            Debug.LogError(
+                $"[{name}] MainBossDialogueController가 연결되지 않았습니다.",
+                this);
+            yield break;
+        }
+
+        Debug.Log($"[{name}] 쓰러진 상태에서 처치 후 보스 대화를 시작합니다.", this);
+        yield return dialogueController.PlayAfterDefeat(
+            this,
+            bossId,
+            ShouldOfferEquipmentChoice(),
+            OnEquipmentChoiceMade
+        );
+        Debug.Log($"[{name}] 처치 후 보스 대화가 끝났습니다.", this);
+    }
+
+    //============== 기계 장치 이식 선택 결과 ==============
+    private void OnEquipmentChoiceMade(bool accepted)
+    {
+        Debug.Log($"[{name}] 기계 장치 이식 선택 결과: {(accepted ? "이식" : "거부")}", this);
+
+        //============== 이식을 선택했으면 기계장비 개수 증가 (엔딩 판정에 사용) ==============
+        if (accepted)
+        {
+            if (EndingManager.Instance != null)
+                EndingManager.Instance.AddMachineEquipment();
+            else
+                Debug.LogWarning($"[{name}] EndingManager가 없어 기계장비 개수를 올리지 못했습니다.", this);
+        }
+
+        onEquipmentChoiceMade?.Invoke(accepted);
     }
 
     protected virtual void LateUpdate()
@@ -292,6 +355,12 @@ public class MainBossController : MidBossController
         desireOwnsAttackLock = false;
         activeAnimation = null;
         base.Die();
+    }
+
+    //============== 조우 대사 중 HP UI 표시 방지 ==============
+    protected override bool CanShowHealthUIOnDetection()
+    {
+        return !encounterDialogueRunning;
     }
 
     protected override void ShowHealthUI() => MainBossHealthUI.Instance?.Show(name, currentHp, data.maxHp);
