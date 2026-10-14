@@ -82,6 +82,34 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     private float basicCooldownAdd;
     private float maxHpBonus;
 
+    
+    //============== 대화 중 AI 정지 ==============
+    protected bool dialoguePaused;
+
+    public void SetDialoguePaused(bool paused)
+    {
+        dialoguePaused = paused;
+
+        if (paused)
+        {
+            StopMove();
+
+            if (rb != null)
+                rb.angularVelocity = 0f;
+        }
+    }
+
+    // 플레이어를 처음 인식했을 때 보스별 추가 처리를 위한 훅
+    protected virtual void OnPlayerDetected()
+    {
+    }
+
+    // 사망 애니메이션 이후, 보스 비활성화 전에 실행할 추가 처리
+    protected virtual IEnumerator BeforeDeactivateAfterDeath()
+    {
+        yield break;
+    }
+
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -117,6 +145,12 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     {
         if (data == null || isDead) return;
         FindAndDetectPlayer();
+        // 대화 중에는 페이즈 변경 및 전투 AI를 실행하지 않습니다.
+        if (dialoguePaused)
+        {
+            StopMove();
+            return;
+        }
         UpdatePhase();
         ApplyInitialCooldownsOnFirstDetection();
         // 스킬 실행 중 이동은 BossSkillExecutor가 담당합니다.
@@ -138,7 +172,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
     protected virtual void FixedUpdate()
     {
-        if (data == null || isDead || isAttacking || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
+        if (data == null || isDead || dialoguePaused || isAttacking || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
         BossSkillData skill = GetReadySkill(out _) ?? GetBasicAttackData();
         if (InCastRange(skill)) { StopMove(); return; }
         if (IsWallInFront()) { StopMove(); return; }
@@ -158,6 +192,9 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (!isChasing && distance <= data.detectRange)
         {
             isChasing = true;
+
+            // 메인보스의 조우 대화 등 최초 감지 이벤트
+            OnPlayerDetected();
 
             // 처음 조우했을 때 HP UI 표시
             if (!healthUIShown)
@@ -413,6 +450,9 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             }
             if (deathEndHold > 0f) yield return new WaitForSeconds(deathEndHold);
         }
+        // 사망 후 대화
+        yield return BeforeDeactivateAfterDeath();
+
         // Retain the original event order: deactivate first, then notify room clear/rewards.
         gameObject.SetActive(false);
         Defeated?.Invoke();

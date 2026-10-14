@@ -15,6 +15,15 @@ public class MainBossController : MidBossController
     private bool phaseAnimationPlaying;
     private string activeAnimation;
     private bool desireOwnsAttackLock;
+    
+    //============== 메인보스 대화 ==============
+    [Header("메인보스 대화")]
+    [SerializeField] private MainBossDialogueController dialogueController;
+    [SerializeField] private string bossId = "Knight1";
+    [SerializeField] private bool playEncounterDialogue = true;
+    private bool encounterDialogueStarted;
+    private bool encounterDialogueRunning;
+
     protected MainBossData MainData => data as MainBossData;
     protected virtual string AnimationPrefix => "MainBoss1_";
     protected virtual string VisualRootName => "MainBoss 1";
@@ -26,9 +35,15 @@ public class MainBossController : MidBossController
 
     protected override void Awake()
     {
+        //============== 기본 초기화 ==============
         base.Awake();
         if (bossAnimator == null) bossAnimator = GetComponentInChildren<Animator>(true);
         if (visualRoot == null) visualRoot = transform.Find(VisualRootName);
+
+        //============== 처음 바라볼 방향: 왼쪽 고정 ==============
+        lookDirection = -1;
+
+        //============== 시각 루트 방향 적용 ==============
         if (visualRoot != null && visualRoot != transform)
         {
             visualScaleX = Mathf.Abs(visualRoot.localScale.x);
@@ -44,6 +59,66 @@ public class MainBossController : MidBossController
         scale.x = visualScaleX * (lookDirection < 0 ? -1f : 1f) * (artworkFacesLeft ? -1f : 1f);
         visualRoot.localScale = scale;
     }
+    
+    //============== 조우 대화 ==============
+    protected override void OnPlayerDetected()
+    {
+        // 조우 대화가 진행 중이면 감지 처리를 대화가 끝날 때까지 미룹니다.
+        if (encounterDialogueRunning)
+            return;
+
+        // 대화를 이미 했거나 쓰지 않는 보스는 기존처럼 바로 감지 처리합니다.
+        if (encounterDialogueStarted || !playEncounterDialogue)
+        {
+            base.OnPlayerDetected();
+            return;
+        }
+
+        if (dialogueController == null)
+        {
+            Debug.LogWarning(
+                $"[{name}] MainBossDialogueController가 연결되지 않았습니다.", this);
+            base.OnPlayerDetected();
+            return;
+        }
+
+        // 한 보스의 조우 대화는 한 번만 시도합니다.
+        encounterDialogueStarted = true;
+
+        if (dialogueController.TryPlayEncounter(this, bossId))
+        {
+            // 대화가 시작되면 감지 처리(HP바 표시 등)는 대화가 끝난 뒤로 미룹니다.
+            encounterDialogueRunning = true;
+        }
+        else
+        {
+            // 대사가 없어서 대화가 시작되지 않으면 바로 감지 처리합니다.
+            base.OnPlayerDetected();
+        }
+    }
+
+    //============== 조우 대화 종료 후 감지 처리 ==============
+    // MainBossDialogueController가 조우 대화가 끝났을 때 호출합니다.
+    public void OnEncounterDialogueFinished()
+    {
+        encounterDialogueRunning = false;
+
+        // 대화 중 이미 죽은 경우에는 감지 처리를 하지 않습니다.
+        if (isDead) return;
+
+        // 미뤄 둔 감지 처리를 이제 실행합니다. (추격 시작, HP바 표시 등)
+        base.OnPlayerDetected();
+    }
+
+    //============== 사망 후 대화 ==============
+    protected override IEnumerator BeforeDeactivateAfterDeath()
+    {
+        // 처치 후 대화가 나오기 전에 HP바를 먼저 숨깁니다.
+        HideHealthUI();
+
+        if (dialogueController != null)
+            yield return dialogueController.PlayAfterDefeat(this, bossId);
+    }
 
     protected virtual void LateUpdate()
     {
@@ -51,10 +126,14 @@ public class MainBossController : MidBossController
         // 클립이 시각 루트 Scale을 기록했더라도 현재 바라보는 방향을 유지합니다.
         ApplyFacingDirection();
         // 종료 훅과 별개로 실제 AI 상태를 반영해 공격 플래그가 남지 않게 합니다.
-        SetBusy(isAttacking || phaseAnimationPlaying);
-        float moveSpeed = !isAttacking && rb != null ? Mathf.Abs(rb.linearVelocity.x) : 0f;
+        SetBusy(!dialoguePaused && (isAttacking || phaseAnimationPlaying));
+
+        float moveSpeed = !dialoguePaused && !isAttacking && rb != null
+            ? Mathf.Abs(rb.linearVelocity.x)
+            : 0f;
+
+        if (HasParameter("IsChasing", AnimatorControllerParameterType.Bool)) bossAnimator.SetBool("IsChasing", isChasing && !dialoguePaused);
         if (HasParameter("MoveSpeed", AnimatorControllerParameterType.Float)) bossAnimator.SetFloat("MoveSpeed", moveSpeed);
-        if (HasParameter("IsChasing", AnimatorControllerParameterType.Bool)) bossAnimator.SetBool("IsChasing", isChasing);
         if (HasParameter("LocomotionSpeed", AnimatorControllerParameterType.Float))
             bossAnimator.SetFloat("LocomotionSpeed", Mathf.Clamp(moveSpeed / (isChasing ? 2.8f : 1.4f), 0.5f, 2f));
     }
