@@ -14,6 +14,7 @@ public class MainBossController : MidBossController
     private float visualScaleX = 1f;
     private int shownPhase = 1;
     private bool phaseAnimationPlaying;
+    private bool animationReturningToIdle;
     private string activeAnimation;
     private bool desireOwnsAttackLock;
     
@@ -189,7 +190,7 @@ public class MainBossController : MidBossController
         // 클립이 시각 루트 Scale을 기록했더라도 현재 바라보는 방향을 유지합니다.
         ApplyFacingDirection();
         // 종료 훅과 별개로 실제 AI 상태를 반영해 공격 플래그가 남지 않게 합니다.
-        SetBusy(!dialoguePaused && (isAttacking || phaseAnimationPlaying));
+        SetBusy(!dialoguePaused && (isAttacking || phaseAnimationPlaying) && !animationReturningToIdle);
 
         float moveSpeed = !dialoguePaused && !isAttacking && rb != null
             ? Mathf.Abs(rb.linearVelocity.x)
@@ -232,6 +233,7 @@ public class MainBossController : MidBossController
         if (HasParameter("AttackSpeed", AnimatorControllerParameterType.Float))
             bossAnimator.SetFloat("AttackSpeed", scaleWithAttackSpeed ? 1f / Mathf.Max(0.01f, GetSkillDelay(1f)) : 1f);
         activeAnimation = state;
+        animationReturningToIdle = false;
         SetBusy(true);
         bossAnimator.SetTrigger(action);
         return true;
@@ -248,7 +250,22 @@ public class MainBossController : MidBossController
             var current = bossAnimator.GetCurrentAnimatorStateInfo(0);
             if (current.shortNameHash == hash)
             {
-                if (current.normalizedTime >= 1f) yield break;
+                if (current.normalizedTime >= 1f)
+                {
+                    // 공격 종료 조건을 Animator가 평가하고 실제로 상태를 빠져나갈 때까지 잠근다.
+                    animationReturningToIdle = true;
+                    SetBusy(false);
+                    float exitWait = 0f;
+                    while (!isDead && bossAnimator != null && bossAnimator.isActiveAndEnabled
+                        && bossAnimator.GetCurrentAnimatorStateInfo(0).shortNameHash == hash
+                        && exitWait < 0.5f)
+                    {
+                        StopMove();
+                        exitWait += Time.deltaTime;
+                        yield return null;
+                    }
+                    yield break;
+                }
                 enterWait = 0f;
             }
             else if (!bossAnimator.IsInTransition(0)
@@ -265,6 +282,7 @@ public class MainBossController : MidBossController
     protected override void OnSkillExecutionStarted(BossSkillData skill, int index)
     {
         base.OnSkillExecutionStarted(skill, index);
+        animationReturningToIdle = false;
         activeAnimation = null;
         PlayAction(SkillAnimationAction(index));
     }
@@ -278,6 +296,7 @@ public class MainBossController : MidBossController
     protected override void OnSkillExecutionFinished(int index)
     {
         SetBusy(false);
+        animationReturningToIdle = false;
         activeAnimation = null;
         base.OnSkillExecutionFinished(index);
     }
@@ -294,9 +313,11 @@ public class MainBossController : MidBossController
     {
         yield return WaitForAction(activeAnimation);
         SetBusy(false);
+        animationReturningToIdle = false;
         activeAnimation = null;
         if (desireOwnsAttackLock) isAttacking = false;
         desireOwnsAttackLock = false;
+        DeferNextCombatAction();
     }
 
     // 전용 욕망 코루틴을 취소할 때 남은 애니메이션 잠금 정보도 정리한다.
@@ -305,6 +326,7 @@ public class MainBossController : MidBossController
     {
         activeAnimation = null;
         desireOwnsAttackLock = false;
+        animationReturningToIdle = false;
         SetBusy(false);
     }
 
@@ -319,7 +341,7 @@ public class MainBossController : MidBossController
             if (HasParameter("Phase", AnimatorControllerParameterType.Int)) bossAnimator.SetInteger("Phase", shownPhase);
             return;
         }
-        if (!isDead && !isAttacking && !phaseAnimationPlaying && shownPhase < currentPhase)
+        if (!isDead && !isAttacking && !AnimatorRecoveryPending && !phaseAnimationPlaying && shownPhase < currentPhase)
             StartCoroutine(EnterPhases());
     }
 
@@ -339,8 +361,10 @@ public class MainBossController : MidBossController
         }
         activeAnimation = null;
         SetBusy(false);
+        animationReturningToIdle = false;
         phaseAnimationPlaying = false;
         isAttacking = false;
+        DeferNextCombatAction();
     }
 
     protected override Animator GetDeathAnimator()

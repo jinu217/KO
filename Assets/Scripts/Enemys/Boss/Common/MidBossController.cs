@@ -64,6 +64,10 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected int currentSkillIndex = -1;
     private bool buffActive;
     private bool initialCooldownsApplied;
+    // 공격 종료 플래그를 Animator가 한 번 평가한 뒤 다음 패턴을 시작한다.
+    private int nextCombatFrame = -1;
+    protected bool AnimatorRecoveryPending => Time.frameCount <= nextCombatFrame;
+    protected void DeferNextCombatAction() => nextCombatFrame = Time.frameCount + 1;
     private float lastBasicTime = -999f;
     private float[] lastSkillTimes;
     private int[] skillUseCounts;
@@ -154,7 +158,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         UpdatePhase();
         ApplyInitialCooldownsOnFirstDetection();
         // 스킬 실행 중 이동은 BossSkillExecutor가 담당합니다.
-        if (isAttacking) return;
+        if (isAttacking || AnimatorRecoveryPending) return;
         if (UpdatePriorityBehavior()) { StopMove(); return; }
         if (!CanRunCombatAI()) { StopMove(); return; }
         if (!isChasing || playerTransform == null) { StopMove(); return; }
@@ -172,7 +176,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
     protected virtual void FixedUpdate()
     {
-        if (data == null || isDead || dialoguePaused || isAttacking || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
+        if (data == null || isDead || dialoguePaused || isAttacking || AnimatorRecoveryPending || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
         BossSkillData skill = GetReadySkill(out _) ?? GetBasicAttackData();
         if (InCastRange(skill)) { StopMove(); return; }
         if (IsWallInFront()) { StopMove(); return; }
@@ -301,6 +305,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         OnSkillExecutionFinished(currentSkillIndex);
         currentSkillIndex = -1;
         isAttacking = false;
+        DeferNextCombatAction();
         StopMove();
     }
 
@@ -325,6 +330,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         LogSkillDebug(index < 0 ? "기본 공격 종료" : $"{index + 1}스킬 종료", skill);
         currentSkillIndex = -1;
         isAttacking = false;
+        DeferNextCombatAction();
         runningSkill = null;
     }
 
