@@ -46,9 +46,9 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     [SerializeField, Min(0f), Tooltip("복귀용 넉백 공격이 플레이어에게 주는 피해입니다.")]
     private float returnAttackDamage = 10f;
     [SerializeField, Tooltip("복귀용 넉백 공격 판정의 가로(X)·세로(Y) 크기입니다.")]
-    private Vector2 returnAttackSize = new Vector2(3.5f, 1.8f);
+    private Vector2 returnAttackSize = new Vector2(4.55f, 2.59f);
     [SerializeField, Tooltip("보스 위치를 기준으로 한 복귀 공격 판정 중심입니다. X는 보는 방향으로 반전됩니다.")]
-    private Vector2 returnAttackOffset = new Vector2(1.8f, 0f);
+    private Vector2 returnAttackOffset = new Vector2(2.325f, -1.55f);
     [SerializeField, Tooltip("복귀 공격 적중 시 적용할 X/Y 넉백 힘입니다.")]
     private Vector2 returnAttackKnockback = new Vector2(16f, 5f);
     [SerializeField, Min(0f), Tooltip("복귀 공격이 빗나갔을 때 보스가 행동하지 못하는 시간입니다.")]

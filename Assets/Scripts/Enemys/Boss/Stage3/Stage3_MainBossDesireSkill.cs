@@ -5,6 +5,9 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class Stage3_MainBossDesireSkill : MonoBehaviour
 {
+    // Stage3-6의 보스 루트는 1배이며, 몸통 충돌체 하단은 루트보다 약 2.39 아래에 있다.
+    private const float GroundedHitboxBottom = -2.55f;
+
     [Header("발동")]
     [SerializeField, InspectorName("지속시간"), Min(0f), Tooltip("성취를 쌓을 수 있고 기본 강화 효과가 유지되는 시간입니다.")]
     private float duration = 20f;
@@ -233,8 +236,8 @@ public sealed class Stage3_MainBossDesireSkill : MonoBehaviour
                 actionType = BossActionType.DashAttack,
                 attackCount = 1,
                 damage = 10f,
-                hitboxSize = new Vector2(2.4f, 1.6f),
-                hitboxOffset = new Vector2(1.35f, 0f),
+                hitboxSize = new Vector2(3.24f, 2.8f),
+                hitboxOffset = new Vector2(1.77f, GroundedHitboxBottom + 2.8f * 0.5f),
                 knockbackForce = new Vector2(3f, 1.5f),
                 moveSpeed = 5f,
                 maxMoveDistance = 1.2f,
@@ -261,8 +264,8 @@ public sealed class Stage3_MainBossDesireSkill : MonoBehaviour
                 actionType = BossActionType.DashAttack,
                 attackCount = 1,
                 damage = 15f,
-                hitboxSize = new Vector2(2.7f, 1.35f),
-                hitboxOffset = new Vector2(1.5f, -0.1f),
+                hitboxSize = new Vector2(3.645f, 2.488f),
+                hitboxOffset = new Vector2(1.973f, GroundedHitboxBottom + 2.488f * 0.5f),
                 knockbackForce = new Vector2(11f, 3f),
                 moveSpeed = 16f,
                 maxMoveDistance = 8f,
@@ -282,8 +285,8 @@ public sealed class Stage3_MainBossDesireSkill : MonoBehaviour
             actionType = BossActionType.Slam,
             attackCount = 1,
             damage = finisherSlamDamage,
-            hitboxSize = new Vector2(4f, 2.2f),
-            hitboxOffset = new Vector2(0f, -0.35f),
+            hitboxSize = new Vector2(5.4f, 3.55f),
+            hitboxOffset = new Vector2(0f, GroundedHitboxBottom + 3.55f * 0.5f),
             knockbackForce = new Vector2(12f, 10f),
             slamSpeed = 25f,
             targetDistanceRatio = 0.3f,
@@ -319,8 +322,8 @@ public sealed class Stage3_MainBossDesireSkill : MonoBehaviour
                 actionType = BossActionType.MeleeAttack,
                 attackCount = 1,
                 damage = followupDamage,
-                hitboxSize = new Vector2(3.4f, 1.9f),
-                hitboxOffset = new Vector2(1.8f, 0f),
+                hitboxSize = new Vector2(4.59f, 3.175f),
+                hitboxOffset = new Vector2(2.395f, GroundedHitboxBottom + 3.175f * 0.5f),
                 knockbackForce = new Vector2(17f, 7f),
                 preDelay = 0.1f,
                 postDelay = 0.65f

@@ -18,7 +18,7 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
     [SerializeField, Range(0, 1), Tooltip("2스킬 어퍼컷 적중 시 추가 회복하는 최대 HP 비율입니다.")] private float uppercutHeal = .02f;
     [SerializeField, Range(0, 1), Tooltip("4스킬 한 패턴에서 최초 적중 시 회복하는 최대 HP 비율입니다.")] private float skill4Heal = .03f;
     [SerializeField, Tooltip("발동 시 주변 플레이어를 밀어내는 판정입니다. 피해는 0으로 유지할 수 있습니다.")]
-    private BossAttackStepData roar = new BossAttackStepData { actionType = BossActionType.MeleeAttack, attackCount = 1, hitboxSize = new Vector2(6, 4), knockbackForce = new Vector2(3, 1), knockbackAwayFromCenter = true };
+    private BossAttackStepData roar = new BossAttackStepData { actionType = BossActionType.MeleeAttack, attackCount = 1, hitboxSize = new Vector2(7.2f, 5.1f), knockbackForce = new Vector2(3, 1), knockbackAwayFromCenter = true };
     private Stage4_MainBoss owner;
     private BossSkillData[] skills;
     private float nextUse, end, startHp, groggyEnd;
@@ -45,8 +45,8 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
             skills[1].active.attackSteps.Add(new BossAttackStepData { stepName = "점프 스트레이트 도약", actionType = BossActionType.Jump, jumpForce = new Vector2(2, 7), duration = .18f });
             var strike = Stage4BossPatterns.Punch("공중 스트레이트", 22, .04f);
             strike.postDelay = .40f;
-            strike.hitboxSize = new Vector2(2.4f, 3f);
-            strike.hitboxOffset = new Vector2(1, .5f);
+            strike.hitboxSize = new Vector2(3.12f, 3.98f);
+            strike.hitboxOffset = new Vector2(1.36f, -1.35f);
             strike.knockbackForce = new Vector2(2, -8);
             skills[1].active.attackSteps.Add(strike);
         }
@@ -115,7 +115,7 @@ public sealed class Stage4_MainBossDesireSkill : MonoBehaviour
         owner.DesireLog("시작");
         // 포효는 피해 없이 밀어내므로 피해가 필요한 공통 공격 판정과 별도로 처리한다.
         var seen = new System.Collections.Generic.HashSet<Rigidbody2D>();
-        foreach (var hit in Physics2D.OverlapBoxAll(owner.transform.position, roar.hitboxSize, 0, owner.PlayerLayer))
+        foreach (var hit in Physics2D.OverlapBoxAll((Vector2)owner.transform.position + new Vector2(0f, -0.95f), roar.hitboxSize, 0, owner.PlayerLayer))
         {
             var body = hit.GetComponentInParent<Rigidbody2D>();
             if (body == null || !seen.Add(body)) continue;

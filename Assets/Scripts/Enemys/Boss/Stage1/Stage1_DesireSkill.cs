@@ -157,8 +157,8 @@ public sealed class Stage1_DesireSkill : MonoBehaviour
             actionType = BossActionType.MeleeAttack,
             attackCount = 1,
             damage = damage,
-            hitboxSize = new Vector2(width, height),
-            hitboxOffset = new Vector2(offset, 0f),
+            hitboxSize = new Vector2(width * 1.3f, height * 1.16f + 0.4f),
+            hitboxOffset = new Vector2(offset + width * 0.15f, 0.8f),
             knockbackForce = knockback,
             preDelay = 0.16f,
             postDelay = 0.16f
