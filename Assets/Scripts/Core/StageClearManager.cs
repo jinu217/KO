@@ -9,6 +9,8 @@ public class StageClearManager : MonoBehaviour
     private static StageClearManager instance;
     private readonly HashSet<EnemyController> enemies = new HashSet<EnemyController>();
     private readonly HashSet<MidBossController> bosses = new HashSet<MidBossController>();
+    private readonly HashSet<EnemyController> defeatedEnemies = new HashSet<EnemyController>();
+    public const int RequiredEnemyDefeats = 15;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void RegisterSceneCallbacks()
@@ -38,6 +40,9 @@ public class StageClearManager : MonoBehaviour
             return true;
 
         StageClearManager manager = GetOrCreate(scene);
+        if (IsDefeatCountScene(scene))
+            return manager.defeatedEnemies.Count >= RequiredEnemyDefeats;
+
         manager.RegisterActiveMonsters(); // 플레이 중 생성된 몬스터도 포함
         foreach (EnemyController enemy in manager.enemies)
             if (enemy != null && !enemy.IsDead)
@@ -46,6 +51,36 @@ public class StageClearManager : MonoBehaviour
             if (boss != null && !boss.IsDead)
                 return false;
         return true;
+    }
+
+    public static int GetDefeatedEnemyCount(Scene scene)
+    {
+        return IsDefeatCountScene(scene)
+            ? GetOrCreate(scene).defeatedEnemies.Count
+            : 0;
+    }
+
+    public static void NotifyEnemyDefeated(EnemyController enemy)
+    {
+        if (enemy == null || !IsDefeatCountScene(enemy.gameObject.scene))
+            return;
+
+        GetOrCreate(enemy.gameObject.scene).defeatedEnemies.Add(enemy);
+    }
+
+    private static bool IsDefeatCountScene(Scene scene)
+    {
+        if (!IsStageScene(scene))
+            return false;
+
+        string name = scene.name;
+        int separator = name.IndexOf('-');
+        if (separator <= 5 ||
+            !int.TryParse(name.Substring(5, separator - 5), out _) ||
+            !int.TryParse(name.Substring(separator + 1), out int room))
+            return false;
+
+        return room == 1 || room == 2 || room == 4 || room == 5;
     }
 
     private static bool IsStageScene(Scene scene)

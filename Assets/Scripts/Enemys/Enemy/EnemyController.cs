@@ -260,7 +260,11 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         deathBodySimulated = rb != null && rb.simulated;
         var dummy = GetComponent<TutorialTrainingDummy>();
         dummy?.NotifyDefeated();
-        if (dummy == null && SaveData.Instance != null) SaveData.Instance.run.killCount++;
+        if (dummy == null)
+        {
+            StageClearManager.NotifyEnemyDefeated(this);
+            if (SaveData.Instance != null) SaveData.Instance.run.killCount++;
+        }
         if (!gameObject.activeInHierarchy) return;
         deathColliders = GetComponentsInChildren<Collider2D>(true);
         deathColliderEnabled = new bool[deathColliders.Length];
@@ -1309,12 +1313,6 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             if (tutorialDummy == null)
             {
                 GiveCoinReward();
-            }
-
-            //============== 처치 횟수 기록 ==============
-            if (tutorialDummy == null && SaveData.Instance != null)
-            {
-                SaveData.Instance.run.killCount++;
             }
 
             // boss-ani-test의 사망 처리

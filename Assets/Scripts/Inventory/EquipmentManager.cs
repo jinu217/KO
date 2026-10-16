@@ -93,7 +93,10 @@ public class EquipmentManager : MonoBehaviour
     private void EquipStartItems()
     {
         if (startEquipItems == null)
+        {
+            playerAppearance?.ClearWeapon();
             return;
+        }
 
         bool isTutorialScene = IsFirstTutorialScene;
 
@@ -118,6 +121,9 @@ public class EquipmentManager : MonoBehaviour
 
             Equip(item);
         }
+
+        if (GetItem(weaponSlot) == null)
+            playerAppearance?.ClearWeapon();
     }
 
     //============== 시작 무기 뒤늦게 지급 (튜토리얼_0 이후 씬) ==============
@@ -246,7 +252,8 @@ public class EquipmentManager : MonoBehaviour
         SetSlotWithoutInventory(footSlot, foot);
 
         // 캐릭터 외형 적용
-        ApplyAppearance(weapon);
+        if (weapon != null) ApplyAppearance(weapon);
+        else playerAppearance?.ClearWeapon();
         ApplyAppearance(hand);
         ApplyAppearance(head);
         ApplyAppearance(body);
@@ -355,6 +362,9 @@ public class EquipmentManager : MonoBehaviour
         ItemData item = slot.GetItem();
         slot.SetItem(null);
 
+        if (slot == weaponSlot)
+            playerAppearance?.ClearWeapon();
+
         if (item != null && inventory != null)
             inventory.AddItem(item);
 
@@ -383,6 +393,9 @@ public class EquipmentManager : MonoBehaviour
 
         if (playerController != null)
         {
+            playerController.SetCurrentWeaponFromInventoryType(
+                weapon != null ? weapon.weaponType : InventoryWeaponType.None
+            );
             playerController.RecalculateEquipmentStats(
                 weapon,
                 head,

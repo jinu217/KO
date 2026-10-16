@@ -36,9 +36,7 @@ public class CharacterPreviewUI : MonoBehaviour
         if (weaponImage != null)
         {
             weaponImage.enabled = weapon != null;
-
-            if (weapon != null)
-                weaponImage.sprite = weapon.previewSprite;
+            weaponImage.sprite = weapon != null ? weapon.previewSprite : null;
         }
 
         UpdateSlot(equipmentManager.headSlot.GetItem());
@@ -49,15 +47,8 @@ public class CharacterPreviewUI : MonoBehaviour
 
     void UpdateSlot(ItemData item)
     {
-        // 무기 미장착 시 검 이미지 제거
         if (item == null)
-        {
-            // 무기 슬롯은 이미지 초기화
-            if (weaponImage != null)
-                weaponImage.sprite = null;
-
             return;
-        }
 
         switch (item.equipType)
         {
