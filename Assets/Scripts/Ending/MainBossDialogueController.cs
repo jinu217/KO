@@ -46,24 +46,6 @@ public class MainBossDialogueController : MonoBehaviour
     [Tooltip("카메라가 보스를 확대한 뒤, 대사창이 나타나기 전까지 기다리는 시간(초)")]
     [SerializeField, Min(0f)] private float panelShowDelay = 1f;
 
-    //============== 처치 후 선택지 (이식 여부) ==============
-    [Header("처치 후 선택지")]
-    [Tooltip("선택지 전용 패널. 아래 텍스트들을 모두 이 패널의 자식으로 두세요.")]
-    [SerializeField] private GameObject choicePanel;
-    [SerializeField] private TMP_Text choiceNameText;
-    [SerializeField] private TMP_Text choicePromptText;
-    [Tooltip("'예' 텍스트 (왼쪽 배치)")]
-    [SerializeField] private TMP_Text yesOptionText;
-    [Tooltip("'아니요' 텍스트 (오른쪽 배치)")]
-    [SerializeField] private TMP_Text noOptionText;
-
-    [SerializeField] private string choiceCharacterName = "???";
-    [SerializeField, TextArea] private string choicePrompt = "기계 장치를 이식하시겠습니까?";
-    [SerializeField] private Color choiceSelectedColor = new Color(1f, 0.85f, 0.2f, 1f);
-    [SerializeField] private Color choiceUnselectedColor = new Color(1f, 1f, 1f, 0.45f);
-    [Tooltip("선택지가 뜬 직후 오입력을 막기 위해 입력을 받지 않는 시간(초)")]
-    [SerializeField, Min(0f)] private float choiceInputDelay = 0.3f;
-
     private readonly List<DialogueLine> allLines = new List<DialogueLine>();
 
     private bool isPlaying;
@@ -118,10 +100,6 @@ public class MainBossDialogueController : MonoBehaviour
         if (dialoguePanel != null)
             dialoguePanel.SetActive(false);
 
-        //============== 선택지 패널은 평소에 숨김 ==============
-        if (choicePanel != null)
-            choicePanel.SetActive(false);
-
         LoadCsv();
     }
 
@@ -160,12 +138,7 @@ public class MainBossDialogueController : MonoBehaviour
     }
     
     //============== 외부 호출: 처치 후 보스 대화 ==============
-    // offerChoice가 true면 대사가 끝난 뒤 기계 장비 획득 선택지를 보여줍니다.
-    public IEnumerator PlayAfterDefeat(
-        MainBossController boss,
-        string bossId,
-        bool offerChoice = false,
-        Action<bool> onChoiceMade = null)
+    public IEnumerator PlayAfterDefeat(MainBossController boss, string bossId)
     {
         if (boss == null)
         {
@@ -186,29 +159,23 @@ public class MainBossDialogueController : MonoBehaviour
             yield break;
         }
 
-        // 조우 대화 등 다른 대화가 끝날 때까지 기다립니다.
         while (isPlaying)
             yield return null;
 
         isPlaying = true;
 
-        Debug.Log(
-            $"[MainBossDialogueController] 처치 후 보스 대화 시작: {bossId}, 대사 수={lines.Count}",
-            this);
+        Debug.Log($"[MainBossDialogueController] 처치 후 보스 대화 시작: {bossId}, 대사 수={lines.Count}", this);
 
-        yield return PlayDialogueRoutine(boss, lines, false, offerChoice, onChoiceMade);
+        yield return PlayDialogueRoutine(boss, lines, false);
 
         Debug.Log($"[MainBossDialogueController] 처치 후 보스 대화 종료: {bossId}", this);
     }
-
 
     //============== 대화 진행 ==============
     private IEnumerator PlayDialogueRoutine(
         MainBossController boss,
         List<DialogueLine> lines,
-        bool resumeBossAfterDialogue,
-        bool offerChoice = false,
-        Action<bool> onChoiceMade = null)
+        bool resumeBossAfterDialogue)
     {
         //============== 대화 시작: 플레이어/HUD/카메라 ==============
         CameraSnapshot cameraSnapshot = CaptureCamera();
@@ -246,26 +213,6 @@ public class MainBossDialogueController : MonoBehaviour
         if (dialoguePanel != null)
             dialoguePanel.SetActive(false);
         
-        //============== 처치 후 선택지 표시 확인 ==============
-        Debug.Log(
-            $"[기계이식 선택지] offerChoice={offerChoice}, " +
-            $"choicePanel={(choicePanel != null ? choicePanel.name : "NULL")}",
-            this
-        );
-
-        if (offerChoice)
-        {
-            Debug.Log("[기계이식 선택지] ShowImplantChoice 호출", this);
-            yield return ShowImplantChoice(onChoiceMade);
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[기계이식 선택지] offerChoice가 false라 선택창을 표시하지 않습니다.",
-                this
-            );
-        }
-
         //============== 대화 종료 ==============
         yield return RestoreCamera(cameraSnapshot);
         RestoreHud();
@@ -295,103 +242,6 @@ public class MainBossDialogueController : MonoBehaviour
             else
                 yield return null;
         }
-    }
-
-    // 지정한 텍스트에 한 글자씩 출력합니다. (선택지 질문용)
-    private IEnumerator TypeTextTo(TMP_Text target, string line)
-    {
-        target.text = "";
-
-        for (int i = 0; i < line.Length; i++)
-        {
-            target.text = line.Substring(0, i + 1);
-
-            if (typeSpeed > 0f)
-                yield return new WaitForSecondsRealtime(typeSpeed);
-            else
-                yield return null;
-        }
-    }
-
-    //============== 처치 후 선택지: 기계 장치 이식 ==============
-    // 좌우 방향키로 예/아니요를 고르고 F키로 확정합니다. 결과는 true=이식, false=거부.
-    private IEnumerator ShowImplantChoice(Action<bool> onChoiceMade)
-    {
-        if (choicePanel == null || choicePromptText == null
-            || yesOptionText == null || noOptionText == null)
-        {
-            Debug.LogError(
-                "[MainBossDialogueController] 선택지 패널 또는 텍스트가 연결되지 않아 선택지를 건너뜁니다.",
-                this);
-            yield break;
-        }
-
-        //============== 선택지 패널 표시 ==============
-        if (choiceNameText != null)
-            choiceNameText.text = choiceCharacterName;
-
-        choicePromptText.text = "";
-        yesOptionText.gameObject.SetActive(false);
-        noOptionText.gameObject.SetActive(false);
-        choicePanel.SetActive(true);
-        Debug.Log(
-            $"[기계이식 선택지] 패널 활성화 완료: {choicePanel.activeInHierarchy}",
-            choicePanel
-        );
-
-        //============== 질문 출력 ==============
-        yield return TypeTextTo(choicePromptText, choicePrompt);
-
-        //============== 예/아니요 표시 ==============
-        bool yesSelected = true;   // 처음 선택 위치. 아니요로 시작하려면 false로 바꾸세요.
-        yesOptionText.gameObject.SetActive(true);
-        noOptionText.gameObject.SetActive(true);
-        RefreshChoiceVisual(yesSelected);
-
-        // 대사 넘김 중에 누른 키가 바로 확정되지 않도록 잠시 입력을 받지 않습니다.
-        if (choiceInputDelay > 0f)
-            yield return new WaitForSecondsRealtime(choiceInputDelay);
-
-        //============== 선택 대기: 좌우 화살표로 이동, F키로 확정 ==============
-        while (true)
-        {
-            Keyboard keyboard = Keyboard.current;
-
-            if (keyboard != null)
-            {
-                if (keyboard.leftArrowKey.wasPressedThisFrame && !yesSelected)
-                {
-                    yesSelected = true;
-                    RefreshChoiceVisual(yesSelected);
-                }
-                else if (keyboard.rightArrowKey.wasPressedThisFrame && yesSelected)
-                {
-                    yesSelected = false;
-                    RefreshChoiceVisual(yesSelected);
-                }
-                else if (keyboard.fKey.wasPressedThisFrame)
-                {
-                    break;
-                }
-            }
-
-            yield return null;
-        }
-
-        //============== 선택지 패널 닫기 ==============
-        choicePanel.SetActive(false);
-
-        onChoiceMade?.Invoke(yesSelected);
-    }
-
-    // 선택된 항목은 "예 (F)"처럼 표시하고 색으로 구분합니다.
-    private void RefreshChoiceVisual(bool yesSelected)
-    {
-        yesOptionText.text = yesSelected ? "예 (F)" : "예";
-        noOptionText.text = yesSelected ? "아니요" : "아니요 (F)";
-
-        yesOptionText.color = yesSelected ? choiceSelectedColor : choiceUnselectedColor;
-        noOptionText.color = yesSelected ? choiceUnselectedColor : choiceSelectedColor;
     }
 
     //============== 플레이어 제어 ==============

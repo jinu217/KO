@@ -16,20 +16,6 @@ public class EndingManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    //============== 기계장비(기계이식) 획득 ==============
-    public void AddMachineEquipment()
-    {
-        if (SaveData.Instance == null)
-            return;
-
-        SaveData.Instance.run.machineEquipmentCount++;
-
-        Debug.Log(
-            $"[EndingManager] 기계장비 획득 " +
-            $"현재 개수 : {SaveData.Instance.run.machineEquipmentCount}"
-        );
-    }
-
     //============== 영애 생존/사망 선택 ==============
     public void SetHeroineChoice(HeroineEndingChoice choice)
     {
