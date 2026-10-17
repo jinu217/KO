@@ -317,6 +317,7 @@ public class EquipmentManager : MonoBehaviour
 
         // 현재 장비를 RunData에 저장
         SaveCurrentEquipmentToRunData();
+        Debug.Log($"기계장비 개수: {EndingManager.Instance.MachineEquipmentCount}");
         return true;
     }
 
