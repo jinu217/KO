@@ -2,19 +2,6 @@ using UnityEngine;
 
 public class EndingManager : MonoBehaviour
 {
-    //============== 테스트용 (에디터 전용) ==============
-    [Header("테스트용 (에디터에서만 적용)")]
-    [Tooltip("-1이면 실제 장비 개수 사용. 0~5로 두면 그 개수로 동작")]
-    [SerializeField, Range(0, 5)] private int debugMachineCount = 0;
-
-    //============== 선택지 제한 종류 ==============
-    public enum ChoiceRestriction
-    {
-        Free,        // 자의로 생존/사망 모두 선택 가능
-        ForceAlive,  // 생존(회유)만 가능
-        ForceDead    // 사망만 가능 (침식)
-    }
-
     public static EndingManager Instance { get; private set; }
 
     private void Awake()
@@ -29,67 +16,6 @@ public class EndingManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    //============== 장착 중인 기계장비 개수 ==============
-    // EquipmentManager가 RunData에 저장해 둔 슬롯별 아이템 ID로 직접 셉니다.
-    public int MachineEquipmentCount
-    {
-        get
-        {
-    #if UNITY_EDITOR
-            if (debugMachineCount >= 0)
-                return debugMachineCount;
-    #endif
-            if (SaveData.Instance == null || SaveData.Instance.run == null)
-                return 0;
-
-            RunData run = SaveData.Instance.run;
-
-            return CountMechanization(run.weaponItemId)
-                + CountMechanization(run.handItemId)
-                + CountMechanization(run.headItemId)
-                + CountMechanization(run.bodyItemId)
-                + CountMechanization(run.footItemId);
-        }
-    }
-
-    private int CountMechanization(int itemId)
-    {
-        if (itemId < 0)
-            return 0;
-
-        ItemData item = SaveData.Instance.GetItemById(itemId);
-
-        return item != null && item.rarity == ItemRarity.Mechanization ? 1 : 0;
-    }
-
-    //============== 히로인 선택지 제한 ==============
-    public ChoiceRestriction GetHeroineRestriction()
-    {
-        // 5개: 침식으로 강제 사망
-        if (MachineEquipmentCount >= 5)
-            return ChoiceRestriction.ForceDead;
-
-        // 0~4개: 자의로 선택 (4개일 때 이 선택이 '견뎌내는 1회'가 됩니다)
-        return ChoiceRestriction.Free;
-    }
-
-    //============== 라스트보스 선택지 제한 ==============
-    public ChoiceRestriction GetLastBossRestriction()
-    {
-        int count = MachineEquipmentCount;
-
-        // 4~5개: 침식으로 강제 사망 (4개는 히로인 선택에서 이미 한 번 견딘 상태)
-        if (count >= 4)
-            return ChoiceRestriction.ForceDead;
-
-        // 3개: 히로인을 죽였다면 라스트보스는 회유만 가능 → 히든엔딩
-        if (count == 3 && SaveData.Instance != null &&
-            SaveData.Instance.run.heroineChoice == HeroineEndingChoice.Dead)
-            return ChoiceRestriction.ForceAlive;
-
-        return ChoiceRestriction.Free;
-    }
-
     //============== 영애 생존/사망 선택 ==============
     public void SetHeroineChoice(HeroineEndingChoice choice)
     {
@@ -98,7 +24,9 @@ public class EndingManager : MonoBehaviour
 
         SaveData.Instance.run.heroineChoice = choice;
 
-        Debug.Log($"[EndingManager] 영애 선택 : {choice}");
+        Debug.Log(
+            $"[EndingManager] 영애 선택 : {choice}"
+        );
     }
 
     //============== 라스트보스 생존/사망 선택 ==============
@@ -109,9 +37,12 @@ public class EndingManager : MonoBehaviour
 
         SaveData.Instance.run.lastBossChoice = choice;
 
-        Debug.Log($"[EndingManager] 라스트보스 선택 : {choice}");
+        Debug.Log(
+            $"[EndingManager] 라스트보스 선택 : {choice}"
+        );
     }
 
+    
     //============== 엔딩 판정 ==============
     public EndingType DetermineEnding()
     {
@@ -122,7 +53,7 @@ public class EndingManager : MonoBehaviour
         }
 
         RunData run = SaveData.Instance.run;
-        int machineCount = MachineEquipmentCount;
+        int machineCount = run.machineEquipmentCount;
 
         //============== 선택 여부 확인 ==============
         if (run.heroineChoice == HeroineEndingChoice.None ||
@@ -132,31 +63,49 @@ public class EndingManager : MonoBehaviour
             return EndingType.None;
         }
 
-        bool heroineAlive = run.heroineChoice == HeroineEndingChoice.Alive;
-        bool lastBossAlive = run.lastBossChoice == LastBossEndingChoice.Alive;
+        //============== 기계장비 개수 확인 ==============
+        if (machineCount < 0 || machineCount > 5)
+        {
+            Debug.LogWarning($"[EndingManager] 잘못된 기계장비 개수: {machineCount}");
+            return EndingType.None;
+        }
 
-        if (heroineAlive && lastBossAlive)
+        // 4개 획득 시 엔딩 규칙은 추후 확정
+        if (machineCount == 4)
         {
-            //============== 생존 / 생존 ==============
-            if (machineCount == 0) return EndingType.TrueEnding;    // 0개
-            if (machineCount <= 3) return EndingType.HappyEnding;   // 1~3개
+            Debug.LogWarning("[EndingManager] 기계장비 4개 엔딩 규칙이 아직 정해지지 않았습니다.");
+            return EndingType.None;
         }
-        else if (heroineAlive && !lastBossAlive)
-        {
-            //============== 생존 / 사망 ==============
-            if (machineCount <= 4) return EndingType.NormalEnding1; // 0~4개
-        }
-        else if (!heroineAlive && lastBossAlive)
-        {
-            //============== 사망 / 생존 ==============
-            if (machineCount <= 2) return EndingType.NormalEnding2; // 0~2개
-            if (machineCount == 3) return EndingType.HiddenEnding;  // 3개
-        }
-        else
-        {
-            //============== 사망 / 사망 ==============
-            return EndingType.BadEnding;                            // 0~5개
-        }
+
+        bool heroineAlive = run.heroineChoice == HeroineEndingChoice.Alive;
+        bool heroineDead = run.heroineChoice == HeroineEndingChoice.Dead;
+        bool lastBossAlive = run.lastBossChoice == LastBossEndingChoice.Alive;
+        bool lastBossDead = run.lastBossChoice == LastBossEndingChoice.Dead;
+
+        //============== 진엔딩 ==============
+        if (machineCount == 0 && heroineAlive && lastBossAlive)
+            return EndingType.TrueEnding;
+
+        //============== 히든엔딩 ==============
+        if (machineCount == 3 && heroineDead && lastBossAlive)
+            return EndingType.HiddenEnding;
+
+        //============== 배드엔딩 ==============
+        if (machineCount == 5 && heroineDead && lastBossDead)
+            return EndingType.BadEnding;
+
+        //============== 노멀 엔딩 1 ==============
+        if (heroineAlive && lastBossDead)
+            return EndingType.NormalEnding1;
+
+        //============== 노멀 엔딩 2 ==============
+        if (heroineDead && lastBossAlive)
+            return EndingType.NormalEnding2;
+
+        //============== 해피엔딩 ==============
+        if (machineCount >= 1 && machineCount <= 2 &&
+            heroineAlive && lastBossAlive)
+            return EndingType.HappyEnding;
 
         Debug.LogWarning(
             $"[EndingManager] 해당하는 엔딩이 없습니다.\n" +
