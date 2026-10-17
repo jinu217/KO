@@ -3,7 +3,7 @@ using UnityEngine;
 
 // 일반 패턴의 특수 이동과 전용 욕망 컴포넌트의 공통 보스 연결을 담당한다.
 public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementContext,
-    IBossConditionalStepContext, IBossHitValidationContext
+    IBossConditionalStepContext, IBossHitValidationContext, IBossSkillContext
 {
     [Header("욕망 스킬")]
     [SerializeField, Tooltip("3페이즈 욕망 스킬의 시간·거리 스택·체력 되감기와 그로기를 담당합니다.")]
@@ -21,14 +21,42 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         new Vector2(-2.8f, 0.2f), new Vector2(2.8f, 1.8f),
         new Vector2(2.8f, 0.2f), new Vector2(-2.8f, 1.8f)
     };
-    [SerializeField, Min(0f), Tooltip("다음 베기 시작 위치까지 공격 없이 빠르게 이동하는 시간입니다.")]
-    private float sweepRepositionDuration = 0.16f;
     [SerializeField, Tooltip("교차 베기가 통과할 상대 위치의 Y축 높이입니다.")]
     private float sweepCrossHeight = 1f;
 
     private BossSkillData executingSkill;
     private bool dashHitPlayer;
     private int lockedDashDirection;
+    private Stage5BossAnimationRelay animationRelay;
+    private float actionDelay=1f;
+    private float? airGravity;
+    private bool specialAnimation;
+    private Stage5BossAnimationRelay Relay => animationRelay!=null?animationRelay
+        :(animationRelay=GetComponentInChildren<Stage5BossAnimationRelay>(true));
+    float IBossSkillContext.GetSkillDelay(float value) => Delay(value);
+    private float Delay(float value) => executingSkill!=null?value*actionDelay:GetSkillDelay(value);
+    private void Play(string action,bool unscaled=false)
+    { if(Relay!=null)Relay.PlayState("MainBoss5_"+action,unscaled?1:1f/Mathf.Max(.01f,actionDelay)); }
+    protected override IEnumerator WaitForSkillAnimation(BossSkillData skill,int index)
+    { if(Relay!=null)yield return Relay.WaitForEnd(); }
+    public void BeginDesirePose(){StartCoroutine(DesirePose());}
+    private IEnumerator DesirePose()
+    {
+        specialAnimation=true;isAttacking=true;StopMove();Play("Dskill",true);
+        if(Relay!=null)yield return Relay.WaitForEnd();
+        specialAnimation=false;isAttacking=false;
+    }
+    public void BeginGroggyPose(float seconds){StartCoroutine(GroggyPose(seconds));}
+    private IEnumerator GroggyPose(float seconds)
+    {
+        specialAnimation=true;isAttacking=true;Play("Groggy",true);
+        yield return new WaitForSeconds(Mathf.Max(0,seconds-8f/12f));
+        if(!isDead){Play("GroggyEnd",true);if(Relay!=null)yield return Relay.WaitForEnd();}
+        specialAnimation=false;isAttacking=false;
+    }
+    private void RestoreAir()
+    {if(airGravity.HasValue&&rb!=null)rb.gravityScale=airGravity.Value;airGravity=null;}
+
 
     protected override string AnimationPrefix => "MainBoss5_";
     protected override string VisualRootName => "MainBoss 5";
@@ -47,7 +75,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         => desireSkill != null && desireSkill.Tick(currentPhase);
 
     protected override bool CanRunCombatAI()
-        => desireSkill == null || !desireSkill.Groggy;
+        => !specialAnimation && (desireSkill == null || !desireSkill.Groggy);
 
     protected override float GetExternalDamageMultiplier()
         => desireSkill != null ? desireSkill.DamageMultiplier : 1f;
@@ -69,7 +97,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     public bool DesireInCombat => isChasing;
     public Transform DesirePlayer => playerTransform;
     public void DesireStop() => StopMove();
-    public void DesireInterrupt() => InterruptCurrentSkill();
+    public void DesireInterrupt() { InterruptCurrentSkill();RestoreAir();executingSkill=null; }
     public void DesireLog(string message)
         => LogSkillDebug(message, new BossSkillData { skillName = "시간을 되돌리는 애정" });
     public void DesireRestoreHp(float value)
@@ -81,6 +109,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
 
     protected override void Die()
     {
+        RestoreAir();
         desireSkill?.Cancel();
         base.Die();
     }
@@ -88,19 +117,22 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     protected override void ApplyFacingDirection()
     {
         base.ApplyFacingDirection();
-        if (spriteRenderer != null) spriteRenderer.flipX = lookDirection < 0;
+        // Whole visual hierarchy is flipped by the base controller.
     }
 
     protected override void OnSkillExecutionStarted(BossSkillData skill, int index)
     {
+        actionDelay=GetSkillDelay(1f);
         executingSkill = skill;
         dashHitPlayer = false;
         lockedDashDirection = lookDirection < 0 ? -1 : 1;
         base.OnSkillExecutionStarted(skill, index);
+        Play(index<0?"Attack":"skill"+(index+1));
     }
 
     protected override void OnSkillExecutionFinished(int index)
     {
+        RestoreAir();
         executingSkill = null;
         dashHitPlayer = false;
         base.OnSkillExecutionFinished(index);
@@ -124,19 +156,43 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     public bool UsesTimedMovement(BossAttackStepData step)
     {
         int index = StepIndex(step);
-        return (currentSkillIndex == 0 && index >= 0 && index % 2 == 0)
-            || (currentSkillIndex == 2 && index == 2)
+        return (currentSkillIndex < 0 && index==2)
+            || (currentSkillIndex == 0 && index >= 0 && index % 2 == 0)
+            || (currentSkillIndex == 2 && index>=0 && index<=2)
             || (currentSkillIndex == 4 && index >= 0 && index < sweepStarts.Length);
     }
 
     public IEnumerator ExecuteTimedMovement(BossAttackStepData step)
     {
-        if (currentSkillIndex == 0)
-            yield return WalkOneStep(step);
-        else if (currentSkillIndex == 2)
-            yield return VaultBehindPlayer(step);
-        else if (currentSkillIndex == 4)
-            yield return CrossSlash(step, StepIndex(step));
+        int index=StepIndex(step);
+        if(currentSkillIndex<0)
+            yield return Stage5PatternMotion.Dash(step,this,()=>isDead,true);
+        else if(currentSkillIndex==0)yield return WalkOneStep(step);
+        else if(currentSkillIndex==2)
+        {
+            if(index==0)
+            {
+                if(rb==null)yield break;
+                airGravity=rb.gravityScale;rb.gravityScale=0;rb.linearVelocity=Vector2.zero;
+                float elapsed=0,duration=Delay(step.duration);Vector2 start=rb.position;
+                while(!isDead&&elapsed<duration)
+                {
+                    float u=Mathf.Clamp01((elapsed+Time.fixedDeltaTime)/Mathf.Max(.01f,duration));
+                    rb.MovePosition(start+Vector2.up*(.32f*u*u*(3-2*u)));
+                    yield return new WaitForFixedUpdate();elapsed+=Time.fixedDeltaTime;
+                }
+            }
+            else if(index==1)
+            {
+                yield return Stage5PatternMotion.Dash(step,this,()=>isDead,false);
+                if(!dashHitPlayer){RestoreAir();Play("skill3_Miss");}
+            }
+            else
+            {
+                Play("skill3_Follow");yield return VaultBehindPlayer(step);RestoreAir();
+            }
+        }
+        else if(currentSkillIndex==4)yield return CrossSlash(step,index);
     }
 
     public override void RefreshSkillDirection()
@@ -162,9 +218,9 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
 
     private IEnumerator WalkOneStep(BossAttackStepData step)
     {
-        if (step.preDelay > 0f) yield return new WaitForSeconds(GetSkillDelay(step.preDelay));
+        if (step.preDelay > 0f) yield return new WaitForSeconds(Delay(step.preDelay));
         float elapsed = 0f;
-        float duration = GetSkillDelay(step.duration);
+        float duration = Delay(step.duration);
         try
         {
             while (!isDead && rb != null && elapsed < duration)
@@ -173,7 +229,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
                 bool walk = playerTransform != null
                     && Mathf.Abs(playerTransform.position.x - transform.position.x) > .7f
                     && !IsWallAhead();
-                rb.linearVelocity = new Vector2(walk ? lookDirection * step.moveSpeed : 0f, rb.linearVelocity.y);
+                rb.linearVelocity = new Vector2(walk ? lookDirection * step.moveSpeed / Mathf.Max(.01f,actionDelay) : 0f, rb.linearVelocity.y);
                 elapsed += Time.fixedDeltaTime;
                 yield return new WaitForFixedUpdate();
             }
@@ -184,7 +240,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     private IEnumerator VaultBehindPlayer(BossAttackStepData step)
     {
         if (rb == null || playerTransform == null) yield break;
-        if (step.preDelay > 0f) yield return new WaitForSeconds(GetSkillDelay(step.preDelay));
+        if (step.preDelay > 0f) yield return new WaitForSeconds(Delay(step.preDelay));
         Vector2 start = rb.position;
         float forward = lockedDashDirection * (playerTransform.position.x - start.x);
         float travel = Mathf.Clamp(forward + vaultBehindDistance, .8f, Mathf.Max(.8f, step.maxMoveDistance));
@@ -196,10 +252,9 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         if (floor.collider != null) groundY = floor.point.y + feetOffset;
 
         Vector2 target = new Vector2(targetX, groundY);
-        float duration = Mathf.Max(.01f, GetSkillDelay(step.duration));
+        float duration = Mathf.Max(.01f, Delay(step.duration));
         float gravity = rb.gravityScale;
         CollisionDetectionMode2D collisionMode = rb.collisionDetectionMode;
-        bool dealtDamage = false;
         try
         {
             rb.gravityScale = 0f;
@@ -212,15 +267,12 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
                 Vector2 arc = Vector2.Lerp(start, target, progress)
                     + Vector2.up * (Mathf.Sin(progress * Mathf.PI) * vaultArcHeight);
                 rb.MovePosition(arc);
-                if (!dealtDamage && PlayerInHitbox(step))
-                {
-                    yield return BossSkillExecutor.ExecuteRepeatedAttacks(step, this);
-                    dealtDamage = true;
-                }
                 elapsed += Time.fixedDeltaTime;
                 yield return new WaitForFixedUpdate();
             }
             rb.MovePosition(target);
+            yield return new WaitForFixedUpdate();
+            if(!isDead)yield return BossSkillExecutor.ExecuteRepeatedAttacks(step,this);
         }
         finally
         {
@@ -236,7 +288,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     private IEnumerator CrossSlash(BossAttackStepData step, int index)
     {
         if (rb == null || playerTransform == null || index < 0 || index >= sweepStarts.Length) yield break;
-        if (step.preDelay > 0f) yield return new WaitForSeconds(GetSkillDelay(step.preDelay));
+        if (step.preDelay > 0f) yield return new WaitForSeconds(Delay(step.preDelay));
         Vector2 center = playerTransform.position;
         Vector2 start = center + sweepStarts[index];
         Vector2 end = center + new Vector2(-sweepStarts[index].x, 2f * sweepCrossHeight - sweepStarts[index].y);
@@ -249,7 +301,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
             rb.linearVelocity = Vector2.zero;
 
             Vector2 from = rb.position;
-            float travelTime = Mathf.Max(.01f, GetSkillDelay(sweepRepositionDuration));
+            float travelTime = Mathf.Max(.01f, Delay(2f/12f));
             float elapsed = 0f;
             while (!isDead && elapsed < travelTime)
             {
@@ -261,7 +313,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
             lookDirection = end.x >= start.x ? 1 : -1;
             ApplyFacingDirection();
 
-            float slashTime = Mathf.Max(.01f, GetSkillDelay(step.duration));
+            float slashTime = Mathf.Max(.01f, Delay(step.duration));
             elapsed = 0f;
             bool dealtDamage = false;
             while (!isDead && elapsed < slashTime)
@@ -291,10 +343,6 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
 
     private bool PlayerInHitbox(BossAttackStepData step)
     {
-        if (step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f) return false;
-        Vector2 center = (Vector2)transform.position + new Vector2(
-            lookDirection * step.hitboxOffset.x, step.hitboxOffset.y);
-        Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, playerLayer);
-        return hit != null && CanHitPlayer(hit);
+        return Stage5PatternMotion.ContainsPlayer(step,this);
     }
 }

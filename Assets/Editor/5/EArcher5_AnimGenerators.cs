@@ -302,7 +302,35 @@ public static class EArcher5_AnimGenerators
     {
         const string path = "Assets/Data/Enemys/Stage5/Stage5_Elite_2.asset";
         var asset = AssetDatabase.LoadMainAssetAtPath(path);
-        if (asset == null) { Debug.LogWarning("데이터 자동 반영 생략: " + path); return; }
+        if (asset == null)
+        {
+            string expected = System.IO.Path.GetFileNameWithoutExtension(path);
+            var matches = new List<string>();
+            foreach (string guid in AssetDatabase.FindAssets(expected))
+            {
+                string candidate = AssetDatabase.GUIDToAssetPath(guid);
+                if (candidate.StartsWith("Assets/", StringComparison.Ordinal)
+                    && candidate.EndsWith(".asset", StringComparison.OrdinalIgnoreCase)
+                    && System.IO.Path.GetFileNameWithoutExtension(candidate) == expected)
+                    matches.Add(candidate);
+            }
+            if (matches.Count == 1)
+            {
+                asset = AssetDatabase.LoadMainAssetAtPath(matches[0]);
+                Debug.Log("데이터 위치 자동 검색: " + matches[0]);
+            }
+            else if (matches.Count > 1)
+            {
+                Debug.LogWarning("동명 데이터가 여러 개여서 자동 반영을 생략했습니다: " + string.Join(", ", matches));
+                return;
+            }
+        }
+        if (asset == null)
+        {
+            Debug.LogWarning("애니메이션/Animator 생성은 완료됐지만 공격 타이밍을 반영할 데이터가 없습니다: "
+                + path + ". 해당 Stage5 EnemyData 에셋을 생성하거나 기존 파일명을 확인하세요. 임의의 HP/데미지 데이터는 생성하지 않습니다.");
+            return;
+        }
         var serialized = new SerializedObject(asset);
         var pre = serialized.FindProperty("preAttackDelay");
         var post = serialized.FindProperty("postAttackDelay");
@@ -464,23 +492,23 @@ public static class EArcher5_AnimGenerators
         return p;
     }
 
+    // R3: Stage4 backward-collapse pose; use Stage5 rest positions in GroundFoot.
     private static Pose Death(float t)
     {
         var p = new Pose();
-        float u = Mathf.Clamp01(t / 0.65f);
-        float fall = Smooth(Mathf.Clamp01((u - 0.08f) / 0.76f));
-        float settle = Smooth(Mathf.Clamp01((u - 0.84f) / 0.16f));
-        p.position[Body].x -= 0.20f * fall;
-        p.angle[Body] = 94f * fall - 4f * settle;
-        p.angle[Head] = 8f * fall;
-        p.angle[SF] = -24f * fall;
-        p.angle[HF] = 15f * fall;
-        p.angle[SB] = -20f * fall;
-        p.angle[HB] = RestAngles[HB] - 25f * fall;
-        p.angle[Bottom] = 0f;
-        p.angle[FF] = -10f * fall;
-        p.angle[FB] = 8f * fall;
-        return p; // Generation grounds the sampled sprite geometry; hold the final pose.
+        float fall = Smooth(Mathf.Clamp01((t - 0.05f) / 0.43f));
+        float settle = Smooth(Mathf.Clamp01((t - 0.48f) / 0.17f));
+        p.position[Body] = new Vector3(-0.19f * fall, -0.30f * fall - 0.025f * settle, 0);
+        p.angle[Body] = 72f * fall - 4f * settle;
+        p.angle[Head] = 12f * fall;
+        p.angle[SF] = -22f * fall;
+        p.angle[HF] = 18f * fall;
+        p.angle[SB] = RestAngles[SB] - 28f * fall;
+        p.angle[HB] = -35f * fall;
+        p.angle[Bottom] = -22f * fall;
+        GroundFoot(p, FF, RestPositions[FF].x - 0.06f * fall, 0, 18f * fall);
+        GroundFoot(p, FB, RestPositions[FB].x + 0.06f * fall, 0, -12f * fall);
+        return p; // 마지막 쓰러진 자세 유지. 사망 클립은 Rest로 복귀하지 않는다.
     }
 
     private static float Track(float t, float[] times, float[] values)
@@ -505,7 +533,6 @@ public static class EArcher5_AnimGenerators
 
     private static AnimationClip Generate(string name, float duration, bool loop, Func<float, Pose> evaluate)
     {
-        var geometry = ReadPrefabGeometry();
         var clip = new AnimationClip { name = name, frameRate = 12f };
         // 주요 타이밍도 포함하여 임팩트가 샘플 사이로 밀리지 않게 합니다.
         var timeSet = new SortedSet<float> { 0, duration };
@@ -515,12 +542,9 @@ public static class EArcher5_AnimGenerators
             foreach (float t in new[] { 0.24f, 0.52f, 0.68f, AttackImpactTime, 0.80f, 0.94f, 1.10f }) timeSet.Add(t);
         var times = new List<float>(timeSet);
         var poses = new Pose[times.Count];
-        float restFloor = LowestVertex(new Pose(), geometry);
         for (int i = 0; i < times.Count; i++)
         {
             poses[i] = evaluate(loop && i == times.Count - 1 ? 0 : times[i]);
-            if (name.EndsWith("_Death", StringComparison.Ordinal))
-                poses[i].position[Body].y += restFloor - LowestVertex(poses[i], geometry);
         }
         for (int part = 0; part < Paths.Length; part++)
         {

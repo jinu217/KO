@@ -53,7 +53,7 @@ public static class TankMob5_AnimGenerators
         EnsureFolder(OutputFolder);
         Generate("TankMob5_Idle", 2.4f, true, Idle);
         Generate("TankMob5_Walk", 1.30f, true, t => Locomotion(t, 1.30f, false));
-        Generate("TankMob5_Run", 0.85f, true, t => Locomotion(t, 0.85f, true));
+        Generate("TankMob5_Run", 0.6f, true, t => Locomotion(t, 0.6f, true));
         AnimationClip attack = Generate("TankMob5_Attack", 1.9f, false, Attack);
         Generate("TankMob5_Hit", 0.30f, false, Hit);
         Generate("TankMob5_Death", 0.85f, false, Death);
@@ -69,7 +69,7 @@ public static class TankMob5_AnimGenerators
     [MenuItem("Tools/5/TankMob 5/Clips/Walk")]
     public static void GenerateWalk() => GenerateSingle("TankMob5_Walk", 1.30f, true, t => Locomotion(t, 1.30f, false));
     [MenuItem("Tools/5/TankMob 5/Clips/Run")]
-    public static void GenerateRun() => GenerateSingle("TankMob5_Run", 0.85f, true, t => Locomotion(t, 0.85f, true));
+    public static void GenerateRun() => GenerateSingle("TankMob5_Run", 0.6f, true, t => Locomotion(t, 0.6f, true));
     [MenuItem("Tools/5/TankMob 5/Clips/Attack")]
     public static void GenerateAttack() => GenerateSingle("TankMob5_Attack", 1.9f, false, Attack);
 
@@ -122,7 +122,7 @@ public static class TankMob5_AnimGenerators
             // 셋업은 없는 클립만 생성한다. 수작업으로 수정한 기존 클립은 유지한다.
             if (i == 0) clips[i] = Generate(names[i], 2.4f, true, Idle);
             if (i == 1) clips[i] = Generate(names[i], 1.30f, true, t => Locomotion(t, 1.30f, false));
-            if (i == 2) clips[i] = Generate(names[i], 0.85f, true, t => Locomotion(t, 0.85f, true));
+            if (i == 2) clips[i] = Generate(names[i], 0.6f, true, t => Locomotion(t, 0.6f, true));
             if (i == 3) clips[i] = Generate(names[i], 1.9f, false, Attack);
             if (i == 4) clips[i] = Generate(names[i], 0.30f, false, Hit);
             if (i == 5) clips[i] = Generate(names[i], 0.85f, false, Death);
@@ -298,7 +298,35 @@ public static class TankMob5_AnimGenerators
     {
         const string path = "Assets/Data/Enemys/Stage5/Stage5_Enemy_2.asset";
         var asset = AssetDatabase.LoadMainAssetAtPath(path);
-        if (asset == null) { Debug.LogWarning("데이터 자동 반영 생략: " + path); return; }
+        if (asset == null)
+        {
+            string expected = System.IO.Path.GetFileNameWithoutExtension(path);
+            var matches = new List<string>();
+            foreach (string guid in AssetDatabase.FindAssets(expected))
+            {
+                string candidate = AssetDatabase.GUIDToAssetPath(guid);
+                if (candidate.StartsWith("Assets/", StringComparison.Ordinal)
+                    && candidate.EndsWith(".asset", StringComparison.OrdinalIgnoreCase)
+                    && System.IO.Path.GetFileNameWithoutExtension(candidate) == expected)
+                    matches.Add(candidate);
+            }
+            if (matches.Count == 1)
+            {
+                asset = AssetDatabase.LoadMainAssetAtPath(matches[0]);
+                Debug.Log("데이터 위치 자동 검색: " + matches[0]);
+            }
+            else if (matches.Count > 1)
+            {
+                Debug.LogWarning("동명 데이터가 여러 개여서 자동 반영을 생략했습니다: " + string.Join(", ", matches));
+                return;
+            }
+        }
+        if (asset == null)
+        {
+            Debug.LogWarning("애니메이션/Animator 생성은 완료됐지만 공격 타이밍을 반영할 데이터가 없습니다: "
+                + path + ". 해당 Stage5 EnemyData 에셋을 생성하거나 기존 파일명을 확인하세요. 임의의 HP/데미지 데이터는 생성하지 않습니다.");
+            return;
+        }
         var serialized = new SerializedObject(asset);
         var pre = serialized.FindProperty("preAttackDelay");
         var post = serialized.FindProperty("postAttackDelay");
@@ -380,7 +408,7 @@ public static class TankMob5_AnimGenerators
         p.angle[HF] = (run ? 15f : 3f) - (run ? 7f : 3f) * wave;
         // 무기 팔의 진폭은 작게, 손목 반응은 약간 늦게 줍니다.
         p.angle[SB] = (run ? 9f : 2f) - (run ? 7f : 4f) * wave;
-        p.angle[HB] = RestAngles[HB] + (run ? 8f : 3f) + 3f * Mathf.Sin(phase * Mathf.PI * 2f - 0.35f);
+        p.angle[HB] = (run ? 75f : RestAngles[HB] + 3f) + 3f * Mathf.Sin(phase * Mathf.PI * 2f - 0.35f); // R4: Run holds weapon up.
         p.angle[Axe] = RestAngles[Axe] - 2f * Mathf.Sin(phase * Mathf.PI * 2f - 0.6f);
         StepFoot(p, FF, phase, run);
         StepFoot(p, FB, phase + 0.5f, run);
@@ -463,23 +491,23 @@ public static class TankMob5_AnimGenerators
         return p;
     }
 
+    // R3: Stage4 backward-collapse pose; use Stage5 rest positions in GroundFoot.
     private static Pose Death(float t)
     {
         var p = new Pose();
-        float u = Mathf.Clamp01(t / 0.85f);
-        float fall = Smooth(Mathf.Clamp01((u - 0.08f) / 0.76f));
-        float settle = Smooth(Mathf.Clamp01((u - 0.84f) / 0.16f));
-        p.position[Body].x -= 0.20f * fall;
-        p.angle[Body] = 94f * fall - 4f * settle;
-        p.angle[Head] = 8f * fall;
-        p.angle[SF] = -24f * fall;
-        p.angle[HF] = 15f * fall;
-        p.angle[SB] = -20f * fall;
-        p.angle[HB] = RestAngles[HB] - 25f * fall;
-        p.angle[Bottom] = 0f;
-        p.angle[FF] = -10f * fall;
-        p.angle[FB] = 8f * fall;
-        return p; // Generation grounds the sampled sprite geometry; hold the final pose.
+        float fall = Smooth(Mathf.Clamp01((t - 0.05f) / 0.58f));
+        float settle = Smooth(Mathf.Clamp01((t - 0.63f) / 0.22f));
+        p.position[Body] = new Vector3(-0.19f * fall, -0.30f * fall - 0.025f * settle, 0);
+        p.angle[Body] = 72f * fall - 4f * settle;
+        p.angle[Head] = 12f * fall;
+        p.angle[SF] = -22f * fall;
+        p.angle[HF] = 18f * fall;
+        p.angle[SB] = -28f * fall;
+        p.angle[HB] = RestAngles[HB] - 35f * fall;
+        p.angle[Bottom] = -22f * fall;
+        GroundFoot(p, FF, RestPositions[FF].x - 0.06f * fall, 0, 18f * fall);
+        GroundFoot(p, FB, RestPositions[FB].x + 0.06f * fall, 0, -12f * fall);
+        return p; // 마지막 쓰러진 자세 유지. 사망 클립은 Rest로 복귀하지 않는다.
     }
 
     private static float Track(float t, float[] times, float[] values)
@@ -504,7 +532,6 @@ public static class TankMob5_AnimGenerators
 
     private static AnimationClip Generate(string name, float duration, bool loop, Func<float, Pose> evaluate)
     {
-        var geometry = ReadPrefabGeometry();
         var clip = new AnimationClip { name = name, frameRate = 12f };
         // 주요 타이밍도 포함하여 임팩트가 샘플 사이로 밀리지 않게 합니다.
         var timeSet = new SortedSet<float> { 0, duration };
@@ -514,12 +541,9 @@ public static class TankMob5_AnimGenerators
             foreach (float t in new[] { 0.42f, 0.68f, 0.78f, AttackImpactTime, 1.06f, 1.25f, 1.60f }) timeSet.Add(t);
         var times = new List<float>(timeSet);
         var poses = new Pose[times.Count];
-        float restFloor = LowestVertex(new Pose(), geometry);
         for (int i = 0; i < times.Count; i++)
         {
             poses[i] = evaluate(loop && i == times.Count - 1 ? 0 : times[i]);
-            if (name.EndsWith("_Death", StringComparison.Ordinal))
-                poses[i].position[Body].y += restFloor - LowestVertex(poses[i], geometry);
         }
         for (int part = 0; part < Paths.Length; part++)
         {

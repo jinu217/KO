@@ -41,6 +41,7 @@ public sealed class Stage5_MainBossDesireSkill : MonoBehaviour
     private float savedHp;
     private float stacks;
     private bool active;
+    private float lastTickTime;
 
     public bool Active => active;
     public bool Groggy => Time.time < groggyEndTime;
@@ -68,19 +69,15 @@ public sealed class Stage5_MainBossDesireSkill : MonoBehaviour
         if (!active) return;
 
         // 시전 순간부터 정확히 20초까지만 쌓을 수 있다.
-        float remaining = endTime - Time.time;
-        if (remaining <= 0f)
-        {
-            Fail();
-            return;
-        }
-
+        float tickEnd=Mathf.Min(Time.time,endTime);
+        float delta=Mathf.Max(0,tickEnd-lastTickTime);lastTickTime=tickEnd;
         Transform player = owner.DesirePlayer;
         bool near = player != null
             && Vector2.Distance(owner.transform.position, player.position) <= nearDistance;
-        stacks = Mathf.Clamp(stacks + (near ? gainPerSecond : -lossPerSecond) * Time.deltaTime,
+        stacks = Mathf.Clamp(stacks + (near ? gainPerSecond : -lossPerSecond) * delta,
             0f, targetStacks);
         if (stacks >= targetStacks) Succeed();
+        else if(Time.time>=endTime)Fail();
     }
 
     private void Activate()
@@ -88,15 +85,17 @@ public sealed class Stage5_MainBossDesireSkill : MonoBehaviour
         active = true;
         savedHp = owner.DesireHp;
         stacks = 0f;
+        lastTickTime=Time.time;
         endTime = Time.time + duration;
         nextUseTime = Time.time + cooldown;
+        owner.BeginDesirePose();
         owner.DesireLog("욕망 시작: 체력 저장, 스택 0");
     }
 
     private void Succeed()
     {
         active = false;
-        owner.DesireInterrupt();
+        // Only HP rewinds. Position and the running normal skill are untouched.
         owner.DesireRestoreHp(savedHp);
         nextUseTime = Time.time + rewindCooldown;
         owner.DesireLog("욕망 성공: 시전 전 체력 복원, 재사용 대기시간 1초");
@@ -108,6 +107,7 @@ public sealed class Stage5_MainBossDesireSkill : MonoBehaviour
         owner.DesireInterrupt();
         groggyEndTime = Time.time + groggyDuration;
         owner.DesireStop();
+        owner.BeginGroggyPose(groggyDuration);
         owner.DesireLog("욕망 실패: 체력 유지, 3초 그로기");
     }
 
