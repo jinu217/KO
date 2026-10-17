@@ -7,8 +7,8 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Assets/Editor/기타/SpritePartsReferenceAligner.cs
-public sealed class SpritePartsReferenceAligner : EditorWindow
+// Assets/Editor/기타/SpritePartsReferenceAlignerR6.cs
+public sealed class SpritePartsReferenceAlignerR6 : EditorWindow
 {
     sealed class Part
     {
@@ -27,6 +27,7 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
     SpriteRenderer anchor;
     float imageScale = 4f;
     bool neutralRotation = true;
+    bool separateBossLegs = true;
     readonly List<Part> parts = new List<Part>();
     Vector2 scroll;
     string message = "씬 또는 Prefab Mode의 몹 루트와 완성 PNG를 지정하세요.";
@@ -34,17 +35,23 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
     Color32[] referencePixels;
     bool previewApplied;
     int previewUndoGroup;
-    [MenuItem("Tools/기타/Sprite Matcher/Reference Part Alignment")]
-    static void Open() { GetWindow<SpritePartsReferenceAligner>("파츠 자동 배치 R3"); }
+    [MenuItem("Tools/기타/Sprite Matcher/Reference Part Alignment R6")]
+    static void Open() { GetWindow<SpritePartsReferenceAlignerR6>("파츠 자동 배치 R6"); }
+    void OnEnable() { titleContent = new GUIContent("파츠 자동 배치 R6"); }
     void OnGUI()
     {
-        GUILayout.Label("Sprite Parts Aligner R3 — 좌우 발 분리 / 배율·위치 정밀 보정", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox("완성 PNG와 같은 방향·크기의 파츠를 위치 검색합니다. 원본 PNG의 픽셀을 읽으므로 Read/Write 설정 변경은 필요 없습니다. 위치만 검색하며 회전/크기 자동 추정은 하지 않습니다.", MessageType.Info);
+        int removed = parts.RemoveAll(p => p == null || p.renderer == null || p.renderer.sprite == null);
+        if (anchor == null) anchor = null;
+        if (removed > 0) message = "씬에서 삭제되거나 교체된 파츠 " + removed + "개를 목록에서 정리했습니다. 현재 루트를 지정하고 '1. 파츠 읽기'를 다시 누르세요.";
+        GUILayout.Label("Sprite Parts Aligner R6 — 관절 판별 수정판 / 손·발 좌우 분리", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("완성 PNG와 같은 방향·크기의 파츠를 위치 검색합니다. Hand_B 자체는 인식하고, Hand_B 아래의 모든 자손 SpriteRenderer만 건너뜁니다. Bottom과 발은 계속 검색합니다.", MessageType.Info);
         EditorGUI.BeginChangeCheck();
         root = (GameObject)EditorGUILayout.ObjectField("배치할 몹 루트", root, typeof(GameObject), true);
         reference = (Texture2D)EditorGUILayout.ObjectField("완성 이미지 PNG", reference, typeof(Texture2D), false);
         if (EditorGUI.EndChangeCheck()) { parts.Clear(); anchor = null; }
         imageScale = EditorGUILayout.FloatField("완성 이미지 배율", imageScale);
+        separateBossLegs = EditorGUILayout.ToggleLeft("허벅지·정강이도 F=그림 왼쪽 / B=오른쪽에서 검색", separateBossLegs);
+        EditorGUILayout.HelpBox("Hand_F와 Foot_F는 완성 이미지 왼쪽, Hand_B와 Foot_B는 오른쪽에서 검색합니다. 가려진 픽셀을 임의로 가림 처리하지 않고 원본 색상으로 비교합니다. 다리의 좌우 분리 옵션은 허벅지·정강이에만 적용됩니다.", MessageType.None);
         neutralRotation = EditorGUILayout.ToggleLeft("선택 파츠 회전을 0으로 맞춤 (원본 파츠 모습 기준)", neutralRotation);
         EditorGUILayout.HelpBox("BasicMob 5의 Hand_B에는 기존 90° 회전이 있습니다. 제공된 완성 이미지에 맞추려면 위 옵션을 켜세요. 루트 위치·회전·스케일과 Pivot, Sorting Layer는 유지합니다.", MessageType.None);
         using (new EditorGUI.DisabledScope(previewApplied || root == null || reference == null))
@@ -61,9 +68,14 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
             foreach (var p in parts)
             {
                 EditorGUILayout.BeginVertical("box");
+                string sideName = PartName(p);
+                string sideLabel = sideName == "handf" ? " [F 손 — 이미지 왼쪽만 검색]" :
+                    sideName == "handb" ? " [B 손 — 이미지 오른쪽만 검색]" :
+                    sideName == "footf" ? " [F 발 — 이미지 왼쪽만 검색]" :
+                    sideName == "footb" ? " [B 발 — 이미지 오른쪽만 검색]" : "";
                 using (new EditorGUI.DisabledScope(previewApplied))
                 {
-                    p.use = EditorGUILayout.ToggleLeft(p.path + (p.renderer == anchor ? " [기준 고정]" : ""), p.use);
+                    p.use = EditorGUILayout.ToggleLeft(p.path + sideLabel + (p.renderer == anchor ? " [기준 고정]" : ""), p.use);
                     p.origin = EditorGUILayout.Vector2Field("완성 이미지 좌상단 픽셀 위치", p.origin);
                     if (p.use && !p.found && GUILayout.Button("입력 좌표 사용")) p.found = true;
                 }
@@ -105,7 +117,9 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
         imageWidth = r.width; imageHeight = r.height; referencePixels = r.GetPixels32(); DestroyImmediate(r);
         foreach (var sr in root.GetComponentsInChildren<SpriteRenderer>(true))
         {
-            if (sr.sprite == null) continue;
+            if (sr == null || sr.sprite == null) continue;
+            string path = AnimationUtility.CalculateTransformPath(sr.transform, root.transform);
+            if (IsDescendantOfHandB(path)) continue;
             var tex = Decode(AssetDatabase.GetAssetPath(sr.sprite));
             try
             {
@@ -120,22 +134,21 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
                         if (c.a > 16) { minX = Mathf.Min(minX, x); minY = Mathf.Min(minY, y); maxX = Mathf.Max(maxX, x); maxY = Mathf.Max(maxY, y); }
                     }
                 if (maxX < 0) continue;
-                string lower = sr.name.ToLowerInvariant();
                 parts.Add(new Part
                 {
                     renderer = sr,
-                    path = AnimationUtility.CalculateTransformPath(sr.transform, root.transform),
+                    path = path,
                     pixels = pixels,
                     width = w,
                     height = h,
                     crop = new RectInt(minX, minY, maxX - minX + 1, maxY - minY + 1),
-                    use = !(lower.Contains("axe") || lower.Contains("weapon") || lower.Contains("sword") || lower.Contains("bow"))
+                    use = true
                 });
             }
             finally { DestroyImmediate(tex); }
         }
         anchor = parts.Select(p => p.renderer).FirstOrDefault(s => s.name == "Body");
-        message = "파츠 " + parts.Count + "개. 검색 대상과 기준 Body를 확인하세요. 완성 이미지에 없는 무기는 제외하세요.";
+        message = "파츠 " + parts.Count + "개를 읽었습니다. Hand_B 자체와 Bottom·발은 포함하고 Hand_B 아래 자손만 건너뛰었습니다.";
     }
     void LoadBasic5()
     {
@@ -181,8 +194,21 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
         }
         return (float)(total / samples.Count);
     }
+    void ValidateParts()
+    {
+        if (root == null || reference == null || referencePixels == null)
+            throw new InvalidOperationException("루트와 이미지를 지정하고 파츠 읽기를 다시 실행하세요.");
+        foreach (var p in parts)
+        {
+            if (p == null || p.renderer == null || p.renderer.sprite == null)
+                throw new InvalidOperationException("삭제되거나 스프라이트가 없는 파츠가 있습니다. 파츠를 다시 읽으세요.");
+            if (!p.renderer.transform.IsChildOf(root.transform))
+                throw new InvalidOperationException("파츠의 루트가 변경되었습니다. 파츠를 다시 읽으세요.");
+        }
+    }
     void Search()
     {
+        ValidateParts();
         if (imageScale <= 0) throw new InvalidOperationException("배율은 0보다 커야 합니다.");
         var active = parts.Where(p => p.use).ToList();
         for (int i = 0; i < active.Count; i++)
@@ -198,7 +224,7 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
                 if (y % 24 == 0 && EditorUtility.DisplayCancelableProgressBar("파츠 위치 검색", p.path, (i + (float)y / Mathf.Max(1, maxY)) / Mathf.Max(1, active.Count))) throw new OperationCanceledException("검색 취소. 씬은 수정하지 않았습니다.");
                 for (int x = 0; x <= maxX; x += 2)
                 {
-                    if (!CorrectFootSide(p, x)) continue;
+                    if (!CorrectPartSide(p, x)) continue;
                     float error = Score(p, x, y, sparse);
                     if (best.Count < 24 || error < best[best.Count - 1].z)
                     { best.Add(new Vector3(x, y, error)); best.Sort((a, b) => a.z.CompareTo(b.z)); if (best.Count > 24) best.RemoveAt(24); }
@@ -210,23 +236,54 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
                     {
                         int x = (int)candidate.x + dx, y = (int)candidate.y + dy;
                         if (x < 0 || y < 0 || x > maxX || y > maxY) continue;
-                        if (!CorrectFootSide(p, x)) continue;
+                        if (!CorrectPartSide(p, x)) continue;
                         float score = Score(p, x, y, full);
                         if (score < lowest) { lowest = score; position = new Vector2(x, y); }
                     }
-            if (float.IsPositiveInfinity(lowest)) throw new InvalidOperationException("해당 방향의 발 후보를 찾지 못했습니다: " + p.path);
+            if (float.IsPositiveInfinity(lowest)) throw new InvalidOperationException("해당 방향의 파츠 후보를 찾지 못했습니다: " + p.path);
             p.origin = position; p.error = lowest; p.found = true;
         }
         RefineMatches(active);
-        message = "R3 검색 완료. Foot_F는 그림 왼쪽, Foot_B는 그림 오른쪽에서 검색했습니다. 적용 좌표는 소수점 셋째 자리까지 반올림합니다.";
+        message = "R6 검색 완료. 손과 발은 지정된 이미지 절반에서 원본 색상·알파를 직접 비교했습니다.";
     }
     static string PartName(Part p)
     {
-        string name = p.renderer.name.ToLowerInvariant().Replace("_", "").Replace(" ", "").Replace("(clone)", "");
-        if (name == "footf" || name == "footb") return name;
-        string sprite = p.renderer.sprite.name.ToLowerInvariant().Replace("_", "").Replace(" ", "");
-        return sprite == "footf" || sprite == "footb" ? sprite : name;
+        if (p == null || p.renderer == null || p.renderer.sprite == null) return string.Empty;
+        // Prefer this object, then its sprite, then the nearest named ancestor.
+        // Walking from the root mislabels Calf and Foot as Thigh.
+        string name = NormalizePartName(p.renderer.name);
+        if (IsDirectionalPartName(name)) return name;
+        string sprite = NormalizePartName(p.renderer.sprite.name);
+        if (IsDirectionalPartName(sprite)) return sprite;
+        string[] segments = (p.path ?? string.Empty).Split('/');
+        for (int i = segments.Length - 1; i >= 0; i--)
+        {
+            string normalized = NormalizePartName(segments[i]);
+            if (IsDirectionalPartName(normalized)) return normalized;
+        }
+        return name;
     }
+    static string NormalizePartName(string value)
+    {
+        return (value ?? string.Empty).ToLowerInvariant().Replace("_", "").Replace(" ", "").Replace("(clone)", "");
+    }
+    static bool IsDirectionalPartName(string name)
+    {
+        return name == "handf" || name == "handb" || IsLegName(name);
+    }
+    static bool IsLegName(string name)
+    {
+        return name == "footf" || name == "footb" || name == "thighf" || name == "thighb" || name == "calff" || name == "calfb";
+    }
+    static bool IsDescendantOfHandB(string path)
+    {
+        // Exclude descendants only; Hand_B itself and other branches remain.
+        string[] segments = (path ?? string.Empty).Split('/');
+        for (int i = 0; i < segments.Length - 1; i++)
+            if (NormalizePartName(segments[i]) == "handb") return true;
+        return false;
+    }
+
     float FineScore(Part p, Vector2 origin, float scale)
     {
         double error = 0; int count = 0;
@@ -258,7 +315,7 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
         // Refine a common scale across all parts instead of stretching individual limbs.
         for (int k = -4; k <= 4; k++)
         {
-            if (EditorUtility.DisplayCancelableProgressBar("R3 정밀 보정", "공통 배율 / 파츠 위치", (k + 4) / 9f)) throw new OperationCanceledException("검색 취소. 씬은 수정하지 않았습니다.");
+            if (EditorUtility.DisplayCancelableProgressBar("R6 정밀 보정", "공통 배율 / 파츠 위치", (k + 4) / 9f)) throw new OperationCanceledException("검색 취소. 씬은 수정하지 않았습니다.");
             imageScale = original * (1f + k * .01f);
             var trial = new Vector2[active.Count]; float total = 0;
             for (int i = 0; i < active.Count; i++)
@@ -267,7 +324,7 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
                 for (int dy = -4; dy <= 4; dy += 2) for (int dx = -4; dx <= 4; dx += 2)
                     {
                         Vector2 v = initial[i] + new Vector2(dx, dy);
-                        if (!CorrectFootSide(p, v.x)) continue;
+                        if (!CorrectPartSide(p, v.x)) continue;
                         float e = FineScore(p, v, imageScale);
                         if (e < error) { error = e; trial[i] = v; }
                     }
@@ -282,19 +339,25 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
             for (int dy = -8; dy <= 8; dy++) for (int dx = -8; dx <= 8; dx++)
                 {
                     Vector2 v = center + new Vector2(dx * .25f, dy * .25f);
-                    if (!CorrectFootSide(p, v.x)) continue;
+                    if (!CorrectPartSide(p, v.x)) continue;
                     float e = FineScore(p, v, imageScale);
                     if (e < error) { error = e; p.origin = v; }
                 }
             p.error = error;
         }
-        Debug.Log("[SpriteParts R3] 배율 " + imageScale.ToString("F3") + " / " + string.Join(" / ", active.Select(p => p.renderer.name + ": " + p.origin.ToString("F2"))));
+        Debug.Log("[SpriteParts R6] 배율 " + imageScale.ToString("F3") + " / " + string.Join(" / ", active.Select(p => p.renderer.name + ": " + p.origin.ToString("F2"))));
     }
-    bool CorrectFootSide(Part p, float x)
+    bool CorrectPartSide(Part p, float x)
     {
         float center = x + p.crop.width * imageScale * .5f;
-        if (PartName(p) == "footf") return center < imageWidth * .5f;
-        if (PartName(p) == "footb") return center >= imageWidth * .5f;
+        string name = PartName(p);
+        if (name == "handf" || name == "footf") return center < imageWidth * .5f;
+        if (name == "handb" || name == "footb") return center >= imageWidth * .5f;
+        if (separateBossLegs && (name == "thighf" || name == "thighb" || name == "calff" || name == "calfb"))
+        {
+            bool front = name.EndsWith("f", StringComparison.Ordinal);
+            return front ? center < imageWidth * .5f : center >= imageWidth * .5f;
+        }
         return true;
     }
     static float RoundPosition(float value) => (float)Math.Round(value, 3, MidpointRounding.AwayFromZero);
@@ -312,6 +375,7 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
     }
     void ApplyPreview()
     {
+        ValidateParts();
         if (root == null || EditorUtility.IsPersistent(root) || EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode()) throw new InvalidOperationException("씬/Prefab Mode에서 Play·Animation Preview를 끄고 실행하세요.");
         var chosen = parts.Where(p => p.use).ToList();
         var body = chosen.FirstOrDefault(p => p.renderer == anchor);
@@ -331,6 +395,8 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
         }
         var frontFoot = chosen.FirstOrDefault(p => PartName(p) == "footf");
         var backFoot = chosen.FirstOrDefault(p => PartName(p) == "footb");
+        var frontHand = chosen.FirstOrDefault(p => PartName(p) == "handf");
+        var backHand = chosen.FirstOrDefault(p => PartName(p) == "handb");
         if (frontFoot != null && backFoot != null && frontFoot.origin.x + frontFoot.crop.width * imageScale * .5f >= backFoot.origin.x + backFoot.crop.width * imageScale * .5f)
             throw new InvalidOperationException("그림 왼쪽은 Foot_F, 오른쪽은 Foot_B로 좌표를 지정하세요.");
         Vector2 basePixel = PivotInImage(body);
@@ -343,7 +409,11 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
             targets[p.renderer.transform] = new Vector3(baseLocal.x + delta.x / (imageScale * anchor.sprite.pixelsPerUnit), baseLocal.y - delta.y / (imageScale * anchor.sprite.pixelsPerUnit), old.z);
         }
         Undo.IncrementCurrentGroup(); previewUndoGroup = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName("Align Sprite Parts To Reference");
-        Undo.RecordObjects(chosen.Select(p => (UnityEngine.Object)p.renderer.transform).ToArray(), "Align Sprite Parts");
+        Transform feetBottom = frontFoot != null && backFoot != null ? frontFoot.renderer.transform.parent : null;
+        if (feetBottom != null && (feetBottom != backFoot.renderer.transform.parent || feetBottom.name != "Bottom" || feetBottom == root.transform || feetBottom == anchor.transform)) feetBottom = null;
+        var undoTargets = chosen.Select(p => (UnityEngine.Object)p.renderer.transform).ToList();
+        if (feetBottom != null) undoTargets.Add(feetBottom);
+        Undo.RecordObjects(undoTargets.Distinct().ToArray(), "Align Sprite Parts");
         foreach (var p in chosen.OrderBy(p => p.path.Count(c => c == '/')))
         {
             var t = p.renderer.transform;
@@ -356,6 +426,21 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
             }
             PrefabUtility.RecordPrefabInstancePropertyModifications(t);
         }
+        if (feetBottom != null)
+        {
+            Transform f = frontFoot.renderer.transform, b = backFoot.renderer.transform;
+            // Use the shared height; tiny matching discrepancies are averaged deliberately.
+            float sharedY = (f.localPosition.y + b.localPosition.y) * .5f;
+            Vector3 bottomPosition = feetBottom.localPosition;
+            bottomPosition.y = RoundPosition(bottomPosition.y + sharedY);
+            feetBottom.localPosition = bottomPosition;
+            Vector3 fp = f.localPosition, bp = b.localPosition;
+            fp.y = 0f; bp.y = 0f;
+            f.localPosition = fp; b.localPosition = bp;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(feetBottom);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(f);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(b);
+        }
         if (frontFoot != null && backFoot != null)
         {
             float fx = root.transform.InverseTransformPoint(frontFoot.renderer.transform.position).x;
@@ -363,13 +448,23 @@ public sealed class SpritePartsReferenceAligner : EditorWindow
             if (fx >= bx || Mathf.Abs(fx - bx) < .01f)
             {
                 Undo.RevertAllDownToGroup(previewUndoGroup);
-                throw new InvalidOperationException("R3: 적용 후 양발 분리 검사 실패. 파츠 이름과 부모 구조를 확인하세요.");
+                throw new InvalidOperationException("R6: 적용 후 양발 분리 검사 실패. 파츠 이름과 부모 구조를 확인하세요.");
             }
         }
-        Debug.Log("[SpriteParts R3] 적용 완료: " + string.Join(" / ", chosen.Select(p => p.path + " = " + p.renderer.transform.localPosition.ToString("F3"))));
+        if (frontHand != null && backHand != null)
+        {
+            float fx = root.transform.InverseTransformPoint(frontHand.renderer.transform.position).x;
+            float bx = root.transform.InverseTransformPoint(backHand.renderer.transform.position).x;
+            if (fx >= bx || Mathf.Abs(fx - bx) < .01f)
+            {
+                Undo.RevertAllDownToGroup(previewUndoGroup);
+                throw new InvalidOperationException("R6: 적용 후 양손 좌우 분리 검사 실패. 파츠 이름과 부모 구조를 확인하세요.");
+            }
+        }
+        Debug.Log("[SpriteParts R6] 적용 완료: " + string.Join(" / ", chosen.Select(p => p.path + " = " + p.renderer.transform.localPosition.ToString("F3"))));
         Undo.CollapseUndoOperations(previewUndoGroup); previewApplied = true;
         EditorSceneManager.MarkSceneDirty(root.scene); SceneView.RepaintAll();
-        message = "씬에 미리 적용했습니다. 루트와 Body 피봇은 고정됩니다. 도끼 등 제외 파츠는 localPosition을 유지하며 부모와 함께 움직입니다. 확인 후 확정하거나 되돌리세요.";
+        message = "씬에 미리 적용했습니다. 루트와 Body 피봇은 고정됩니다. Bottom 직속 양발의 Y는 0, 공통 높이는 Bottom에 적용했습니다. 도끼 등 제외 파츠는 localPosition을 유지하며 부모와 함께 움직입니다. 확인 후 확정하거나 되돌리세요.";
     }
 }
 #endif
