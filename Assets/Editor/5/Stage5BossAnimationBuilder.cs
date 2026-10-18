@@ -460,7 +460,7 @@ public static class Stage5BossAnimationBuilder
         }
         // The target remains in the authored forward square; variants vary breadth, not order.
         float width = 1f + variant * .06f;
-        Vector2 center = new Vector2(1.85f, .05f + variant * .04f);
+        Vector2 center = new Vector2(3.20f, .05f + variant * .04f);
         Vector2[] before ={center+new Vector2(.65f,.65f)*width,
             center+new Vector2(.20f,-.55f)*width,
             center+new Vector2(-.65f,-.55f)*width,
@@ -472,37 +472,88 @@ public static class Stage5BossAnimationBuilder
             center+new Vector2(.20f,-.55f)*width,
             center+new Vector2(.65f,0)};
         // Sprite +Y is the blade tip. Angles describe upper-right -> lower-left etc.
-        float[] readyAngle = { 135, -145, -45, -30, -90 };
-        float[] hitAngle = { 135, -25, -45, -150, -90 };
-        // These paths describe the blade TIP, not the grip: a diagonal thrust must
-        // finish in front of the boss instead of extending a full blade into its body.
+        for (int i = 0; i < 5; i++)
+        {
+            Vector2 middle = (before[i] + after[i]) * .5f;
+            Vector2 half = (after[i] - before[i]) * .5f * (i == 0 || i == 2 || i == 4 ? 3f : 1.6f);
+            before[i] = middle - half; after[i] = middle + half;
+        }
+        // Keep the third thrust's preparation point forward and above the lower-left edge.
+        before[2] += new Vector2(1.20f, .65f); after[2] += new Vector2(1.20f, .65f);
+        float[] readyAngle = { 135, -165, -45, -15, -90 };
+        float[] hitAngle = { 135, -15, -45, -165, -90 };
+        // Use the weapon sprite center at frame 12 as the enemy-position anchor.
         Vector2 bladeTip = r.vertices[Weapon].OrderByDescending(v => v.y).First();
+        Vector2 min = new Vector2(r.vertices[Weapon].Min(v => v.x), r.vertices[Weapon].Min(v => v.y));
+        Vector2 max = new Vector2(r.vertices[Weapon].Max(v => v.x), r.vertices[Weapon].Max(v => v.y));
+        Vector2 spriteCenter = (min + max) * .5f;
         for (int i = 0; i < 5; i++)
         {
             Pose reference = p.Clone(); r.WeaponAt(reference, Vector2.zero, readyAngle[i]);
-            Vector2 offset = r.Matrix(reference, Weapon).MultiplyVector(bladeTip);
-            before[i] -= offset;
+            Vector2 tipOffset = r.Matrix(reference, Weapon).MultiplyVector(bladeTip);
+            Vector2 pathCenterOffset = r.Matrix(reference, Weapon).MultiplyVector(spriteCenter);
+            before[i] += pathCenterOffset - tipOffset;
             r.WeaponAt(reference, Vector2.zero, hitAngle[i]);
-            offset = r.Matrix(reference, Weapon).MultiplyVector(bladeTip); after[i] -= offset;
+            tipOffset = r.Matrix(reference, Weapon).MultiplyVector(bladeTip);
+            pathCenterOffset = r.Matrix(reference, Weapon).MultiplyVector(spriteCenter);
+            after[i] += pathCenterOffset - tipOffset;
         }
-        Vector2 target = hover; float angle = hoverAngle;
+        // The first impact's sprite center is the enemy point. Tighten the full
+        // sequence around it, and bring the high frame-11 windup down noticeably.
+        Vector2 enemyPoint = after[0];
+        for (int i = 0; i < 5; i++)
+        {
+            float reach = i == 0 ? .65f : .90f;
+            before[i] = Vector2.Lerp(enemyPoint, before[i], reach);
+            if (i > 0) after[i] = Vector2.Lerp(enemyPoint, after[i], .90f);
+        }
+        // Place a virtual pivot below the grip along the weapon's local -Y axis.
+        // The grip now travels too, producing a wider arc without scaling the blade.
+        // At -90 degrees the sprite center still crosses the frame-12 enemy point.
+        float slashPivotExtension = (max.y - min.y) * .35f;
+        Vector2 virtualPivotLocal = new Vector2(0, -slashPivotExtension);
+        Vector2 slashCenterLever = spriteCenter - virtualPivotLocal;
+        Pose slashReference = p.Clone(); r.WeaponAt(slashReference, Vector2.zero, -90f);
+        Vector2 slashPivot = enemyPoint - (Vector2)r.Matrix(slashReference, Weapon).MultiplyVector(slashCenterLever);
+        for (int slashIndex = 1; slashIndex <= 3; slashIndex += 2)
+        {
+            r.WeaponAt(slashReference, Vector2.zero, readyAngle[slashIndex]);
+            before[slashIndex] = slashPivot + (Vector2)r.Matrix(slashReference, Weapon).MultiplyVector(slashCenterLever);
+            r.WeaponAt(slashReference, Vector2.zero, hitAngle[slashIndex]);
+            after[slashIndex] = slashPivot + (Vector2)r.Matrix(slashReference, Weapon).MultiplyVector(slashCenterLever);
+        }
+        Pose hoverPose = p.Clone(); r.WeaponAt(hoverPose, hover, hoverAngle);
+        Vector2 hoverCenter = hover + (Vector2)r.Matrix(hoverPose, Weapon).MultiplyVector(spriteCenter);
+        Vector2 target = hoverCenter; float angle = hoverAngle;
         for (int hit = 0; hit < 5; hit++)
         {
-            float impact = 12 + 7.2f * hit, start = impact - 1f;
-            float previous = hit == 0 ? 10 : 12 + 7.2f * (hit - 1) + .6f;
-            Vector2 previousPoint = hit == 0 ? hover : after[hit - 1];
+            bool isSlash = hit == 1 || hit == 3;
+            float impact = 12 + 7.2f * hit, start = impact - (isSlash ? 1.8f : .6f);
+            float sweepEnd = impact + (isSlash ? 1.8f : 0f);
+            float holdEnd = isSlash ? sweepEnd + .8f : impact + .6f;
+            bool previousWasSlash = hit == 2 || hit == 4;
+            float previous = hit == 0 ? 10 : 12 + 7.2f * (hit - 1) + (previousWasSlash ? 2.6f : .6f);
+            Vector2 previousPoint = hit == 0 ? hoverCenter : after[hit - 1];
             float previousAngle = hit == 0 ? hoverAngle : hitAngle[hit - 1];
             if (f < start)
             {
-                float u = S((f - previous) / (start - previous));
+                // Set the low/high windup first, then show it briefly before cutting.
+                float readyFrame = isSlash ? start - .8f : start;
+                float u = S((f - previous) / (readyFrame - previous));
                 target = Vector2.Lerp(previousPoint, before[hit], u);
-                angle = Mathf.Lerp(previousAngle, readyAngle[hit], u); break;
+                angle = previousAngle + Mathf.DeltaAngle(previousAngle, readyAngle[hit]) * u; break;
             }
-            if (f <= impact + .6f)
+            if (f <= holdEnd)
             {
-                float u = S((f - start) / (impact - start));
+                float u = S((f - start) / (sweepEnd - start));
+                angle = Mathf.Lerp(readyAngle[hit], hitAngle[hit], u);
                 target = Vector2.Lerp(before[hit], after[hit], u);
-                angle = Mathf.Lerp(readyAngle[hit], hitAngle[hit], u); break;
+                if (isSlash)
+                {
+                    Pose arcPose = p.Clone(); r.WeaponAt(arcPose, Vector2.zero, angle);
+                    target = slashPivot + (Vector2)r.Matrix(arcPose, Weapon).MultiplyVector(slashCenterLever);
+                }
+                break;
             }
             target = after[hit]; angle = hitAngle[hit];
         }
@@ -510,9 +561,12 @@ public static class Stage5BossAnimationBuilder
         if (f > 41.4f)
         {
             float u = S((f - 41.4f) / 6.6f);
-            target = Vector2.Lerp(after[4], grip, u); angle = Mathf.Lerp(hitAngle[4], r.Angle(p, Weapon), u);
+            Vector2 gripCenter = grip + (Vector2)r.Matrix(p, Weapon).MultiplyVector(spriteCenter);
+            target = Vector2.Lerp(after[4], gripCenter, u); angle = Mathf.Lerp(hitAngle[4], r.Angle(p, Weapon), u);
         }
-        r.WeaponAt(p, target, angle); return p;
+        Pose centerPose = p.Clone(); r.WeaponAt(centerPose, Vector2.zero, angle);
+        Vector2 finalCenterOffset = r.Matrix(centerPose, Weapon).MultiplyVector(spriteCenter);
+        r.WeaponAt(p, target - finalCenterOffset, angle); return p;
     }
     static void AddSwordVariants(Rig r, List<Motion> list)
     {
@@ -546,7 +600,7 @@ public static class Stage5BossAnimationBuilder
         r.Leg(charge, false, r.World(rest, FB) + new Vector2(.38f, 0)); r.Ground(charge);
         r.HandAt(charge, false, new Vector2(0, 1.30f)); r.BladeAt(charge, Vector2.left);
         charge.rot[SF] = 60; charge.rot[AF] = 45; MatchFrontGrip(r, charge);
-        // R9: attack-only deep, two-handed slam; other clips keep their existing poses.
+        // attack-only deep, two-handed slam; other clips keep their existing poses.
         slam = Arms(r, -32, 60, 12, -10, 35, 35, 5);
         slam.pos[Body] += new Vector3(.12f, -.42f, 0);
         slam.pos[Bottom] = r.rest.pos[Bottom]; slam.rot[Bottom] = 24;
@@ -609,16 +663,26 @@ public static class Stage5BossAnimationBuilder
         reach.pos[SF] = new Vector3(-.856f, .727f, 0); reach.rot[SF] = 70;
         reach.pos[AF] = new Vector3(-.312f, -.590f, 0); reach.rot[AF] = 0;
         reach.pos[HF] = new Vector3(.054f, -.633f, 0); reach.rot[HF] = 0;
-        Pose beckon = reach.Clone(); beckon.rot[AF] = 65; beckon.rot[HF] = 45;
+        Pose beckon = reach.Clone(); beckon.rot[SF] = 100; beckon.rot[AF] = 65; beckon.rot[HF] = 45;
+        // Lower skill2 dash with rear knee forward and front leg trailing.
+        dash.pos[Body].y -= .25f; dash.rot[Body] = -28; dash.rot[Bottom] = 20;
+        r.Leg(dash, true, r.World(rest, FF) + new Vector2(-.64f, 0));
+        r.Leg(dash, false, r.World(rest, FB) + new Vector2(.66f, 0)); r.Ground(dash);
         // One clip. Runtime seeks to frame 33 when a hit/wall ends the variable dash early.
         list.Add(new Motion("skill2", 39, false, f =>
-            Track(f, new Key(0, rest), new Key(5, reach), new Key(8, reach), new Key(16, beckon), new Key(20, beckon), new Key(24, dash),
+            Track(f, new Key(0, rest), new Key(5, reach), new Key(8, reach), new Key(10, beckon), new Key(20, beckon), new Key(24, dash),
                 new Key(33, dash), new Key(39, rest)))
             .Cue(0, "Skill2.PullStart").Cue(24, "Skill2.PullEnd").Cue(24, "Skill2.DashStart")
             .Cue(33, "Skill2.DashEnd").Cue(39, "Action.End"));
-        Pose buff = Arms(r, 0, 70, 40, 0, 70, 30, 8);
-        r.HandAt(buff, false, new Vector2(.45f, .70f)); r.BladeAt(buff, Vector2.up);
-        r.HandAt(buff, true, r.World(buff, Weapon) + new Vector2(0, -.12f)); buff.rot[Head] = -12;
+        // User-authored skill3 arm pose: absolute local transforms, no IK overwrite.
+        Pose buff = rest.Clone();
+        buff.pos[SF] = new Vector3(-.856f, .727f, 0); buff.rot[SF] = 15.307f;
+        buff.pos[AF] = new Vector3(-.312f, -.590f, 0); buff.rot[AF] = 67.600f;
+        buff.pos[HF] = new Vector3(.054f, -.633f, 0); buff.rot[HF] = 1.250f;
+        buff.pos[SB] = new Vector3(.442f, .713f, 0); buff.rot[SB] = 35f;
+        buff.pos[AB] = new Vector3(.063f, -.575f, 0); buff.rot[AB] = -125f;
+        buff.pos[HB] = new Vector3(.069f, -.601f, 0); buff.rot[HB] = 0;
+        r.BladeAt(buff, Vector2.up); buff.rot[Head] = -12;
         // Use the previously authored Mirrored rotation as the single skill3.
         {
             float sign = r.Matrix(buff, HB).determinant < 0 ? -1 : 1;
@@ -741,7 +805,7 @@ public static class Stage5BossAnimationBuilder
             Setup(r, motions);
             ApplyExistingData(r.main);
             AssetDatabase.SaveAssets();
-            Debug.Log("[Stage5 R9] " + r.name + " 애니메이션/컨트롤러 완료: " + r.folder +
+            Debug.Log("[Stage5 R13] " + r.name + " 애니메이션/컨트롤러 완료: " + r.folder +
                 ". 조건부 연계와 실제 타격/이동은 Stage5 전투 코드에서 Relay 신호를 연결하세요.");
         }
     }
@@ -816,6 +880,8 @@ public static class Stage5BossAnimationBuilder
             }
         // Animate small flags; the relay applies exact integer SortingLayer IDs even in preview.
         FlagCurve(clip, "frontWeapon", new Keyframe(0, ((r.main && m.name.StartsWith("Dskill", StringComparison.Ordinal)) || (!r.main && m.name == "Attack")) ? 1 : 0),
+            new Keyframe(m.frames / FPS, 0));
+        FlagCurve(clip, "frontRearArm", new Keyframe(0, !r.main && m.name == "skill3" ? 1 : 0),
             new Keyframe(m.frames / FPS, 0));
         FlagCurve(clip, "npcBlade", new Keyframe(0, 0),
             new Keyframe(4 / FPS, !r.main && m.name == "skill3" ? 1 : 0), new Keyframe(m.frames / FPS, 0));
