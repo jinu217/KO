@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -79,45 +78,6 @@ public class HeroineDialogueController : MonoBehaviour
     [Tooltip("선택지가 뜬 직후 오입력을 막기 위해 입력을 받지 않는 시간(초)")]
     [SerializeField, Min(0f)] private float choiceInputDelay = 0.3f;
 
-    //============== 죽이는 연출 (자동) ==============
-    [Header("죽이는 연출 - '손을 놓는다'를 확정하면 자동 재생 (설정 없이도 동작)")]
-    [Tooltip("공격이 닿는 순간 카메라가 흔들리는 세기. 0이면 흔들지 않습니다.")]
-    [SerializeField, Min(0f)] private float killHitShake = 0.08f;
-    [Tooltip("플레이어가 영애 쪽으로 이동하는 거리. 이동한 자리에 그대로 서서 벱니다. 0이면 제자리에서 공격합니다.")]
-    [SerializeField, Min(0f)] private float killLunge = 4f;
-    [Tooltip("앞으로 이동하는 데 걸리는 시간(초). 길수록 이동하는 모습이 또렷하게 보입니다.")]
-    [SerializeField, Min(0.01f)] private float killApproachTime = 0.3f;
-    [Tooltip("이동이 끝난 뒤 베기 이펙트가 나오기까지의 딜레이(초). 이동이 끝난 걸 보여 준 다음 벱니다.")]
-    [SerializeField, Min(0f)] private float killSlashDelay = 0.1f;
-    [SerializeField] private Color slashColor = new Color(1f, 0.92f, 0.92f, 1f);
-    [Tooltip("베기 이펙트 길이 / 두께 (월드 단위)")]
-    [SerializeField, Min(0.1f)] private float slashLength = 3f;
-    [SerializeField, Min(0.01f)] private float slashThickness = 0.12f;
-    [Tooltip("공격을 맞은 직후 영애가 휘청이는 각도")]
-    [SerializeField, Range(0f, 45f)] private float slumpAngle = 15f;
-    [Tooltip("마지막 대사 뒤 영애가 완전히 쓰러지는 각도")]
-    [SerializeField, Range(0f, 90f)] private float collapseAngle = 90f;
-    [Tooltip("영애가 완전히 쓰러지는 데 걸리는 시간(초)")]
-    [SerializeField, Min(0f)] private float deathAnimTime = 2f;
-    [Tooltip("공격을 맞고 휘청일 때 영애가 이동하는 거리. X는 플레이어 반대 방향이 +, Y는 위쪽이 +입니다.")]
-    [SerializeField] private Vector2 slumpOffset = Vector2.zero;
-    [Tooltip("완전히 쓰러졌을 때 영애의 최종 위치 이동량. X는 플레이어 반대 방향이 +, Y는 위쪽이 +입니다. (예: X 0.4, Y -0.3 → 뒤로 밀리며 내려앉음)")]
-    [SerializeField] private Vector2 collapseOffset = Vector2.zero;
-    [Tooltip("공격이 닿는 순간 호출됩니다. 효과음, 파티클 등을 연결하세요.")]
-    [SerializeField] private UnityEvent onKillHit;
-
-    [Header("죽이는 연출 - 직접 만든 애니메이션을 쓰고 싶을 때만 (선택 사항)")]
-    [Tooltip("비워 두면 플레이어 오브젝트에서 Animator를 자동으로 찾습니다.")]
-    [SerializeField] private Animator playerAnimator;
-    [Tooltip("플레이어 Animator의 Trigger 이름 (예: Kill). 적으면 제자리 파고들기 대신 이 모션을 씁니다.")]
-    [SerializeField] private string playerKillTrigger = "";
-    [Tooltip("비워 두면 히로인 오브젝트에서 Animator를 자동으로 찾습니다.")]
-    [SerializeField] private Animator heroineAnimator;
-    [Tooltip("히로인 Animator의 Trigger 이름 (예: Die). 적으면 코드로 휘청이고 쓰러지는 연출 대신 이 모션을 씁니다.")]
-    [SerializeField] private string heroineDeathTrigger = "";
-    [Tooltip("플레이어 Trigger를 쓸 때, 모션 시작부터 공격이 닿는 순간까지의 시간(초)")]
-    [SerializeField, Min(0f)] private float killHitDelay = 0.4f;
-
     //============== 침식 연출: 카메라 떨림 ==============
     [Header("침식 연출 - 카메라 떨림 (기계 목소리가 나올 때)")]
     [Tooltip("기계장비 개수별 떨림 세기 (월드 단위)")]
@@ -161,11 +121,6 @@ public class HeroineDialogueController : MonoBehaviour
 
     private const string GlitchChars = "#@%&?!/|*+~";
 
-    // 죽이는 연출 타이밍 / 색
-    private static readonly Color HurtTint = new Color(1f, 0.25f, 0.25f, 1f);
-    private static readonly Color DimTint = new Color(0.6f, 0.55f, 0.6f, 1f);
-    private static readonly Color DeadTint = new Color(0.35f, 0.35f, 0.4f, 1f);
-
     private bool isPlaying;
     private bool finished;
     private bool[] hudWasActive;
@@ -185,17 +140,6 @@ public class HeroineDialogueController : MonoBehaviour
 
     // 방금 출력한 대사에서 계속 깨진 채로 남는 글자 위치 (5개 전용)
     private bool[] lineDamage;
-
-    // 죽이는 연출 상태
-    private SpriteRenderer[] heroineRenderers;
-    private Color[] heroineBaseColors;
-    private Quaternion heroineStartRotation;
-    private Vector3 heroineStartPosition;
-    private float heroineFallDir = 1f;
-    private float heroineAngle;
-    private bool heroineReacting;
-    private bool heroineUsesAnimator;
-    private static Sprite slashSprite;
 
     private void Awake()
     {
@@ -222,16 +166,6 @@ public class HeroineDialogueController : MonoBehaviour
 
         if (playerBody == null && playerController != null)
             playerBody = playerController.GetComponent<Rigidbody2D>();
-
-        // 죽이는 연출용 Animator 자동 탐색 (직접 연결했다면 그대로 사용)
-        if (playerAnimator == null && playerController != null)
-            playerAnimator = playerController.GetComponentInChildren<Animator>();
-
-        if (heroineAnimator == null)
-            heroineAnimator = heroineTransform.GetComponentInChildren<Animator>();
-
-        // 죽이는 연출용: 히로인의 원래 색/회전 기억 (테스트 초기화 때 되돌리기용)
-        CacheHeroineVisual();
 
         // 원래 글자색 기억 (기계 대사 이후 되돌리기용)
         if (dialogueText != null) dialogueDefaultColor = dialogueText.color;
@@ -280,10 +214,6 @@ public class HeroineDialogueController : MonoBehaviour
         finished = false;
         isPlaying = false;
 
-        // 쓰러뜨린 히로인을 원래 모습으로 되돌립니다.
-        heroineReacting = false;
-        RestoreHeroineVisual();
-
         if (SaveData.Instance != null)
             SaveData.Instance.run.heroineChoice = HeroineEndingChoice.None;
 
@@ -297,9 +227,9 @@ public class HeroineDialogueController : MonoBehaviour
         return new[]
         {
             new Line(HeroineName, "…왔구나."),
-            new Line(HeroineName, "여기까지 오는 길, 쉽지 않았을텐데.."),
-            new Line(HeroineName, "그래도 결국 여기까지 왔네.. 이제 진실을 알게 됐지..?"),
-            new Line(HeroineName, "마지막으로 물을게. 나를… 어떻게 할 거야?"),
+            new Line(HeroineName, "여기까지 오는 길, 쉽지 않았을 거야."),
+            new Line(HeroineName, "그래도 결국 여기까지 왔네. 이제 진실을 알게 됐구나."),
+            new Line(HeroineName, "한 가지만 물을게. 나를… 어떻게 할 거야?"),
         };
     }
 
@@ -360,13 +290,13 @@ public class HeroineDialogueController : MonoBehaviour
         {
             return new[]
             {
-                new Line(HeroineName, "…잠깐만."),
-                new Line(HeroineName, "왜 그런 눈으로 나를 보는 거야..?"),
-                new Line(HeroineName, "너잖아. 나를 구하러 여기까지 온 사람은.. 너잖아..."),
-                new Line(HeroineName, "그런데 왜.. 네 손이 네 뜻대로 움직이지 않는 것처럼..."),
-                new Line(HeroineName, "…아. 그렇구나.. 너는 아직 그 안에 있는 거구나..."),
-                new Line(HeroineName, "괜찮아.. 네가 아니라고 믿고 싶어."),
-                new Line(HeroineName, "…미안해. 끝까지 네 손을 잡아 주지 못해서."),
+                new Line(HeroineName, "……잠깐만."),
+                new Line(HeroineName, "왜 그런 눈으로 나를 보는 거야……?"),
+                new Line(HeroineName, "너잖아. 나를 구하러 여기까지 온 사람은…… 너잖아."),
+                new Line(HeroineName, "그런데 왜…… 네 손이 네 뜻대로 움직이지 않는 것처럼……."),
+                new Line(HeroineName, "……아. 그렇구나. 너는 아직 그 안에 있는 거구나."),
+                new Line(HeroineName, "괜찮아…… 네가 아니라고 믿고 싶어."),
+                new Line(HeroineName, "……미안해. 끝까지 네 손을 잡아 주지 못해서."),
             };
         }
         // 기계장비 4개: 기존 대사 유지
@@ -427,9 +357,7 @@ public class HeroineDialogueController : MonoBehaviour
         }
         
         //============== 선택 후 죽음 연출 ==============
-        bool erosionKill = !alive && machineCount >= 5;
-
-        if (erosionKill)
+        if (!alive && machineCount >= 5)
         {
             // 기계의 강제 명령이 실행되는 순간 붉은 화면과 충격을 강조합니다.
             ShowVignette(0.95f, true);
@@ -438,15 +366,7 @@ public class HeroineDialogueController : MonoBehaviour
             yield return new WaitForSecondsRealtime(0.35f);
 
             StopShake();
-        }
 
-        //============== 죽이는 연출 (손을 놓는다 확정 시 자동 재생, 장비 개수와 상관없음) ==============
-        // 베기 → 타격 순간 → 영애 휘청임까지 진행하고, 영애의 반응 대사와 함께 이어집니다.
-        if (!alive)
-            yield return PlayKillSequence();
-
-        if (erosionKill)
-        {
             // 영애의 마지막 대사가 나오기 전 짧은 정적
             yield return new WaitForSecondsRealtime(0.4f);
         }
@@ -460,10 +380,6 @@ public class HeroineDialogueController : MonoBehaviour
                 ? BuildAliveReactionLines()
                 : BuildDeadReactionLines(machineCount),
             machineCount);
-
-        //============== 영애가 완전히 쓰러지는 연출 (마지막 대사 직후) ==============
-        if (!alive)
-            yield return HeroineCollapse();
 
         //============== 영애의 죽음 이후 여운 ==============
         if (!alive && machineCount >= 5)
@@ -484,345 +400,6 @@ public class HeroineDialogueController : MonoBehaviour
 
         finished = true;
         isPlaying = false;
-    }
-
-    //============== 죽이는 연출 ==============
-    // 1) 플레이어가 영애 쪽으로 파고들며 공격
-    // 2) 타격 순간: 베기 이펙트 + 카메라 흔들림 + On Kill Hit 이벤트 + 영애가 붉게 물들며 휘청임
-    // 3) (반응 대사가 나오는 동안 영애는 그 상태로 서 있음)
-    // 4) 마지막 대사 직후 HeroineCollapse()에서 완전히 쓰러짐
-    private IEnumerator PlayKillSequence()
-    {
-        bool hasPlayerMotion = HasTrigger(playerAnimator, playerKillTrigger);
-        heroineUsesAnimator = HasTrigger(heroineAnimator, heroineDeathTrigger);
-
-        Vector3 playerStart = playerController != null
-            ? playerController.transform.position
-            : heroineTransform.position;
-
-        // 영애가 쓰러지는 방향: 플레이어에게서 멀어지는 쪽
-        float dir = heroineTransform.position.x >= playerStart.x ? 1f : -1f;
-        heroineFallDir = dir;
-
-        //============== 플레이어 공격 동작 ==============
-        if (hasPlayerMotion)
-        {
-            playerAnimator.SetTrigger(playerKillTrigger);
-
-            if (killHitDelay > 0f)
-                yield return new WaitForSecondsRealtime(killHitDelay);
-        }
-        else if (playerController != null && killLunge > 0f)
-        {
-            // 앞으로 이동하는 모습이 보이도록, 이동이 끝난 뒤 잠깐 멈췄다가 벱니다.
-            yield return PlayerAdvance(playerStart, dir);
-
-            if (killSlashDelay > 0f)
-                yield return new WaitForSecondsRealtime(killSlashDelay);
-        }
-
-        //============== 타격 순간 ==============
-        onKillHit?.Invoke();
-        SpawnSlashes();
-
-        if (heroineUsesAnimator)
-            heroineAnimator.SetTrigger(heroineDeathTrigger);
-        else
-            StartCoroutine(HeroineHitReaction());
-
-        bool hitShake = killHitShake > 0f;
-
-        if (hitShake)
-            StartShake(killHitShake);
-
-        yield return new WaitForSecondsRealtime(0.18f);
-
-        if (hitShake)
-            StopShake();
-    }
-
-    // 플레이어가 영애 쪽으로 이동합니다. 돌아오지 않고 이동한 자리에 그대로 남습니다.
-    private IEnumerator PlayerAdvance(Vector3 start, float dir)
-    {
-        float gap = Mathf.Abs(heroineTransform.position.x - start.x);
-        float distance = Mathf.Min(killLunge, gap * 0.6f);
-        Vector3 end = start + new Vector3(dir * distance, 0f, 0f);
-
-        yield return MovePlayer(start, end, killApproachTime);
-    }
-
-    private IEnumerator MovePlayer(Vector3 from, Vector3 to, float duration)
-    {
-        float length = Mathf.Max(0.01f, duration);
-        float elapsed = 0f;
-
-        while (elapsed < length)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / length));
-            SetPlayerPosition(Vector3.Lerp(from, to, t));
-            yield return null;
-        }
-
-        SetPlayerPosition(to);
-    }
-
-    private void SetPlayerPosition(Vector3 position)
-    {
-        if (playerBody != null)
-            playerBody.position = position;
-        else if (playerController != null)
-            playerController.transform.position = position;
-    }
-
-    // 영애가 붉게 물들었다가 어두운 색으로 가라앉으며 살짝 휘청입니다.
-    private IEnumerator HeroineHitReaction()
-    {
-        heroineReacting = true;
-
-        SetHeroineTint(HurtTint);
-
-        const float tintTime = 0.5f;
-        const float slumpTime = 0.25f;
-        float elapsed = 0f;
-
-        while (elapsed < tintTime)
-        {
-            elapsed += Time.unscaledDeltaTime;
-
-            SetHeroineTint(Color.Lerp(HurtTint, DimTint, Mathf.Clamp01(elapsed / tintTime)));
-
-            float slump = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / slumpTime));
-            SetHeroineAngle(slumpAngle * slump);
-            SetHeroineOffset(slumpOffset * slump);
-
-            yield return null;
-        }
-
-        SetHeroineTint(DimTint);
-        SetHeroineAngle(slumpAngle);
-        SetHeroineOffset(slumpOffset);
-
-        heroineReacting = false;
-    }
-
-    // 마지막 대사 직후, 영애가 완전히 쓰러집니다. (Animator 모션을 쓰는 경우엔 그 길이만큼만 기다림)
-    private IEnumerator HeroineCollapse()
-    {
-        // 타격 반응이 아직 끝나지 않았다면 기다립니다.
-        while (heroineReacting)
-            yield return null;
-
-        if (heroineUsesAnimator)
-        {
-            if (deathAnimTime > 0f)
-                yield return new WaitForSecondsRealtime(deathAnimTime);
-
-            yield break;
-        }
-
-        float length = Mathf.Max(0.01f, deathAnimTime);
-        float startAngle = heroineAngle;
-        float elapsed = 0f;
-
-        while (elapsed < length)
-        {
-            elapsed += Time.unscaledDeltaTime;
-
-            // 처음엔 천천히, 갈수록 빠르게 (쓰러지는 느낌)
-            float t = Mathf.Clamp01(elapsed / length);
-            t *= t;
-
-            SetHeroineAngle(Mathf.Lerp(startAngle, collapseAngle, t));
-            SetHeroineOffset(Vector2.Lerp(slumpOffset, collapseOffset, t));
-            SetHeroineTint(Color.Lerp(DimTint, DeadTint, t));
-
-            yield return null;
-        }
-
-        SetHeroineAngle(collapseAngle);
-        SetHeroineOffset(collapseOffset);
-        SetHeroineTint(DeadTint);
-    }
-
-    //============== 베기 이펙트 ==============
-    // 영애 몸 위에 흰 선이 순간적으로 그어지고 사라지는 코드 생성 이펙트입니다. (별도 에셋 불필요)
-    private void SpawnSlashes()
-    {
-        Vector3 center = GetHeroineCenter();
-
-        StartCoroutine(SlashRoutine(center, 35f, 0f));
-        StartCoroutine(SlashRoutine(center, -30f, 0.07f));
-    }
-
-    private IEnumerator SlashRoutine(Vector3 center, float angle, float delay)
-    {
-        if (delay > 0f)
-            yield return new WaitForSecondsRealtime(delay);
-
-        GameObject go = new GameObject("KillSlash(Temp)");
-        go.transform.position = center;
-        go.transform.rotation = Quaternion.Euler(0f, 0f, angle);
-
-        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = GetSlashSprite();
-        sr.color = slashColor;
-
-        // 영애보다 항상 앞에 그려지게 정렬 레이어를 맞춥니다.
-        if (heroineRenderers != null && heroineRenderers.Length > 0 && heroineRenderers[0] != null)
-        {
-            sr.sortingLayerID = heroineRenderers[0].sortingLayerID;
-            sr.sortingOrder = heroineRenderers[0].sortingOrder + 10;
-        }
-        else
-        {
-            sr.sortingOrder = 500;
-        }
-
-        // 순식간에 길게 그어짐
-        const float growTime = 0.08f;
-        float elapsed = 0f;
-
-        while (elapsed < growTime)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.Clamp01(elapsed / growTime);
-            go.transform.localScale = new Vector3(Mathf.Lerp(0.1f, slashLength, t), slashThickness, 1f);
-            yield return null;
-        }
-
-        go.transform.localScale = new Vector3(slashLength, slashThickness, 1f);
-
-        // 가늘어지며 사라짐
-        const float fadeTime = 0.18f;
-        elapsed = 0f;
-
-        while (elapsed < fadeTime)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.Clamp01(elapsed / fadeTime);
-
-            Color c = slashColor;
-            c.a = Mathf.Lerp(slashColor.a, 0f, t);
-            sr.color = c;
-            go.transform.localScale = new Vector3(slashLength, Mathf.Lerp(slashThickness, 0f, t), 1f);
-
-            yield return null;
-        }
-
-        Destroy(go);
-    }
-
-    // 흰색 단색 스프라이트를 코드로 한 번만 만듭니다. (월드 크기 1 x 1)
-    private static Sprite GetSlashSprite()
-    {
-        if (slashSprite != null)
-            return slashSprite;
-
-        Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-        tex.SetPixels(new[] { Color.white, Color.white, Color.white, Color.white });
-        tex.Apply();
-
-        slashSprite = Sprite.Create(
-            tex,
-            new Rect(0, 0, 2, 2),
-            new Vector2(0.5f, 0.5f),
-            2f);
-
-        return slashSprite;
-    }
-
-    private Vector3 GetHeroineCenter()
-    {
-        if (heroineRenderers != null && heroineRenderers.Length > 0 && heroineRenderers[0] != null)
-            return heroineRenderers[0].bounds.center;
-
-        return heroineTransform.position;
-    }
-
-    //============== 영애 외형 (색 / 회전) ==============
-    private void CacheHeroineVisual()
-    {
-        heroineStartRotation = heroineTransform.rotation;
-        heroineStartPosition = heroineTransform.position;
-        heroineAngle = 0f;
-
-        heroineRenderers = heroineTransform.GetComponentsInChildren<SpriteRenderer>();
-        heroineBaseColors = new Color[heroineRenderers.Length];
-
-        for (int i = 0; i < heroineRenderers.Length; i++)
-            heroineBaseColors[i] = heroineRenderers[i].color;
-    }
-
-    // 원래 색에 tint를 곱해 적용합니다. (투명도는 원래 값 유지)
-    private void SetHeroineTint(Color tint)
-    {
-        if (heroineRenderers == null)
-            return;
-
-        for (int i = 0; i < heroineRenderers.Length; i++)
-        {
-            if (heroineRenderers[i] == null)
-                continue;
-
-            Color baseColor = heroineBaseColors[i];
-            heroineRenderers[i].color = new Color(
-                baseColor.r * tint.r,
-                baseColor.g * tint.g,
-                baseColor.b * tint.b,
-                baseColor.a);
-        }
-    }
-
-    // 플레이어에게서 멀어지는 방향으로 기울입니다. (angle은 0~90도, 방향은 heroineFallDir로 결정)
-    private void SetHeroineAngle(float angle)
-    {
-        heroineAngle = angle;
-        heroineTransform.rotation = heroineStartRotation * Quaternion.Euler(0f, 0f, -heroineFallDir * angle);
-    }
-
-    // 원래 위치에서 offset만큼 이동시킵니다. (X는 플레이어에게서 멀어지는 방향이 +, Y는 위쪽이 +)
-    private void SetHeroineOffset(Vector2 offset)
-    {
-        heroineTransform.position = heroineStartPosition +
-            new Vector3(heroineFallDir * offset.x, offset.y, 0f);
-    }
-
-    private void RestoreHeroineVisual()
-    {
-        heroineAngle = 0f;
-        heroineTransform.rotation = heroineStartRotation;
-        heroineTransform.position = heroineStartPosition;
-
-        if (heroineRenderers == null)
-            return;
-
-        for (int i = 0; i < heroineRenderers.Length; i++)
-        {
-            if (heroineRenderers[i] != null)
-                heroineRenderers[i].color = heroineBaseColors[i];
-        }
-    }
-
-    // Animator에 해당 이름의 Trigger 파라미터가 실제로 있는지 확인합니다. (이름이 비어 있으면 조용히 false)
-    private static bool HasTrigger(Animator animator, string triggerName)
-    {
-        if (animator == null || animator.runtimeAnimatorController == null)
-            return false;
-
-        if (string.IsNullOrEmpty(triggerName))
-            return false;
-
-        foreach (AnimatorControllerParameter parameter in animator.parameters)
-        {
-            if (parameter.type == AnimatorControllerParameterType.Trigger &&
-                parameter.name == triggerName)
-                return true;
-        }
-
-        Debug.LogWarning(
-            "[HeroineDialogueController] Animator에 Trigger '" + triggerName + "'이(가) 없습니다.", animator);
-        return false;
     }
 
     //============== 대사 출력 ==============
