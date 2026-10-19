@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class EndingManager : MonoBehaviour
 {
+    //============== 테스트용 (에디터 전용) ==============
+    [Header("테스트용 (에디터에서만 적용)")]
+    [Tooltip("-1이면 실제 장비 개수 사용. 0~5로 두면 그 개수로 동작")]
+    [SerializeField, Range(0, 5)] private int debugMachineCount = 0;
+
     //============== 선택지 제한 종류 ==============
     public enum ChoiceRestriction
     {
@@ -30,16 +35,20 @@ public class EndingManager : MonoBehaviour
     {
         get
         {
+    #if UNITY_EDITOR
+            if (debugMachineCount >= 0)
+                return debugMachineCount;
+    #endif
             if (SaveData.Instance == null || SaveData.Instance.run == null)
                 return 0;
 
             RunData run = SaveData.Instance.run;
 
             return CountMechanization(run.weaponItemId)
-                 + CountMechanization(run.handItemId)
-                 + CountMechanization(run.headItemId)
-                 + CountMechanization(run.bodyItemId)
-                 + CountMechanization(run.footItemId);
+                + CountMechanization(run.handItemId)
+                + CountMechanization(run.headItemId)
+                + CountMechanization(run.bodyItemId)
+                + CountMechanization(run.footItemId);
         }
     }
 
