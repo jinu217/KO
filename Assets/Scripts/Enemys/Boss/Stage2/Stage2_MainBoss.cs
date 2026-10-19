@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // 일반 전투 흐름만 담당하며 안전 욕구의 고유 규칙은 전용 컴포넌트에 위임한다.
-public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContext, IBossScheduledSpawnContext, IBossTimedMovementContext, IBossHitValidationContext
+public sealed class Stage2_MainBoss : MainBossController, IBossScheduledSpawnContext, IBossTimedMovementContext, IBossHitValidationContext
 {
     protected override string AnimationPrefix => "MainBoss2_";
     protected override string VisualRootName => "MainBoss 2";
@@ -272,31 +272,6 @@ public sealed class Stage2_MainBoss : MainBossController, IBossSpawnHeightContex
     {
         yield return base.WaitForSkillAnimation(skill, index);
         while (stoneSpawnRunning && !isDead) yield return null;
-    }
-
-    [Header("돌기둥 생성 높이")]
-    [SerializeField, Tooltip("비워두면 MainBoss 2 아래 Foot_B를 자동으로 찾습니다.")]
-    private Transform stoneWaveFoot;
-    [SerializeField, Tooltip("Foot_B 월드 높이 기준 보정값입니다. 기존 spawnOffset.y 대신 사용합니다.")]
-    private float stoneWaveHeightOffset = 0f;
-
-    public bool TryGetSpawnHeight(BossAttackStepData step, out float worldY)
-    {
-        worldY = 0f;
-        // 데이터의 4스킬(화면의 Skill3) 돌기둥 생성 단계에만 적용한다.
-        BossSkillData stoneSkill = GetSkillData(3);
-        if (stoneSkill?.active?.attackSteps == null) return false;
-        bool isStoneStep = false;
-        foreach (BossAttackStepData candidate in stoneSkill.active.attackSteps)
-        {
-            if (object.ReferenceEquals(candidate, step)) { isStoneStep = true; break; }
-        }
-        if (!isStoneStep) return false;
-        if (stoneWaveFoot == null)
-            stoneWaveFoot = transform.Find("MainBoss 2/Body/Bottom/Thigh_B/Calf_B/Foot_B");
-        if (stoneWaveFoot == null) return false;
-        worldY = stoneWaveFoot.position.y + stoneWaveHeightOffset;
-        return true;
     }
 
     [Header("욕망 스킬")]
