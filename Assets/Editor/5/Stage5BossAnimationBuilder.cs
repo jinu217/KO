@@ -97,22 +97,7 @@ public static class Stage5BossAnimationBuilder
                 }
                 if (vertices[Body] == null || vertices[FF] == null || vertices[FB] == null)
                     throw new InvalidOperationException(name + ": Body와 양발의 Sprite 참조가 필요합니다.");
-                if (main)
-                {
-                    rest.pos[Cape] = new Vector3(-.125f, 1.313f, 0);
-                    rest.rot[Cape] = 0;
-                    Transform cape = visual.Find(paths[Cape]);
-                    cape.localPosition = rest.pos[Cape]; cape.localRotation = Quaternion.identity;
-                    // User rest revision: 2026-10-17. Keep Sprite pivots and existing scale.
-                    Vector3[] lower ={new Vector3(-.084f,-.465f,0),new Vector3(-.100f,.414f,0),
-                        new Vector3(-.259f,-1.146f,0),new Vector3(-.233f,-1.112f,0),
-                        new Vector3(.172f,.433f,0),new Vector3(.234f,-1.148f,0),new Vector3(-.249f,-1.128f,0)};
-                    for (int i = Bottom; i <= FB; i++)
-                    {
-                        rest.pos[i] = lower[i - Bottom]; rest.rot[i] = 0;
-                        Transform t = visual.Find(paths[i]); t.localPosition = rest.pos[i]; t.localRotation = Quaternion.identity;
-                    }
-                }
+                // R24: use current prefab transforms and Sprite pivots for every motion.
                 floor = Lowest(rest);
             }
             catch { PrefabUtility.UnloadPrefabContents(contents); contents = null; throw; }
@@ -573,14 +558,14 @@ public static class Stage5BossAnimationBuilder
         for (int v = 0; v < 3; v++)
         {
             int variant = v; string name = v == 0 ? "skill1" : "skill1_V" + (v + 1);
-            Motion motion = new Motion(name, r.main ? 66 : 54, false, f => r.main ? FlyingSword(r, f, true, variant) : MidFlyingSword(r, f, variant));
+            Motion motion = new Motion(name, r.main ? 90 : 54, false, f => r.main ? MainFlyingSword(r, f, variant) : MidFlyingSword(r, f, variant));
             if (r.main)
             {
-                motion.Cue(12, "Skill1.MoveStart").Cue(60, "Skill1.MoveEnd").Cue(66, "Action.End");
+                motion.Cue(12, "Skill1.MoveStart").Cue(84, "Skill1.MoveEnd").Cue(90, "Action.End");
                 for (int step = 0; step < 8; step++)
                 {
-                    motion.Cue(12 + step * 6, "Skill1.Step" + (step + 1));
-                    for (int hit = 0; hit < 4; hit++) motion.Cue(13.5f + step * 6 + hit * 1.5f, "Skill1.Hit." + step + "." + hit);
+                    motion.Cue(12 + step * 9, "Skill1.Step" + (step + 1));
+                    for (int hit = 0; hit < 4; hit++) motion.Cue(14.25f + step * 9 + hit * 2.25f, "Skill1.Hit." + step + "." + hit);
                 }
             }
             else
@@ -608,7 +593,7 @@ public static class Stage5BossAnimationBuilder
         r.Leg(slam, false, r.World(rest, FB) + new Vector2(.60f, 0)); r.Ground(slam);
         slam.scale[Weapon].y = 1.8f;
         r.HandAt(slam, false, new Vector2(.30f, r.floor + 1.60f));
-        r.BladeToFloor(slam); MatchFrontGrip(r, slam);
+        r.BladeToFloor(slam);
         // Front knee on the ground, rear knee forward. This is deliberately asymmetric.
         Pose kneel = Arms(r, -5, 8, 15, 0, 12, 35, 8);
         kneel.rot[Bottom] = -kneel.rot[Body];
@@ -664,10 +649,24 @@ public static class Stage5BossAnimationBuilder
         reach.pos[AF] = new Vector3(-.312f, -.590f, 0); reach.rot[AF] = 0;
         reach.pos[HF] = new Vector3(.054f, -.633f, 0); reach.rot[HF] = 0;
         Pose beckon = reach.Clone(); beckon.rot[SF] = 100; beckon.rot[AF] = 65; beckon.rot[HF] = 45;
-        // Lower skill2 dash with rear knee forward and front leg trailing.
-        dash.pos[Body].y -= .25f; dash.rot[Body] = -28; dash.rot[Bottom] = 20;
-        r.Leg(dash, true, r.World(rest, FF) + new Vector2(-.64f, 0));
-        r.Leg(dash, false, r.World(rest, FB) + new Vector2(.66f, 0)); r.Ground(dash);
+        // R21: authored skill2 dash pose; preserve exact local coordinates and angles.
+        dash = rest.Clone();
+        dash.pos[Body] = new Vector3(0.060f, -0.686f, 0); dash.rot[Body] = -36.000f;
+        dash.pos[Head] = new Vector3(-0.116f, 0.872f, 0); dash.rot[Head] = 25.000f;
+        dash.pos[SF] = new Vector3(-0.856f, 0.727f, 0); dash.rot[SF] = -22.000f;
+        dash.pos[AF] = new Vector3(-0.312f, -0.590f, 0); dash.rot[AF] = 28.000f;
+        dash.pos[HF] = new Vector3(0.054f, -0.633f, 0); dash.rot[HF] = 8.000f;
+        dash.pos[SB] = new Vector3(0.442f, 0.713f, 0); dash.rot[SB] = 120.000f;
+        dash.pos[AB] = new Vector3(0.063f, -0.575f, 0); dash.rot[AB] = -7.000f;
+        dash.pos[HB] = new Vector3(0.069f, -0.601f, 0); dash.rot[HB] = -25.000f;
+        dash.pos[Weapon] = new Vector3(0.100f, -0.213f, 0); dash.rot[Weapon] = -140.000f;
+        dash.pos[Bottom] = new Vector3(-0.074f, -0.055f, 0); dash.rot[Bottom] = 28.000f;
+        dash.pos[TF] = new Vector3(-0.490f, -0.432f, 0); dash.rot[TF] = -35.000f;
+        dash.pos[CF] = new Vector3(0.019f, -0.812f, 0); dash.rot[CF] = -30.000f;
+        dash.pos[FF] = new Vector3(-0.182f, -0.617f, 0); dash.rot[FF] = 0.000f;
+        dash.pos[TB] = new Vector3(0.259f, -0.428f, 0); dash.rot[TB] = 86.665f;
+        dash.pos[CB] = new Vector3(0.053f, -0.816f, 0); dash.rot[CB] = -115.600f;
+        dash.pos[FB] = new Vector3(-0.184f, -0.617f, 0); dash.rot[FB] = -0.287f;
         // One clip. Runtime seeks to frame 33 when a hit/wall ends the variable dash early.
         list.Add(new Motion("skill2", 39, false, f =>
             Track(f, new Key(0, rest), new Key(5, reach), new Key(8, reach), new Key(10, beckon), new Key(20, beckon), new Key(24, dash),
@@ -705,38 +704,190 @@ public static class Stage5BossAnimationBuilder
         if (back) r.BladeAt(p, new Vector2(.4f, -1));
         return p;
     }
+    // MainBoss5: prepare legs together with the upper body, keeping planted feet.
+    static void MainReadyLegs(Rig r, Pose p, float lower, float spread)
+    {
+        p.pos[Body].y -= lower; p.rot[Bottom] = -p.rot[Body] * .8f;
+        r.Leg(p, true, r.World(r.rest, FF) + new Vector2(-spread, 0));
+        r.Leg(p, false, r.World(r.rest, FB) + new Vector2(spread, 0));
+        r.Ground(p);
+    }
+    static Pose MainFlyingSword(Rig r, float f, int variant)
+    {
+        Pose rest = r.Rest(), ready = Arms(r, 0, 65, 45, 0, -10, 25, 5);
+        // Remain upright until the sword is airborne. No preparatory knee bend.
+        if (f < 4) return Mix(rest, ready, f / 4);
+        Pose p = ready.Clone();
+        Vector2 grip = r.World(ready, Weapon), raised = grip + new Vector2(0, 2.15f);
+        float baseAngle = r.Angle(ready, Weapon);
+        if (f < 12)
+        { r.WeaponAt(p, Vector2.Lerp(grip, raised, S((f - 4) / 8)), baseAngle); return p; }
+        // Walk only while attacks are active; retain the commanding upper-arm pose.
+        float walkWeight = S((f - 12) / 2) * (1 - S((f - 82) / 2));
+        Pose walking = Move(r, f - 12, 18, false);
+        for (int leg = 0; leg < 2; leg++)
+        {
+            int foot = leg == 0 ? FF : FB;
+            Vector2 footRest = r.World(rest, foot), footNow = r.World(walking, foot);
+            float stride = footNow.x - footRest.x;
+            footNow.x = footRest.x + stride * (leg == 0 && stride < 0 ? 2.25f : 1.75f);
+            r.Leg(walking, leg == 0, footNow);
+        }
+        Pose walkingBlend = Mix(ready, walking, walkWeight);
+        p = Mix(ready, rest, S((f - 12) / 4));
+        p.pos[Body] = walkingBlend.pos[Body]; p.rot[Body] = walkingBlend.rot[Body];
+        for (int part = Bottom; part <= FB; part++)
+        { p.pos[part] = walkingBlend.pos[part]; p.rot[part] = walkingBlend.rot[part]; }
+        float height = variant == 0 ? 0 : variant == 1 ? .22f : -.18f;
+        // One nine-frame step contains four attacks on the same side.
+        float t = Mathf.Clamp(f - 12, 0, 72);
+        int strike = Mathf.Min(31, Mathf.FloorToInt(t / 2.25f)), pass = strike % 4;
+        float side = ((strike / 4) % 2 == 0) ? 1f : -1f;
+        Vector2[] start ={new Vector2(1.65f,.65f+height),new Vector2(1.20f,-.55f+height),
+            new Vector2(2.10f,.30f+height),new Vector2(1.25f,.15f+height)};
+        Vector2[] end ={new Vector2(1.65f,-.45f+height),new Vector2(2.45f,.70f+height),
+            new Vector2(2.10f,.30f+height),new Vector2(2.65f,.15f+height)};
+        float[] fromAngle = { 25, -45, -90, -90 }, toAngle = { -155, -45, 270, -90 };
+        for (int k = 0; k < 4; k++)
+        { start[k].x *= side; end[k].x *= side; fromAngle[k] *= side; toAngle[k] *= side; }
+        // A point below the grip stays fixed during the downward cut.
+        Vector2 virtualLocal = new Vector2(0, -.55f);
+        Vector2 cutCenter = new Vector2(1.65f * side, -.05f + height);
+        Pose geometry = p.Clone();
+        r.WeaponAt(geometry, Vector2.zero, fromAngle[0]);
+        start[0] = cutCenter - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(virtualLocal);
+        r.WeaponAt(geometry, Vector2.zero, toAngle[0]);
+        end[0] = cutCenter - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(virtualLocal);
+        // Rotate at the target with the blade sprite centre fixed, rather than orbiting the boss.
+        Vector2 bladeCenter = Vector2.zero;
+        if (r.vertices[Weapon] != null && r.vertices[Weapon].Length > 0)
+        {
+            Vector2 lo = r.vertices[Weapon][0], hi = lo;
+            foreach (Vector2 vertex in r.vertices[Weapon]) { lo = Vector2.Min(lo, vertex); hi = Vector2.Max(hi, vertex); }
+            bladeCenter = (lo + hi) * .5f;
+        }
+        Vector2 spinTarget = new Vector2(2.10f * side, .30f + height);
+        r.WeaponAt(geometry, Vector2.zero, fromAngle[2]);
+        start[2] = spinTarget - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(bladeCenter);
+        end[2] = start[2];
+        Vector2 farther = new Vector2(.65f * side, 0);
+        for (int k = 0; k < 4; k++) { start[k] += farther; end[k] += farther; }
+        cutCenter += farther; spinTarget += farther;
+        // Second and third damage slots share one continuous full turn.
+        fromAngle[1] = -90 * side; toAngle[1] = 90 * side;
+        fromAngle[2] = 90 * side; toAngle[2] = 270 * side;
+        r.WeaponAt(geometry, Vector2.zero, fromAngle[1]);
+        start[1] = spinTarget - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(bladeCenter);
+        r.WeaponAt(geometry, Vector2.zero, toAngle[2]);
+        end[2] = spinTarget - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(bladeCenter);
+        float u = (t - strike * 2.25f) / 2.25f;
+        Vector2 previous = strike == 0 ? raised : end[(pass + 3) % 4];
+        float previousAngle = strike == 0 ? baseAngle : toAngle[(pass + 3) % 4];
+        // At the beginning of a group, depart from the previous side's final hit.
+        if (strike > 0 && pass == 0) { previous.x = -previous.x; previousAngle = -previousAngle; }
+        Vector2 target; float angle;
+        if (u < .45f)
+        {
+            float travel = S(u / .45f);
+            target = Vector2.Lerp(previous, start[pass], travel);
+            target.y += .70f * Mathf.Sin(travel * Mathf.PI);
+            angle = Mathf.LerpAngle(previousAngle, fromAngle[pass], travel);
+        }
+        else
+        {
+            float attack = S((u - .45f) / .55f);
+            target = Vector2.Lerp(start[pass], end[pass], attack);
+            angle = Mathf.Lerp(fromAngle[pass], toAngle[pass], attack);
+            if (pass == 0 || pass == 2)
+            {
+                r.WeaponAt(geometry, Vector2.zero, angle);
+                Vector2 anchor = pass == 0 ? cutCenter : spinTarget;
+                Vector2 localAnchor = pass == 0 ? virtualLocal : bladeCenter;
+                target = anchor - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(localAnchor);
+            }
+        }
+        if ((pass == 1 && u >= .45f) || pass == 2)
+        {
+            float turnProgress = Mathf.Clamp01((pass - 1 + u - .45f) / 1.55f);
+            angle = (-90 + 360 * turnProgress) * side;
+            r.WeaponAt(geometry, Vector2.zero, angle);
+            target = spinTarget - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(bladeCenter);
+        }
+        if (f >= 84)
+        {
+            // Feet and hands stay still; the sword approaches just in front of the resting grip.
+            p = rest.Clone();
+            Vector2 catchGrip = r.World(p, Weapon), approach = catchGrip + new Vector2(.35f, 0);
+            float back = S((f - 84) / 4);
+            target = f < 88 ? Vector2.Lerp(end[3], approach, back) : Vector2.Lerp(approach, catchGrip, S((f - 88) / 2));
+            angle = Mathf.LerpAngle(toAngle[3], r.Angle(p, Weapon), back);
+        }
+        r.WeaponAt(p, target, angle); return p;
+    }
     static void MainMotions(Rig r, List<Motion> list)
     {
         Pose rest = r.Rest(), charge = RaisedSword(r), slam = GroundSlam(r), dash = Thrust(r);
-        Pose spin = Arms(r, -2, 75, 25, 0, -15, 25, 8), spinEnd = spin.Clone();
-        spinEnd.rot[Weapon] += 720;
-        Pose dashEnd = dash.Clone(); dashEnd.rot[Weapon] += 720;
-        Pose final = rest.Clone(); final.rot[Weapon] += 720;
-        list.Add(new Motion("Attack", 39, false, f =>
+        // R23: lower shoulder and flex elbow together during the wind-up.
+        charge = Arms(r, 2, 90, 40, 0, -20, 30, 8);
+        MainReadyLegs(r, charge, .25f, .30f);
+        charge.rot[Weapon] = rest.rot[Weapon];
+        slam.rot[Body] = -38;
+        MainReadyLegs(r, slam, .35f, .68f);
+        r.BladeToFloor(slam);
+        Pose spin = Arms(r, 10, 45, 25, 0, -32, 18, 8);
+        MainReadyLegs(r, spin, .04f, .12f);
+        r.Leg(spin, true, r.World(rest, FF) + new Vector2(-.42f, 0));
+        r.Leg(spin, false, r.World(rest, FB) + new Vector2(.38f, 0)); r.Ground(spin);
+        dash.rot[Body] = -20; dash.pos[Body].y = rest.pos[Body].y - .18f; dash.rot[Bottom] = 12;
+        dash.rot[TF] = -40; dash.rot[CF] = -12; dash.rot[FF] = 12;
+        dash.rot[TB] = 85; dash.rot[CB] = -115; dash.rot[FB] = 18;
+        r.Ground(dash); r.BladeAt(dash, Vector2.right);
+        // Finish the spin facing forward; continue along the same angle branch into dash.
+        Pose spinEnd = spin.Clone(); r.BladeAt(spinEnd, Vector2.right);
+        spinEnd.rot[Weapon] = slam.rot[Weapon] + 720 + Mathf.DeltaAngle(slam.rot[Weapon], spinEnd.rot[Weapon]);
+        Pose dashEnd = dash.Clone();
+        dashEnd.rot[Weapon] = spinEnd.rot[Weapon] + Mathf.DeltaAngle(spinEnd.rot[Weapon], dash.rot[Weapon]);
+        Pose final = rest.Clone();
+        final.rot[Weapon] = dashEnd.rot[Weapon] + Mathf.DeltaAngle(dashEnd.rot[Weapon], rest.rot[Weapon]);
+        list.Add(new Motion("Attack", 35, false, f =>
         {
-            Pose p = Track(f, new Key(0, rest), new Key(6, charge), new Key(9, slam), new Key(12, slam),
-                new Key(15, spin), new Key(24, spinEnd), new Key(28, spinEnd), new Key(30, dashEnd), new Key(34, dashEnd), new Key(39, final));
-            if (f >= 12 && f <= 24) p.rot[Weapon] = Mathf.Lerp(slam.rot[Weapon], spin.rot[Weapon], S((f - 12) / 3)) + 720 * (f - 12) / 12;
+            Pose p = Track(f, new Key(0, rest), new Key(3, charge), new Key(5, slam), new Key(8, slam),
+                new Key(11, spin), new Key(20, spinEnd), new Key(22, dashEnd), new Key(30, dashEnd), new Key(35, final));
+            if (f >= 8 && f <= 20)
+                p.rot[Weapon] = Mathf.Lerp(slam.rot[Weapon], spinEnd.rot[Weapon], S((f - 8) / 12));
+            // Compensate shoulder/body motion so the blade does not pitch during the dash transition.
+            if (f >= 20 && f <= 30) r.BladeAt(p, Vector2.right);
             return p;
         })
-            .Cue(9, "Attack.Slam").Cue(12, "Attack.SpinStart").Cue(12, "Attack.Pulse1").Cue(15, "Attack.Pulse2")
-            .Cue(18, "Attack.Pulse3").Cue(21, "Attack.Pulse4").Cue(24, "Attack.SpinEnd")
-            .Cue(30, "Attack.DashStart").Cue(34, "Attack.DashEnd").Cue(39, "Action.End"));
+            .Cue(5, "Attack.Slam").Cue(8, "Attack.SpinStart").Cue(8, "Attack.Pulse1").Cue(11, "Attack.Pulse2")
+            .Cue(14, "Attack.Pulse3").Cue(17, "Attack.Pulse4").Cue(20, "Attack.SpinEnd")
+            .Cue(22, "Attack.DashStart").Cue(30, "Attack.DashEnd").Cue(35, "Action.End"));
         AddSwordVariants(r, list);
         Pose frontBuff = CapeSpread(r, false), backBuff = CapeSpread(r, true);
-        list.Add(new Motion("skill2", 24, false, f => Track(f, new Key(0, rest), new Key(5, rest), new Key(9, frontBuff),
-            new Key(13, frontBuff), new Key(24, rest))).Cue(12, "Skill2.BuffApply").Cue(24, "Action.End"));
+        Pose capeReady = rest.Clone(); capeReady.rot[SF] = 32.5f; capeReady.rot[AF] = 45; capeReady.rot[HF] = 15;
+        frontBuff = rest.Clone(); frontBuff.rot[SF] = -45; frontBuff.rot[AF] = 0; frontBuff.rot[HF] = 0;
+        list.Add(new Motion("skill2", 24, false, f => Track(f, new Key(0, rest), new Key(6, capeReady), new Key(9, capeReady),
+            new Key(11, frontBuff), new Key(16, frontBuff), new Key(24, rest))).Cue(12, "Skill2.BuffApply").Cue(24, "Action.End"));
         list.Add(new Motion("skill4", 30, false, f => Track(f, new Key(0, rest), new Key(6, rest), new Key(11, backBuff),
             new Key(16, backBuff), new Key(30, rest))).Cue(15, "Skill4.BuffApply").Cue(30, "Action.End"));
-        Pose hover = Arms(r, 0, 12, 15, 0, 40, 65, 8);
-        r.HandAt(hover, true, new Vector2(.05f, .70f));
-        Pose lift = Arms(r, -22, 115, -15, 0, -35, 20, 8);
-        ForwardStance(r, lift, true);
-        r.HandAt(lift, false, new Vector2(1.30f, .35f)); r.BladeAt(lift, Vector2.up);
-        r.HandAt(lift, true, r.World(lift, Weapon) + new Vector2(0, .30f));
+        Pose hover = rest.Clone();
+        hover.rot[SF] = 15; hover.rot[AF] = 100; hover.rot[HF] = 0;
+        hover.rot[HB] = -15; hover.rot[Weapon] = -105;
+        hover.rot[Bottom] = 15; hover.rot[TF] = -15; hover.rot[CF] = 0; hover.rot[FF] = -60;
+        hover.rot[TB] = 45; hover.rot[CB] = -75; hover.rot[FB] = -45;
+        Pose lift = rest.Clone(); lift.pos[Body] = new Vector3(.060f, -.080f, 0);
+        lift.rot[Body] = -85; lift.rot[Head] = 14.3f;
+        lift.rot[SF] = 160; lift.rot[AF] = -25; lift.rot[HF] = 0;
+        lift.rot[SB] = 180; lift.rot[AB] = 0; lift.rot[HB] = 0;
+        lift.pos[Weapon] = new Vector3(.230f, -.228f, 0); lift.rot[Weapon] = 90;
+        lift.rot[Bottom] = 15; lift.rot[TF] = -5; lift.rot[CF] = -12; lift.rot[FF] = -60;
+        lift.rot[TB] = 15; lift.rot[CB] = -45; lift.rot[FB] = -45;
         list.Add(new Motion("skill3", 15, false, f => Track(f, new Key(0, rest), new Key(3, hover), new Key(4, lift), new Key(15, lift)))
             .Cue(4, "Skill3.DashStart").Cue(15, "Skill3.DashTimeout"));
-        Pose over = lift.Clone(); over.rot[Body] -= 165; over.rot[TB] = 55; over.rot[CB] = -75;
+        Pose over = lift.Clone(); over.rot[Body] -= 165;
+        over.rot[TF] = 115; over.rot[CF] = -145; over.rot[FF] = -30;
+        over.rot[TB] = 125; over.rot[CB] = -150; over.rot[FB] = -30;
+        over.rot[SF] = 80; over.rot[AF] = 75; over.rot[SB] = 85; over.rot[AB] = 70;
         Pose landing = slam.Clone(); landing.rot[Body] -= 360;
         Pose followEnd = rest.Clone(); followEnd.rot[Body] -= 360;
         list.Add(new Motion("skill3_Follow", 18, false, f =>
@@ -745,7 +896,7 @@ public static class Stage5BossAnimationBuilder
             return p;
         }).Cue(0, "Skill3.DashEnd").Cue(0, "Skill3.VaultStart").Cue(12, "Skill3.FollowImpact")
             .Cue(12, "Skill3.VaultEnd").Cue(18, "Action.End"));
-        list.Add(new Motion("skill3_Miss", 6, false, f => Mix(lift, rest, f / 6)).Cue(0, "Skill3.DashEnd").Cue(6, "Action.End"));
+        list.Add(new Motion("skill3_Miss", 6, false, f => Track(f, new Key(0, lift), new Key(3, hover), new Key(6, rest))).Cue(0, "Skill3.DashEnd").Cue(6, "Action.End"));
         Pose crossUp = dash.Clone(), crossDown = dash.Clone();
         crossUp.rot[Body] = -12; crossDown.rot[Body] = -26;
         foreach (Pose pose in new[] { crossUp, crossDown, dash })
@@ -825,13 +976,18 @@ public static class Stage5BossAnimationBuilder
         }
         else
         {
-            float previousFrame = Mathf.Max(0, frame - 1.2f);
+            // Attack cloth settles faster after the slam (shorter follow-through delay).
+            float capeDelay = m.name == "Attack" ? .45f : 1.2f;
+            float previousFrame = Mathf.Max(0, frame - capeDelay);
             Pose previous = m.sample(previousFrame);
             float bodyLag = Mathf.DeltaAngle(pose.rot[Body], previous.rot[Body]);
             float armLag = Mathf.DeltaAngle(pose.rot[SB], previous.rot[SB]);
             float envelope = S(frame / 2f) * S((m.frames - frame) / 4f);
             turn = Mathf.Clamp(bodyLag * .65f + armLag * .12f, -14f, 14f) * envelope;
-            if (m.name.StartsWith("skill1", StringComparison.Ordinal)) turn += 2f * Mathf.Sin(frame * Mathf.PI / 6f) * envelope;
+            if (m.name == "Attack" && frame >= 9 && frame <= 12)
+                turn *= 1 - S((frame - 9) / 1.5f);
+            if (m.name.StartsWith("skill1", StringComparison.Ordinal))
+                turn = frame < 12 ? 0 : 1.2f * Mathf.Sin((frame - 12) * Mathf.PI / 6f) * envelope;
             if (m.name == "skill2_Dash" || m.name == "skill3") turn += 6f * S(frame / 3f) * envelope;
         }
         if (m.name == "skill2" || m.name == "skill4")
@@ -840,6 +996,21 @@ public static class Stage5BossAnimationBuilder
             float spread = S((frame - start) / (peak - start)) * (1 - S((frame - peak) / (m.frames - peak)));
             turn += (m.name == "skill2" ? -22 : 22) * spread;
         }
+        if (m.name == "Attack")
+        {
+            if (frame < 3) turn = 0;
+            else if (frame < 5) turn = 14 * S((frame - 3) / 2);
+            else if (frame < 8) turn = 14 * (1 - S((frame - 5) / 3));
+            else if (frame < 20) turn = 0;
+            else if (frame < 22) turn = -37 * S((frame - 20) / 2);
+            else if (frame <= 30) turn = -37;
+            else turn = -37 * (1 - S((frame - 30) / 5));
+        }
+        if (m.name == "skill2")
+            turn = frame < 9 ? 0 : frame < 11 ? -60 * S((frame - 9) / 2) : -60 * (1 - S((frame - 11) / 13));
+        if (m.name == "skill3") turn = 6 * S((frame - 3));
+        if (m.name == "skill3_Follow") turn = 6 * (1 - S(frame / 18));
+        if (m.name == "skill3_Miss") turn = 6 * (1 - S(frame / 6));
         pose.pos[Cape] = r.rest.pos[Cape]; pose.scale[Cape] = r.rest.scale[Cape];
         pose.rot[Cape] = r.rest.rot[Cape] + turn;
     }
@@ -855,6 +1026,8 @@ public static class Stage5BossAnimationBuilder
             poses[i] = m.sample(frame);
             if (r.main) ApplyCape(r, m, frame, poses[i]);
             else FloatTorso(r, m, frame, poses[i]);
+            // MidBoss5 skill3: keep the authored local head rotation at zero throughout.
+            if (!r.main && m.name == "skill3") poses[i].rot[Head] = 0;
             for (int part = 0; part < r.paths.Length; part++)
                 if (float.IsNaN(poses[i].rot[part]) || float.IsInfinity(poses[i].rot[part]))
                     throw new InvalidOperationException("Invalid pose: " + clip.name + " frame " + frame);
@@ -883,8 +1056,8 @@ public static class Stage5BossAnimationBuilder
             new Keyframe(m.frames / FPS, 0));
         FlagCurve(clip, "frontRearArm", new Keyframe(0, !r.main && m.name == "skill3" ? 1 : 0),
             new Keyframe(m.frames / FPS, 0));
-        FlagCurve(clip, "npcBlade", new Keyframe(0, 0),
-            new Keyframe(4 / FPS, !r.main && m.name == "skill3" ? 1 : 0), new Keyframe(m.frames / FPS, 0));
+        FlagCurve(clip, "npcBlade", new Keyframe(0, !r.main && m.name == "skill3" ? 1 : 0),
+            new Keyframe(m.frames / FPS, 0));
         if (!r.main && m.name == "Attack")
             FlagCurve(clip, "frontBlade", new Keyframe(0, 0), new Keyframe(9 / FPS, 1), new Keyframe(22 / FPS, 0), new Keyframe(39 / FPS, 0));
         else FlagCurve(clip, "frontBlade", new Keyframe(0, 0), new Keyframe(m.frames / FPS, 0));

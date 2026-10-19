@@ -10,10 +10,11 @@ public sealed class Stage5BossAnimationRelay : MonoBehaviour
     public event Action<string> Cue;
     [HideInInspector] public float frontWeapon;
     [HideInInspector] public float frontBlade;
+    [HideInInspector] public float frontRearArm;
     [HideInInspector] public float npcBlade;
     [HideInInspector] public float hideVisual;
-    [SerializeField, HideInInspector] private SpriteRenderer backHand, blade;
-    [SerializeField, HideInInspector] private int backHandLayer, bladeLayer, frontLayer;
+    [SerializeField, HideInInspector] private SpriteRenderer backHand, blade, backForearm;
+    [SerializeField, HideInInspector] private int backHandLayer, bladeLayer, frontLayer, backForearmLayer;
     [SerializeField, HideInInspector] private SpriteRenderer[] visualRenderers;
     [SerializeField, HideInInspector] private bool[] rendererEnabled;
     private bool runtimeHidden;
@@ -22,6 +23,8 @@ public sealed class Stage5BossAnimationRelay : MonoBehaviour
     {
         backHand = hand; blade = weapon; visualRenderers = renderers;
         backHandLayer = hand != null ? hand.sortingLayerID : 0; bladeLayer = weapon != null ? weapon.sortingLayerID : 0;
+        backForearm = hand != null && hand.transform.parent != null ? hand.transform.parent.GetComponent<SpriteRenderer>() : null;
+        backForearmLayer = backForearm != null ? backForearm.sortingLayerID : 0;
         frontLayer = SortingLayer.NameToID("Front");
         rendererEnabled = new bool[renderers.Length];
         for (int i = 0; i < renderers.Length; i++) rendererEnabled[i] = renderers[i] != null && renderers[i].enabled;
@@ -61,16 +64,23 @@ public sealed class Stage5BossAnimationRelay : MonoBehaviour
         {
             previewWasActive = false;
             // AnimationMode has restored the registered renderer properties already.
-            frontWeapon = 0; frontBlade = 0; npcBlade = 0; hideVisual = 0; runtimeHidden = false;
+            frontWeapon = 0; frontBlade = 0; frontRearArm = 0; npcBlade = 0; hideVisual = 0; runtimeHidden = false;
             UnityEditor.SceneView.RepaintAll();
         }
     }
 #endif
     private void RestoreVisuals()
-    { frontWeapon = 0; frontBlade = 0; npcBlade = 0; hideVisual = 0; runtimeHidden = false; ApplyVisuals(); }
+    { frontWeapon = 0; frontBlade = 0; frontRearArm = 0; npcBlade = 0; hideVisual = 0; runtimeHidden = false; ApplyVisuals(); }
     private void ApplyVisuals()
     {
-        SetLayer(backHand, frontWeapon > .5f ? frontLayer : backHandLayer);
+        // Resolve the new reference on already-configured scene instances as well.
+        if (backForearm == null && backHand != null && backHand.transform.parent != null)
+        {
+            backForearm = backHand.transform.parent.GetComponent<SpriteRenderer>();
+            if (backForearm != null) backForearmLayer = backForearm.sortingLayerID;
+        }
+        SetLayer(backForearm, frontRearArm > .5f ? frontLayer : backForearmLayer);
+        SetLayer(backHand, frontWeapon > .5f || frontRearArm > .5f ? frontLayer : backHandLayer);
         int desiredBlade = frontWeapon > .5f || frontBlade > .5f ? frontLayer : bladeLayer;
         if (npcBlade > .5f)
             foreach (var layer in SortingLayer.layers)
