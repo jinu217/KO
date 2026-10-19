@@ -175,6 +175,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         baseStats.maxHp += persistent.bonusMaxHp;
         baseStats.attackSpeed += persistent.bonusAttackSpeed;
         baseStats.moveSpeed += persistent.bonusMoveSpeed;
+        if (persistent.doubleJumpUpgradeCount > 0)
+            baseStats.maxJumpCount = Mathf.Max(baseStats.maxJumpCount, 2);
         availableDashCount = MaxDashCount;
         RecalculateCurrentEquipmentStats();
     }
@@ -220,6 +222,11 @@ public class PlayerController : MonoBehaviour, IDamageable
                 if (persistent != null)
                     persistent.startingCoinBonus += Mathf.Max(1, Mathf.RoundToInt(amount));
                 break;
+            case ShamanUpgradeType.DoubleJump:
+                int extraJumps = Mathf.Max(0, 2 - baseStats.maxJumpCount);
+                baseStats.maxJumpCount += extraJumps;
+                currentJumpCount += extraJumps;
+                break;
             case ShamanUpgradeType.EquipmentRerollCount:
                 if (persistent != null)
                     persistent.equipmentRerollBonus += Mathf.Max(1, Mathf.RoundToInt(amount));
@@ -247,6 +254,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             ShamanUpgradeType.Speed => persistent.attackSpeedUpgradeCount,
             ShamanUpgradeType.DashCount => persistent.dashCountUpgradeCount,
             ShamanUpgradeType.DashCooldownReduction => persistent.dashCooldownUpgradeCount,
+            ShamanUpgradeType.DoubleJump => persistent.doubleJumpUpgradeCount,
             ShamanUpgradeType.StartingCoin => persistent.startingCoinUpgradeCount,
             ShamanUpgradeType.EquipmentRerollCount => persistent.equipmentRerollUpgradeCount,
             _ => 0
@@ -266,6 +274,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             case ShamanUpgradeType.Speed: persistent.attackSpeedUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.DashCount: persistent.dashCountUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.DashCooldownReduction: persistent.dashCooldownUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.DoubleJump: persistent.doubleJumpUpgradeCount = 1; break;
             case ShamanUpgradeType.StartingCoin: persistent.startingCoinUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.EquipmentRerollCount: persistent.equipmentRerollUpgradeCount += purchaseCount; break;
         }

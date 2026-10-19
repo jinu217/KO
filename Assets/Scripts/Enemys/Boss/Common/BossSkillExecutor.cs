@@ -50,11 +50,6 @@ public interface IBossScheduledSpawnContext
     bool IsScheduledSpawn(BossAttackStepData step);
 }
 
-public interface IBossSpawnHeightContext
-{
-    bool TryGetSpawnHeight(BossAttackStepData step, out float worldY);
-}
-
 public interface IBossSpawnedSkillObject
 {
     void Init(int direction, float damage, LayerMask playerLayer, float sizeMultiplier = 1f, float projectileSpeed = 0f);
@@ -413,10 +408,6 @@ public static class BossSkillExecutor
         if (step.spawnPrefab == null)
             yield break;
 
-        float spawnHeight = 0f;
-        bool overrideHeight = context is IBossSpawnHeightContext heightContext
-            && heightContext.TryGetSpawnHeight(step, out spawnHeight);
-
         for (int i = 0; i < step.spawnCount; i++)
         {
             Vector3 position = context.BossTransform.position + new Vector3(
@@ -424,9 +415,6 @@ public static class BossSkillExecutor
                 step.spawnOffset.y + step.spawnVerticalSpacing * i,
                 0f
             );
-
-            if (overrideHeight)
-                position.y = spawnHeight + step.spawnVerticalSpacing * i;
 
             GameObject spawned = UnityEngine.Object.Instantiate(step.spawnPrefab, position, Quaternion.identity);
             IBossSpawnedSkillObject spawnedSkill = spawned.GetComponent<IBossSpawnedSkillObject>();

@@ -27,6 +27,7 @@ public class PersistentData
     public int attackSpeedUpgradeCount;
     public int dashCountUpgradeCount;
     public int dashCooldownUpgradeCount;
+    public int doubleJumpUpgradeCount;
     public int startingCoinUpgradeCount;
     public int equipmentRerollBonus;
     public int equipmentRerollUpgradeCount;

@@ -4972,6 +4972,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c058282cee80244bac4a6647d487f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAppearance
+  weaponRenderer: {fileID: 0}
   headRenderer: {fileID: 1573010546}
   bodyRenderer: {fileID: 664436279}
   shoulderLeftRenderer: {fileID: 1326626979}
@@ -22775,6 +22776,12 @@ MonoBehaviour:
     soulPrice: 120
     maxPurchaseCount: 1
     statImage: {fileID: -8371457186597962494, guid: f4fca435dae752b43a4a5864b3f91022, type: 3}
+  - displayName: "\uB354\uBE14 \uC810\uD504"
+    upgradeType: 7
+    amountPerPurchase: 1
+    soulPrice: 100
+    maxPurchaseCount: 1
+    statImage: {fileID: -2260445889162913623, guid: 5591425caf7654b469126e749d3ea14e, type: 3}
   - displayName: "\uC2DC\uC791 \uCF54\uC778"
     upgradeType: 5
     amountPerPurchase: 1
@@ -41270,6 +41277,7 @@ MonoBehaviour:
     attackSpeedUpgradeCount: 0
     dashCountUpgradeCount: 0
     dashCooldownUpgradeCount: 0
+    doubleJumpUpgradeCount: 0
     startingCoinUpgradeCount: 0
     equipmentRerollBonus: 0
     equipmentRerollUpgradeCount: 0

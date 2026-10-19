@@ -23,6 +23,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 3
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 3.1
     forceCastMinDistance: 0
@@ -42,10 +43,14 @@ MonoBehaviour:
         hitboxSize: {x: 2.86, y: 3.748}
         hitboxOffset: {x: 1.68, y: -1.24}
         knockbackForce: {x: 2.5, y: 12}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -53,6 +58,9 @@ MonoBehaviour:
         spawnVerticalSpacing: 0
         spawnInterval: 0
         spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
@@ -61,6 +69,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 7
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 4
     forceCastMinDistance: 0
@@ -80,10 +89,14 @@ MonoBehaviour:
         hitboxSize: {x: 2.99, y: 3.632}
         hitboxOffset: {x: 1.695, y: -1.64}
         knockbackForce: {x: 4, y: 3}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -91,6 +104,9 @@ MonoBehaviour:
         spawnVerticalSpacing: 0
         spawnInterval: 0
         spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "\uB300\uAC01\uC120 \uC704\uB85C \uD06C\uAC8C \uC810\uD504"
         actionType: 5
         preDelay: 0
@@ -102,10 +118,14 @@ MonoBehaviour:
         hitboxSize: {x: 0, y: 0}
         hitboxOffset: {x: 0, y: 0}
         knockbackForce: {x: 0, y: 0}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 14.142136}
         slamSpeed: 0
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -115,6 +135,7 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0.7
+        persistentFixedCadence: 0
       - stepName: "2\uD0C0 \uCC29\uC9C0 \uB0B4\uB824\uCC0D\uAE30"
         actionType: 6
         preDelay: 0.08
@@ -126,10 +147,14 @@ MonoBehaviour:
         hitboxSize: {x: 4.68, y: 2.472}
         hitboxOffset: {x: 1.94, y: -1.89}
         knockbackForce: {x: 8, y: 7}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 22
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -139,6 +164,7 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0.3
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
@@ -146,6 +172,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 10
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 7
     forceCastMinDistance: 0
@@ -165,10 +192,14 @@ MonoBehaviour:
         hitboxSize: {x: 2.86, y: 2.124}
         hitboxOffset: {x: 1.58, y: -1.64}
         knockbackForce: {x: 4, y: 2}
+        knockbackAwayFromCenter: 0
         moveSpeed: 12
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
         stopAtWall: 1
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -176,6 +207,9 @@ MonoBehaviour:
         spawnVerticalSpacing: 0
         spawnInterval: 0
         spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "2\uD0C0 \uC62C\uB824\uCE58\uAE30"
         actionType: 2
         preDelay: 0.2
@@ -187,10 +221,14 @@ MonoBehaviour:
         hitboxSize: {x: 2.86, y: 3.748}
         hitboxOffset: {x: 1.68, y: -1.24}
         knockbackForce: {x: 3, y: 8}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -198,6 +236,9 @@ MonoBehaviour:
         spawnVerticalSpacing: 0
         spawnInterval: 0
         spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+        persistentFixedCadence: 0
       - stepName: "3\uD0C0 \uB0B4\uB824\uCC0D\uAE30"
         actionType: 2
         preDelay: 0.28
@@ -209,10 +250,14 @@ MonoBehaviour:
         hitboxSize: {x: 4.03, y: 2.414}
         hitboxOffset: {x: 1.915, y: -1.89}
         knockbackForce: {x: 7, y: 4}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -220,13 +265,17 @@ MonoBehaviour:
         spawnVerticalSpacing: 0
         spawnInterval: 0
         spawnScaleMultiplier: 0
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
-  - skillName: "3스킬 철벽"
+  - skillName: "3\uC2A4\uD0AC \uCCA0\uBCBD"
     skillType: 1
     executionOrder: 0
     cooldown: 20
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
@@ -245,6 +294,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 15
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 8.5
     forceCastMinDistance: 0
@@ -257,17 +307,21 @@ MonoBehaviour:
         actionType: 5
         preDelay: 0
         postDelay: 0
-        duration: 2.1213203
+        duration: 2.1213202
         interval: 0
         attackCount: 0
         damage: 0
         hitboxSize: {x: 0, y: 0}
         hitboxOffset: {x: 0, y: 0}
         knockbackForce: {x: 0, y: 0}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 14.142136}
         slamSpeed: 0
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -277,6 +331,7 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0.7
+        persistentFixedCadence: 0
       - stepName: "\uCC29\uC9C0 \uB0B4\uB824\uCC0D\uAE30"
         actionType: 6
         preDelay: 0.1
@@ -288,10 +343,14 @@ MonoBehaviour:
         hitboxSize: {x: 4.94, y: 2.588}
         hitboxOffset: {x: 2.02, y: -1.89}
         knockbackForce: {x: 10, y: 8}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 24
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 0}
         spawnCount: 0
         spawnOffset: {x: 0, y: 0}
@@ -301,6 +360,7 @@ MonoBehaviour:
         spawnScaleMultiplier: 0
         projectileSpeed: 0
         targetDistanceRatio: 0.3
+        persistentFixedCadence: 0
       - stepName: "\uC804\uBC29 \uB3CC 5\uAC1C \uC21C\uCC28 \uC0DD\uC131"
         actionType: 7
         preDelay: 0
@@ -312,24 +372,32 @@ MonoBehaviour:
         hitboxSize: {x: 0, y: 0}
         hitboxOffset: {x: 0, y: 0}
         knockbackForce: {x: 0, y: 0}
+        knockbackAwayFromCenter: 0
         moveSpeed: 0
+        maxMoveDistance: 0
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
         stopAtWall: 0
+        stopOnPlayerHit: 0
+        pullTargetOffset: {x: 0, y: 0}
         spawnPrefab: {fileID: 8399009758184244419, guid: 9675df734131ca540ae812565650a0c3, type: 3}
         spawnCount: 5
-        spawnOffset: {x: 1.8, y: -0.55}
-        spawnSpacing: 1.35
+        spawnOffset: {x: 2, y: -2}
+        spawnSpacing: 1.5
         spawnVerticalSpacing: 0
-        spawnInterval: 0.16
+        spawnInterval: 0.2
         spawnScaleMultiplier: 1
+        projectileSpeed: 0
+        targetDistanceRatio: 0
+        persistentFixedCadence: 0
     buff:
       duration: 0
       effects: []
-  - skillName: "5스킬 재정비"
+  - skillName: "5\uC2A4\uD0AC \uC7AC\uC815\uBE44"
     skillType: 1
     executionOrder: 0
     cooldown: 24
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 2
     castRange: 0
     forceCastMinDistance: 0
