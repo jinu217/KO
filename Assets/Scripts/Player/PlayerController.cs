@@ -317,6 +317,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 애니메이터 파라미터 해시(문자열 비교보다 빠름)
     private static readonly int AnimMoveSpeed = Animator.StringToHash("MoveSpeed");
     private static readonly int AnimVerticalVelocity = Animator.StringToHash("VerticalVelocity");
+    private static readonly int AnimJumpState = Animator.StringToHash("Base Layer.Jump");
     private static readonly int AnimIsGrounded = Animator.StringToHash("IsGrounded");
     private static readonly int AnimIsDownJumping = Animator.StringToHash("IsDownJumping");
     private static readonly int AnimAttack = Animator.StringToHash("Attack");
@@ -1667,9 +1668,18 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (jumpBufferTimer <= 0f) return false;
         if (!CanJumpNow()) return false;
 
+        bool isExtraJump = !isGrounded && coyoteTimer <= 0f
+            && currentJumpCount < stats.maxJumpCount;
         suppressKnockbackAirAnimation = false;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
         currentJumpCount--;
+
+        if (isExtraJump && animator != null && animator.HasState(0, AnimJumpState))
+        {
+            animator.SetBool(AnimIsGrounded, false);
+            animator.SetFloat(AnimVerticalVelocity, stats.jumpForce);
+            animator.Play(AnimJumpState, 0, 0f);
+        }
 
         isJumpHeld = true;
         jumpHoldTimer = 0f;
