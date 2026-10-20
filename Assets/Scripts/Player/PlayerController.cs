@@ -400,6 +400,31 @@ public class PlayerController : MonoBehaviour, IDamageable
         : 0);
     public int AvailableDashCount => availableDashCount;
     public bool IsDodging => isDashing;
+
+    // PlayerMovementEffects가 읽는 이동 이펙트 인터페이스
+    public event Action<float> MovementFXJump;
+    public event Action<float> MovementFXDash;
+
+    // 루트 스케일은 좌우 표시가 반전되어 있으므로 실제 진행 방향은 부호를 뒤집습니다.
+    public float MovementFXDirection
+    {
+        get
+        {
+            float direction = Mathf.Sign(lastHorizontalDirection);
+            if (Mathf.Approximately(direction, 0f))
+                direction = transform.localScale.x < 0f ? 1f : -1f;
+            return direction;
+        }
+    }
+
+    public bool MovementFXWalking => enabled
+        && isGrounded
+        && Mathf.Abs(moveInput.x) > 0.01f
+        && !isDashing && !isKnockback && !isMoveDelayed && !isMeditating
+        && !isDownJumping && !isInventoryOpen && !isKeyboardControlPaused
+        && (playerStatus == null || playerStatus.CanMove)
+        && !ChestRewardPanel.IsAnyOpen;
+
     public float EffectiveDashCooldown => dashCooldown * (1f - (SaveData.Instance != null
         ? Mathf.Clamp(SaveData.Instance.persistent.dashCooldownReduction, 0f, 0.8f)
         : 0f));
@@ -498,6 +523,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     private bool isDamageInvincible;
     private Coroutine invincibleRoutine;
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
+    private PlayerCombatEffects combatEffects;
 
     //============== 명상 ==============
     [Header("명상")]
@@ -520,13 +546,6 @@ public class PlayerController : MonoBehaviour, IDamageable
     private InventoryUI inventoryUI;  // 인벤토리 UI 참조
 
     // -------------------- 내부 보조 값 --------------------
-    public event System.Action<float> MovementFXJump;
-    public event System.Action<float> MovementFXDash;
-    public float MovementFXDirection => lastHorizontalDirection;
-    public bool MovementFXWalking => isGrounded && !isDownJumping && !isDashing && !isKnockback
-        && !isGameOver && !isMoveDelayed && !isMeditating && !isKeyboardControlPaused
-        && !isInventoryOpen && !ChestRewardPanel.IsAnyOpen && Mathf.Abs(moveInput.x) > .01f
-        && rb != null && Mathf.Abs(rb.linearVelocity.x) > .1f && Mathf.Abs(rb.linearVelocity.y) < .2f;
     private float lastHorizontalDirection = 1f; // 마지막으로 바라본 좌우 방향
     private float lastAttackTime;               // 마지막 공격 시각
     private float originalGravity;              // 초기 중력 값(대쉬 시 복원용)
@@ -547,6 +566,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (animator == null) animator = GetComponentInChildren<Animator>();
 
         hitFlash = GetComponent<HitFlashEffect>();
+        combatEffects = GetComponent<PlayerCombatEffects>();
         runtimeState = GetComponent<PlayerRuntimeState>();
         if (runtimeState == null)
             runtimeState = gameObject.AddComponent<PlayerRuntimeState>();
@@ -941,8 +961,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (Mathf.Approximately(dashDir, 0f)) dashDir = 1f;
         // 대쉬 동안에는 시작 방향으로 고정합니다. 반대 입력은 종료 후 적용됩니다.
         lastHorizontalDirection = dashDir;
-        MovementFXDash?.Invoke(dashDir);
         transform.localScale = new Vector3(-dashDir, 1f, 1f);
+        MovementFXDash?.Invoke(dashDir);
         float effectiveDashDistance = dashDistance * (playerStatus != null ? playerStatus.DashDistanceMultiplier : 1f);
         float effectiveDashSpeed = dashSpeed * (playerStatus != null ? playerStatus.DashSpeedMultiplier : 1f);
         float moved = 0f;
@@ -1237,6 +1257,11 @@ public class PlayerController : MonoBehaviour, IDamageable
         Vector2 size = GetWeaponAttackSize();
         Vector2 pos = (Vector2)transform.position + Vector2.right * dir * GetWeaponOffset();
 
+        // 실제 타격 이벤트 위치에서 무기 타입에 맞는 공격 이펙트를 재생합니다.
+        if (combatEffects == null)
+            combatEffects = GetComponent<PlayerCombatEffects>();
+        combatEffects?.PlayAttackEffect(currentWeapon, pos, dir);
+
         // IDamageable 구현 오브젝트에 데미지 전달 (적/보스 통합)
         Collider2D[] hits = Physics2D.OverlapBoxAll(pos, size, 0f, enemyLayer);
         HashSet<int> damagedIds = new HashSet<int>();
@@ -1379,7 +1404,13 @@ public class PlayerController : MonoBehaviour, IDamageable
     // IDamageable 구현 — applyKnockback/applyIFrame으로 동작 제어
     public void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = true, bool applyIFrame = true)
     {
-        TakeDamageInternal(damage, sourcePos, applyIFrame, applyKnockback);
+        float actualDamage = TakeDamageInternal(damage, sourcePos, applyIFrame, applyKnockback);
+        if (actualDamage > 0f)
+        {
+            if (combatEffects == null)
+                combatEffects = GetComponent<PlayerCombatEffects>();
+            combatEffects?.PlayDamageEffect(actualDamage);
+        }
         // iFrame 여부와 무관하게 항상 깜빡임 실행
         // (applyIFrame=true면 DamageInvincibleRoutine에서도 호출되지만 중복 호출 안전)
         StartHitBlink();
@@ -1400,10 +1431,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 하위 호환 — 기존 NoIFrame 호출 대체
     public void TakeDamageNoIFrame(float damage, Vector2 sourcePos)
         => TakeDamage(damage, sourcePos, true, false);
-    private void TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame, bool applyKnockback = true)
+    private float TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame, bool applyKnockback = true)
     {
-        if (isDashing) return;
-        if (applyIFrame && isDamageInvincible) return;
+        if (isDashing) return 0f;
+        if (applyIFrame && isDamageInvincible) return 0f;
         if (isMeditating)
             StopMeditating();
 
@@ -1443,6 +1474,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         }
 
         if (playerStatus.currentHp <= 0) GameOver();
+        return suppressHpDamage ? 0f : finalDamage;
     }
 
     // 넉백 상태 해제 루틴
@@ -1633,7 +1665,6 @@ public class PlayerController : MonoBehaviour, IDamageable
         suppressKnockbackAirAnimation = false;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
         currentJumpCount--;
-        MovementFXJump?.Invoke(lastHorizontalDirection);
 
         isJumpHeld = true;
         jumpHoldTimer = 0f;
@@ -1643,6 +1674,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         // (isGrounded 여부와 무관하게 점프 성공 시 항상 초기화)
         coyoteTimer = 0f;
         hasBurnedGroundJumpAfterCoyote = true;
+        MovementFXJump?.Invoke(MovementFXDirection);
 
         return true;
     }
