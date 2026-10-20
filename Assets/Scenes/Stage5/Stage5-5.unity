@@ -4554,7 +4554,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5657403811559140637, guid: ffa54f9668325f5419a8d3106972d224, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.399643
+      value: -0.46
       objectReference: {fileID: 0}
     - target: {fileID: 5657403811559140637, guid: ffa54f9668325f5419a8d3106972d224, type: 3}
       propertyPath: m_LocalPosition.y
@@ -8099,6 +8099,26 @@ MonoBehaviour:
   selectedColor: {r: 1, g: 0.85, b: 0.2, a: 1}
   unselectedColor: {r: 1, g: 1, b: 1, a: 0.45}
   choiceInputDelay: 0.3
+  killHitShake: 0.08
+  killLunge: 4
+  killApproachTime: 0.3
+  killSlashDelay: 0.1
+  slashColor: {r: 1, g: 0.92, b: 0.92, a: 1}
+  slashLength: 3
+  slashThickness: 0.12
+  slumpAngle: 15
+  collapseAngle: 90
+  deathAnimTime: 2
+  slumpOffset: {x: 1, y: 0}
+  collapseOffset: {x: 1, y: -0.5}
+  onKillHit:
+    m_PersistentCalls:
+      m_Calls: []
+  playerAnimator: {fileID: 8316471521107765618}
+  playerKillTrigger: 
+  heroineAnimator: {fileID: 1601638621}
+  heroineDeathTrigger: 
+  killHitDelay: 0.4
   cameraShake3: 0.015
   cameraShake4: 0.03
   cameraShake5: 0.08
@@ -8112,18 +8132,6 @@ MonoBehaviour:
   glitchLingerTime5: 1.2
   warningFontSize: 8
   optionShakeAmount: 3
-  overlayImage: {fileID: 0}
-  deathDimColor3: {r: 0.04, g: 0.07, b: 0.18, a: 1}
-  deathDimAlpha3: 0.45
-  glimmerColor3: {r: 1, g: 0.82, b: 0.4, a: 1}
-  glimmerAlpha3: 0.4
-  deathDimColor4: {r: 0.06, g: 0, b: 0, a: 1}
-  deathDimAlpha4: 0.7
-  deathBlackAlpha4: 0.92
-  flashAlpha5: 0.9
-  slowMotionScale5: 0.2
-  slowMotionTime5: 0.6
-  blackoutAlpha5: 0.75
 --- !u!4 &573812636
 Transform:
   m_ObjectHideFlags: 0
@@ -48827,6 +48835,11 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!95 &1601638621 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: -828553579518810925, guid: ffa54f9668325f5419a8d3106972d224, type: 3}
+  m_PrefabInstance: {fileID: 283515723}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1604133903
 GameObject:
   m_ObjectHideFlags: 0
