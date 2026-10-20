@@ -520,6 +520,13 @@ public class PlayerController : MonoBehaviour, IDamageable
     private InventoryUI inventoryUI;  // 인벤토리 UI 참조
 
     // -------------------- 내부 보조 값 --------------------
+    public event System.Action<float> MovementFXJump;
+    public event System.Action<float> MovementFXDash;
+    public float MovementFXDirection => lastHorizontalDirection;
+    public bool MovementFXWalking => isGrounded && !isDownJumping && !isDashing && !isKnockback
+        && !isGameOver && !isMoveDelayed && !isMeditating && !isKeyboardControlPaused
+        && !isInventoryOpen && !ChestRewardPanel.IsAnyOpen && Mathf.Abs(moveInput.x) > .01f
+        && rb != null && Mathf.Abs(rb.linearVelocity.x) > .1f && Mathf.Abs(rb.linearVelocity.y) < .2f;
     private float lastHorizontalDirection = 1f; // 마지막으로 바라본 좌우 방향
     private float lastAttackTime;               // 마지막 공격 시각
     private float originalGravity;              // 초기 중력 값(대쉬 시 복원용)
@@ -934,6 +941,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (Mathf.Approximately(dashDir, 0f)) dashDir = 1f;
         // 대쉬 동안에는 시작 방향으로 고정합니다. 반대 입력은 종료 후 적용됩니다.
         lastHorizontalDirection = dashDir;
+        MovementFXDash?.Invoke(dashDir);
         transform.localScale = new Vector3(-dashDir, 1f, 1f);
         float effectiveDashDistance = dashDistance * (playerStatus != null ? playerStatus.DashDistanceMultiplier : 1f);
         float effectiveDashSpeed = dashSpeed * (playerStatus != null ? playerStatus.DashSpeedMultiplier : 1f);
@@ -1625,6 +1633,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         suppressKnockbackAirAnimation = false;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
         currentJumpCount--;
+        MovementFXJump?.Invoke(lastHorizontalDirection);
 
         isJumpHeld = true;
         jumpHoldTimer = 0f;

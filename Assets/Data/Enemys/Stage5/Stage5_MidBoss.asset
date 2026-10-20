@@ -23,6 +23,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 3.4
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 3.3
     forceCastMinDistance: 0
@@ -34,8 +35,8 @@ MonoBehaviour:
       - stepName: "1\uD0C0 1\uCD08 \uAE30 \uBAA8\uC544 \uC9E7\uC740 \uB3CC\uC9C4"
         actionType: 4
         preDelay: 1
-        postDelay: 0.18
-        duration: 0.28
+        postDelay: 0
+        duration: 0.5
         interval: 0
         attackCount: 1
         damage: 10
@@ -43,7 +44,7 @@ MonoBehaviour:
         hitboxOffset: {x: 1.25, y: -0.1}
         knockbackForce: {x: 3, y: 1}
         knockbackAwayFromCenter: 0
-        moveSpeed: 10
+        moveSpeed: 4.4
         maxMoveDistance: 2.2
         jumpForce: {x: 0, y: 0}
         slamSpeed: 0
@@ -62,8 +63,8 @@ MonoBehaviour:
         persistentFixedCadence: 0
       - stepName: "2\uD0C0 1\uCD08 \uAE30 \uBAA8\uC544 \uC804\uBC29 \uB0B4\uB824\uCC0D\uAE30"
         actionType: 2
-        preDelay: 1
-        postDelay: 0.5
+        preDelay: 1.1666666
+        postDelay: 0.5833333
         duration: 0
         interval: 0
         attackCount: 1
@@ -97,6 +98,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 9
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 4.2
     forceCastMinDistance: 0
@@ -141,6 +143,7 @@ MonoBehaviour:
     skillType: 0
     executionOrder: 0
     cooldown: 11
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 6
     forceCastMinDistance: 0
@@ -181,8 +184,8 @@ MonoBehaviour:
       - stepName: "\uD50C\uB808\uC774\uC5B4 \uBC29\uD5A5 \uB3CC\uC9C4"
         actionType: 4
         preDelay: 0
-        postDelay: 0.6
-        duration: 0.65
+        postDelay: 0.5
+        duration: 0.75
         interval: 0
         attackCount: 1
         damage: 16
@@ -210,16 +213,17 @@ MonoBehaviour:
     buff:
       duration: 0
       effects: []
-  - skillName: "3스킬 가까워지는 시간"
+  - skillName: "3\uC2A4\uD0AC \uAC00\uAE4C\uC6CC\uC9C0\uB294 \uC2DC\uAC04"
     skillType: 1
     executionOrder: 0
     cooldown: 18
+    excludeDistanceCooldownReduction: 0
     minimumPhase: 1
     castRange: 0
     forceCastMinDistance: 0
     forceCastRemainingCooldown: 0
-    preDelay: 0.8
-    postDelay: 0.3
+    preDelay: 1
+    postDelay: 1
     active:
       attackSteps: []
     buff:
