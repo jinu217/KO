@@ -67,6 +67,11 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     {
         nextCombatFrame = Mathf.Max(nextCombatFrame, Time.frameCount + 1);
     }
+    private BossEffects bossEffects;
+    protected BossEffects Effects { get { if (bossEffects == null) bossEffects = GetComponent<BossEffects>(); return bossEffects; } }
+    public int FXDirection => lookDirection;
+    public bool FXChasing => !isDead && !dialoguePaused && isChasing && !isAttacking &&
+        rb != null && Mathf.Abs(rb.linearVelocity.x) > .1f;
     public bool IsDead => isDead;
     public event System.Action Defeated;
     protected int currentPhase = 1;
@@ -202,6 +207,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (isDead) return;
         isChasing = true;
         ShowHealthUIIfAllowed();
+        Effects?.PlayNotice(lookDirection);
     }
 
     protected virtual bool CanShowHealthUIOnDetection() => true;
@@ -345,7 +351,9 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = false, bool applyIFrame = false)
     {
         if (isDead) return;
-        currentHp -= Mathf.Max(0f, damage - defenseBonus) * (1f - buffDamageReduction);
+        float actualDamage = Mathf.Max(0f, damage - defenseBonus) * (1f - buffDamageReduction);
+        currentHp -= actualDamage;
+        if (actualDamage > 0f) Effects?.PlayHit(sourcePos);
         UpdateHealthUI();
         isChasing = true;
         if (currentHp <= 0f) Die();
@@ -354,6 +362,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected virtual void Die()
     {
         if (isDead) return;
+        Effects?.PlayDeath();
         isDead = true;
         //====== 코인 지급 ======
         CoinReward coinReward = GetComponent<CoinReward>();

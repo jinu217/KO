@@ -186,6 +186,7 @@ public static class BossSkillExecutor
     {
         for (int i = 0; i < step.attackCount; i++)
         {
+            PlayAttackEffect(step, context);
             HitPlayer(step, context);
             if (i < step.attackCount - 1 && step.interval > 0f)
                 yield return new WaitForSeconds(context.GetSkillDelay(step.interval));
@@ -203,6 +204,7 @@ public static class BossSkillExecutor
             yield return ExecuteMoveWithoutDashAnimation(step, context, attackDuringMove);
             yield break;
         }
+        if (attackDuringMove) PlayAttackEffect(step, context);
         float startX = body != null ? body.position.x : context.BossTransform.position.x;
         animation?.OnDashMovementStarted();
         try
@@ -242,6 +244,7 @@ public static class BossSkillExecutor
     {
         float timer = 0f;
         int remainingHits = step.attackCount;
+        if (attackDuringMove) PlayAttackEffect(step, context);
         float startX = context.BossBody != null ? context.BossBody.position.x : context.BossTransform.position.x;
 
         while (timer < step.duration)
@@ -430,6 +433,7 @@ public static class BossSkillExecutor
                 position.y = spawnHeight + step.spawnVerticalSpacing * i;
 
             GameObject spawned = UnityEngine.Object.Instantiate(step.spawnPrefab, position, Quaternion.identity);
+            context.BossTransform.GetComponent<BossEffects>()?.PlayShot(position, context.LookDirection);
             IBossSpawnedSkillObject spawnedSkill = spawned.GetComponent<IBossSpawnedSkillObject>();
             if (spawnedSkill != null)
                 spawnedSkill.Init(
@@ -469,6 +473,7 @@ public static class BossSkillExecutor
             {
                 if (elapsed >= nextHitTime)
                 {
+                    PlayAttackEffect(step, context);
                     if (playerInside) HitPlayer(step, context);
                     hitCount++;
                     nextHitTime = elapsed + interval;
@@ -479,6 +484,7 @@ public static class BossSkillExecutor
                 playerEntered = true;
                 if (elapsed >= nextHitTime)
                 {
+                    PlayAttackEffect(step, context);
                     HitPlayer(step, context);
                     hitCount++;
                     nextHitTime = elapsed + interval;
@@ -549,6 +555,15 @@ public static class BossSkillExecutor
         if (hit == null) return false;
         PlayerController player = hit.GetComponentInParent<PlayerController>();
         return player == null || !player.IsDodging;
+    }
+
+    private static void PlayAttackEffect(BossAttackStepData step, IBossSkillContext context)
+    {
+        if (step.damage <= 0 || step.hitboxSize.x <= 0 || step.hitboxSize.y <= 0) return;
+        var fx = context.BossTransform.GetComponent<BossEffects>();
+        if (fx == null) return;
+        Vector3 center = context.BossTransform.position + new Vector3(context.LookDirection * step.hitboxOffset.x, step.hitboxOffset.y, 0);
+        fx.PlayAttack(center, context.LookDirection);
     }
 
     private static bool HitPlayer(BossAttackStepData step, IBossSkillContext context)

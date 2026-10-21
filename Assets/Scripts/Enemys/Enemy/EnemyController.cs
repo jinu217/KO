@@ -190,7 +190,36 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
 
     // 읽기 전용 상태 프로퍼티
     protected bool isKnockback => knockbackTimer > 0;
-    protected bool isAttacking => attackTimer > 0;
+    [SerializeField] private bool waitForAttackAnimation;
+    [SerializeField] private AnimationClip[] movementLockAttackClips;
+    private bool attackAnimationRequested;
+    private float attackAnimationRequestedAt;
+    protected bool isAttacking => attackTimer > 0 || AttackAnimationBlocksMovement();
+
+    private bool AttackAnimationBlocksMovement()
+    {
+        if (!waitForAttackAnimation || !attackAnimationRequested || animator == null ||
+            !animator.isActiveAndEnabled || animator.runtimeAnimatorController == null) return false;
+        // Trigger가 Animator에 반영될 때까지 짧게 대기한다.
+        if (Time.time - attackAnimationRequestedAt < .2f) return true;
+        var state = animator.GetCurrentAnimatorStateInfo(0);
+        foreach (var info in animator.GetCurrentAnimatorClipInfo(0))
+            if (IsMovementLockClip(info.clip) && state.normalizedTime < 1f) return true;
+        if (animator.IsInTransition(0))
+        {
+            var next = animator.GetNextAnimatorStateInfo(0);
+            foreach (var info in animator.GetNextAnimatorClipInfo(0))
+                if (IsMovementLockClip(info.clip) && next.normalizedTime < 1f) return true;
+        }
+        attackAnimationRequested = false;
+        return false;
+    }
+    private bool IsMovementLockClip(AnimationClip clip)
+    {
+        if (movementLockAttackClips == null) return false;
+        foreach (var candidate in movementLockAttackClips) if (candidate == clip) return true;
+        return false;
+    }
     protected bool isHitStunned => hitStunTimer > 0 || Time.time < reactionUntil;
 
     [Header("피격 / 사망 애니메이션 (일괄 설정 도구에서 연결)")]
@@ -209,6 +238,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     {
         if (!isDead) return;
         isDead = false;
+        attackAnimationRequested = false;
         if (data != null) currentHp = data.maxHp;
         attackTimer = hitStunTimer = knockbackTimer = reactionUntil = 0f;
         hasWallImpactPending = false;
@@ -221,7 +251,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         ScheduleNextPatrolIdle(); ScheduleNextPatrolPause();
     }
 
-    protected virtual void CancelAttackForReaction() { attackTimer = 0f; }
+    protected virtual void CancelAttackForReaction() { attackTimer = 0f; attackAnimationRequested = false; }
 
     private bool HasReactionParameter(string name, AnimatorControllerParameterType type)
     {
@@ -725,6 +755,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     {
         if (isDead || isHitStunned) return;
         lastAttackTime = Time.time;
+        attackAnimationRequested = waitForAttackAnimation;
+        attackAnimationRequestedAt = Time.time;
 
         if (animator != null)
             animator.SetTrigger("Attack");

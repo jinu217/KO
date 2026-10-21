@@ -1561,12 +1561,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         switch (currentWeapon)
         {
-            case WeaponType.Sword: return 1.2f;
-            case WeaponType.Blunt: return 0.8f;
-            case WeaponType.Dagger: return 2.0f;
-            case WeaponType.Axe: return 1.0f;
-            case WeaponType.Scythe: return 1.5f;
-            default: return 1.2f;
+            case WeaponType.Sword: return 0.95f;
+            case WeaponType.Blunt: return 0.65f;
+            case WeaponType.Dagger: return 1.75f;
+            case WeaponType.Axe: return 0.8f;
+            case WeaponType.Scythe: return 1.2f;
+            default: return 0.95f;
         }
     }
 
