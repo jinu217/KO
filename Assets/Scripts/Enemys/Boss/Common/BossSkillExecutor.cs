@@ -125,12 +125,16 @@ public static class BossSkillExecutor
 
             if (context is IBossTimedMovementContext timed && timed.UsesTimedMovement(step))
             {
-                yield return timed.ExecuteTimedMovement(step);
+                var timedFX = context.BossTransform.GetComponent<BossEffects>();
+                timedFX?.BeginStep(step);
+                try { yield return timed.ExecuteTimedMovement(step); }
+                finally { timedFX?.EndStep(); }
                 if (step.postDelay > 0f)
                     yield return new WaitForSeconds(context.GetSkillDelay(step.postDelay));
                 continue;
             }
 
+            context.BossTransform.GetComponent<BossEffects>()?.BeginStep(step);
             context.RefreshSkillDirection();
 
             if (step.preDelay > 0f)
@@ -177,6 +181,7 @@ public static class BossSkillExecutor
 
             }
 
+            context.BossTransform.GetComponent<BossEffects>()?.EndStep();
             if (step.postDelay > 0f)
                 yield return new WaitForSeconds(context.GetSkillDelay(step.postDelay));
         }
@@ -186,6 +191,8 @@ public static class BossSkillExecutor
     {
         for (int i = 0; i < step.attackCount; i++)
         {
+            var fx = context.BossTransform.GetComponent<BossEffects>();
+            if (fx != null) yield return fx.WaitForImpact(step, i);
             PlayAttackEffect(step, context);
             HitPlayer(step, context);
             if (i < step.attackCount - 1 && step.interval > 0f)
@@ -433,7 +440,6 @@ public static class BossSkillExecutor
                 position.y = spawnHeight + step.spawnVerticalSpacing * i;
 
             GameObject spawned = UnityEngine.Object.Instantiate(step.spawnPrefab, position, Quaternion.identity);
-            context.BossTransform.GetComponent<BossEffects>()?.PlayShot(position, context.LookDirection);
             IBossSpawnedSkillObject spawnedSkill = spawned.GetComponent<IBossSpawnedSkillObject>();
             if (spawnedSkill != null)
                 spawnedSkill.Init(
@@ -563,7 +569,7 @@ public static class BossSkillExecutor
         var fx = context.BossTransform.GetComponent<BossEffects>();
         if (fx == null) return;
         Vector3 center = context.BossTransform.position + new Vector3(context.LookDirection * step.hitboxOffset.x, step.hitboxOffset.y, 0);
-        fx.PlayAttack(center, context.LookDirection);
+        fx.PlayStep(step, center, context.LookDirection);
     }
 
     private static bool HitPlayer(BossAttackStepData step, IBossSkillContext context)

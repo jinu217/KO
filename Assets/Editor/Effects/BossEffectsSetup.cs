@@ -11,12 +11,13 @@ public static class BossEffectsSetup
     public static void ApplyAll()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-        Texture2D attack, shot, hit, death, chase;
+        Texture2D attack, shot, hit, death, chase, spin;
         Sprite[] notice;
         try
         {
             attack = Load("공격/slash_big.png");
             shot = Load("공격/sting.png");
+            spin = Load("공격/cut_medium.png");
             hit = Load("데미지받을시/impact_big.png");
             death = Load("공격&데미지받을시&사망&대쉬등 다있는곳/death_01.png");
             chase = Load("걸을때 지속.png");
@@ -45,20 +46,26 @@ public static class BossEffectsSetup
                         var fx = boss.GetComponent<BossEffects>();
                         bool added = fx == null;
                         if (added) fx = boss.gameObject.AddComponent<BossEffects>();
-                        bool fists = stage == 4 && boss is MainBossController;
-                        if (fx.attack.sheet == null) fx.attack.sheet = fists ? hit : attack;
-                        if (fx.shot.sheet == null) fx.shot.sheet = shot;
+                        fx.stage = stage;
+                        fx.mainBoss = boss is MainBossController;
+                        fx.attack.sheet = attack; fx.attack.columns = 10; fx.attack.flipY = true; fx.attack.scale = 2;
+                        fx.upward.sheet = attack; fx.upward.columns = 10; fx.upward.flipY = false; fx.upward.scale = 2;
+                        fx.horizontal.sheet = shot; fx.horizontal.columns = 10; fx.horizontal.flipY = false; fx.horizontal.scale = 2;
+                        fx.spin.sheet = spin; fx.spin.columns = 10; fx.spin.flipY = false; fx.spin.scale = 2;
+                        fx.punch.sheet = hit; fx.punch.columns = 10; fx.punch.flipY = false; fx.punch.scale = 1.6f;
+                        fx.dash.frames = notice; fx.dash.sheet = null; fx.dash.scale = 3; fx.dash.fps = 20;
+                        // 플레이어 대쉬 원본 이미지와 동일한 좌우 방향.
+                        fx.dash.artFacesRight = false;
+                        fx.dash.offset = new Vector2(-.3f, 0);
                         if (fx.hit.sheet == null) fx.hit.sheet = hit;
                         if (fx.death.sheet == null) fx.death.sheet = death;
                         if (fx.chase.sheet == null) fx.chase.sheet = chase;
                         if (fx.notice.frames == null || fx.notice.frames.Length == 0) fx.notice.frames = notice;
-                        if (added)
-                        {
-                            fx.attack.flipY = !fists;
-                            fx.attack.scale = 2f;
-                            fx.hit.scale = 1.2f;
-                            fx.death.scale = 2f;
-                        }
+                        fx.motionAnimator = boss.GetComponentInChildren<Animator>(true);
+                        fx.weaponAnchor = boss.GetComponentsInChildren<Transform>(true).FirstOrDefault(t =>
+                            new[] { "Sword", "Weapon", "Axe", "Scythe", "Spear", "Mace" }.Contains(t.name));
+                        if (added) { fx.hit.scale = 1.2f; fx.death.scale = 2; }
+                        if (stage == 1 && !fx.mainBoss) ConfigureComboTimings(fx);
                         EditorUtility.SetDirty(fx);
                         count++;
                     }
@@ -72,6 +79,59 @@ public static class BossEffectsSetup
         }
         AssetDatabase.SaveAssets();
         Debug.Log("보스 FX 적용 완료: " + count + "개. 연결된 씬 프리팹에도 적용됩니다.");
+    }
+    static void ConfigureComboTimings(BossEffects fx)
+    {
+        var list = new System.Collections.Generic.List<BossEffects.ImpactTiming>();
+        if (fx.motionAnimator != null && fx.motionAnimator.runtimeAnimatorController != null)
+            foreach (var clip in fx.motionAnimator.runtimeAnimatorController.animationClips.Distinct())
+            {
+                if (clip == null || (!clip.name.Contains("Combo2") && !clip.name.Contains("Combo3"))) continue;
+                float impact = -1;
+                foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+                {
+                    if (binding.propertyName != "m_LocalScale.y" || !binding.path.EndsWith("/Weapon")) continue;
+                    var keys = AnimationUtility.GetEditorCurve(clip, binding).keys;
+                    for (int i = 1; i < keys.Length; i++)
+                        if (keys[i - 1].value < 0 && keys[i].value > 0) impact = keys[i].time;
+                }
+                if (impact >= 0)
+                {
+                    list.Add(new BossEffects.ImpactTiming { clip = clip, horizontalImpact = impact });
+                    Debug.Log(clip.name + " 가로베기 타격: " + impact.ToString("F3") + "초 / " + (impact * clip.frameRate).ToString("F1") + "프레임 (클립 원본 시간)");
+                }
+                else Debug.LogWarning(clip.name + ": 가로베기 반전 키를 찾지 못했습니다. BossEffects Combo Timings에 타격 시간을 지정하세요.");
+            }
+        fx.comboTimings = list.ToArray();
+    }
+    [MenuItem("Tools/Effects/Bosses/Report Spawn Prefabs")]
+    public static void ReportSpawns()
+    {
+        foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Prefabs" }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            var root = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (root == null) continue;
+            foreach (var boss in root.GetComponentsInChildren<MidBossController>(true))
+            {
+                if (boss.data == null) continue;
+                var skills = new System.Collections.Generic.List<BossSkillData> { boss.data.basicAttack };
+                if (boss.data.skills != null) skills.AddRange(boss.data.skills);
+                foreach (var skill in skills)
+                    if (skill?.active?.attackSteps != null)
+                        foreach (var step in skill.active.attackSteps)
+                            if (step != null && step.actionType == BossActionType.SpawnPrefab)
+                                Debug.Log(path + " / " + skill.skillName + " / " + (step.spawnPrefab != null ? AssetDatabase.GetAssetPath(step.spawnPrefab) : "미지정"));
+                foreach (var component in boss.GetComponents<MonoBehaviour>())
+                {
+                    if (component == null || !component.GetType().Name.Contains("Desire")) continue;
+                    var property = new SerializedObject(component).GetIterator();
+                    while (property.NextVisible(true))
+                        if (property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue is GameObject)
+                            Debug.Log(path + " / " + component.GetType().Name + "." + property.name + " / " + AssetDatabase.GetAssetPath(property.objectReferenceValue));
+                }
+            }
+        }
     }
     static Texture2D Load(string suffix)
     {

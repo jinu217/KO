@@ -290,6 +290,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (runningSkill == null) return;
         StopCoroutine(runningSkill);
         runningSkill = null;
+        Effects?.EndSkill();
         OnSkillExecutionFinished(currentSkillIndex);
         currentSkillIndex = -1;
         isAttacking = false;
@@ -310,9 +311,11 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             distanceCooldownReduced[index] = false;
         }
         LogSkillDebug(index < 0 ? "기본 공격 시작" : $"{index + 1}스킬 시작", skill);
+        Effects?.BeginSkill(skill, index);
         OnSkillExecutionStarted(skill, index);
         yield return BossSkillExecutor.Execute(skill, this);
         yield return WaitForSkillAnimation(skill, index);
+        Effects?.EndSkill();
         OnSkillExecutionFinished(index);
         LogSkillDebug(index < 0 ? "기본 공격 종료" : $"{index + 1}스킬 종료", skill);
         currentSkillIndex = -1;
@@ -362,6 +365,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected virtual void Die()
     {
         if (isDead) return;
+        Effects?.EndSkill();
         Effects?.PlayDeath();
         isDead = true;
         //====== 코인 지급 ======

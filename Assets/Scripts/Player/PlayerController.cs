@@ -741,6 +741,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 이동(인벤토리 열림 중에는 인벤토리 커서 이동에 사용)
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (isGameOver) return;
         if (isMeditating)
         {
             Vector2 meditationMoveInput = context.ReadValue<Vector2>();
@@ -788,6 +789,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 점프/하향 점프(점프 버퍼 + 코요테 타임 적용)
     public void OnJump(InputAction.CallbackContext context)
     {
+        if (isGameOver) return;
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (playerStatus != null && !playerStatus.CanMove) return;
@@ -917,6 +919,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 대쉬
     public void OnDash(InputAction.CallbackContext context)
     {
+        if (isGameOver) return;
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDash()) return;
@@ -1001,6 +1004,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)
     public void OnAttack(InputAction.CallbackContext context)
     {
+        if (isGameOver) return;
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
@@ -1246,6 +1250,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 실제 공격 판정 처리(무기별 박스/넉백 + 일반몹/중간보스/메인보스 모두 적용)
     void Attack()
     {
+        if (isGameOver) return;
         float dmg = stats.attackDamage;
         if (playerStatus != null)
             dmg *= playerStatus.AttackDamageMultiplier;
@@ -1430,7 +1435,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         => TakeDamage(damage, sourcePos, true, false);
     private float TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame, bool applyKnockback = true)
     {
-        if (isDashing) return 0f;
+        if (isGameOver || isDashing) return 0f;
         if (applyIFrame && isDamageInvincible) return 0f;
         if (isMeditating)
             StopMeditating();
@@ -1493,6 +1498,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 환경 피해(함정 등) 깜빡임: iFrame 없이 시각 효과만
     private void StartHitBlink()
     {
+        if (isGameOver) return;
         hitFlash?.Play(damageInvincibleTime);
     }
 
@@ -1590,25 +1596,32 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isGameOver) return;
 
         isGameOver = true;
+        StopAllCoroutines();
+        if (bodyCollider != null && ignoredThinFloorCollider != null)
+        { Physics2D.IgnoreCollision(bodyCollider, ignoredThinFloorCollider, false); ignoredThinFloorCollider = null; }
+        int playerLayerIndex = LayerMask.NameToLayer("Player"), enemyLayerIndex = LayerMask.NameToLayer("Enemy");
+        if (playerLayerIndex != -1 && enemyLayerIndex != -1) Physics2D.IgnoreLayerCollision(playerLayerIndex, enemyLayerIndex, false);
+        if (isHitStopRunning) { Time.timeScale = 1f; Time.fixedDeltaTime = .02f; isHitStopRunning = false; }
         StartCoroutine(GameOverRoutine());
     }
 
     private IEnumerator GameOverRoutine()
     {
-        // 플레이어 정지
-        rb.linearVelocity = Vector2.zero;
-        rb.simulated = false;      // Rigidbody2D 정지
-        enabled = false;           // PlayerController 비활성화 (선택 사항)
-
-        // 사망 횟수 증가
-        SaveData.Instance.persistent.deathCount++;
+        enabled = false;
+        moveInput = Vector2.zero;
+        isDashing = false;
+        rb.gravityScale = originalGravity;
+        var input = GetComponent<PlayerInput>();
+        if (input != null) input.DeactivateInput();
+        if (SaveData.Instance != null) SaveData.Instance.persistent.deathCount++;
+        yield return PlayerDeathMotion.Play(gameObject, animator, rb, groundLayer | thinFloorLayer);
 
         float t = 0f;
 
         while (t < fadeDuration)
         {
-            t += Time.deltaTime;
-            fadeGroup.alpha = Mathf.Lerp(0, 1, t / fadeDuration);
+            t += Time.unscaledDeltaTime;
+            if (fadeGroup != null) fadeGroup.alpha = Mathf.Lerp(0, 1, t / fadeDuration);
             yield return null;
         }
 
