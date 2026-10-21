@@ -15,7 +15,7 @@ public enum WeaponType
 {
     Sword,
     Blunt,
-    Spear,
+    Dagger,
     Axe,
     Scythe
 }
@@ -1385,7 +1385,7 @@ public class PlayerController : MonoBehaviour, IDamageable
                 currentWeapon = WeaponType.Blunt;
                 break;
             case InventoryWeaponType.Spear:
-                currentWeapon = WeaponType.Spear;
+                currentWeapon = WeaponType.Dagger;
                 break;
             case InventoryWeaponType.Axe:
                 currentWeapon = WeaponType.Axe;
@@ -1552,7 +1552,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             case WeaponType.Sword: return new Vector2(2.0f, 1.2f);
             case WeaponType.Blunt: return new Vector2(1.2f, 2.0f);
-            case WeaponType.Spear: return new Vector2(3.5f, 0.6f);
+            case WeaponType.Dagger: return new Vector2(3.5f, 0.6f);
             case WeaponType.Axe: return new Vector2(1.8f, 1.8f);
             case WeaponType.Scythe: return new Vector2(2.5f, 1.5f);
             default: return new Vector2(2.0f, 1.2f);
@@ -1566,7 +1566,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             case WeaponType.Sword: return 1.2f;
             case WeaponType.Blunt: return 0.8f;
-            case WeaponType.Spear: return 2.0f;
+            case WeaponType.Dagger: return 2.0f;
             case WeaponType.Axe: return 1.0f;
             case WeaponType.Scythe: return 1.5f;
             default: return 1.2f;
@@ -1580,7 +1580,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             case WeaponType.Sword: return 5f;
             case WeaponType.Blunt: return 10f;
-            case WeaponType.Spear: return 10f;
+            case WeaponType.Dagger: return 10f;
             case WeaponType.Axe: return 8f;
             case WeaponType.Scythe: return 6f;
             default: return 5f;

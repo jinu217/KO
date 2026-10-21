@@ -1,12 +1,17 @@
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 재생 가능한 1행 스프라이트 시트로 플레이어의 공격/피격 이펙트를 표시합니다.
-/// 시트는 각각 10프레임이며, PNG를 Sprite (Single)로 임포트해 연결합니다.
+/// 10칸짜리 가로 PNG 시트를 전체 프레임 사각형으로 재생합니다.
+/// 활성 이펙트와 런타임 스프라이트는 이 컴포넌트가 관리합니다.
 /// </summary>
+[DisallowMultipleComponent]
 public sealed class PlayerCombatEffects : MonoBehaviour
 {
+    private const int FrameCount = 10;
+
     [Header("Attack sheets (10 frames each)")]
     [SerializeField] private Sprite cutMedium;
     [SerializeField] private Sprite slashBig;
@@ -25,35 +30,35 @@ public sealed class PlayerCombatEffects : MonoBehaviour
     [SerializeField] private string sortingLayerOverride = "";
     [SerializeField] private int sortingOrderOffset = 5;
 
-    private SpriteRenderer sortingReference;
-
-    private void Awake()
+    private sealed class ActiveEffect
     {
-        sortingReference = GetComponentInChildren<SpriteRenderer>();
+        public GameObject gameObject;
+        public SpriteRenderer renderer;
+        public Sprite[] frames;
+        public float elapsed;
+        public float fps;
     }
+
+    private readonly Dictionary<Sprite, Sprite[]> frameCache = new Dictionary<Sprite, Sprite[]>();
+    private readonly List<ActiveEffect> activeEffects = new List<ActiveEffect>();
 
     public void PlayAttackEffect(WeaponType weapon, Vector2 position, float facing)
     {
         Sprite sheet;
         bool flipY = false;
-
         switch (weapon)
         {
+            case WeaponType.Dagger:
+                sheet = sting;
+                break;
             case WeaponType.Scythe:
                 sheet = cutMedium;
                 break;
-            case WeaponType.Blunt:
+            case WeaponType.Sword:
                 sheet = slashBig;
                 flipY = true;
                 break;
-            case WeaponType.Spear:
-                // 현재 PlayerController의 찌르기 계열 무기 타입에 sting을 연결합니다.
-                sheet = sting;
-                break;
-            case WeaponType.Sword:
-                sheet = slashMedium;
-                flipY = true;
-                break;
+            case WeaponType.Blunt:
             case WeaponType.Axe:
                 sheet = slashBig;
                 flipY = true;
@@ -64,8 +69,8 @@ public sealed class PlayerCombatEffects : MonoBehaviour
                 break;
         }
 
-        Play(sheet, position + new Vector2(Mathf.Sign(facing) * attackOffset.x, attackOffset.y),
-            Mathf.Sign(facing), flipY);
+        float direction = facing < 0f ? -1f : 1f;
+        Play(sheet, position + new Vector2(direction * attackOffset.x, attackOffset.y), direction, flipY);
     }
 
     public void PlayDamageEffect(float actualDamage)
@@ -76,83 +81,170 @@ public sealed class PlayerCombatEffects : MonoBehaviour
 
     private void Play(Sprite sheet, Vector2 position, float facing, bool flipY)
     {
-        if (sheet == null)
+        if (!isActiveAndEnabled || sheet == null)
             return;
 
-        Rect sheetRect;
-        try
-        {
-            sheetRect = sheet.textureRect;
-        }
-        catch (UnityException)
-        {
-            Debug.LogWarning($"[PlayerCombatEffects] '{sheet.name}'이 아틀라스에 타이트 메시로 패킹되어 시트 영역을 읽을 수 없습니다.", this);
+        Sprite[] frames = GetFrames(sheet);
+        if (frames == null)
             return;
-        }
 
-        const int frameCount = 10;
-        float frameWidth = sheetRect.width / frameCount;
-        if (frameWidth < 1f || sheetRect.height < 1f)
-        {
-            Debug.LogWarning($"[PlayerCombatEffects] '{sheet.name}' 스프라이트 시트 크기가 올바르지 않습니다.", this);
-            return;
-        }
-
-        GameObject effectObject = new GameObject($"FX_{sheet.name}");
-        effectObject.transform.position = position;
+        float fps = Mathf.Max(1f, framesPerSecond);
+        var effectObject = new GameObject($"FX_{sheet.name}");
+        effectObject.hideFlags = HideFlags.DontSave;
+        effectObject.SetActive(false);
+        // Additive로 열린 다른 씬에 이펙트가 남지 않도록 Player의 씬에 둡니다.
+        if (gameObject.scene.IsValid() && gameObject.scene.isLoaded)
+            SceneManager.MoveGameObjectToScene(effectObject, gameObject.scene);
+        effectObject.transform.position = new Vector3(position.x, position.y, transform.position.z);
+        effectObject.transform.localScale = Vector3.one * Mathf.Max(0.01f, effectScale);
 
         SpriteRenderer renderer = effectObject.AddComponent<SpriteRenderer>();
+        renderer.sprite = frames[0];
         renderer.flipY = flipY;
         renderer.flipX = facing < 0f;
-        renderer.sortingLayerID = ResolveSortingLayerID();
-        renderer.sortingOrder = (sortingReference != null ? sortingReference.sortingOrder : 0) + sortingOrderOffset;
+        ResolveSorting(out int layer, out int order);
+        renderer.sortingLayerID = layer;
+        renderer.sortingOrder = order;
 
-        float ppu = sheet.pixelsPerUnit > 0f ? sheet.pixelsPerUnit : 64f;
-        effectObject.transform.localScale = Vector3.one * effectScale;
-
-        StartCoroutine(AnimateSheet(effectObject, renderer, sheet, sheetRect, frameWidth, ppu));
+        activeEffects.Add(new ActiveEffect
+        {
+            gameObject = effectObject,
+            renderer = renderer,
+            frames = frames,
+            fps = fps
+        });
+        effectObject.SetActive(true);
+        // Update가 중단되더라도 별도 GameObject가 영구히 남지 않도록 수명을 예약합니다.
+        Destroy(effectObject, (FrameCount + 1f) / fps);
     }
 
-    private int ResolveSortingLayerID()
+    private Sprite[] GetFrames(Sprite sheet)
     {
-        if (!string.IsNullOrWhiteSpace(sortingLayerOverride))
+        if (frameCache.TryGetValue(sheet, out Sprite[] cached))
+            return cached;
+
+        if (sheet.packed)
         {
-            int requested = SortingLayer.NameToID(sortingLayerOverride);
-            if (requested != 0 || sortingLayerOverride == "Default")
-                return requested;
+            Debug.LogWarning($"[PlayerCombatEffects] '{sheet.name}' 시트 PNG를 Sprite Atlas에서 제외하세요. 패킹된 시트는 잘린 좌표로 재생하지 않습니다.", this);
+            return null;
         }
 
-        return sortingReference != null ? sortingReference.sortingLayerID : SortingLayer.NameToID("Default");
+        // textureRect의 투명 여백 잘림에 영향을 받지 않는 원본 Sprite 영역을 사용합니다.
+        Rect rect = sheet.rect;
+        int width = Mathf.RoundToInt(rect.width);
+        int height = Mathf.RoundToInt(rect.height);
+        if (sheet.texture == null || width <= 0 || height <= 0 || width % FrameCount != 0)
+        {
+            Debug.LogWarning($"[PlayerCombatEffects] '{sheet.name}'은 Sprite (Single)인 10칸 가로 시트여야 합니다.", this);
+            return null;
+        }
+
+        int frameWidth = width / FrameCount;
+        float ppu = sheet.pixelsPerUnit > 0f ? sheet.pixelsPerUnit : 64f;
+        var frames = new Sprite[FrameCount];
+        for (int i = 0; i < FrameCount; i++)
+        {
+            Rect frameRect = new Rect(rect.x + frameWidth * i, rect.y, frameWidth, height);
+            // Tight 메시의 윤곽 대신 프레임 사각형 전체를 렌더링합니다.
+            frames[i] = Sprite.Create(sheet.texture, frameRect, new Vector2(0.5f, 0.5f),
+                ppu, 0, SpriteMeshType.FullRect);
+            frames[i].name = $"{sheet.name}_{i:00}";
+            frames[i].hideFlags = HideFlags.DontSave;
+        }
+        frameCache.Add(sheet, frames);
+        return frames;
     }
 
-    private IEnumerator AnimateSheet(GameObject effectObject, SpriteRenderer renderer, Sprite source,
-        Rect sheetRect, float frameWidth, float pixelsPerUnit)
+    private void Update()
     {
-        const int frameCount = 10;
-        float frameDuration = 1f / Mathf.Max(1f, framesPerSecond);
-        Sprite runtimeFrame = null;
-
-        for (int i = 0; i < frameCount; i++)
+        for (int i = activeEffects.Count - 1; i >= 0; i--)
         {
-            if (effectObject == null || renderer == null)
+            ActiveEffect effect = activeEffects[i];
+            if (effect.gameObject == null || effect.renderer == null)
             {
-                if (runtimeFrame != null)
-                    Destroy(runtimeFrame);
-                yield break;
+                RemoveEffect(i);
+                continue;
             }
 
-            Rect frameRect = new Rect(sheetRect.x + frameWidth * i, sheetRect.y, frameWidth, sheetRect.height);
-            Sprite nextFrame = Sprite.Create(source.texture, frameRect, new Vector2(0.5f, 0.5f), pixelsPerUnit);
-            renderer.sprite = nextFrame;
-            if (runtimeFrame != null)
-                Destroy(runtimeFrame);
-            runtimeFrame = nextFrame;
-            yield return new WaitForSeconds(frameDuration);
+            effect.elapsed += Time.deltaTime;
+            int frame = Mathf.FloorToInt(effect.elapsed * effect.fps);
+            if (frame >= effect.frames.Length)
+                RemoveEffect(i);
+            else
+                effect.renderer.sprite = effect.frames[frame];
         }
+    }
 
-        if (effectObject != null)
-            Destroy(effectObject);
-        if (runtimeFrame != null)
-            Destroy(runtimeFrame);
+    private void ResolveSorting(out int layer, out int order)
+    {
+        layer = SortingLayer.NameToID("Default");
+        order = 0;
+        int highestLayer = int.MinValue;
+        bool found = false;
+        foreach (SpriteRenderer candidate in GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            if (candidate.sprite == null)
+                continue;
+            int value = SortingLayer.GetLayerValueFromID(candidate.sortingLayerID);
+            if (!found || value > highestLayer || (value == highestLayer && candidate.sortingOrder > order))
+            {
+                found = true;
+                highestLayer = value;
+                layer = candidate.sortingLayerID;
+                order = candidate.sortingOrder;
+            }
+        }
+        // SortingGroup 바깥의 이펙트도 플레이어보다 위에서 그려지도록 그룹 순서를 반영합니다.
+        foreach (SortingGroup group in GetComponentsInParent<SortingGroup>(true))
+        {
+            layer = group.sortingLayerID;
+            order = group.sortingOrder;
+        }
+        if (!string.IsNullOrWhiteSpace(sortingLayerOverride))
+        {
+            foreach (SortingLayer candidate in SortingLayer.layers)
+            {
+                if (candidate.name == sortingLayerOverride)
+                {
+                    layer = candidate.id;
+                    break;
+                }
+            }
+        }
+        order = Mathf.Clamp(order + sortingOrderOffset, -32768, 32767);
+    }
+
+    private void RemoveEffect(int index)
+    {
+        ActiveEffect effect = activeEffects[index];
+        if (effect.renderer != null)
+            effect.renderer.sprite = null;
+        if (effect.gameObject != null)
+        {
+            effect.gameObject.SetActive(false);
+            Destroy(effect.gameObject);
+        }
+        activeEffects.RemoveAt(index);
+    }
+
+    private void OnDisable()
+    {
+        ClearActiveEffects();
+    }
+
+    private void OnDestroy()
+    {
+        ClearActiveEffects();
+        foreach (Sprite[] frames in frameCache.Values)
+            foreach (Sprite frame in frames)
+                if (frame != null)
+                    Destroy(frame);
+        frameCache.Clear();
+    }
+
+    private void ClearActiveEffects()
+    {
+        for (int i = activeEffects.Count - 1; i >= 0; i--)
+            RemoveEffect(i);
     }
 }

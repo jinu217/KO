@@ -180,6 +180,14 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     private float originalGravity;  // 초기 gravityScale 저장 (경사 정지 시 복구용)
     private int lastFacingDirection = 1;
 
+    // Optional common-mob FX hooks. No animation events or combat timing changes.
+    private MobEffects mobEffects;
+    protected MobEffects Effects { get { if (mobEffects == null) mobEffects = GetComponent<MobEffects>(); return mobEffects; } }
+    public int FXDirection => lastFacingDirection;
+    public bool FXChasingOnGround => !isDead && isChasing && !isReacting && !isAttacking &&
+        !isHitStunned && !isKnockback && !isWandering && rb != null &&
+        Mathf.Abs(rb.linearVelocity.x) > .1f && IsGroundedNow();
+
     // 읽기 전용 상태 프로퍼티
     protected bool isKnockback => knockbackTimer > 0;
     protected bool isAttacking => attackTimer > 0;
@@ -254,6 +262,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     {
         if (isDead) return;
         isDead = true;
+        Effects?.PlayDeath();
         CancelAttackForReaction();
         StopAllCoroutines();
         hasWallImpactPending = false;
@@ -732,6 +741,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         if (isDead || isHitStunned) return;
         Vector2 attackPos = (Vector2)transform.position + new Vector2(walkDirection * data.attackOffset, data.attackHeightOffset);
         Vector2 attackSize = new Vector2(data.attackRange, data.attackHeight);
+        Effects?.PlayAttack(attackPos, walkDirection);
 
         Collider2D hit = Physics2D.OverlapBox(attackPos, attackSize, 0, playerLayer);
 
@@ -814,6 +824,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 반응 상태 시작(최초 감지 후 반응 지연)
     protected void StartReaction()
     {
+        Effects?.PlayNotice(playerTransform != null && playerTransform.position.x < transform.position.x ? -1 : 1);
         isReacting = true;
         isIdle = false;
         reactionTimer = data.reactionTime;
@@ -1193,6 +1204,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             return;
 
         currentHp -= damage;
+        if (damage > 0f) Effects?.PlayHit(sourcePos);
 
         // 데미지 텍스트 생성
         DamageTextManager.Instance?.ShowDamage(
@@ -1373,6 +1385,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         if (totalWallDamage > 0f)
         {
             currentHp -= totalWallDamage;
+            Effects?.PlayHit((Vector2)transform.position + Vector2.right * moveDir);
             if (currentHp <= 0f)
             {
                 GiveCoinReward();
