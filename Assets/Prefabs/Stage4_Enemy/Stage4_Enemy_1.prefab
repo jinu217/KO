@@ -316,6 +316,7 @@ GameObject:
   - component: {fileID: 4048134802029589269}
   - component: {fileID: 1221640104977840777}
   - component: {fileID: 2486274900373757063}
+  - component: {fileID: 7040029385659571538}
   m_Layer: 8
   m_Name: Stage4_Enemy_1
   m_TagString: Enemy
@@ -472,6 +473,82 @@ MonoBehaviour:
   hitAnimationState: 
   deathAnimationState: 
   showAttackLog: 0
+--- !u!114 &7040029385659571538
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3856d7d1f6f5cdb498ef1b1ce1ddd99c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MobEffects
+  attack:
+    sheet: {fileID: 2800000, guid: 6dcf3a5b3badd8e49aeb7c9722b9322f, type: 3}
+    frames: []
+    columns: 10
+    fps: 24
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 1
+  shot:
+    sheet: {fileID: 2800000, guid: f6d14937ff9161e4f824aac42bb84f0d, type: 3}
+    frames: []
+    columns: 10
+    fps: 24
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  hit:
+    sheet: {fileID: 2800000, guid: 167ea0e7ccd9e044e83d812168339aaa, type: 3}
+    frames: []
+    columns: 10
+    fps: 24
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  death:
+    sheet: {fileID: 2800000, guid: c3271c89b56f51448aaa873e23a1ecfe, type: 3}
+    frames: []
+    columns: 24
+    fps: 24
+    scale: 1.3
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  notice:
+    sheet: {fileID: 0}
+    frames:
+    - {fileID: 21300000, guid: d228300f31dd7b74ba6d3c5924d5990c, type: 3}
+    - {fileID: 21300000, guid: 6db9e40131646054595319fc5f9887a9, type: 3}
+    - {fileID: 21300000, guid: efa7b3fd5b91d704887329c1026d1579, type: 3}
+    - {fileID: 21300000, guid: 4a4c4ce2d85f70644bb986e5ef8df8d8, type: 3}
+    - {fileID: 21300000, guid: 044ab47ea57746047adc58fcf999bfe5, type: 3}
+    - {fileID: 21300000, guid: b004bf4185d1238489a4fe2599112d04, type: 3}
+    columns: 1
+    fps: 20
+    scale: 1.5
+    offset: {x: 0, y: 0}
+    artFacesRight: 0
+    flipY: 0
+  chase:
+    sheet: {fileID: 2800000, guid: 07c6a616ea5bd7348b3b97b9de5dc387, type: 3}
+    frames: []
+    columns: 8
+    fps: 16
+    scale: 1.5
+    offset: {x: -0.3, y: 0.05}
+    artFacesRight: 0
+    flipY: 0
+  pixelsPerUnit: 64
+  chaseInterval: 0.18
+  sortingLayerOverride: 
+  sortingOrderOffset: 5
 --- !u!1 &5389209900318098326
 GameObject:
   m_ObjectHideFlags: 0

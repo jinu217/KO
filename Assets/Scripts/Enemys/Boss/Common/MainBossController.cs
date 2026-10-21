@@ -17,7 +17,7 @@ public class MainBossController : MidBossController
     private bool animationReturningToIdle;
     private string activeAnimation;
     private bool desireOwnsAttackLock;
-    
+
     //============== 메인보스 대화 ==============
     [Header("메인보스 대화")]
     [SerializeField] private MainBossDialogueController dialogueController;
@@ -78,7 +78,7 @@ public class MainBossController : MidBossController
         scale.x = visualScaleX * (lookDirection < 0 ? -1f : 1f) * (artworkFacesLeft ? -1f : 1f);
         visualRoot.localScale = scale;
     }
-    
+
     //============== 조우 대화 시작 (감지/트리거 공통 진입점) ==============
     // 보스 감지와 BossDialogueTrigger 양쪽에서 이 메서드로만 조우 대화를 시작합니다.
     // 보스당 한 번만 시도하며, 대화가 실제로 시작되면 true를 반환합니다.
@@ -105,6 +105,9 @@ public class MainBossController : MidBossController
         {
             // 대화가 시작되면 감지 처리(HP바 표시 등)는 대화가 끝난 뒤로 미룹니다.
             encounterDialogueRunning = true;
+            dialoguePaused = true;
+            InterruptCurrentSkill();
+            StopMove();
             return true;
         }
 
@@ -131,6 +134,8 @@ public class MainBossController : MidBossController
     public void OnEncounterDialogueFinished()
     {
         encounterDialogueRunning = false;
+        dialoguePaused = false;
+        DeferNextCombatAction();
 
         // 대화 중 이미 죽은 경우에는 아무것도 하지 않습니다.
         if (isDead)
@@ -327,15 +332,6 @@ public class MainBossController : MidBossController
         activeAnimation = null;
         desireOwnsAttackLock = false;
         animationReturningToIdle = false;
-        SetBusy(false);
-    }
-
-    // 전용 욕망 코루틴을 취소할 때 남은 애니메이션 잠금 정보도 정리한다.
-    // 실제 행동 잠금은 취소를 요청한 욕망 컴포넌트가 다음 상태에 맞게 설정한다.
-    public void CancelDesireAnimation()
-    {
-        activeAnimation = null;
-        desireOwnsAttackLock = false;
         SetBusy(false);
     }
 

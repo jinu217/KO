@@ -42341,6 +42341,7 @@ MonoBehaviour:
     attackSpeedUpgradeCount: 0
     dashCountUpgradeCount: 0
     dashCooldownUpgradeCount: 0
+    doubleJumpUpgradeCount: 0
     startingCoinUpgradeCount: 0
     equipmentRerollBonus: 0
     equipmentRerollUpgradeCount: 0
@@ -50721,6 +50722,7 @@ MonoBehaviour:
   knockbackDuration: 0.2
   hitStopDuration: 0.03
   hitStopTimeScale: 0.05
+  damageInvincibleTime: 0.1
   showWeaponAttackGizmo: 1
   showEmpoweredImpactGizmo: 1
   showGroundCheckGizmo: 1
@@ -50903,6 +50905,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c058282cee80244bac4a6647d487f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAppearance
+  weaponRenderer: {fileID: 0}
   headRenderer: {fileID: 5255676311422413628}
   bodyRenderer: {fileID: 8906019195681797928}
   shoulderLeftRenderer: {fileID: 1206402247622915416}
@@ -50952,6 +50955,8 @@ GameObject:
   - component: {fileID: 673028714835265919}
   - component: {fileID: 8761759398429683270}
   - component: {fileID: 1272795179551675043}
+  - component: {fileID: 9104716021800673538}
+  - component: {fileID: 9104716021800673539}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -52278,6 +52283,77 @@ MonoBehaviour:
   exhaustedImpairDuration: 4
   exhaustedResetDelay: 5
   exhaustedMoveSpeedMultiplier: 0.35
+--- !u!114 &9104716021800673538
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1763610816959778360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3130d91200c3c2e498654baa4ea4bffc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMovementEffects
+  walkSheet: {fileID: 2800000, guid: 07c6a616ea5bd7348b3b97b9de5dc387, type: 3}
+  walkColumns: 8
+  jumpFrames:
+  - {fileID: 21300000, guid: 6946ac6bd4668f84a9888fd5422b5170, type: 3}
+  - {fileID: 21300000, guid: f3abc72e64f617544b4b71a61c4a9ed8, type: 3}
+  - {fileID: 21300000, guid: 5cabeddce83218946ac17f8f0f5b0499, type: 3}
+  - {fileID: 21300000, guid: 4a6bf0e2550c6304f97ed0f5981b9fae, type: 3}
+  - {fileID: 21300000, guid: ac1e51c3d0646344d9b673411fd9ef32, type: 3}
+  - {fileID: 21300000, guid: c7033dd9755efef4982193ac020e5ab5, type: 3}
+  - {fileID: 21300000, guid: 184fee55788a64848b6bb069cb730933, type: 3}
+  - {fileID: 21300000, guid: 1b5cd2313bde6de42a8cfdca45c3f634, type: 3}
+  dashFrames:
+  - {fileID: 21300000, guid: d228300f31dd7b74ba6d3c5924d5990c, type: 3}
+  - {fileID: 21300000, guid: 6db9e40131646054595319fc5f9887a9, type: 3}
+  - {fileID: 21300000, guid: efa7b3fd5b91d704887329c1026d1579, type: 3}
+  - {fileID: 21300000, guid: 4a4c4ce2d85f70644bb986e5ef8df8d8, type: 3}
+  - {fileID: 21300000, guid: 044ab47ea57746047adc58fcf999bfe5, type: 3}
+  - {fileID: 21300000, guid: b004bf4185d1238489a4fe2599112d04, type: 3}
+  pixelsPerUnit: 64
+  walkFPS: 12
+  jumpFPS: 16
+  dashFPS: 20
+  walkScale: 2
+  jumpScale: 2
+  dashScale: 2
+  walkOffset: {x: -0.7, y: -0.1}
+  jumpOffset: {x: 0, y: 0}
+  dashOffset: {x: 0, y: -0.1}
+  walkArtFacesRight: 0
+  jumpArtFacesRight: 0
+  reverseDashImage: 1
+  dashArtFacesRight: 1
+  sortingLayer: Front
+  sortingOrder: 20
+  groundAnchor: {fileID: 6852483028742810990}
+--- !u!114 &9104716021800673539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1763610816959778360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8bc78392d899c545a362192153acad5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatEffects
+  cutMedium: {fileID: 21300000, guid: 11aef90ceef640349a10eb6c81a582e6, type: 3}
+  slashBig: {fileID: 21300000, guid: 4c696c1001b33c943be90cb1f55f5d94, type: 3}
+  slashMedium: {fileID: 21300000, guid: 6dcf3a5b3badd8e49aeb7c9722b9322f, type: 3}
+  sting: {fileID: 21300000, guid: f6d14937ff9161e4f824aac42bb84f0d, type: 3}
+  impactBig: {fileID: 21300000, guid: d76cebfa258566744963c416a9dd1e92, type: 3}
+  impactMedium: {fileID: 21300000, guid: 167ea0e7ccd9e044e83d812168339aaa, type: 3}
+  framesPerSecond: 24
+  effectScale: 1
+  attackOffset: {x: 0, y: 0.15}
+  damageOffset: {x: 0, y: 0.1}
+  sortingLayerOverride: 
+  sortingOrderOffset: 5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

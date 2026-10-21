@@ -1387,9 +1387,6 @@ public class PlayerController : MonoBehaviour, IDamageable
             case InventoryWeaponType.Spear:
                 currentWeapon = WeaponType.Dagger;
                 break;
-            case InventoryWeaponType.Axe:
-                currentWeapon = WeaponType.Axe;
-                break;
             case InventoryWeaponType.Scythe:
                 currentWeapon = WeaponType.Scythe;
                 break;

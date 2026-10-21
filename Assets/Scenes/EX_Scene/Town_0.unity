@@ -1284,6 +1284,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c058282cee80244bac4a6647d487f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAppearance
+  weaponRenderer: {fileID: 0}
   headRenderer: {fileID: 1405165069}
   bodyRenderer: {fileID: 1858650705}
   shoulderLeftRenderer: {fileID: 1809337221}
@@ -1557,8 +1558,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 907e038b999a66e46bd948f5d5817ffa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitFlashEffect
-  flashDuration: 0.2
-  blinkInterval: 0.04
 --- !u!114 &112837366
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3257,6 +3256,7 @@ MonoBehaviour:
     attackSpeedUpgradeCount: 0
     dashCountUpgradeCount: 0
     dashCooldownUpgradeCount: 0
+    doubleJumpUpgradeCount: 0
     startingCoinUpgradeCount: 0
     equipmentRerollBonus: 0
     equipmentRerollUpgradeCount: 0
@@ -3851,6 +3851,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventoryDisplay
   inventory: {fileID: 112837369}
   tooltip: {fileID: 1402183994}
+  mechanizationWarningPanel: {fileID: 0}
 --- !u!114 &180476923
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18917,6 +18918,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventoryDisplay
   inventory: {fileID: 112837369}
   tooltip: {fileID: 1402183994}
+  mechanizationWarningPanel: {fileID: 0}
 --- !u!224 &1001637076
 RectTransform:
   m_ObjectHideFlags: 0
@@ -39053,6 +39055,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 053fa14ea54fb4148a55206227c40c52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  hitFlashDuration: 0.2
+  enemyHitFlashDuration: 0.1
+  hitFlashInterval: 0.04
   showInitLog: 0
 --- !u!1 &2024834435
 GameObject:

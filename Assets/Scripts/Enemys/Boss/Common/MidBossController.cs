@@ -58,6 +58,15 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected bool isAttacking;
     protected bool isDead;
     private bool healthUIShown;
+    protected bool dialoguePaused;
+    private int nextCombatFrame = -1;
+    protected bool AnimatorRecoveryPending => Time.frameCount <= nextCombatFrame;
+
+    // Give the Animator one update after an action releases its attack lock.
+    protected void DeferNextCombatAction()
+    {
+        nextCombatFrame = Mathf.Max(nextCombatFrame, Time.frameCount + 1);
+    }
     public bool IsDead => isDead;
     public event System.Action Defeated;
     protected int currentPhase = 1;
@@ -117,6 +126,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     {
         if (data == null || isDead) return;
         FindAndDetectPlayer();
+        if (dialoguePaused || AnimatorRecoveryPending) { StopMove(); return; }
         UpdatePhase();
         ApplyInitialCooldownsOnFirstDetection();
         // 스킬 실행 중 이동은 BossSkillExecutor가 담당합니다.
@@ -138,7 +148,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
     protected virtual void FixedUpdate()
     {
-        if (data == null || isDead || isAttacking || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
+        if (data == null || isDead || dialoguePaused || AnimatorRecoveryPending || isAttacking || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
         BossSkillData skill = GetReadySkill(out _) ?? GetBasicAttackData();
         if (InCastRange(skill)) { StopMove(); return; }
         if (IsWallInFront()) { StopMove(); return; }
@@ -157,20 +167,54 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         float distance = Vector2.Distance(transform.position, playerTransform.position);
         if (!isChasing && distance <= data.detectRange)
         {
-            isChasing = true;
-
-            // 처음 조우했을 때 HP UI 표시
-            if (!healthUIShown)
-            {
-                healthUIShown = true;
-                ShowHealthUI();
-            }
+            OnPlayerDetected();
         }
         else if (isChasing && distance > data.chaseRange)
         {
             isChasing = false;
         }
     }
+
+    // Public entry point used by MainBossDialogueController.
+    public virtual void SetDialoguePaused(bool paused)
+    {
+        if (dialoguePaused == paused)
+        {
+            if (paused) StopMove();
+            return;
+        }
+        dialoguePaused = paused;
+        if (isDead) return;
+        if (paused)
+        {
+            InterruptCurrentSkill();
+            StopMove();
+        }
+        else
+        {
+            DeferNextCombatAction();
+        }
+    }
+
+    // Main bosses can defer this until their encounter dialogue finishes.
+    protected virtual void OnPlayerDetected()
+    {
+        if (isDead) return;
+        isChasing = true;
+        ShowHealthUIIfAllowed();
+    }
+
+    protected virtual bool CanShowHealthUIOnDetection() => true;
+
+    protected void ShowHealthUIIfAllowed()
+    {
+        if (isDead || healthUIShown || data == null || !CanShowHealthUIOnDetection()) return;
+        healthUIShown = true;
+        ShowHealthUI();
+    }
+
+    // Main bosses keep their final death pose while the defeat dialogue runs.
+    protected virtual IEnumerator BeforeDeactivateAfterDeath() { yield break; }
 
     // 최초 인식 시 일반 공격은 즉시 준비하고, 나머지 스킬은 쿨타임이 50% 지난 상태로 시작한다.
     private void ApplyInitialCooldownsOnFirstDetection()
@@ -268,6 +312,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         currentSkillIndex = -1;
         isAttacking = false;
         runningSkill = null;
+        DeferNextCombatAction();
     }
 
     private void EnsureTimers()
@@ -413,7 +458,8 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             }
             if (deathEndHold > 0f) yield return new WaitForSeconds(deathEndHold);
         }
-        // Retain the original event order: deactivate first, then notify room clear/rewards.
+        yield return BeforeDeactivateAfterDeath();
+        // After the defeat sequence: deactivate first, then notify room clear/rewards.
         gameObject.SetActive(false);
         Defeated?.Invoke();
     }
