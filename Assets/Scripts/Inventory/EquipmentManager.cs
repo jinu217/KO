@@ -93,7 +93,10 @@ public class EquipmentManager : MonoBehaviour
     private void EquipStartItems()
     {
         if (startEquipItems == null)
+        {
+            playerAppearance?.ClearWeapon();
             return;
+        }
 
         bool isTutorialScene = IsFirstTutorialScene;
 
@@ -118,6 +121,9 @@ public class EquipmentManager : MonoBehaviour
 
             Equip(item);
         }
+
+        if (GetItem(weaponSlot) == null)
+            playerAppearance?.ClearWeapon();
     }
 
     //============== 시작 무기 뒤늦게 지급 (튜토리얼_0 이후 씬) ==============
@@ -246,7 +252,8 @@ public class EquipmentManager : MonoBehaviour
         SetSlotWithoutInventory(footSlot, foot);
 
         // 캐릭터 외형 적용
-        ApplyAppearance(weapon);
+        if (weapon != null) ApplyAppearance(weapon);
+        else playerAppearance?.ClearWeapon();
         ApplyAppearance(hand);
         ApplyAppearance(head);
         ApplyAppearance(body);
@@ -277,33 +284,25 @@ public class EquipmentManager : MonoBehaviour
 
     //============== 장비 장착 ==============
 
-    public void Equip(ItemData item)
+    public bool Equip(ItemData item)
     {
         if (item == null)
-            return;
+            return false;
 
-        switch (item.equipType)
+        EquipmentSlot slot = item.equipType switch
         {
-            case EquipmentType.Weapon:
-                ReplaceIfDifferent(weaponSlot, item);
-                break;
+            EquipmentType.Weapon => weaponSlot,
+            EquipmentType.Hand => handSlot,
+            EquipmentType.Head => headSlot,
+            EquipmentType.Body => bodySlot,
+            EquipmentType.Foot => footSlot,
+            _ => null
+        };
 
-            case EquipmentType.Hand:
-                ReplaceIfDifferent(handSlot, item);
-                break;
+        if (slot == null || GetItem(slot)?.rarity == ItemRarity.Mechanization)
+            return false;
 
-            case EquipmentType.Head:
-                ReplaceIfDifferent(headSlot, item);
-                break;
-
-            case EquipmentType.Body:
-                ReplaceIfDifferent(bodySlot, item);
-                break;
-
-            case EquipmentType.Foot:
-                ReplaceIfDifferent(footSlot, item);
-                break;
-        }
+        ReplaceIfDifferent(slot, item);
 
         // 플레이어 외형 적용
         if (playerAppearance != null)
@@ -318,6 +317,7 @@ public class EquipmentManager : MonoBehaviour
 
         // 현재 장비를 RunData에 저장
         SaveCurrentEquipmentToRunData();
+        return true;
     }
 
 
@@ -346,35 +346,24 @@ public class EquipmentManager : MonoBehaviour
 
     public void Unequip(int index)
     {
-        ItemData item = null;
-
-        switch (index)
+        EquipmentSlot slot = index switch
         {
-            case 0:
-                item = weaponSlot.GetItem();
-                weaponSlot.SetItem(null);
-                break;
+            0 => weaponSlot,
+            1 => handSlot,
+            2 => headSlot,
+            3 => bodySlot,
+            4 => footSlot,
+            _ => null
+        };
 
-            case 1:
-                item = handSlot.GetItem();
-                handSlot.SetItem(null);
-                break;
+        if (slot == null || GetItem(slot)?.rarity == ItemRarity.Mechanization)
+            return;
 
-            case 2:
-                item = headSlot.GetItem();
-                headSlot.SetItem(null);
-                break;
+        ItemData item = slot.GetItem();
+        slot.SetItem(null);
 
-            case 3:
-                item = bodySlot.GetItem();
-                bodySlot.SetItem(null);
-                break;
-
-            case 4:
-                item = footSlot.GetItem();
-                footSlot.SetItem(null);
-                break;
-        }
+        if (slot == weaponSlot)
+            playerAppearance?.ClearWeapon();
 
         if (item != null && inventory != null)
             inventory.AddItem(item);
@@ -404,6 +393,9 @@ public class EquipmentManager : MonoBehaviour
 
         if (playerController != null)
         {
+            playerController.SetCurrentWeaponFromInventoryType(
+                weapon != null ? weapon.weaponType : InventoryWeaponType.None
+            );
             playerController.RecalculateEquipmentStats(
                 weapon,
                 head,

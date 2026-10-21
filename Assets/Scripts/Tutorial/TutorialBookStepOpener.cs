@@ -23,18 +23,21 @@ public class TutorialBookStepOpener : MonoBehaviour
     private static readonly List<TutorialBookStepOpener> instances = new List<TutorialBookStepOpener>();
 
     private readonly HashSet<int> openedIndices = new HashSet<int>();
-    private StepBookPage pendingFocusPage;
-    private TutorialStep pendingFocusStep;
     private bool waitingForBookClose;
+    private TutorialStep pendingBookStep;
 
     public static bool ShouldDelayNpcForStep(TutorialStep step, TutorialNPCSpeaker speaker)
     {
         foreach (TutorialBookStepOpener opener in instances)
         {
-            if (opener == null || !opener.enabled || !opener.HasStepPage(step))
+            if (opener == null || !opener.isActiveAndEnabled)
                 continue;
 
-            return speaker != null && !speaker.HasFocusForStep(step);
+            if (opener.waitingForBookClose && opener.pendingBookStep == step)
+                return true;
+
+            if (opener.WillOpenForStep(step))
+                return true;
         }
 
         return false;
@@ -73,11 +76,10 @@ public class TutorialBookStepOpener : MonoBehaviour
         if (TutorialManager.Instance != null)
             TutorialManager.Instance.onStepChanged.RemoveListener(HandleStepChanged);
 
-        if (npcSpeaker != null)
-            npcSpeaker.CameraFocusFinished -= HandleNpcFocusFinished;
-
         if (bookUI != null)
             bookUI.Closed -= HandleBookClosedForNpcStart;
+
+        waitingForBookClose = false;
     }
 
     private void HandleStepChanged(TutorialStep step)
@@ -97,36 +99,18 @@ public class TutorialBookStepOpener : MonoBehaviour
                 return;
 
             openedIndices.Add(i);
-            OpenWithTiming(step, stepPage);
+            OpenBeforeNpc(step, stepPage);
             return;
         }
     }
 
-    private void OpenWithTiming(TutorialStep step, StepBookPage stepPage)
+    private void OpenBeforeNpc(TutorialStep step, StepBookPage stepPage)
     {
-        if (npcSpeaker != null && npcSpeaker.HasFocusForStep(step))
-        {
-            pendingFocusStep = step;
-            pendingFocusPage = stepPage;
-            npcSpeaker.CameraFocusFinished -= HandleNpcFocusFinished;
-            npcSpeaker.CameraFocusFinished += HandleNpcFocusFinished;
-            return;
-        }
-
         waitingForBookClose = true;
+        pendingBookStep = step;
         bookUI.Closed -= HandleBookClosedForNpcStart;
         bookUI.Closed += HandleBookClosedForNpcStart;
         bookUI.OpenAt(stepPage.pageIndex);
-    }
-
-    private void HandleNpcFocusFinished(TutorialStep step)
-    {
-        if (pendingFocusPage == null || step != pendingFocusStep)
-            return;
-
-        npcSpeaker.CameraFocusFinished -= HandleNpcFocusFinished;
-        bookUI.OpenAt(pendingFocusPage.pageIndex);
-        pendingFocusPage = null;
     }
 
     private void HandleBookClosedForNpcStart()
@@ -137,19 +121,26 @@ public class TutorialBookStepOpener : MonoBehaviour
         waitingForBookClose = false;
         bookUI.Closed -= HandleBookClosedForNpcStart;
 
-        if (TutorialManager.Instance != null && npcSpeaker != null)
-            npcSpeaker.PlayStepNow(TutorialManager.Instance.CurrentStep);
+        if (TutorialManager.Instance != null &&
+            (TutorialManager.Instance.CurrentStep == pendingBookStep ||
+             (pendingBookStep == TutorialStep.DashUnlocked &&
+              TutorialManager.Instance.CurrentStep == TutorialStep.DashPositionGuide)) &&
+            npcSpeaker != null)
+            npcSpeaker.PlayStepNow(pendingBookStep);
     }
 
-    private bool HasStepPage(TutorialStep step)
+    private bool WillOpenForStep(TutorialStep step)
     {
-        if (stepPages == null)
+        if (bookUI == null || stepPages == null)
             return false;
 
-        foreach (StepBookPage stepPage in stepPages)
+        for (int i = 0; i < stepPages.Length; i++)
         {
-            if (stepPage != null && stepPage.step == step)
-                return true;
+            StepBookPage stepPage = stepPages[i];
+            if (stepPage == null || stepPage.step != step)
+                continue;
+
+            return !stepPage.openOnlyOnce || !openedIndices.Contains(i);
         }
 
         return false;

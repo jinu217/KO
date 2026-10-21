@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
@@ -24,7 +25,7 @@ public class PauseManager : MonoBehaviour
     [SerializeField] private SettingController settingController;
     [SerializeField] private PlayerController playerController;
 
-    [Header("inventory Pause")]
+    [Header("Inventory Pause")]
     [SerializeField] private InventoryUI inventoryUI;
 
     public bool IsPaused { get; private set; }
@@ -44,9 +45,13 @@ public class PauseManager : MonoBehaviour
         Quit
     }
 
-    void Start()
+    // =========================
+    // 초기화
+    // =========================
+    private void Start()
     {
-        pausePanel.SetActive(false);
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
 
         if (settingPanel != null)
             settingPanel.SetActive(false);
@@ -56,15 +61,16 @@ public class PauseManager : MonoBehaviour
 
         Time.timeScale = 1f;
         IsPaused = false;
+        currentConfirmType = ConfirmType.None;
     }
 
-    void Update()
+    private void Update()
     {
         if (ShopInteractionState.BlockPauseThisFrame)
             return;
 
         // =========================
-        // 확인 패널이 열려 있을 때
+        // 확인 패널 입력 처리
         // =========================
         if (IsConfirmOpen)
         {
@@ -83,7 +89,7 @@ public class PauseManager : MonoBehaviour
         // =========================
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            // 튜토리얼북이 열려 있으면 PauseManager는 처리하지 않음
+            // 튜토리얼북이 열려 있으면 처리하지 않음
             if (TutorialBookUI.IsAnyOpen)
                 return;
 
@@ -94,7 +100,7 @@ public class PauseManager : MonoBehaviour
                 return;
             }
 
-            // 튜토리얼북이 닫혀 있을 때만 정지/재개
+            // 정지 / 재개
             if (IsPaused)
                 Resume();
             else
@@ -104,14 +110,16 @@ public class PauseManager : MonoBehaviour
 
     // =========================
     // 확인 패널 입력 처리
+    // F = 확인
+    // ESC = 취소
     // =========================
     private void HandleConfirmInput()
     {
-        // Enter = 확인
-        if (Input.GetKeyDown(KeyCode.Return) ||
-            Input.GetKeyDown(KeyCode.KeypadEnter))
+        // F = 확인
+        if (Input.GetKeyDown(KeyCode.F))
         {
             ConfirmAction();
+            return;
         }
 
         // ESC = 취소
@@ -128,7 +136,8 @@ public class PauseManager : MonoBehaviour
     {
         IsPaused = true;
 
-        pausePanel.SetActive(true);
+        if (pausePanel != null)
+            pausePanel.SetActive(true);
 
         // 메뉴를 첫 번째로 초기화
         pauseController?.ResetSelection();
@@ -146,7 +155,8 @@ public class PauseManager : MonoBehaviour
     {
         IsPaused = false;
 
-        pausePanel.SetActive(false);
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
 
         if (settingPanel != null)
             settingPanel.SetActive(false);
@@ -175,7 +185,8 @@ public class PauseManager : MonoBehaviour
     // =========================
     public void OpenSetting()
     {
-        pausePanel.SetActive(false);
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
 
         settingController.OpenPanel();
         settingController.ResetSelection();
@@ -188,7 +199,8 @@ public class PauseManager : MonoBehaviour
     {
         settingController.ClosePanel();
 
-        pausePanel.SetActive(true);
+        if (pausePanel != null)
+            pausePanel.SetActive(true);
 
         pauseController?.ResetSelection();
     }
@@ -201,7 +213,10 @@ public class PauseManager : MonoBehaviour
         currentConfirmType = ConfirmType.Title;
 
         if (confirmText != null)
-            confirmText.text = "타이틀로 돌아가시겠습니까?\n\nYes(Enter)  /  No(Esc)";
+        {
+            confirmText.text =
+                "타이틀 화면으로 돌아가시겠습니까?\n\n확인 (F)  /  취소 (Esc)";
+        }
 
         if (pausePanel != null)
             pausePanel.SetActive(false);
@@ -218,7 +233,10 @@ public class PauseManager : MonoBehaviour
         currentConfirmType = ConfirmType.Quit;
 
         if (confirmText != null)
-            confirmText.text = "게임을 종료하시겠습니까?\n\nYes(Enter)  /  No(Esc)";
+        {
+            confirmText.text =
+                "게임을 종료하시겠습니까?\n\n확인 (F)  /  취소 (Esc)";
+        }
 
         if (pausePanel != null)
             pausePanel.SetActive(false);
@@ -237,7 +255,7 @@ public class PauseManager : MonoBehaviour
 
         currentConfirmType = ConfirmType.None;
 
-        // 다시 정지 패널 열기
+        // 정지 패널로 복귀
         if (pausePanel != null)
             pausePanel.SetActive(true);
 
@@ -267,13 +285,12 @@ public class PauseManager : MonoBehaviour
     private void ReturnToTitle()
     {
         Time.timeScale = 1f;
-
         IsPaused = false;
 
         if (confirmPanel != null)
             confirmPanel.SetActive(false);
 
-        // 타이틀 씬 이름에 맞게 수정
+        // 실제 타이틀 씬 이름과 일치해야 함
         SceneManager.LoadScene("Title Scene");
     }
 

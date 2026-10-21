@@ -4,6 +4,6 @@ public enum InventoryWeaponType
     Sword,
     Blunt,
     Spear,
-    Axe,
+    Dagger,
     Scythe
 }

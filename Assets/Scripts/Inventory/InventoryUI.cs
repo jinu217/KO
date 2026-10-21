@@ -42,6 +42,7 @@ public class InventoryUI : MonoBehaviour
 
     public void Open()
     {
+        inventoryDisplay?.HideMechanizationWarning();
         inventoryPanel.SetActive(true);
 
         if (equipmentPanel != null)
@@ -58,6 +59,7 @@ public class InventoryUI : MonoBehaviour
 
     public void Close()
     {
+        inventoryDisplay?.HideMechanizationWarning();
         inventoryPanel.SetActive(false);
 
         if (equipmentPanel != null)

@@ -24,22 +24,25 @@ public class CharacterPreviewUI : MonoBehaviour
         Refresh();
     }
 
+    //============== 미리보기 갱신 ==============
     public void Refresh()
     {
-        UpdateSlot(
-            equipmentManager.weaponSlot.GetItem());
+        if (equipmentManager == null)
+            return;
 
-        UpdateSlot(
-            equipmentManager.headSlot.GetItem());
+        // 무기 장착 여부에 따라 무기 이미지 표시
+        ItemData weapon = equipmentManager.weaponSlot.GetItem();
 
-        UpdateSlot(
-            equipmentManager.bodySlot.GetItem());
+        if (weaponImage != null)
+        {
+            weaponImage.enabled = weapon != null;
+            weaponImage.sprite = weapon != null ? weapon.previewSprite : null;
+        }
 
-        UpdateSlot(
-            equipmentManager.handSlot.GetItem());
-
-        UpdateSlot(
-            equipmentManager.footSlot.GetItem());
+        UpdateSlot(equipmentManager.headSlot.GetItem());
+        UpdateSlot(equipmentManager.bodySlot.GetItem());
+        UpdateSlot(equipmentManager.handSlot.GetItem());
+        UpdateSlot(equipmentManager.footSlot.GetItem());
     }
 
     void UpdateSlot(ItemData item)
@@ -47,48 +50,46 @@ public class CharacterPreviewUI : MonoBehaviour
         if (item == null)
             return;
 
-        switch(item.equipType)
+        switch (item.equipType)
         {
             case EquipmentType.Weapon:
-
-                weaponImage.sprite =
-                    item.previewSprite;
+                if (weaponImage != null)
+                {
+                    weaponImage.enabled = true;
+                    weaponImage.sprite = item.previewSprite;
+                }
                 break;
-
+                
             case EquipmentType.Head:
-
-                headImage.sprite =
-                    item.previewSprite;
+                if (headImage != null)
+                    headImage.sprite = item.previewSprite;
                 break;
 
             case EquipmentType.Body:
+                if (bodyImage != null)
+                    bodyImage.sprite = item.bodySprite;
 
-                bodyImage.sprite =
-                    item.bodySprite;
+                if (shoulderLeftImage != null)
+                    shoulderLeftImage.sprite = item.shoulderLeftSprite;
 
-                shoulderLeftImage.sprite =
-                    item.shoulderLeftSprite;
-
-                shoulderRightImage.sprite =
-                    item.shoulderRightSprite;
+                if (shoulderRightImage != null)
+                    shoulderRightImage.sprite = item.shoulderRightSprite;
                 break;
 
             case EquipmentType.Hand:
+                if (handLeftImage != null)
+                    handLeftImage.sprite = item.handLeftSprite;
 
-                handLeftImage.sprite =
-                    item.handLeftSprite;
-
-                handRightImage.sprite =
-                    item.handRightSprite;
+                if (handRightImage != null)
+                    handRightImage.sprite = item.handRightSprite;
                 break;
 
             case EquipmentType.Foot:
+                if (footLeftImage != null)
+                    footLeftImage.sprite = item.footLeftSprite;
 
-                footLeftImage.sprite =
-                    item.footLeftSprite;
-
-                footRightImage.sprite =
-                    item.footRightSprite;
+                if (footRightImage != null)
+                    footRightImage.sprite = item.footRightSprite;
                 break;
         }
     }

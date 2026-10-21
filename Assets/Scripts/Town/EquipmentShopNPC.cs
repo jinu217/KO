@@ -346,7 +346,7 @@ public class EquipmentShopNPC : NPCShopBase
             foreach (ItemData item in itemDatabase.Items)
             {
                 if (item != null && item.itemType == ItemType.Equipment &&
-                    item.equipType == type)
+                    item.equipType == type && item.rarity != ItemRarity.Mechanization)
                     valid.Add(item);
             }
         }
@@ -366,7 +366,8 @@ public class EquipmentShopNPC : NPCShopBase
             return null;
 
         ItemData item = itemDatabase.GetById(id);
-        if (item == null || item.itemType != ItemType.Equipment || item.equipType != type)
+        if (item == null || item.itemType != ItemType.Equipment || item.equipType != type ||
+            item.rarity == ItemRarity.Mechanization)
             return null;
 
         return item;
