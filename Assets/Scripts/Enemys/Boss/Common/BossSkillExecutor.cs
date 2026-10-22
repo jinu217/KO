@@ -568,8 +568,17 @@ public static class BossSkillExecutor
         if (step.damage <= 0 || step.hitboxSize.x <= 0 || step.hitboxSize.y <= 0) return;
         var fx = context.BossTransform.GetComponent<BossEffects>();
         if (fx == null) return;
-        Vector3 center = context.BossTransform.position + new Vector3(context.LookDirection * step.hitboxOffset.x, step.hitboxOffset.y, 0);
+        Vector3 center = MeleeCenter(step, context);
         fx.PlayStep(step, center, context.LookDirection);
+    }
+
+    private static Vector3 MeleeCenter(BossAttackStepData step, IBossSkillContext context)
+    {
+        float reach = 0f;
+        if ((step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam) &&
+            context is Stage1_MidBoss midBoss1) reach = midBoss1.MeleeReachBonus;
+        return context.BossTransform.position + new Vector3(
+            context.LookDirection * (step.hitboxOffset.x + reach), step.hitboxOffset.y, 0);
     }
 
     private static bool HitPlayer(BossAttackStepData step, IBossSkillContext context)
@@ -577,10 +586,7 @@ public static class BossSkillExecutor
         if (step.damage <= 0f || step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f)
             return false;
 
-        Vector2 center = (Vector2)context.BossTransform.position + new Vector2(
-            context.LookDirection * step.hitboxOffset.x,
-            step.hitboxOffset.y
-        );
+        Vector2 center = MeleeCenter(step, context);
 
         Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer);
         if (!CanDamagePlayer(hit))

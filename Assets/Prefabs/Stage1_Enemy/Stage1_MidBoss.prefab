@@ -975,8 +975,9 @@ MonoBehaviour:
   skill3ReductionDistance: 6
   visualRoot: {fileID: 0}
   artworkFacesLeft: 0
-  bossAnimator: {fileID: 0}
+  bossAnimator: {fileID: 6076169005715364182}
   animationOverrides: []
+  meleeReachBonus: 0.2
 --- !u!114 &2121253478190188275
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1124,8 +1125,15 @@ MonoBehaviour:
   comboTimings:
   - clip: {fileID: 7400000, guid: 1a283f7cf00fa1540a4773cf4abbc062, type: 2}
     horizontalImpact: 1.2616667
+    impacts:
+    - 0.74
+    - 1.2616667
   - clip: {fileID: 7400000, guid: e4f0bdb84de49f94f99fe528015d64fa, type: 2}
     horizontalImpact: 2.3716667
+    impacts:
+    - 0.74
+    - 1.6883333
+    - 2.3716667
   overrides: []
   chaseStartDelay: 0.3
 --- !u!1 &4591527111188279586

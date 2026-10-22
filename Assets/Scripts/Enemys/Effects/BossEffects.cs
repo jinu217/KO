@@ -23,6 +23,10 @@ public sealed class BossEffects : MonoBehaviour
     public MobEffects.Effect spin = new MobEffects.Effect();
     public MobEffects.Effect punch = new MobEffects.Effect();
     public MobEffects.Effect dash = new MobEffects.Effect { fps = 20, scale = 3f, artFacesRight = false };
+    [Header("둔기 / 도끼 보스 가로베기 이펙트")]
+    [Min(.01f)] public float midBoss1HorizontalScale = 1.35f;
+    public float midBoss1HorizontalHeight = .25f;
+    public float additionalHeavyHorizontalHeight = .15f;
     public Transform weaponAnchor;
     public Animator motionAnimator;
     [System.Serializable]
@@ -30,6 +34,7 @@ public sealed class BossEffects : MonoBehaviour
     {
         public AnimationClip clip;
         public float horizontalImpact;
+        public float[] impacts;
     }
     public ImpactTiming[] comboTimings;
     public enum Kind { None, Down, Up, Horizontal, Thrust, Spin, Punch, Uppercut }
@@ -87,13 +92,29 @@ public sealed class BossEffects : MonoBehaviour
         bool dashStep = currentStep != null && (currentStep.actionType == BossActionType.DashAttack ||
             (mainBoss && stage == 4 && skillIndex == 3 && currentStep.actionType == BossActionType.MoveForward));
         if (!dashStep || !moving || enemy == null || enemy.IsDead) { ClearDash(); return; }
-        if (dashInstance == null) dashInstance = Play(dash, Center(), enemy.FXDirection, true);
+        if (dashInstance == null) dashInstance = Play(dash, DashOrigin(), enemy.FXDirection, true);
         if (dashInstance != null)
         {
-            dashInstance.transform.position = Center() + new Vector3(dash.offset.x * enemy.FXDirection, dash.offset.y, 0);
+            dashInstance.transform.position = DashOrigin() + new Vector3(dash.offset.x * enemy.FXDirection, dash.offset.y, 0);
             float angle = Mathf.Atan2(delta.y, Mathf.Abs(delta.x)) * Mathf.Rad2Deg;
             dashInstance.transform.rotation = Quaternion.Euler(0, 0, angle * enemy.FXDirection);
         }
+    }
+    bool UsesHeavyWeapon()
+    {
+        if ((stage == 1 && !mainBoss) || (stage == 2 && mainBoss)) return true;
+        if (weaponAnchor == null) return false;
+        string name = weaponAnchor.name.ToLowerInvariant();
+        return name == "axe" || name == "club" || name == "mace" || name == "hammer";
+    }
+    float HeavyHorizontalHeight => midBoss1HorizontalHeight + additionalHeavyHorizontalHeight;
+    Vector3 DashOrigin()
+    {
+        if (!UsesHeavyWeapon()) return Center();
+        Vector3 p = Feet();
+        // Root의 바닥 기준 + 진행 반대쪽. collider 폭도 반영하여 발 뒤에 배치.
+        p.x -= enemy.FXDirection * (body != null ? body.bounds.extents.x : .35f);
+        return p;
     }
     int StepIndex(BossAttackStepData step) => executing?.active?.attackSteps?.IndexOf(step) ?? -1;
     int Ordinal(BossAttackStepData step, int pulse)
@@ -118,8 +139,8 @@ public sealed class BossEffects : MonoBehaviour
     }
     public IEnumerator WaitForImpact(BossAttackStepData step, int pulse)
     {
-        // MidBoss1: 마지막 가로베기는 실제 무기 반전 키까지 판정과 FX를 함께 보류한다.
-        if (stage != 1 || mainBoss || TotalHits() < 2 || Ordinal(step, pulse) != TotalHits() - 1 ||
+        // MidBoss1: 모든 콤보 타격을 실제 클립 시각까지 판정과 FX 함께 보류한다.
+        if (stage != 1 || mainBoss || TotalHits() < 2 ||
             motionAnimator == null || comboTimings == null) yield break;
         float waited = 0;
         while (motionAnimator.isActiveAndEnabled && enemy != null && !enemy.IsDead && waited < 8f)
@@ -129,7 +150,13 @@ public sealed class BossEffects : MonoBehaviour
             foreach (var clip in motionAnimator.GetCurrentAnimatorClipInfo(0))
                 foreach (var timing in comboTimings)
                     if (timing.clip == clip.clip)
-                    { matched = true; pending |= state.normalizedTime * clip.clip.length + .001f < timing.horizontalImpact; }
+                    {
+                        int ordinal = Ordinal(step, pulse);
+                        float impact = timing.impacts != null && ordinal < timing.impacts.Length
+                            ? timing.impacts[ordinal] : ordinal == TotalHits() - 1 ? timing.horizontalImpact : -1f;
+                        matched = true;
+                        pending |= state.normalizedTime * clip.clip.length + .001f < impact;
+                    }
             if (matched && !pending) yield break;
             if (!matched && waited > .4f) yield break;
             waited += Time.deltaTime;
@@ -217,9 +244,12 @@ public sealed class BossEffects : MonoBehaviour
         var effect = kind == Kind.Up ? upward : kind == Kind.Horizontal || kind == Kind.Thrust ? horizontal :
             kind == Kind.Spin ? spin : kind == Kind.Punch || kind == Kind.Uppercut ? punch : attack;
         if (kind == Kind.Uppercut) angle = 65;
+        bool heavyHorizontal = UsesHeavyWeapon() && kind == Kind.Horizontal;
+        if (heavyHorizontal) center.y += HeavyHorizontalHeight;
         var instance = Play(effect, center + new Vector3(extra.x * direction, extra.y, 0), direction);
         if (instance != null)
         {
+            if (heavyHorizontal) instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
             float worldAngle = angle * direction;
             if (kind == Kind.Thrust && stage == 5 && skillIndex == 0 && weaponAnchor != null)
             {
@@ -235,7 +265,14 @@ public sealed class BossEffects : MonoBehaviour
         Vector3 feet = Feet();
         return Physics2D.Raycast(feet + Vector3.up * .05f, Vector2.down, .15f, enemy.wallLayer).collider != null;
     }
-    public void PlayReturnAttack(Vector3 position, float direction) { Play(horizontal, position, direction); }
+    public void PlayReturnAttack(Vector3 position, float direction)
+    {
+        bool heavy = UsesHeavyWeapon();
+        if (heavy) position.y += HeavyHorizontalHeight;
+        var instance = Play(horizontal, position, direction);
+        if (heavy && instance != null)
+            instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
+    }
     public void PlayShot(Vector3 position, float direction) { } // 생성물에는 추가 FX를 붙이지 않음
     public void PlayAttack(Vector3 position, float direction, bool ranged = false)
     { Play(ranged ? shot : attack, position, direction); }

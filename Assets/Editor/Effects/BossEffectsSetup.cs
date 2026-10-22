@@ -80,7 +80,7 @@ public static class BossEffectsSetup
         AssetDatabase.SaveAssets();
         Debug.Log("보스 FX 적용 완료: " + count + "개. 연결된 씬 프리팹에도 적용됩니다.");
     }
-    static void ConfigureComboTimings(BossEffects fx)
+    public static void ConfigureComboTimings(BossEffects fx)
     {
         var list = new System.Collections.Generic.List<BossEffects.ImpactTiming>();
         if (fx.motionAnimator != null && fx.motionAnimator.runtimeAnimatorController != null)
@@ -97,7 +97,12 @@ public static class BossEffectsSetup
                 }
                 if (impact >= 0)
                 {
-                    list.Add(new BossEffects.ImpactTiming { clip = clip, horizontalImpact = impact });
+                    list.Add(new BossEffects.ImpactTiming
+                    {
+                        clip = clip,
+                        horizontalImpact = impact,
+                        impacts = MidBoss1_AnimGenerators.GetComboImpactTimes(clip)
+                    });
                     Debug.Log(clip.name + " 가로베기 타격: " + impact.ToString("F3") + "초 / " + (impact * clip.frameRate).ToString("F1") + "프레임 (클립 원본 시간)");
                 }
                 else Debug.LogWarning(clip.name + ": 가로베기 반전 키를 찾지 못했습니다. BossEffects Combo Timings에 타격 시간을 지정하세요.");
