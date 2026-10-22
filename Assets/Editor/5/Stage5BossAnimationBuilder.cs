@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-// R9 2026-10-18: rear fist, front-hand sword transfer, clock buff, unified pull/dash and rear-knee drive.
+// R32: verified clip rebuild, gameplay-prefab bindings, authored floating desire pose, kneeling death and corrected groggy.
 // Rest transforms, Sprite pivots and scale are read from the target prefab on each generation.
 public static class Stage5BossAnimationBuilder
 {
@@ -295,13 +295,47 @@ public static class Stage5BossAnimationBuilder
         r.Ground(p); return p;
     }
 
+    // Front knee rests below the pelvis; rear knee projects forward, rear sole stays level.
+    static void MainKneelingLegs(Rig r, Pose p)
+    {
+        p.rot[Bottom] = -p.rot[Body];
+        p.rot[TF] = 12; p.rot[CF] = -112; p.rot[FF] = 75;
+        p.rot[TB] = 88; p.rot[CB] = -106; p.rot[FB] = 18;
+        r.Ground(p);
+        for (int i = 0; i < 3; i++)
+        {
+            Matrix4x4 foot = r.Matrix(p, FB);
+            float low = r.vertices[FB].Min(v => foot.MultiplyPoint3x4(v).y);
+            r.Leg(p, false, r.World(p, FB) + Vector2.up * (r.floor - low), 0);
+            r.Ground(p);
+        }
+        p.rot[FB] = -r.Angle(p, CB);
+    }
+    static Pose MainTimeDeath(Rig r, float f)
+    {
+        Pose rest = r.Rest(), weak = Arms(r, -5, 5, 8, -6, -3, 14, 5);
+        weak.rot[Head] = -8; weak.rot[Cape] = -4;
+        Pose knee = Arms(r, -18, 8, 5, -12, 5, 12, 4);
+        knee.rot[Head] = -16; MainKneelingLegs(r, knee);
+        Pose end = knee.Clone(); end.rot[Body] = -24; end.rot[Head] = -32;
+        end.rot[SB] = 6; end.rot[AB] = 3; end.rot[HB] = -18;
+        end.rot[SF] = 4; end.rot[AF] = 8; end.rot[HF] = 6;
+        end.rot[Cape] = 0; MainKneelingLegs(r, end);
+        r.BladeToFloor(end); // Loose grip: blade slumps toward the floor rather than hovering.
+        knee.rot[Weapon] = end.rot[Weapon];
+        Pose p = Track(f, new Key(0, rest), new Key(5, weak), new Key(11, knee),
+            new Key(16, end), new Key(36, end));
+        if (f >= 11) r.Ground(p);
+        return p;
+    }
+
     static List<Motion> Motions(Rig r)
     {
         var list = new List<Motion> {
             new Motion("Idle",36,true,f=>Idle(r,f)),
             new Motion("Walk",16,true,f=>Move(r,f,16,false)),
             new Motion("Run",r.main?10:8,true,f=>Move(r,f,r.main?10:8,true)),
-            new Motion("Death",30,false,f=>Death(r,f))
+            new Motion("Death",r.main?36:30,false,f=>r.main?MainTimeDeath(r,f):Death(r,f))
         };
         if (r.main) MainMotions(r, list); else MidMotions(r, list);
         return list;
@@ -744,14 +778,14 @@ public static class Stage5BossAnimationBuilder
         int strike = Mathf.Min(31, Mathf.FloorToInt(t / 2.25f)), pass = strike % 4;
         float side = ((strike / 4) % 2 == 0) ? 1f : -1f;
         Vector2[] start ={new Vector2(1.65f,.65f+height),new Vector2(1.20f,-.55f+height),
-            new Vector2(2.10f,.30f+height),new Vector2(1.25f,.15f+height)};
+            new Vector2(2.10f,.30f+height),new Vector2(.80f,.15f+height)};
         Vector2[] end ={new Vector2(1.65f,-.45f+height),new Vector2(2.45f,.70f+height),
-            new Vector2(2.10f,.30f+height),new Vector2(2.65f,.15f+height)};
+            new Vector2(2.10f,.30f+height),new Vector2(3.25f,.15f+height)};
         float[] fromAngle = { 25, -45, -90, -90 }, toAngle = { -155, -45, 270, -90 };
         for (int k = 0; k < 4; k++)
         { start[k].x *= side; end[k].x *= side; fromAngle[k] *= side; toAngle[k] *= side; }
         // A point below the grip stays fixed during the downward cut.
-        Vector2 virtualLocal = new Vector2(0, -.55f);
+        Vector2 virtualLocal = new Vector2(0, -.85f);
         Vector2 cutCenter = new Vector2(1.65f * side, -.05f + height);
         Pose geometry = p.Clone();
         r.WeaponAt(geometry, Vector2.zero, fromAngle[0]);
@@ -770,7 +804,7 @@ public static class Stage5BossAnimationBuilder
         r.WeaponAt(geometry, Vector2.zero, fromAngle[2]);
         start[2] = spinTarget - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(bladeCenter);
         end[2] = start[2];
-        Vector2 farther = new Vector2(.65f * side, 0);
+        Vector2 farther = new Vector2(1.05f * side, 0);
         for (int k = 0; k < 4; k++) { start[k] += farther; end[k] += farther; }
         cutCenter += farther; spinTarget += farther;
         // Second and third damage slots share one continuous full turn.
@@ -786,16 +820,16 @@ public static class Stage5BossAnimationBuilder
         // At the beginning of a group, depart from the previous side's final hit.
         if (strike > 0 && pass == 0) { previous.x = -previous.x; previousAngle = -previousAngle; }
         Vector2 target; float angle;
-        if (u < .45f)
+        if (u < .32f)
         {
-            float travel = S(u / .45f);
+            float travel = S(u / .32f);
             target = Vector2.Lerp(previous, start[pass], travel);
             target.y += .70f * Mathf.Sin(travel * Mathf.PI);
             angle = Mathf.LerpAngle(previousAngle, fromAngle[pass], travel);
         }
         else
         {
-            float attack = S((u - .45f) / .55f);
+            float attack = S((u - .32f) / .38f);
             target = Vector2.Lerp(start[pass], end[pass], attack);
             angle = Mathf.Lerp(fromAngle[pass], toAngle[pass], attack);
             if (pass == 0 || pass == 2)
@@ -806,9 +840,9 @@ public static class Stage5BossAnimationBuilder
                 target = anchor - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(localAnchor);
             }
         }
-        if ((pass == 1 && u >= .45f) || pass == 2)
+        if ((pass == 1 && u >= .32f) || pass == 2)
         {
-            float turnProgress = Mathf.Clamp01((pass - 1 + u - .45f) / 1.55f);
+            float turnProgress = Mathf.Clamp01((pass - 1 + u - .32f) / 1.38f);
             angle = (-90 + 360 * turnProgress) * side;
             r.WeaponAt(geometry, Vector2.zero, angle);
             target = spinTarget - (Vector2)r.Matrix(geometry, Weapon).MultiplyVector(bladeCenter);
@@ -868,8 +902,21 @@ public static class Stage5BossAnimationBuilder
         frontBuff = rest.Clone(); frontBuff.rot[SF] = -45; frontBuff.rot[AF] = 0; frontBuff.rot[HF] = 0;
         list.Add(new Motion("skill2", 24, false, f => Track(f, new Key(0, rest), new Key(6, capeReady), new Key(9, capeReady),
             new Key(11, frontBuff), new Key(16, frontBuff), new Key(24, rest))).Cue(12, "Skill2.BuffApply").Cue(24, "Action.End"));
-        list.Add(new Motion("skill4", 30, false, f => Track(f, new Key(0, rest), new Key(6, rest), new Key(11, backBuff),
-            new Key(16, backBuff), new Key(30, rest))).Cue(15, "Skill4.BuffApply").Cue(30, "Action.End"));
+        Pose plantReady = Arms(r, -8, 48, -60, 0, 12, 60, 5);
+        MainReadyLegs(r, plantReady, .16f, .22f);
+        r.HandAt(plantReady, true, r.World(plantReady, HB));
+        Pose planted = plantReady.Clone(); planted.pos[Body].y -= .28f;
+        r.BladeToFloor(planted); r.Ground(planted); r.BladeToFloor(planted);
+        r.HandAt(planted, true, r.World(planted, HB));
+        float plantSign = r.Matrix(plantReady, HB).determinant < 0 ? -1 : 1;
+        Pose plantTurn = plantReady.Clone(); plantTurn.rot[Weapon] += 360 * plantSign;
+        planted.rot[Weapon] = plantTurn.rot[Weapon] + Mathf.DeltaAngle(plantTurn.rot[Weapon], planted.rot[Weapon]);
+        Pose extracted = plantReady.Clone(); extracted.rot[Weapon] = planted.rot[Weapon];
+        Pose unwind = plantReady.Clone(); unwind.rot[Weapon] = extracted.rot[Weapon] - 360 * plantSign;
+        Pose plantRest = rest.Clone(); plantRest.rot[Weapon] = unwind.rot[Weapon] + Mathf.DeltaAngle(unwind.rot[Weapon], rest.rot[Weapon]);
+        list.Add(new Motion("skill4", 42, false, f => Track(f, new Key(0, rest), new Key(6, plantReady),
+            new Key(15, plantTurn), new Key(18, planted), new Key(25, planted), new Key(29, extracted),
+            new Key(37, unwind), new Key(42, plantRest))).Cue(18, "Skill4.BuffApply").Cue(42, "Action.End"));
         Pose hover = rest.Clone();
         hover.rot[SF] = 15; hover.rot[AF] = 100; hover.rot[HF] = 0;
         hover.rot[HB] = -15; hover.rot[Weapon] = -105;
@@ -882,21 +929,32 @@ public static class Stage5BossAnimationBuilder
         lift.pos[Weapon] = new Vector3(.230f, -.228f, 0); lift.rot[Weapon] = 90;
         lift.rot[Bottom] = 15; lift.rot[TF] = -5; lift.rot[CF] = -12; lift.rot[FF] = -60;
         lift.rot[TB] = 15; lift.rot[CB] = -45; lift.rot[FB] = -45;
-        list.Add(new Motion("skill3", 15, false, f => Track(f, new Key(0, rest), new Key(3, hover), new Key(4, lift), new Key(15, lift)))
-            .Cue(4, "Skill3.DashStart").Cue(15, "Skill3.DashTimeout"));
+        lift.scale[SF].x = -1; lift.scale[SB].x = -1;
+        list.Add(new Motion("skill3", 18, false, f =>
+        {
+            Pose p = Track(f, new Key(0, rest), new Key(3, hover), new Key(6, hover), new Key(7, lift), new Key(18, lift));
+            // Reflection changes discretely: never squash the shoulder through scale zero.
+            p.scale[SF].x = f >= 6 ? -1 : rest.scale[SF].x; p.scale[SB].x = f >= 6 ? -1 : rest.scale[SB].x;
+            return p;
+        }).Cue(7, "Skill3.DashStart").Cue(18, "Skill3.DashTimeout"));
         Pose over = lift.Clone(); over.rot[Body] -= 165;
         over.rot[TF] = 115; over.rot[CF] = -145; over.rot[FF] = -30;
         over.rot[TB] = 125; over.rot[CB] = -150; over.rot[FB] = -30;
         over.rot[SF] = 80; over.rot[AF] = 75; over.rot[SB] = 85; over.rot[AB] = 70;
-        Pose landing = slam.Clone(); landing.rot[Body] -= 360;
+        Pose landing = slam.Clone(); landing.rot[Body] = lift.rot[Body] - 360;
         Pose followEnd = rest.Clone(); followEnd.rot[Body] -= 360;
         list.Add(new Motion("skill3_Follow", 18, false, f =>
         {
-            Pose p = Track(f, new Key(0, lift), new Key(6, over), new Key(12, landing), new Key(14, landing), new Key(18, followEnd));
+            Pose p = Track(f, new Key(0, lift), new Key(4, over), new Key(8, over), new Key(12, landing), new Key(14, landing), new Key(18, followEnd));
+            if (f <= 12) p.rot[Body] = lift.rot[Body] - 360 * (f / 12f);
+            p.scale[SF].x = f < 10 ? -1 : rest.scale[SF].x; p.scale[SB].x = f < 10 ? -1 : rest.scale[SB].x;
             return p;
         }).Cue(0, "Skill3.DashEnd").Cue(0, "Skill3.VaultStart").Cue(12, "Skill3.FollowImpact")
             .Cue(12, "Skill3.VaultEnd").Cue(18, "Action.End"));
-        list.Add(new Motion("skill3_Miss", 6, false, f => Track(f, new Key(0, lift), new Key(3, hover), new Key(6, rest))).Cue(0, "Skill3.DashEnd").Cue(6, "Action.End"));
+        list.Add(new Motion("skill3_Miss", 6, false, f => {
+            Pose p = Track(f, new Key(0, lift), new Key(3, hover), new Key(6, rest));
+            p.scale[SF].x = f < 2 ? -1 : rest.scale[SF].x; p.scale[SB].x = f < 2 ? -1 : rest.scale[SB].x; return p;
+        }).Cue(0, "Skill3.DashEnd").Cue(6, "Action.End"));
         Pose crossUp = dash.Clone(), crossDown = dash.Clone();
         crossUp.rot[Body] = -12; crossDown.rot[Body] = -26;
         foreach (Pose pose in new[] { crossUp, crossDown, dash })
@@ -912,29 +970,57 @@ public static class Stage5BossAnimationBuilder
         }).Cue(48, "Action.End");
         for (int i = 0; i < 4; i++) cross.Cue(8 + i * 8, "Skill5.PassStart." + i).Cue(9 + i * 8, "Skill5.Impact." + i).Cue(11 + i * 8, "Skill5.PassEnd." + i);
         list.Add(cross);
-        Pose timePose = Arms(r, 0, 55, 55, 0, 55, 55, 8);
-        r.HandAt(timePose, false, new Vector2(.10f, .50f));
-        r.HandAt(timePose, true, r.World(timePose, Weapon) + new Vector2(-.08f, -.08f));
-        // Reflected weapon parents reverse local rotation: choose the sign for root-local CCW.
-        float spinSign = r.Matrix(timePose, HB).determinant < 0 ? -1 : 1;
-        // Preserve mirrored desire variants: these belong to MainBoss, not MidBoss skill3.
+        // Authored desire pose. Do not replace these arms with hand-target IK.
+        Pose timePose = rest.Clone();
+        timePose.rot[SF] = 0; timePose.rot[AF] = 85; timePose.rot[HF] = 0;
+        timePose.rot[SB] = 15; timePose.rot[AB] = -90; timePose.rot[HB] = 0;
+        timePose.pos[Weapon] = new Vector3(.148f, -.317f, 0); timePose.rot[Weapon] = 75;
+        timePose.pos[Body].y += .24f;
+        timePose.rot[FF] = -18; timePose.rot[FB] = -18;
+        float clockStart = r.Angle(timePose, Weapon);
         for (int mirror = 0; mirror < 2; mirror++)
         {
-            Pose spun = timePose.Clone(), returned = rest.Clone();
-            float direction = mirror == 0 ? 1 : -1;
-            spun.rot[Weapon] += 360 * spinSign * direction;
-            returned.rot[Weapon] += 360 * spinSign * direction;
-            list.Add(new Motion(mirror == 0 ? "Dskill" : "Dskill_Mirrored", 30, false, f => Track(f,
-                new Key(0, rest), new Key(7, timePose), new Key(22, spun), new Key(24, spun), new Key(30, returned)))
-                .Cue(0, "Desire.Begin").Cue(30, "Action.End"));
+            float clockDirection = mirror == 0 ? -1 : 1;
+            list.Add(new Motion(mirror == 0 ? "Dskill" : "Dskill_Mirrored", 36, false, f =>
+            {
+                Pose p = Track(f, new Key(0, rest), new Key(6, timePose), new Key(30, timePose), new Key(36, rest));
+                if (f >= 6 && f <= 30)
+                {
+                    float tick = Mathf.Clamp(f - 6, 0, 24), quarter = Mathf.Min(3, Mathf.Floor(tick / 6));
+                    float progress = quarter + S(Mathf.Clamp01((tick - quarter * 6) / 4));
+                    // Keep the grip attached to the supplied hand pose while the body floats.
+                    Vector2 center = r.World(p, Weapon);
+                    r.WeaponAt(p, center, clockStart + clockDirection * 90 * progress);
+                }
+                return p;
+            }).Cue(0, "Desire.Begin").Cue(36, "Action.End"));
         }
-        list.Add(new Motion("DesireSuccess", 12, false, f => Track(f, new Key(0, rest), new Key(4, timePose), new Key(12, rest)))
-            .Cue(0, "Desire.RestoreHP").Cue(12, "Action.End"));
-        Pose groggy = Arms(r, -20, 5, 4, 0, 8, 5, 0); groggy.pos[Body].y -= .24f; groggy.rot[Head] = -18;
-        r.Leg(groggy, true, r.World(rest, FF)); r.Leg(groggy, false, r.World(rest, FB));
-        list.Add(new Motion("Groggy", 12, false, f => Mix(rest, groggy, f / 12)).Cue(0, "Groggy.Begin"));
-        list.Add(new Motion("GroggyLoop", 24, true, f => { Pose p = groggy.Clone(); p.rot[Head] += .6f * Mathf.Sin(f / 24 * Mathf.PI * 2); return p; }));
-        list.Add(new Motion("GroggyEnd", 8, false, f => Mix(groggy, rest, f / 8)).Cue(8, "Action.End"));
+        for (int mirror = 0; mirror < 2; mirror++)
+        {
+            float successDirection = mirror == 0 ? 1 : -1;
+            list.Add(new Motion(mirror == 0 ? "DesireSuccess" : "DesireSuccess_Mirrored", 12, false, f =>
+            {
+                Pose p = Track(f, new Key(0, rest), new Key(2, timePose), new Key(10, timePose), new Key(12, rest));
+                if (f >= 2 && f <= 10) r.WeaponAt(p, r.World(p, Weapon), clockStart + successDirection * 360 * (f - 2) / 8);
+                return p;
+            }).Cue(0, "Desire.RestoreHP").Cue(12, "Action.End"));
+        }
+        Pose groggy = rest.Clone(); groggy.rot[Body] = -20; groggy.rot[Head] = -30;
+        MainKneelingLegs(r, groggy);
+        groggy.rot[SB] = 90; groggy.rot[AB] = 0; groggy.rot[HB] = 0;
+        groggy.scale[AB].x = -1;
+        // Fixed rear-arm reference; aim only the blade, never solve rear arm backwards through IK.
+        r.BladeAt(groggy, Vector2.down);
+        groggy.rot[SF] = 25; groggy.rot[AF] = 75; groggy.rot[HF] = 5;
+        // Front arm is allowed to reach the grip; keep it within an anatomical elbow branch.
+        r.HandAt(groggy, true, r.World(groggy, HB));
+        groggy.rot[SF] = Mathf.Clamp(Mathf.DeltaAngle(0, groggy.rot[SF]), -15, 85);
+        groggy.rot[AF] = Mathf.Clamp(Mathf.DeltaAngle(0, groggy.rot[AF]), 0, 120);
+        MainKneelingLegs(r, groggy);
+        r.BladeAt(groggy, Vector2.down);
+        list.Add(new Motion("Groggy", 12, false, f => { Pose p = Mix(rest, groggy, f / 12); p.scale[AB].x = f >= 3 ? -1 : rest.scale[AB].x; p.rot[FB] = -r.Angle(p, CB); return p; }).Cue(0, "Groggy.Begin"));
+        list.Add(new Motion("GroggyLoop", 24, true, f => { Pose p = groggy.Clone(); p.rot[Head] = groggy.rot[Head]; return p; }));
+        list.Add(new Motion("GroggyEnd", 8, false, f => { Pose p = Mix(groggy, rest, f / 8); p.scale[AB].x = f < 6 ? -1 : rest.scale[AB].x; p.rot[FB] = -r.Angle(p, CB); return p; }).Cue(8, "Action.End"));
     }
 
     public static void Generate(bool main, string only = null, bool setupOnly = false)
@@ -950,13 +1036,19 @@ public static class Stage5BossAnimationBuilder
             {
                 string path = r.folder + "/" + r.prefix + m.name + ".anim";
                 bool selected = only == null || m.name == only || m.name.StartsWith(only + "_", StringComparison.Ordinal)
+                    || (only == "Dskill" && m.name.StartsWith("DesireSuccess", StringComparison.Ordinal))
                     || (only == "Groggy" && m.name.StartsWith("Groggy", StringComparison.Ordinal));
                 if ((!setupOnly && selected) || AssetDatabase.LoadAssetAtPath<AnimationClip>(path) == null) BuildClip(r, m, path);
             }
             Setup(r, motions);
             ApplyExistingData(r.main);
             AssetDatabase.SaveAssets();
-            Debug.Log("[Stage5 R13] " + r.name + " 애니메이션/컨트롤러 완료: " + r.folder +
+            if (r.main)
+            {
+                BindMainCombatPrefabs(r);
+                if (!setupOnly && only == null) VerifyMainClips(r.folder);
+            }
+            Debug.Log("[Stage5 R32] " + r.name + " 애니메이션/컨트롤러 완료: " + r.folder +
                 ". 조건부 연계와 실제 타격/이동은 Stage5 전투 코드에서 Relay 신호를 연결하세요.");
         }
     }
@@ -965,6 +1057,7 @@ public static class Stage5BossAnimationBuilder
     // Position stays on the shoulder attachment; only the Cape's local Z rotation changes.
     static void ApplyCape(Rig r, Motion m, float frame, Pose pose)
     {
+        if (m.name == "Death") return; // Death cloth rewinds with the body, then settles once.
         float turn = 0;
         if (m.loop)
         {
@@ -1002,15 +1095,21 @@ public static class Stage5BossAnimationBuilder
             else if (frame < 5) turn = 14 * S((frame - 3) / 2);
             else if (frame < 8) turn = 14 * (1 - S((frame - 5) / 3));
             else if (frame < 20) turn = 0;
-            else if (frame < 22) turn = -37 * S((frame - 20) / 2);
-            else if (frame <= 30) turn = -37;
-            else turn = -37 * (1 - S((frame - 30) / 5));
+            else if (frame < 22) turn = -47 * S((frame - 20) / 2);
+            else if (frame <= 30) turn = -47;
+            else turn = -47 * (1 - S((frame - 30) / 5));
         }
         if (m.name == "skill2")
-            turn = frame < 9 ? 0 : frame < 11 ? -60 * S((frame - 9) / 2) : -60 * (1 - S((frame - 11) / 13));
-        if (m.name == "skill3") turn = 6 * S((frame - 3));
-        if (m.name == "skill3_Follow") turn = 6 * (1 - S(frame / 18));
+            turn = frame < 9 ? 0 : frame < 11 ? -75 * S((frame - 9) / 2) : -75 * (1 - S((frame - 11) / 13));
+        if (m.name == "skill3") turn = 6 * S((frame - 6));
+        if (m.name == "skill3_Follow") turn = frame < 10 ? 6 : frame < 12 ? Mathf.Lerp(6, -45, S((frame - 10) / 2)) : frame < 14 ? -45 : -45 * (1 - S((frame - 14) / 4));
         if (m.name == "skill3_Miss") turn = 6 * (1 - S(frame / 6));
+        if (m.name.StartsWith("Dskill", StringComparison.Ordinal))
+        {
+            float weight = S(frame / 6) * (1 - S((frame - 30) / 6));
+            pose.pos[Body].y += .025f * Mathf.Sin((frame - 6) * Mathf.PI / 12) * weight;
+            turn = (-5 + 3 * Mathf.Sin((frame - 6) * Mathf.PI / 8)) * weight;
+        }
         pose.pos[Cape] = r.rest.pos[Cape]; pose.scale[Cape] = r.rest.scale[Cape];
         pose.rot[Cape] = r.rest.rot[Cape] + turn;
     }
@@ -1052,7 +1151,7 @@ public static class Stage5BossAnimationBuilder
                 Curve(clip, r.paths[part], "m_LocalScale." + "xyz"[axis], scale);
             }
         // Animate small flags; the relay applies exact integer SortingLayer IDs even in preview.
-        FlagCurve(clip, "frontWeapon", new Keyframe(0, ((r.main && m.name.StartsWith("Dskill", StringComparison.Ordinal)) || (!r.main && m.name == "Attack")) ? 1 : 0),
+        FlagCurve(clip, "frontWeapon", new Keyframe(0, ((r.main && (m.name.StartsWith("Dskill", StringComparison.Ordinal) || m.name.StartsWith("DesireSuccess", StringComparison.Ordinal))) || (!r.main && m.name == "Attack")) ? 1 : 0),
             new Keyframe(m.frames / FPS, 0));
         FlagCurve(clip, "frontRearArm", new Keyframe(0, !r.main && m.name == "skill3" ? 1 : 0),
             new Keyframe(m.frames / FPS, 0));
@@ -1065,6 +1164,19 @@ public static class Stage5BossAnimationBuilder
             FlagCurve(clip, "hideVisual", new Keyframe(0, 0), new Keyframe(22 / FPS, 1), new Keyframe(24 / FPS, 0),
                 new Keyframe(30 / FPS, 1), new Keyframe(32 / FPS, 0), new Keyframe(48 / FPS, 0));
         else FlagCurve(clip, "hideVisual", new Keyframe(0, 0), new Keyframe(m.frames / FPS, 0));
+        if (r.main)
+        {
+            bool spinning = m.name == "skill3_Follow";
+            var on = new AnimationCurve(new Keyframe(0, spinning ? 1 : 0), new Keyframe((spinning ? 12 : m.frames) / FPS, 0));
+            for (int k = 0; k < on.length; k++)
+            {
+                AnimationUtility.SetKeyLeftTangentMode(on, k, AnimationUtility.TangentMode.Constant);
+                AnimationUtility.SetKeyRightTangentMode(on, k, AnimationUtility.TangentMode.Constant);
+            }
+            AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Stage5MainBossSpinEffect), "active"), on);
+            AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Stage5MainBossSpinEffect), "progress"),
+                AnimationCurve.Linear(0, 0, m.frames / FPS, m.frames / FPS));
+        }
         var settings = AnimationUtility.GetAnimationClipSettings(clip);
         settings.loopTime = m.loop; settings.loopBlend = false;
         AnimationUtility.SetAnimationClipSettings(clip, settings);
@@ -1104,6 +1216,10 @@ public static class Stage5BossAnimationBuilder
             AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Linear);
             AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Linear);
         }
+        if (property.StartsWith("m_LocalScale.", StringComparison.Ordinal))
+            for (int i = 0; i < keys.Length - 1; i++)
+                if (keys[i].value * keys[i + 1].value < 0)
+                    AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Constant);
         AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve(path, typeof(Transform), property), curve);
     }
 
@@ -1171,7 +1287,7 @@ public static class Stage5BossAnimationBuilder
             state.motion = AssetDatabase.LoadAssetAtPath<AnimationClip>(r.folder + "/" + name + ".anim");
             state.writeDefaultValues = false; state.speed = 1;
             state.speedParameter = "AttackSpeed";
-            state.speedParameterActive = !(m.loop || m.name == "Death" || m.name.StartsWith("Groggy") || m.name.StartsWith("Dskill", StringComparison.Ordinal) || m.name == "DesireSuccess");
+            state.speedParameterActive = !(m.loop || m.name == "Death" || m.name.StartsWith("Groggy") || m.name.StartsWith("Dskill", StringComparison.Ordinal) || m.name.StartsWith("DesireSuccess", StringComparison.Ordinal));
             states[m.name] = state;
             foreach (var t in state.transitions) if (t.name.StartsWith(Tag, StringComparison.Ordinal)) state.RemoveTransition(t);
             Vector3 location;
@@ -1235,6 +1351,17 @@ public static class Stage5BossAnimationBuilder
         relay.ConfigureVisuals(r.visual.Find(r.paths[HB]).GetComponent<SpriteRenderer>(),
             r.visual.Find(r.paths[Weapon]).GetComponent<SpriteRenderer>(), r.visual.GetComponentsInChildren<SpriteRenderer>(true));
         EditorUtility.SetDirty(relay);
+        if (r.main)
+        {
+            var fx = r.visual.GetComponent<Stage5MainBossSpinEffect>();
+            if (fx == null) fx = r.visual.gameObject.AddComponent<Stage5MainBossSpinEffect>();
+            fx.body = r.visual.Find("Body"); fx.sword = r.visual.Find(r.paths[Weapon]).GetComponent<SpriteRenderer>();
+            var matches = AssetDatabase.FindAssets("typhoon t:Texture2D").Select(AssetDatabase.GUIDToAssetPath)
+                .Where(p => new string(System.IO.Path.GetFileNameWithoutExtension(p).Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant() == "typhoon03").ToArray();
+            if (matches.Length == 1) fx.sheet = AssetDatabase.LoadAssetAtPath<Texture2D>(matches[0]);
+            else if (fx.sheet == null) Debug.LogWarning("typhoon_03.png를 하나로 특정하지 못했습니다. Stage5MainBossSpinEffect의 Sheet에 지정하세요.");
+            EditorUtility.SetDirty(fx);
+        }
         foreach (var component in r.contents.GetComponentsInChildren<MonoBehaviour>(true))
         {
             if (component == null) continue;
@@ -1251,6 +1378,76 @@ public static class Stage5BossAnimationBuilder
         if (!saved) throw new InvalidOperationException("프리팹 저장 실패: " + r.prefabPath);
         EditorUtility.SetDirty(sm); EditorUtility.SetDirty(c);
     }
+    [MenuItem("Tools/5/MainBoss 5/Rebuild All And Verify (R32)")]
+    public static void RebuildMainAndVerify() => Generate(true);
+
+    static void VerifyMainClips(string folder)
+    {
+        string prefix = folder + "/MainBoss5_";
+        var cape = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "skill2.anim");
+        var capeCurve = AnimationUtility.GetEditorCurve(cape, EditorCurveBinding.FloatCurve("Body/Cape", typeof(Transform), "localEulerAnglesRaw.z"));
+        var dash = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "skill3.anim");
+        var shoulder = AnimationUtility.GetEditorCurve(dash, EditorCurveBinding.FloatCurve("Body/Shoulder_B", typeof(Transform), "m_LocalScale.x"));
+        var death = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "Death.anim");
+        var skill4 = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "skill4.anim");
+        if (capeCurve == null || shoulder == null || death == null || skill4 == null)
+            throw new InvalidOperationException("R32: 클립 또는 필수 커브가 없습니다.");
+        float capeDelta = capeCurve.Evaluate(11 / FPS) - capeCurve.Evaluate(0);
+        if (Mathf.Abs(capeDelta + 75) > .05f || Mathf.Abs(shoulder.Evaluate(8 / FPS) + 1) > .01f
+            || Mathf.Abs(death.length - 36 / FPS) > .01f || Mathf.Abs(skill4.length - 42 / FPS) > .01f)
+            throw new InvalidOperationException("R32: 재생성 결과가 목표 값과 다릅니다. " + folder);
+        Debug.Log("[MainBoss5 R32 검증 완료] skill2 Cape -75 / skill3 SB scale.x -1 / skill4 42f / Death 36f\n" + folder, cape);
+    }
+    static void BindMainCombatPrefabs(Rig r)
+    {
+        const string folder = "Assets/Prefabs/Stage5_Enemy";
+        if (!AssetDatabase.IsValidFolder(folder))
+        { Debug.LogWarning("R32: 전투 프리팹 폴더를 찾지 못했습니다: " + folder); return; }
+        AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(r.folder + "/MainBoss5_AC.controller");
+        AnimationClip death = AssetDatabase.LoadAssetAtPath<AnimationClip>(r.folder + "/MainBoss5_Death.anim");
+        Texture2D typhoon = r.visual.GetComponent<Stage5MainBossSpinEffect>().sheet;
+        int updated = 0;
+        foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { folder }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path == r.prefabPath) { updated++; continue; }
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (asset == null || !asset.GetComponentsInChildren<MonoBehaviour>(true)
+                .Any(c => c != null && c.GetType().Name == "Stage5_MainBoss")) continue;
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                var candidates = root.GetComponentsInChildren<Transform>(true)
+                    .Where(t => t.name == "MainBoss 5" && t.Find("Body") != null).ToArray();
+                if (candidates.Length != 1) { Debug.LogWarning("R32: 시각 루트 확인 필요: " + path); continue; }
+                Transform visual = candidates[0];
+                var animator = visual.GetComponent<Animator>(); if (animator == null) animator = visual.gameObject.AddComponent<Animator>();
+                animator.runtimeAnimatorController = controller; animator.applyRootMotion = false;
+                var relay = visual.GetComponent<Stage5BossAnimationRelay>(); if (relay == null) relay = visual.gameObject.AddComponent<Stage5BossAnimationRelay>();
+                relay.ConfigureVisuals(visual.Find(r.paths[HB]).GetComponent<SpriteRenderer>(),
+                    visual.Find(r.paths[Weapon]).GetComponent<SpriteRenderer>(), visual.GetComponentsInChildren<SpriteRenderer>(true));
+                var fx = visual.GetComponent<Stage5MainBossSpinEffect>(); if (fx == null) fx = visual.gameObject.AddComponent<Stage5MainBossSpinEffect>();
+                fx.body = visual.Find("Body"); fx.sword = visual.Find(r.paths[Weapon]).GetComponent<SpriteRenderer>(); fx.sheet = typhoon;
+                foreach (var component in root.GetComponentsInChildren<MonoBehaviour>(true))
+                {
+                    if (component == null) continue;
+                    var so = new SerializedObject(component);
+                    SetObject(so, "deathAnimation", death); SetObject(so, "deathAnimator", animator);
+                    SetObject(so, "bossAnimator", animator); SetObject(so, "visualRoot", visual);
+                    var state = so.FindProperty("deathStateName") ?? so.FindProperty("deathAnimationState");
+                    if (state != null && state.propertyType == SerializedPropertyType.String) state.stringValue = "MainBoss5_Death";
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                }
+                PrefabUtility.SaveAsPrefabAsset(root, path, out bool saved);
+                if (!saved) throw new InvalidOperationException("R32: 전투 프리팹 저장 실패 " + path);
+                updated++; Debug.Log("[MainBoss5 R32 전투 프리팹 갱신] " + path);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+        if (updated == 0) Debug.LogWarning("R32: Stage5_MainBoss가 붙은 전투 프리팹을 찾지 못했습니다. " + folder);
+        AssetDatabase.SaveAssets();
+    }
+
     static void SetObject(SerializedObject so, string name, UnityEngine.Object value)
     {
         var p = so.FindProperty(name);
@@ -1749,7 +1946,7 @@ public static class Stage5BossAnimationBuilder
             Number(so, "skills.Array.data[2].active.attackSteps.Array.data[0].actionType", 5f);
             Number(so, "skills.Array.data[2].active.attackSteps.Array.data[0].preDelay", 0f);
             Number(so, "skills.Array.data[2].active.attackSteps.Array.data[0].postDelay", 0f);
-            Number(so, "skills.Array.data[2].active.attackSteps.Array.data[0].duration", 0.333333333f);
+            Number(so, "skills.Array.data[2].active.attackSteps.Array.data[0].duration", 0.583333333f);
             Number(so, "skills.Array.data[2].active.attackSteps.Array.data[0].interval", 0f);
             Number(so, "skills.Array.data[2].active.attackSteps.Array.data[0].attackCount", 0f);
             Number(so, "skills.Array.data[2].active.attackSteps.Array.data[0].damage", 0f);
@@ -1817,8 +2014,8 @@ public static class Stage5BossAnimationBuilder
             Number(so, "skills.Array.data[3].castRange", 0f);
             Number(so, "skills.Array.data[3].forceCastMinDistance", 0f);
             Number(so, "skills.Array.data[3].forceCastRemainingCooldown", 0f);
-            Number(so, "skills.Array.data[3].preDelay", 1.25f);
-            Number(so, "skills.Array.data[3].postDelay", 1.25f);
+            Number(so, "skills.Array.data[3].preDelay", 1.5f);
+            Number(so, "skills.Array.data[3].postDelay", 2f);
             Number(so, "skills.Array.data[3].buff.duration", 10f);
             Number(so, "skills.Array.data[3].buff.effects.Array.data[0].stat", 4f);
             Number(so, "skills.Array.data[3].buff.effects.Array.data[0].valueMode", 1f);

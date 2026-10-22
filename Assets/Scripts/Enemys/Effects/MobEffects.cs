@@ -39,17 +39,23 @@ public sealed class MobEffects : MonoBehaviour
     void Update()
     {
         if (enemy == null || !enemy.FXChasingOnGround)
-        { if (dust != null) Destroy(dust.gameObject); dust = null; return; }
-        if (Time.time < nextDust || dust != null) return;
+        { if (dust != null) dust.StopAndFade(); dust = null; return; }
+        if (dust != null)
+        {
+            dust.transform.position = Feet() + new Vector3(chase.offset.x * enemy.FXDirection, chase.offset.y, 0);
+            dust.SetFacing(enemy.FXDirection, chase.artFacesRight);
+            return;
+        }
+        if (Time.time < nextDust) return;
         nextDust = Time.time + chaseInterval;
         dust = Play(chase, Feet(), enemy.FXDirection);
     }
     public void PlayAttack(Vector3 position, float direction, bool ranged = false)
-    { Play(ranged ? shot : attack, position, direction); }
+    { Play(ranged ? shot : attack, position, direction, 1.5f); }
     public void PlayHit(Vector2 source) { Play(hit, Center(), source.x < transform.position.x ? -1 : 1); }
     public void PlayDeath() { Play(death, Center(), enemy != null ? enemy.FXDirection : 1); }
     public void PlayNotice(float direction) { Play(notice, Feet(), direction); }
-    MobEffectInstance Play(Effect effect, Vector3 position, float direction)
+    MobEffectInstance Play(Effect effect, Vector3 position, float direction, float speedMultiplier = 1f)
     {
         if (!isActiveAndEnabled || effect == null) return null;
         if (effect.sheet == null && (effect.frames == null || effect.frames.Length == 0)) return null;
@@ -70,6 +76,6 @@ public sealed class MobEffects : MonoBehaviour
         if (!string.IsNullOrEmpty(sortingLayerOverride)) layer = SortingLayer.NameToID(sortingLayerOverride);
         position += new Vector3(effect.offset.x * Mathf.Sign(direction), effect.offset.y, 0);
         return MobEffectInstance.Spawn(effect, position, direction, pixelsPerUnit, layer,
-            order + sortingOrderOffset, gameObject.scene);
+            order + sortingOrderOffset, gameObject.scene, ReferenceEquals(effect, chase), ReferenceEquals(effect, death) ? 1f : 1.5f, speedMultiplier);
     }
 }

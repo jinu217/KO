@@ -9,8 +9,10 @@ public sealed class MobEffectInstance : MonoBehaviour
     bool ownsFrames;
     bool looping;
     float elapsed, fps;
+    bool fading;
+    float fadeAge, fadeHold, fadeDuration, fadeAlpha;
     public static MobEffectInstance Spawn(MobEffects.Effect effect, Vector3 position, float direction,
-        float ppu, int layer, int order, Scene scene, bool loop = false)
+        float ppu, int layer, int order, Scene scene, bool loop = false, float scaleMultiplier = 1f, float speedMultiplier = 1f)
     {
         bool supplied = effect.frames != null && effect.frames.Length > 0;
         if (!supplied && (effect.sheet == null || effect.columns < 1 || effect.sheet.width % effect.columns != 0))
@@ -21,7 +23,7 @@ public sealed class MobEffectInstance : MonoBehaviour
         if (scene.IsValid() && scene.isLoaded) SceneManager.MoveGameObjectToScene(obj, scene);
         var instance = obj.AddComponent<MobEffectInstance>();
         instance.looping = loop;
-        instance.fps = Mathf.Max(1, effect.fps);
+        instance.fps = Mathf.Max(1, effect.fps) * Mathf.Max(.01f, speedMultiplier);
         if (supplied) instance.frames = effect.frames;
         else
         {
@@ -33,19 +35,44 @@ public sealed class MobEffectInstance : MonoBehaviour
                     new Vector2(.5f, .5f), Mathf.Max(1, ppu), 0, SpriteMeshType.FullRect);
         }
         obj.transform.position = position;
-        obj.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale);
+        obj.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale) * Mathf.Max(.01f, scaleMultiplier);
         instance.spriteRenderer = obj.AddComponent<SpriteRenderer>();
         instance.spriteRenderer.sortingLayerID = layer;
         instance.spriteRenderer.sortingOrder = order;
         instance.spriteRenderer.flipX = effect.artFacesRight ? direction < 0 : direction > 0;
         instance.spriteRenderer.flipY = effect.flipY;
         instance.spriteRenderer.sprite = instance.frames[0];
-        if (!loop) Destroy(obj, (instance.frames.Length + 1f) / instance.fps);
+        // Update owns the lifetime so stop-fade can finish past the last animation frame.
         return instance;
+    }
+    public void SetFacing(float direction, bool artFacesRight)
+    {
+        if (spriteRenderer != null && !fading)
+            spriteRenderer.flipX = artFacesRight ? direction < 0 : direction > 0;
+    }
+    public void StopAndFade(float hold = .06f, float duration = .14f)
+    {
+        if (fading || spriteRenderer == null) return;
+        fading = true;
+        fadeAge = 0;
+        fadeHold = Mathf.Max(0, hold);
+        fadeDuration = Mathf.Max(.01f, duration);
+        fadeAlpha = spriteRenderer.color.a;
+        // Freeze both current sprite and world position; emitter may immediately create a new trail.
+        transform.SetParent(null, true);
     }
     void Update()
     {
         if (frames == null || frames.Length == 0) { Destroy(gameObject); return; }
+        if (fading)
+        {
+            fadeAge += Time.deltaTime;
+            Color color = spriteRenderer.color;
+            color.a = fadeAlpha * (1f - Mathf.Clamp01((fadeAge - fadeHold) / fadeDuration));
+            spriteRenderer.color = color;
+            if (fadeAge >= fadeHold + fadeDuration) Destroy(gameObject);
+            return;
+        }
         elapsed += Time.deltaTime;
         int index = Mathf.FloorToInt(elapsed * fps);
         if (looping) index %= frames.Length;

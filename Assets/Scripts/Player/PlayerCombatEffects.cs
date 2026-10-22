@@ -70,7 +70,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         }
 
         float direction = facing < 0f ? -1f : 1f;
-        Play(sheet, position + new Vector2(direction * attackOffset.x, attackOffset.y), direction, flipY);
+        Play(sheet, position + new Vector2(direction * attackOffset.x, attackOffset.y), direction, flipY, 1.5f);
     }
 
     public void PlayDamageEffect(float actualDamage)
@@ -79,7 +79,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         Play(sheet, (Vector2)transform.position + damageOffset, 1f, false);
     }
 
-    private void Play(Sprite sheet, Vector2 position, float facing, bool flipY)
+    private void Play(Sprite sheet, Vector2 position, float facing, bool flipY, float speedMultiplier = 1f)
     {
         if (!isActiveAndEnabled || sheet == null)
             return;
@@ -88,7 +88,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         if (frames == null)
             return;
 
-        float fps = Mathf.Max(1f, framesPerSecond);
+        float fps = Mathf.Max(1f, framesPerSecond) * speedMultiplier;
         var effectObject = new GameObject($"FX_{sheet.name}");
         effectObject.hideFlags = HideFlags.DontSave;
         effectObject.SetActive(false);
@@ -96,7 +96,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         if (gameObject.scene.IsValid() && gameObject.scene.isLoaded)
             SceneManager.MoveGameObjectToScene(effectObject, gameObject.scene);
         effectObject.transform.position = new Vector3(position.x, position.y, transform.position.z);
-        effectObject.transform.localScale = Vector3.one * Mathf.Max(0.01f, effectScale);
+        effectObject.transform.localScale = Vector3.one * Mathf.Max(0.01f, effectScale) * 1.5f;
 
         SpriteRenderer renderer = effectObject.AddComponent<SpriteRenderer>();
         renderer.sprite = frames[0];

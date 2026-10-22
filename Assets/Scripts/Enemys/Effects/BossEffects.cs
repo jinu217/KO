@@ -70,10 +70,16 @@ public sealed class BossEffects : MonoBehaviour
     void Update()
     {
         if (enemy == null || !enemy.FXChasing || !Grounded())
-        { movingTime = 0; if (dust != null) Destroy(dust.gameObject); dust = null; return; }
+        { movingTime = 0; if (dust != null) dust.StopAndFade(); dust = null; return; }
         movingTime += Time.deltaTime;
         if (movingTime < chaseStartDelay) return;
-        if (Time.time < nextDust || dust != null) return;
+        if (dust != null)
+        {
+            dust.transform.position = Feet() + new Vector3(chase.offset.x * enemy.FXDirection, chase.offset.y, 0);
+            dust.SetFacing(enemy.FXDirection, chase.artFacesRight);
+            return;
+        }
+        if (Time.time < nextDust) return;
         nextDust = Time.time + chaseInterval;
         dust = Play(chase, Feet(), enemy.FXDirection);
     }
@@ -246,7 +252,7 @@ public sealed class BossEffects : MonoBehaviour
         if (kind == Kind.Uppercut) angle = 65;
         bool heavyHorizontal = UsesHeavyWeapon() && kind == Kind.Horizontal;
         if (heavyHorizontal) center.y += HeavyHorizontalHeight;
-        var instance = Play(effect, center + new Vector3(extra.x * direction, extra.y, 0), direction);
+        var instance = Play(effect, center + new Vector3(extra.x * direction, extra.y, 0), direction, false, 1.5f);
         if (instance != null)
         {
             if (heavyHorizontal) instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
@@ -269,17 +275,17 @@ public sealed class BossEffects : MonoBehaviour
     {
         bool heavy = UsesHeavyWeapon();
         if (heavy) position.y += HeavyHorizontalHeight;
-        var instance = Play(horizontal, position, direction);
+        var instance = Play(horizontal, position, direction, false, 1.5f);
         if (heavy && instance != null)
             instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
     }
     public void PlayShot(Vector3 position, float direction) { } // 생성물에는 추가 FX를 붙이지 않음
     public void PlayAttack(Vector3 position, float direction, bool ranged = false)
-    { Play(ranged ? shot : attack, position, direction); }
+    { Play(ranged ? shot : attack, position, direction, false, 1.5f); }
     public void PlayHit(Vector2 source) { Play(hit, Center(), source.x < transform.position.x ? -1 : 1); }
     public void PlayDeath() { Play(death, Center(), enemy != null ? enemy.FXDirection : 1); }
     public void PlayNotice(float direction) { if (noticed) return; noticed = true; Play(notice, Feet(), direction); }
-    MobEffectInstance Play(MobEffects.Effect effect, Vector3 position, float direction, bool loop = false)
+    MobEffectInstance Play(MobEffects.Effect effect, Vector3 position, float direction, bool loop = false, float speedMultiplier = 1f)
     {
         if (!isActiveAndEnabled || effect == null) return null;
         if (effect.sheet == null && (effect.frames == null || effect.frames.Length == 0)) return null;
@@ -300,6 +306,6 @@ public sealed class BossEffects : MonoBehaviour
         if (!string.IsNullOrEmpty(sortingLayerOverride)) layer = SortingLayer.NameToID(sortingLayerOverride);
         position += new Vector3(effect.offset.x * Mathf.Sign(direction), effect.offset.y, 0);
         return MobEffectInstance.Spawn(effect, position, direction, pixelsPerUnit, layer,
-            order + sortingOrderOffset, gameObject.scene, loop);
+            order + sortingOrderOffset, gameObject.scene, loop || ReferenceEquals(effect, chase), ReferenceEquals(effect, death) ? 1f : 1.5f, speedMultiplier);
     }
 }

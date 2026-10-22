@@ -33,7 +33,6 @@ public static class PlayerDeathGenerator
             var curves = new AnimationCurve[nodes.Length, 7];
             for (int i = 0; i < nodes.Length; i++) for (int c = 0; c < 7; c++) curves[i, c] = new AnimationCurve();
             float floor = Lowest(animator.transform, body);
-            const float duration = 1.2f;
             for (int f = 0; f <= 72; f++)
             {
                 float time = f / 60f;
