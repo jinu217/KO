@@ -23,7 +23,7 @@ public sealed class BossEffects : MonoBehaviour
     public MobEffects.Effect spin = new MobEffects.Effect();
     public MobEffects.Effect punch = new MobEffects.Effect();
     public MobEffects.Effect dash = new MobEffects.Effect { fps = 20, scale = 3f, artFacesRight = false };
-    [Header("µĞ±â / µµ³¢ º¸½º °¡·Îº£±â ÀÌÆåÆ®")]
+    [Header("ë‘”ê¸° / ë„ë¼ ë³´ìŠ¤ ê°€ë¡œë² ê¸° ì´í™íŠ¸")]
     [Min(.01f)] public float midBoss1HorizontalScale = 1.35f;
     public float midBoss1HorizontalHeight = .25f;
     public float additionalHeavyHorizontalHeight = .15f;
@@ -89,8 +89,19 @@ public sealed class BossEffects : MonoBehaviour
     public void EndStep() { currentStep = null; ClearDash(); }
     public void EndSkill() { executing = null; EndStep(); }
     void ClearDash() { if (dashInstance != null) Destroy(dashInstance.gameObject); dashInstance = null; }
+    BossClipEffects clipEffects;
+    bool ClipOwnsAttack
+    {
+        get
+        {
+            if (!mainBoss || stage != 5) return false;
+            if (clipEffects == null) clipEffects = GetComponentInChildren<BossClipEffects>(true);
+            return clipEffects != null && clipEffects.OwnsCurrentAttack;
+        }
+    }
     void LateUpdate()
     {
+        if (ClipOwnsAttack) { ClearDash(); previousPosition = transform.position; return; }
         Vector3 delta = transform.position - previousPosition;
         previousPosition = transform.position;
         if (delta.sqrMagnitude > .000001f) lastDashMotion = Time.time;
@@ -118,7 +129,7 @@ public sealed class BossEffects : MonoBehaviour
     {
         if (!UsesHeavyWeapon()) return Center();
         Vector3 p = Feet();
-        // RootÀÇ ¹Ù´Ú ±âÁØ + ÁøÇà ¹İ´ëÂÊ. collider Æøµµ ¹İ¿µÇÏ¿© ¹ß µÚ¿¡ ¹èÄ¡.
+        // Rootì˜ ë°”ë‹¥ ê¸°ì¤€ + ì§„í–‰ ë°˜ëŒ€ìª½. collider í­ë„ ë°˜ì˜í•˜ì—¬ ë°œ ë’¤ì— ë°°ì¹˜.
         p.x -= enemy.FXDirection * (body != null ? body.bounds.extents.x : .35f);
         return p;
     }
@@ -143,9 +154,41 @@ public sealed class BossEffects : MonoBehaviour
                 if (s != null && (s.actionType == BossActionType.MeleeAttack || s.actionType == BossActionType.Slam)) n += Mathf.Max(1, s.attackCount);
         return n;
     }
+    // Only pure melee patterns with an exact authored hit count opt into this clock.
+    // Jump/landing, persistent hitboxes and conditional movement retain their existing controllers.
+    BossClipEffects.Track MotionDamageTrack()
+    {
+        if (executing?.active?.attackSteps == null || motionAnimator == null) return null;
+        if (executing.active.attackSteps.Exists(s => s != null && s.actionType != BossActionType.MeleeAttack)) return null;
+        var driver = GetComponentInChildren<BossClipEffects>();
+        if (driver == null || !driver.runtimeEnabled) return null;
+        foreach (var info in motionAnimator.GetCurrentAnimatorClipInfo(0))
+        {
+            var track = driver.Find(info.clip);
+            if (info.weight > .5f && track != null && track.runtime && track.damageTimes != null && track.damageTimes.Length > 0 && track.damageTimes.Length == TotalHits()) return track;
+        }
+        return null;
+    }
+    public bool UsesMotionDamageClock => MotionDamageTrack() != null;
     public IEnumerator WaitForImpact(BossAttackStepData step, int pulse)
     {
-        // MidBoss1: ¸ğµç ÄŞº¸ Å¸°İÀ» ½ÇÁ¦ Å¬¸³ ½Ã°¢±îÁö ÆÇÁ¤°ú FX ÇÔ²² º¸·ùÇÑ´Ù.
+        var authored = MotionDamageTrack();
+        if (authored != null)
+        {
+            int ordinal = Ordinal(step, pulse);
+            if (ordinal < authored.damageTimes.Length)
+            {
+                float elapsed = 0, target = authored.damageTimes[ordinal];
+                while (enemy != null && !enemy.IsDead && motionAnimator.isActiveAndEnabled && elapsed < 12f)
+                {
+                    if (MotionDamageTrack() != authored) yield break;
+                    if (motionAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime * authored.clip.length + .001f >= target) yield break;
+                    elapsed += Time.deltaTime; yield return null;
+                }
+                yield break;
+            }
+        }
+        // Legacy fallback for an unconfigured MidBoss1 clip.
         if (stage != 1 || mainBoss || TotalHits() < 2 ||
             motionAnimator == null || comboTimings == null) yield break;
         float waited = 0;
@@ -232,8 +275,23 @@ public sealed class BossEffects : MonoBehaviour
         }
         return Kind.Down;
     }
+    public Kind ResolveForPreview(BossSkillData skill, int index, BossAttackStepData step, int pulse, out float angle)
+    {
+        var oldSkill = executing; int oldIndex = skillIndex;
+        try
+        {
+            executing = skill; skillIndex = index;
+            Kind kind = Resolve(step, pulse, out angle);
+            if (overrides != null) foreach (var rule in overrides)
+                if (rule.skillIndex == index && rule.stepIndex == StepIndex(step) && rule.pulse == pulse)
+                { kind = rule.kind; angle = rule.angle; break; }
+            return kind;
+        }
+        finally { executing = oldSkill; skillIndex = oldIndex; }
+    }
     public void PlayStep(BossAttackStepData step, Vector3 center, float direction)
     {
+        if (ClipOwnsAttack) return;
         if (step == null || step.damage <= 0) return;
         int pulse = pulses.TryGetValue(step, out int n) ? n : 0;
         pulses[step] = pulse + 1;
@@ -244,7 +302,7 @@ public sealed class BossEffects : MonoBehaviour
                 if (rule.skillIndex == skillIndex && rule.stepIndex == StepIndex(step) && rule.pulse == pulse)
                 { kind = rule.kind; angle = rule.angle; extra = rule.offset; break; }
         if (kind == Kind.None) return;
-        // ÀÌ±â¾î°ËÀº ¸ö ¾Õ¿¡ °íÁ¤ÇÏÁö ¾Ê°í ½ÇÁ¦ ¶° ÀÖ´Â °Ë À§Ä¡¸¦ »ç¿ëÇÑ´Ù.
+        // ì´ê¸°ì–´ê²€ì€ ëª¸ ì•ì— ê³ ì •í•˜ì§€ ì•Šê³  ì‹¤ì œ ë–  ìˆëŠ” ê²€ ìœ„ì¹˜ë¥¼ ì‚¬ìš©í•œë‹¤.
         if (stage == 5 && skillIndex == 0 && weaponAnchor != null)
         { var sr = weaponAnchor.GetComponent<SpriteRenderer>(); center = sr != null ? sr.bounds.center : weaponAnchor.position; }
         var effect = kind == Kind.Up ? upward : kind == Kind.Horizontal || kind == Kind.Thrust ? horizontal :
@@ -279,7 +337,7 @@ public sealed class BossEffects : MonoBehaviour
         if (heavy && instance != null)
             instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
     }
-    public void PlayShot(Vector3 position, float direction) { } // »ı¼º¹°¿¡´Â Ãß°¡ FX¸¦ ºÙÀÌÁö ¾ÊÀ½
+    public void PlayShot(Vector3 position, float direction) { } // ìƒì„±ë¬¼ì—ëŠ” ì¶”ê°€ FXë¥¼ ë¶™ì´ì§€ ì•ŠìŒ
     public void PlayAttack(Vector3 position, float direction, bool ranged = false)
     { Play(ranged ? shot : attack, position, direction, false, 1.5f); }
     public void PlayHit(Vector2 source) { Play(hit, Center(), source.x < transform.position.x ? -1 : 1); }
@@ -309,3 +367,4 @@ public sealed class BossEffects : MonoBehaviour
             order + sortingOrderOffset, gameObject.scene, loop || ReferenceEquals(effect, chase), ReferenceEquals(effect, death) ? 1f : 1.5f, speedMultiplier);
     }
 }
+

@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-// R38: verified clip rebuild, gameplay-prefab bindings, authored floating desire pose, kneeling death and corrected groggy.
+// R50: verified clip rebuild, gameplay-prefab bindings, authored floating desire pose, kneeling death and corrected groggy.
 // Rest transforms, Sprite pivots and scale are read from the target prefab on each generation.
 public static class Stage5BossAnimationBuilder
 {
@@ -361,6 +361,7 @@ public static class Stage5BossAnimationBuilder
             }
             target.rot[TB] = bestThigh;
         }
+        target.rot[CF] = -90; target.rot[CB] = -90;
         target.pos[Body].y += r.floor - MainFrontKnee(r, target).y;
         p.pos[Body] = Vector3.Lerp(p.pos[Body], target.pos[Body], weight);
         p.rot[Bottom] = Mathf.Lerp(p.rot[Bottom], target.rot[Bottom], weight);
@@ -385,17 +386,22 @@ public static class Stage5BossAnimationBuilder
         Pose rest = r.Rest(), weak = Arms(r, 0, 5, 8, -6, -3, 14, 5);
         weak.rot[Head] = 0; weak.rot[Cape] = -4;
         Pose knee = Arms(r, 0, 8, 5, -12, 5, 12, 4);
-        knee.rot[Head] = 0; MainDeathKneeContact(r, knee);
+        knee.rot[Head] = 0; MainDeathKneeContact(r, knee); knee.rot[Weapon] = -85; weak.rot[Weapon] = -85;
         Pose end = knee.Clone(); end.rot[Body] = -8; end.rot[Head] = -38;
-        end.pos[Body].x -= .32f; end.pos[Body].y -= .22f; end.rot[Bottom] = 8;
+        end.pos[Body].x -= .48f; end.pos[Body].y -= .22f; end.rot[Bottom] = 8;
         end.rot[SB] = -4; end.rot[AB] = 8; end.rot[HB] = -35;
         end.rot[SF] = 4; end.rot[AF] = 8; end.rot[HF] = 6;
         end.rot[Cape] = 0; MainDeathPinnedKnees(r, end, knee); r.BladeToFloor(end);
         // Both knees land first, still looking forward. Pelvis retreats and head drops afterwards.
         Pose p = Track(f, new Key(0, rest), new Key(5, weak), new Key(9, knee), new Key(12, knee),
             new Key(23, end), new Key(36, end));
-        if (f >= 9) MainDeathPinnedKnees(r, p, knee);
+        if (f >= 9)
+        {
+            // Pelvis and thighs settle; calf pivots, world rotations and feet remain planted.
+            MainDeathPinnedKnees(r, p, knee);
+        }
         else if (f >= 5) MainDeathKneeContact(r, p, S((f - 5) / 4));
+        if (f >= 9) p.rot[Weapon] = -85;
         return p;
     }
 
@@ -958,7 +964,7 @@ public static class Stage5BossAnimationBuilder
             Pose p = Track(f, new Key(0, rest), new Key(3, charge), new Key(5, slam), new Key(8, slam),
                 new Key(11, spin), new Key(20, spinEnd), new Key(22, dashEnd), new Key(30, dashEnd), new Key(35, final));
             if (f >= 8 && f <= 20)
-                p.rot[Weapon] = Mathf.Lerp(slam.rot[Weapon], spinEnd.rot[Weapon], S((f - 8) / 12));
+                p.rot[Weapon] = Mathf.Lerp(slam.rot[Weapon], spinEnd.rot[Weapon], S((f - 8) / 14));
             // Compensate shoulder/body motion so the blade does not pitch during the dash transition.
             if (f >= 20 && f <= 30) r.BladeAt(p, Vector2.right);
             return p;
@@ -972,21 +978,57 @@ public static class Stage5BossAnimationBuilder
         frontBuff = rest.Clone(); frontBuff.rot[SF] = -45; frontBuff.rot[AF] = 0; frontBuff.rot[HF] = 0;
         list.Add(new Motion("skill2", 30, false, f => Track(f, new Key(0, rest), new Key(6, capeReady), new Key(9, capeReady),
             new Key(11, frontBuff), new Key(22, frontBuff), new Key(30, rest))).Cue(12, "Skill2.BuffApply").Cue(30, "Action.End"));
-        Pose plantReady = Arms(r, -8, 48, -60, 0, 12, 60, 5);
-        MainReadyLegs(r, plantReady, .16f, .22f);
-        r.HandAt(plantReady, true, r.World(plantReady, HB));
-        Pose planted = plantReady.Clone(); planted.pos[Body].y -= .28f;
-        r.BladeToFloor(planted); r.Ground(planted); r.BladeToFloor(planted);
-        r.HandAt(planted, true, r.World(planted, HB));
-        float plantSign = r.Matrix(plantReady, HB).determinant < 0 ? -1 : 1;
-        Pose plantTurn = plantReady.Clone(); plantTurn.rot[Weapon] += 360 * plantSign;
-        planted.rot[Weapon] = plantTurn.rot[Weapon] + Mathf.DeltaAngle(plantTurn.rot[Weapon], planted.rot[Weapon]);
-        Pose extracted = plantReady.Clone(); extracted.rot[Weapon] = planted.rot[Weapon];
-        Pose unwind = plantReady.Clone(); unwind.rot[Weapon] = extracted.rot[Weapon] - 360 * plantSign;
-        Pose plantRest = rest.Clone(); plantRest.rot[Weapon] = unwind.rot[Weapon] + Mathf.DeltaAngle(unwind.rot[Weapon], rest.rot[Weapon]);
-        list.Add(new Motion("skill4", 42, false, f => Track(f, new Key(0, rest), new Key(6, plantReady),
-            new Key(15, plantTurn), new Key(18, planted), new Key(25, planted), new Key(29, extracted),
-            new Key(37, unwind), new Key(42, plantRest))).Cue(18, "Skill4.BuffApply").Cue(42, "Action.End"));
+        // Authored planted pose (2026-10-26 14:34). Never overwrite it with floor/hand IK.
+        Pose planted = rest.Clone();
+        for (int i = 0; i < planted.rot.Length; i++) planted.rot[i] = 0;
+        planted.pos[Body] = Vector3.zero;
+        planted.pos[SF] = new Vector3(-.528f, .902f, 0);
+        planted.pos[AF] = new Vector3(-.312f, -.611f, 0); planted.pos[HF] = new Vector3(-.124f, -.567f, 0);
+        planted.pos[SB] = new Vector3(.340f, 1.080f, 0); planted.rot[SB] = 15;
+        planted.pos[AB] = new Vector3(.261f, -.778f, 0); planted.rot[AB] = 105;
+        planted.pos[HB] = new Vector3(.059f, -.579f, 0); planted.rot[HB] = -30;
+        planted.pos[Weapon] = new Vector3(.320f, -.230f, 0); planted.rot[Weapon] = 90;
+        Pose fullTurn = planted.Clone();
+        fullTurn.pos[SB].x += .25f;
+        fullTurn.rot[SB] = 80; fullTurn.rot[AB] = 80; fullTurn.rot[HB] = 20;
+        r.BladeAt(fullTurn, Vector2.up);
+        float plantSign = r.Matrix(fullTurn, HB).determinant < 0 ? -1 : 1;
+        fullTurn.rot[Weapon] += 360 * plantSign;
+        Pose downReady = fullTurn.Clone(); downReady.rot[Weapon] += 180 * plantSign;
+        planted.rot[Weapon] = downReady.rot[Weapon] + Mathf.DeltaAngle(downReady.rot[Weapon], 90);
+        Pose extracted = downReady.Clone();
+        // Keep the fist facing forward through the pull; turn the wrist only for the spin.
+        extracted.rot[HB] = planted.rot[SB] + planted.rot[AB] + planted.rot[HB]
+            - extracted.rot[SB] - extracted.rot[AB];
+        extracted.rot[Weapon] += downReady.rot[HB] - extracted.rot[HB];
+        Pose returnFull = downReady.Clone(); returnFull.rot[Weapon] += 360 * plantSign;
+        Pose upright = returnFull.Clone(); upright.rot[Weapon] += 180 * plantSign;
+        Pose plantRest = rest.Clone(); plantRest.rot[Weapon] = upright.rot[Weapon] + Mathf.DeltaAngle(upright.rot[Weapon], rest.rot[Weapon]);
+        float startBladeAngle = Vector2.SignedAngle(Vector2.up, r.Matrix(rest, Weapon).MultiplyVector(Vector3.up));
+        list.Add(new Motion("skill4", 42, false, f =>
+        {
+            // One uninterrupted arm rise, with no separate stop at the start of sword rotation.
+            Pose p = Track(f, new Key(0, rest), new Key(11, fullTurn),
+                new Key(15, downReady), new Key(17, downReady), new Key(18, planted),
+                new Key(25, planted), new Key(29, extracted), new Key(33, returnFull),
+                new Key(37, upright), new Key(42, plantRest));
+            if (f < 6)
+                r.BladeAt(p, Quaternion.Euler(0, 0, Mathf.Lerp(startBladeAngle, 0, S(f / 6))) * Vector3.up);
+            else if (f < 15)
+            {
+                float turn = f <= 11 ? 360 * (f - 6) / 5
+                    : f < 11.15f ? 360 : 360 + 180 * (f - 11.15f) / 3.85f;
+                r.BladeAt(p, Quaternion.Euler(0, 0, turn) * Vector3.up);
+            }
+            // Plant and extract by joint interpolation: allow a natural arc, keep the authored grip.
+            if (f > 29 && f <= 37)
+            {
+                float turn = f <= 33 ? 360 * (f - 29) / 4
+                    : f < 33.15f ? 360 : 360 + 180 * (f - 33.15f) / 3.85f;
+                r.BladeAt(p, Quaternion.Euler(0, 0, turn) * Vector3.down);
+            }
+            return p;
+        }).Cue(18, "Skill4.BuffApply").Cue(42, "Action.End"));
         Pose hover = rest.Clone();
         hover.rot[SF] = 15; hover.rot[AF] = 100; hover.rot[HF] = 0;
         hover.rot[HB] = -15; hover.rot[Weapon] = -105;
@@ -999,55 +1041,136 @@ public static class Stage5BossAnimationBuilder
         lift.pos[Weapon] = new Vector3(.230f, -.228f, 0); lift.rot[Weapon] = 90;
         lift.rot[Bottom] = 15; lift.rot[TF] = -5; lift.rot[CF] = -12; lift.rot[FF] = -60;
         lift.rot[TB] = 15; lift.rot[CB] = -45; lift.rot[FB] = -45;
-        lift.scale[SF].x = -1; lift.scale[SB].x = -1;
+        lift.scale[SF].x = -1; lift.scale[SB].x = -1; lift.scale[Weapon].x = -1;
         Pose recoil = hover.Clone(); recoil.pos[Body].x -= .18f; recoil.rot[Body] += 6; recoil.rot[Head] -= 6;
         list.Add(new Motion("skill3", 21, false, f =>
         {
             Pose p = Track(f, new Key(0, rest), new Key(3, hover), new Key(6, hover), new Key(8, recoil), new Key(10, lift), new Key(21, lift));
             // Reflection changes discretely: never squash the shoulder through scale zero.
-            p.scale[SF].x = f >= 9 ? -1 : rest.scale[SF].x; p.scale[SB].x = f >= 9 ? -1 : rest.scale[SB].x;
+            p.scale[Weapon].x = f >= 9 ? -1 : rest.scale[Weapon].x; p.scale[SF].x = f >= 9 ? -1 : rest.scale[SF].x; p.scale[SB].x = f >= 9 ? -1 : rest.scale[SB].x;
             return p;
         }).Cue(10, "Skill3.DashStart").Cue(21, "Skill3.DashTimeout"));
-        Pose over = lift.Clone(); over.rot[Body] -= 165;
+        Pose followStart = lift.Clone();
+        followStart.scale[SF] = rest.scale[SF]; followStart.scale[SB] = rest.scale[SB];
+        followStart.scale[Weapon] = rest.scale[Weapon];
+        Pose over = followStart.Clone();
         over.rot[TF] = 115; over.rot[CF] = -145; over.rot[FF] = -30;
         over.rot[TB] = 125; over.rot[CB] = -150; over.rot[FB] = -30;
-        over.rot[SF] = 80; over.rot[AF] = 75; over.rot[SB] = 85; over.rot[AB] = 70;
-        Pose landing = slam.Clone(); landing.rot[Body] = lift.rot[Body] - 360;
-        Pose followEnd = rest.Clone(); followEnd.rot[Body] -= 360;
+        over.rot[SF] = 95; over.rot[AF] = 90; over.rot[SB] = 105; over.rot[AB] = 95;
+        // The sword is tucked before the fast revolution, with no reflection switch at frame 10.
+        Pose landing = rest.Clone(); landing.rot[Body] -= 720;
+        Pose followEnd = rest.Clone(); followEnd.rot[Body] -= 720;
+        Pose tucked = over.Clone(); tucked.rot[Body] = Mathf.Lerp(lift.rot[Body], landing.rot[Body], .5f);
         list.Add(new Motion("skill3_Follow", 18, false, f =>
         {
-            Pose p = Track(f, new Key(0, lift), new Key(4, over), new Key(8, over), new Key(12, landing), new Key(14, landing), new Key(18, followEnd));
-            if (f <= 12) p.rot[Body] = lift.rot[Body] - 360 * (f / 12f);
-            p.scale[SF].x = f < 10 ? -1 : rest.scale[SF].x; p.scale[SB].x = f < 10 ? -1 : rest.scale[SB].x;
+            Pose p = Track(f, new Key(0, followStart), new Key(2, over), new Key(6, tucked),
+                new Key(12, landing), new Key(18, followEnd));
+            p.rot[Body] = Mathf.Lerp(lift.rot[Body], landing.rot[Body], S(f / 12));
+            p.scale[SF] = rest.scale[SF]; p.scale[SB] = rest.scale[SB];
+            p.scale[Weapon] = rest.scale[Weapon];
+            // The weapon remains attached to the hand as the tucked pose opens toward Rest.
+            if (f >= 9 && r.vertices[Weapon] != null)
+            {
+                Matrix4x4 blade = r.Matrix(p, Weapon);
+                float low = r.vertices[Weapon].Min(v => blade.MultiplyPoint3x4(v).y);
+                if (low < r.floor)
+                {
+                    Vector3 correction = r.Matrix(p, HB).inverse.MultiplyVector(Vector3.up * (r.floor - low));
+                    p.pos[Weapon] += correction;
+                }
+            }
             return p;
         }).Cue(0, "Skill3.DashEnd").Cue(0, "Skill3.VaultStart").Cue(12, "Skill3.FollowImpact")
             .Cue(12, "Skill3.VaultEnd").Cue(18, "Action.End"));
         list.Add(new Motion("skill3_Miss", 6, false, f => {
             Pose p = Track(f, new Key(0, lift), new Key(3, hover), new Key(6, rest));
-            p.scale[SF].x = f < 2 ? -1 : rest.scale[SF].x; p.scale[SB].x = f < 2 ? -1 : rest.scale[SB].x; return p;
+            p.scale[Weapon].x = f < 2 ? -1 : rest.scale[Weapon].x; p.scale[SF].x = f < 2 ? -1 : rest.scale[SF].x; p.scale[SB].x = f < 2 ? -1 : rest.scale[SB].x; return p;
         }).Cue(0, "Skill3.DashEnd").Cue(6, "Action.End"));
-        Pose crossUp = dash.Clone(), crossDown = dash.Clone();
-        crossUp.rot[Body] = -12; crossDown.rot[Body] = -26;
-        foreach (Pose pose in new[] { crossUp, crossDown, dash })
-        { ForwardStance(r, pose, true); }
-        Motion cross = new Motion("skill5", 48, false, f =>
+        // Authored 2026-10-25 18:47 pose; preserve local joints rather than solving new IK.
+        Pose crossBase = rest.Clone();
+        crossBase.pos[Body] = new Vector3(.057f, -1.062f, 0); crossBase.rot[Body] = -45.938f;
+        crossBase.pos[Head] = new Vector3(-.045f, 1.173f, 0); crossBase.rot[Head] = 35;
+        crossBase.pos[SF] = new Vector3(-.528f, .902f, 0); crossBase.rot[SF] = 0;
+        crossBase.pos[AF] = new Vector3(-.312f, -.611f, 0); crossBase.rot[AF] = 26.797f;
+        crossBase.pos[HF] = new Vector3(-.124f, -.567f, 0); crossBase.rot[HF] = 7.656f;
+        crossBase.pos[SB] = new Vector3(.340f, 1.080f, 0); crossBase.rot[SB] = 105;
+        crossBase.pos[AB] = new Vector3(.261f, -.778f, 0); crossBase.rot[AB] = 15;
+        crossBase.pos[HB] = new Vector3(.059f, -.579f, 0); crossBase.rot[HB] = -45;
+        crossBase.pos[Weapon] = new Vector3(-.149f, -.102f, 0); crossBase.rot[Weapon] = -105.257f;
+        crossBase.pos[Bottom] = new Vector3(.055f, .064f, 0); crossBase.rot[Bottom] = 28.711f;
+        crossBase.pos[TF] = new Vector3(-.240f, -.115f, 0); crossBase.rot[TF] = -36.367f;
+        crossBase.pos[CF] = new Vector3(-.259f, -1.147f, 0); crossBase.rot[CF] = -23.926f;
+        crossBase.pos[FF] = new Vector3(-.232f, -1.116f, 0); crossBase.rot[FF] = 9.570f;
+        crossBase.pos[TB] = new Vector3(.033f, -.098f, 0); crossBase.rot[TB] = 86.133f;
+        crossBase.pos[CB] = new Vector3(.234f, -1.148f, 0); crossBase.rot[CB] = -110.059f;
+        crossBase.pos[FB] = new Vector3(-.248f, -1.131f, 0); crossBase.rot[FB] = 14.355f;
+        Pose[] rush = new Pose[4], finish = new Pose[4];
+        for (int i = 0; i < 4; i++)
         {
-            if (f < 6) return Mix(rest, crossUp, f / 6);
-            int pass = Mathf.Min(3, Mathf.FloorToInt((f - 6) / 8)); float local = f - (6 + pass * 8);
-            Pose cut = pass == 0 ? crossUp : pass == 1 ? crossDown : pass == 2 ? crossUp : dash;
-            if (f >= 38) return Mix(dash, rest, (f - 38) / 10);
-            Pose previous = pass == 0 ? crossUp : pass == 1 ? crossUp : pass == 2 ? crossDown : crossUp;
-            return Track(local, new Key(0, previous), new Key(2, cut), new Key(5, cut), new Key(8, cut));
-        }).Cue(48, "Action.End");
-        for (int i = 0; i < 4; i++) cross.Cue(8 + i * 8, "Skill5.PassStart." + i).Cue(9 + i * 8, "Skill5.Impact." + i).Cue(11 + i * 8, "Skill5.PassEnd." + i);
+            rush[i] = crossBase.Clone(); // Preserve the supplied local arm and sword angles.
+            finish[i] = rush[i].Clone();
+        }
+        // Four distinct finishes: raised guard / low sweep / overhead cocked blade / extended thrust.
+        finish[0].rot[Body] = -10; finish[0].rot[Head] = 10;
+        finish[0].rot[TF] = 95; finish[0].rot[CF] = -130; finish[0].rot[TB] = -25; finish[0].rot[CB] = -10;
+        finish[0].rot[SF] = 55; finish[0].rot[AF] = 75;
+        finish[0].rot[SB] = 40; finish[0].rot[AB] = 100; finish[0].rot[HB] = -20;
+        finish[1].rot[Body] = -55; finish[1].rot[Head] = 45;
+        finish[1].rot[TF] = -65; finish[1].rot[CF] = -10; finish[1].rot[TB] = 75; finish[1].rot[CB] = -120;
+        finish[1].rot[SF] = -45; finish[1].rot[AF] = 15;
+        finish[1].rot[SB] = 55; finish[1].rot[AB] = 5; finish[1].rot[HB] = -35;
+        finish[2].rot[Body] = 12; finish[2].rot[Head] = -12;
+        finish[2].rot[TF] = -35; finish[2].rot[CF] = -20; finish[2].rot[TB] = 110; finish[2].rot[CB] = -145;
+        finish[2].rot[SF] = -35; finish[2].rot[AF] = 20;
+        finish[2].rot[SB] = 145; finish[2].rot[AB] = -45; finish[2].rot[HB] = 20;
+        finish[3].pos[Body] = new Vector3(.197f, -.550f, 0);
+        finish[3].rot[Body] = -20; finish[3].rot[Head] = -35;
+        finish[3].rot[TF] = -45; finish[3].rot[CF] = -15; finish[3].rot[TB] = 65; finish[3].rot[CB] = -95;
+        finish[3].rot[SF] = -65; finish[3].rot[AF] = 0;
+        finish[3].rot[SB] = 105; finish[3].rot[AB] = 15; finish[3].rot[HB] = -45;
+        r.BladeAt(finish[0], new Vector2(.3f, 1));
+        r.BladeAt(finish[1], new Vector2(1, -.45f));
+        r.BladeAt(finish[2], new Vector2(-1, .35f));
+        finish[3].rot[Weapon] = -140;
+        finish[3].rot[Cape] = 0;
+        // Lower every pass and its distinct finish without changing the sword's grip position.
+        for (int i = 0; i < 3; i++) finish[i].rot[Weapon] -= 10;
+        // Second pass is a single overhead-to-low cut, held through the remaining movement.
+        // No separate braking pose or secondary body sway is added to this pass.
+        rush[1] = finish[0].Clone();
+        rush[1].rot[SB] = 145; rush[1].rot[AB] = -45; rush[1].rot[HB] = 20;
+        finish[1].rot[SB] = 30; finish[1].rot[AB] = 15; finish[1].rot[HB] = -35;
+        Pose crossReady = rush[0].Clone(); r.Ground(crossReady);
+        Motion cross = new Motion("skill5", 72, false, f =>
+        {
+            if (f < 8) { Pose p = Mix(rest, crossReady, f / 8); r.Ground(p); return p; }
+            if (f >= 62) { Pose p = Mix(finish[3], rest, (f - 62) / 10); p.pos[Body].y += Mathf.Max(0, r.floor - r.Lowest(p)); return p; }
+            int pass = Mathf.Clamp(Mathf.FloorToInt((f - 8) / 14), 0, 3);
+            float local = f - (8 + pass * 14);
+            float finishProgress = pass == 3 ? local / 1.5f : (pass == 0 || pass == 2) ? (local - 2) / 4 : (local - .5f) / 2.5f;
+            // Start the cut at frame 22, reach mid-swing at 23, and finish at 24.
+            if (pass == 1) finishProgress = local / 2;
+            Pose pose = Mix(rush[pass], finish[pass], finishProgress);
+            if (pass == 1)
+            {
+                float cutAngle = Mathf.Lerp(15, 170, S(finishProgress)) * Mathf.Deg2Rad;
+                r.BladeAt(pose, new Vector2(Mathf.Sin(cutAngle), Mathf.Cos(cutAngle)));
+            }
+            // Body follows through once while the root decelerates; no repeated bounce.
+            if (pass != 1) pose.pos[Body].x += .14f * Mathf.Sin(Mathf.PI * Mathf.Clamp01((local - 2) / 6));
+            pose.pos[Body].y += Mathf.Max(0, r.floor - r.Lowest(pose));
+            return pose;
+        }).Cue(72, "Action.End");
+        for (int i = 0; i < 4; i++) cross.Cue(8 + i * 14, "Skill5.PassStart." + i)
+            .Cue(9 + i * 14, "Skill5.Impact." + i).Cue(16 + i * 14, "Skill5.PassEnd." + i);
         list.Add(cross);
         // Authored desire pose. Do not replace these arms with hand-target IK.
         Pose timePose = rest.Clone();
         timePose.rot[SF] = 0; timePose.rot[AF] = 85; timePose.rot[HF] = 0;
         timePose.rot[SB] = 15; timePose.rot[AB] = -90; timePose.rot[HB] = 0;
         timePose.pos[Weapon] = new Vector3(.148f, -.317f, 0); timePose.rot[Weapon] = 75;
-        timePose.pos[Body].y += .36f;
-        timePose.rot[FF] = -25; timePose.rot[FB] = -25;
+        timePose.pos[Body].y = .75f;
+        timePose.rot[FF] = -40; timePose.rot[FB] = -40;
         Pose gather = timePose.Clone(); gather.pos[Body] = rest.pos[Body];
         gather.rot[FF] = rest.rot[FF]; gather.rot[FB] = rest.rot[FB];
         float clockStart = r.Angle(timePose, Weapon);
@@ -1056,7 +1179,7 @@ public static class Stage5BossAnimationBuilder
             float clockDirection = mirror == 0 ? -1 : 1;
             list.Add(new Motion(mirror == 0 ? "Dskill" : "Dskill_Mirrored", 51, false, f =>
             {
-                Pose p = Track(f, new Key(0, rest), new Key(6, gather), new Key(11, gather), new Key(16, timePose), new Key(21, timePose), new Key(45, timePose), new Key(51, rest));
+                Pose p = Track(f, new Key(0, rest), new Key(6, gather), new Key(11, gather), new Key(16, timePose), new Key(21, timePose), new Key(45, timePose), new Key(49, gather), new Key(51, rest));
                 if (f >= 21 && f <= 45)
                 {
                     float tick = Mathf.Clamp(f - 21, 0, 24), quarter = Mathf.Min(3, Mathf.Floor(tick / 6));
@@ -1073,7 +1196,7 @@ public static class Stage5BossAnimationBuilder
             float successDirection = mirror == 0 ? 1 : -1;
             list.Add(new Motion(mirror == 0 ? "DesireSuccess" : "DesireSuccess_Mirrored", 12, false, f =>
             {
-                Pose p = Track(f, new Key(0, rest), new Key(2, timePose), new Key(10, timePose), new Key(12, rest));
+                Pose p = Track(f, new Key(0, rest), new Key(2, timePose), new Key(10, timePose), new Key(11, gather), new Key(12, rest));
                 if (f >= 2 && f <= 10) r.WeaponAt(p, r.World(p, Weapon), clockStart + successDirection * 360 * (f - 2) / 8);
                 return p;
             }).Cue(0, "Desire.RestoreHP").Cue(12, "Action.End"));
@@ -1089,16 +1212,31 @@ public static class Stage5BossAnimationBuilder
         groggy.rot[Bottom] = 17.522f;
         groggy.rot[TF] = 10.513f; groggy.rot[CF] = -109.512f; groggy.rot[FF] = 7.009f;
         groggy.rot[TB] = 82.047f; groggy.rot[CB] = -98.929f; groggy.rot[FB] = 16.882f;
-        Pose turn = Mix(rest, groggy, .8f); turn.pos[Body].y += .12f;
-        turn.rot[Weapon] = groggy.rot[Weapon] + 45;
-        list.Add(new Motion("Groggy", 18, false, f =>
+        // One continuous kneel, after the early sword turn. Recovery samples this exact path backwards.
+        Func<float, Pose> groggyPose = f =>
         {
-            Pose p = Track(f, new Key(0, rest), new Key(13, turn), new Key(18, groggy));
-            p.scale[Weapon].y = f < 13 ? 1 : -1; return p;
-        })
-            .Cue(0, "Groggy.Begin"));
+            Pose p = Mix(rest, groggy, (f - 5) / 13);
+            Pose arms = Mix(rest, groggy, f / 7);
+            foreach (int part in new[] { SF, AF, HF, SB, AB, HB, Weapon })
+            { p.pos[part] = arms.pos[part]; p.rot[part] = arms.rot[part]; }
+            float startAngle = Vector2.SignedAngle(Vector2.up, r.Matrix(rest, Weapon).MultiplyVector(Vector3.up));
+            float endAngle = Vector2.SignedAngle(Vector2.up, r.Matrix(groggy, Weapon).MultiplyVector(Vector3.up));
+            float clockwise = -Mathf.Repeat(startAngle - endAngle, 360);
+            float angle = startAngle + clockwise * S(f / 5);
+            p.scale[Weapon] = rest.scale[Weapon];
+            p.scale[Weapon].y = f < 4 ? rest.scale[Weapon].y : groggy.scale[Weapon].y;
+            r.BladeAt(p, Quaternion.Euler(0, 0, angle) * Vector3.up);
+            // Solve with a nonzero signed axis, then hide the whole sprite through the flip.
+            // The plateau spans multiple baked keys in both entry and slower reverse playback.
+            float fold = f < 3 ? 1 : f < 3.6f ? 1 - S((f - 3) / .6f)
+                : f <= 4.4f ? 0 : S((f - 4.4f) / .6f);
+            p.scale[Weapon].x *= fold; p.scale[Weapon].y *= fold;
+            if (f >= 18) return groggy.Clone();
+            return p;
+        };
+        list.Add(new Motion("Groggy", 18, false, groggyPose).Cue(0, "Groggy.Begin"));
         list.Add(new Motion("GroggyLoop", 24, true, f => groggy.Clone()));
-        list.Add(new Motion("GroggyEnd", 8, false, f => { Pose p = Mix(groggy, rest, f / 8); p.scale[Weapon].y = f < 8 ? -1 : rest.scale[Weapon].y; return p; }).Cue(8, "Action.End"));
+        list.Add(new Motion("GroggyEnd", 12, false, f => groggyPose(18 * (1 - f / 12))).Cue(12, "Action.End"));
 
     }
 
@@ -1127,7 +1265,7 @@ public static class Stage5BossAnimationBuilder
                 BindMainCombatPrefabs(r);
                 if (!setupOnly && only == null) VerifyMainClips(r.folder);
             }
-            Debug.Log("[Stage5 R38] " + r.name + " 애니메이션/컨트롤러 완료: " + r.folder +
+            Debug.Log("[Stage5 R50] " + r.name + " 애니메이션/컨트롤러 완료: " + r.folder +
                 ". 조건부 연계와 실제 타격/이동은 Stage5 전투 코드에서 Relay 신호를 연결하세요.");
         }
     }
@@ -1181,13 +1319,23 @@ public static class Stage5BossAnimationBuilder
         if (m.name == "skill2")
             turn = frame < 9 ? 0 : frame < 11 ? -75 * S((frame - 9) / 2) : -75 * (1 - S((frame - 11) / 13));
         if (m.name == "skill3") turn = 6 * S((frame - 9));
-        if (m.name == "skill3_Follow") turn = frame < 10 ? 6 : frame < 12 ? Mathf.Lerp(6, -45, S((frame - 10) / 2)) : frame < 14 ? -45 : -45 * (1 - S((frame - 14) / 4));
+        if (m.name == "skill3_Follow") turn = frame < 10 ? 6 : frame < 12 ? Mathf.Lerp(6, -45, S((frame - 10) / 2)) : frame < 13 ? -45 : -45 * (1 - S((frame - 13) / 5));
         if (m.name == "skill3_Miss") turn = 6 * (1 - S(frame / 6));
         if (m.name.StartsWith("Dskill", StringComparison.Ordinal))
         {
             float weight = S((frame - 11) / 5) * (1 - S((frame - 45) / 6));
             pose.pos[Body].y += .025f * Mathf.Sin((frame - 6) * Mathf.PI / 12) * weight;
             turn = (-5 + 3 * Mathf.Sin((frame - 6) * Mathf.PI / 8)) * weight;
+        }
+        if (m.name == "skill5" && frame >= 58 && frame <= 62)
+        {
+            pose.pos[Cape] = new Vector3(-.144f, 1.308f, 0);
+            pose.rot[Cape] = 0; return;
+        }
+        if (m.name == "skill4")
+        {
+            pose.rot[Cape] = 0;
+            pose.pos[Cape] = r.rest.pos[Cape]; pose.scale[Cape] = r.rest.scale[Cape]; return;
         }
         pose.pos[Cape] = r.rest.pos[Cape]; pose.scale[Cape] = r.rest.scale[Cape];
         pose.rot[Cape] = r.rest.rot[Cape] + turn;
@@ -1228,6 +1376,20 @@ public static class Stage5BossAnimationBuilder
                 Curve(clip, r.paths[part], "m_LocalPosition." + "xyz"[axis], position);
                 Curve(clip, r.paths[part], "localEulerAnglesRaw." + "xyz"[axis], rotation);
                 Curve(clip, r.paths[part], "m_LocalScale." + "xyz"[axis], scale);
+                if (r.main && m.name == "skill5")
+                {
+                    foreach (string property in new[] { "m_LocalPosition.", "localEulerAnglesRaw.", "m_LocalScale." })
+                    {
+                        var binding = EditorCurveBinding.FloatCurve(r.paths[part], typeof(Transform), property + "xyz"[axis]);
+                        var curve = AnimationUtility.GetEditorCurve(clip, binding);
+                        foreach (int boundary in new[] { 22, 36, 50 })
+                        {
+                            AnimationUtility.SetKeyRightTangentMode(curve, boundary * 5 - 1, AnimationUtility.TangentMode.Constant);
+                            AnimationUtility.SetKeyLeftTangentMode(curve, boundary * 5, AnimationUtility.TangentMode.Constant);
+                        }
+                        AnimationUtility.SetEditorCurve(clip, binding, curve);
+                    }
+                }
             }
         // Animate small flags; the relay applies exact integer SortingLayer IDs even in preview.
         FlagCurve(clip, "frontWeapon", new Keyframe(0, ((r.main && (m.name.StartsWith("Dskill", StringComparison.Ordinal) || m.name.StartsWith("DesireSuccess", StringComparison.Ordinal))) || (!r.main && m.name == "Attack")) ? 1 : 0),
@@ -1239,14 +1401,16 @@ public static class Stage5BossAnimationBuilder
         if (!r.main && m.name == "Attack")
             FlagCurve(clip, "frontBlade", new Keyframe(0, 0), new Keyframe(9 / FPS, 1), new Keyframe(22 / FPS, 0), new Keyframe(39 / FPS, 0));
         else FlagCurve(clip, "frontBlade", new Keyframe(0, 0), new Keyframe(m.frames / FPS, 0));
-        if (r.main && m.name == "skill5")
-            FlagCurve(clip, "hideVisual", new Keyframe(0, 0), new Keyframe(22 / FPS, 1), new Keyframe(24 / FPS, 0),
-                new Keyframe(30 / FPS, 1), new Keyframe(32 / FPS, 0), new Keyframe(48 / FPS, 0));
-        else FlagCurve(clip, "hideVisual", new Keyframe(0, 0), new Keyframe(m.frames / FPS, 0));
+        // Reposition between passes without blanking the character after the stop.
+        FlagCurve(clip, "hideVisual", new Keyframe(0, 0), new Keyframe(m.frames / FPS, 0));
         if (r.main)
         {
+            int mode = m.name == "skill5" ? 1 : m.name == "Attack" ? 2 : m.name.StartsWith("skill1") ? 3 : m.name == "skill3" ? 4 : m.name == "skill3_Follow" ? 5 : m.name == "skill3_Miss" ? 6 : 0;
+            var previewOn = new AnimationCurve(new Keyframe(0, mode));
+            AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Stage5MainBossPathPreview), "active"), previewOn);
+            AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Stage5MainBossPathPreview), "frame"), AnimationCurve.Linear(0, 0, m.frames / FPS, m.frames));
             bool spinning = m.name == "skill3_Follow";
-            var on = new AnimationCurve(new Keyframe(0, spinning ? 1 : 0), new Keyframe((spinning ? 12 : m.frames) / FPS, 0));
+            var on = new AnimationCurve(new Keyframe(0, spinning ? 1 : 0), new Keyframe((spinning ? 11 : m.frames) / FPS, 0));
             for (int k = 0; k < on.length; k++)
             {
                 AnimationUtility.SetKeyLeftTangentMode(on, k, AnimationUtility.TangentMode.Constant);
@@ -1432,6 +1596,7 @@ public static class Stage5BossAnimationBuilder
         EditorUtility.SetDirty(relay);
         if (r.main)
         {
+            if (r.visual.GetComponent<Stage5MainBossPathPreview>() == null) r.visual.gameObject.AddComponent<Stage5MainBossPathPreview>();
             var fx = r.visual.GetComponent<Stage5MainBossSpinEffect>();
             if (fx == null) fx = r.visual.gameObject.AddComponent<Stage5MainBossSpinEffect>();
             fx.body = r.visual.Find("Body"); fx.sword = r.visual.Find(r.paths[Weapon]).GetComponent<SpriteRenderer>();
@@ -1457,7 +1622,7 @@ public static class Stage5BossAnimationBuilder
         if (!saved) throw new InvalidOperationException("프리팹 저장 실패: " + r.prefabPath);
         EditorUtility.SetDirty(sm); EditorUtility.SetDirty(c);
     }
-    [MenuItem("Tools/5/MainBoss 5/Rebuild All And Verify (R38)")]
+    [MenuItem("Tools/5/MainBoss 5/Rebuild All And Verify (R50)")]
     public static void RebuildMainAndVerify() => Generate(true);
 
     static void VerifyMainClips(string folder)
@@ -1470,18 +1635,72 @@ public static class Stage5BossAnimationBuilder
         var death = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "Death.anim");
         var skill4 = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "skill4.anim");
         if (capeCurve == null || shoulder == null || death == null || skill4 == null)
-            throw new InvalidOperationException("R38: 클립 또는 필수 커브가 없습니다.");
+            throw new InvalidOperationException("R50: 클립 또는 필수 커브가 없습니다.");
         float capeDelta = capeCurve.Evaluate(11 / FPS) - capeCurve.Evaluate(0);
         if (Mathf.Abs(capeDelta + 75) > .05f || Mathf.Abs(shoulder.Evaluate(11 / FPS) + 1) > .01f
             || Mathf.Abs(death.length - 36 / FPS) > .01f || Mathf.Abs(skill4.length - 42 / FPS) > .01f)
-            throw new InvalidOperationException("R38: 재생성 결과가 목표 값과 다릅니다. " + folder);
-        Debug.Log("[MainBoss5 R38 검증 완료] skill2 Cape -75 / skill3 SB scale.x -1 / skill4 42f / Death 36f\n" + folder, cape);
+            throw new InvalidOperationException("R50: 재생성 결과가 목표 값과 다릅니다. " + folder);
+        var follow = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "skill3_Follow.anim");
+        var cross = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "skill5.anim");
+        if (follow == null || cross == null || Mathf.Abs(cross.length - 72 / FPS) > .01f)
+            throw new InvalidOperationException("R50: 후속/교차 공격 클립 길이 확인 필요");
+        foreach (string arm in new[] { "Body/Shoulder_F", "Body/Shoulder_B" })
+        {
+            var restClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + "Idle.anim");
+            var restScale = AnimationUtility.GetEditorCurve(restClip, EditorCurveBinding.FloatCurve(arm, typeof(Transform), "m_LocalScale.x"));
+            var followScale = AnimationUtility.GetEditorCurve(follow, EditorCurveBinding.FloatCurve(arm, typeof(Transform), "m_LocalScale.x"));
+            if (restScale == null || followScale == null || followScale.keys.Any(k => Mathf.Abs(k.value - restScale.Evaluate(0)) > .01f))
+                throw new InvalidOperationException("R50: Skill3 Follow 팔 반전 복귀 확인 필요: " + arm);
+        }
+        var cloth = AnimationUtility.GetEditorCurve(skill4, EditorCurveBinding.FloatCurve("Body/Cape", typeof(Transform), "localEulerAnglesRaw.z"));
+        if (cloth == null || cloth.keys.Any(k => Mathf.Abs(k.value) > .05f))
+            throw new InvalidOperationException("R50: Skill4 망토 정지 확인 필요");
+        foreach (string action in new[] { "Groggy", "GroggyEnd" })
+        {
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(prefix + action + ".anim");
+            float flipFrame = action == "Groggy" ? 4 : 12f * (1 - 4f / 18f);
+            string weaponPath = "Body/Shoulder_B/Forearm_B/Hand_B/Sword";
+            foreach (string axis in new[] { "x", "y" })
+            {
+                var foldCurve = AnimationUtility.GetEditorCurve(clip, EditorCurveBinding.FloatCurve(weaponPath, typeof(Transform), "m_LocalScale." + axis));
+                if (foldCurve == null || Mathf.Abs(foldCurve.Evaluate(flipFrame / FPS)) > .001f)
+                    throw new InvalidOperationException("R50: 무기 반전 구간 접힘 확인 필요: " + action);
+            }
+            if (action == "GroggyEnd" && Mathf.Abs(clip.length - 1) > .01f)
+                throw new InvalidOperationException("R50: 그로기 복귀 길이 확인 필요");
+        }
+        string rear = "Body/Shoulder_B";
+        string[] authoredPaths = { rear, rear + "/Forearm_B", rear + "/Forearm_B/Hand_B", rear + "/Forearm_B/Hand_B/Sword" };
+        float[] authoredAngles = { 15, 105, -30, 90 };
+        for (int part = 0; part < authoredPaths.Length; part++)
+        {
+            var curve = AnimationUtility.GetEditorCurve(skill4, EditorCurveBinding.FloatCurve(authoredPaths[part], typeof(Transform), "localEulerAnglesRaw.z"));
+            if (curve == null || Mathf.Abs(Mathf.DeltaAngle(curve.Evaluate(18 / FPS), authoredAngles[part])) > .05f
+                || Mathf.Abs(Mathf.DeltaAngle(curve.Evaluate(25 / FPS), authoredAngles[part])) > .05f)
+                throw new InvalidOperationException("R50: 사용자 지정 꽂기 자세 확인 필요: " + authoredPaths[part]);
+        }
+        string[] finishPaths = { "Body", "Body/Head", "Body/Shoulder_F", "Body/Shoulder_F/Forearm_F",
+            rear, rear + "/Forearm_B", rear + "/Forearm_B/Hand_B", rear + "/Forearm_B/Hand_B/Sword", "Body/Cape" };
+        float[] finishAngles = { -20, -35, -65, 0, 105, 15, -45, -140, 0 };
+        for (int part = 0; part < finishPaths.Length; part++)
+        {
+            var curve = AnimationUtility.GetEditorCurve(cross, EditorCurveBinding.FloatCurve(finishPaths[part], typeof(Transform), "localEulerAnglesRaw.z"));
+            if (curve == null || Mathf.Abs(Mathf.DeltaAngle(curve.Evaluate(60 / FPS), finishAngles[part])) > .05f)
+                throw new InvalidOperationException("R50: Skill5 final pose: " + finishPaths[part]);
+        }
+        foreach (string axis in new[] { "x", "y" })
+        {
+            var curve = AnimationUtility.GetEditorCurve(cross, EditorCurveBinding.FloatCurve("Body", typeof(Transform), "m_LocalPosition." + axis));
+            if (curve == null || (axis == "x" ? Mathf.Abs(curve.Evaluate(60 / FPS) - .197f) > .001f : curve.Evaluate(60 / FPS) < -.551f))
+                throw new InvalidOperationException("R50: Skill5 final Body position: " + axis);
+        }
+        Debug.Log("[MainBoss5 R50 검증 완료] skill2 Cape -75 / skill3 SB scale.x -1 / skill4 Cape 0 / skill5 72f / Follow arm scales restored / Death 36f\n" + folder, cape);
     }
     static void BindMainCombatPrefabs(Rig r)
     {
         const string folder = "Assets/Prefabs/Stage5_Enemy";
         if (!AssetDatabase.IsValidFolder(folder))
-        { Debug.LogWarning("R38: 전투 프리팹 폴더를 찾지 못했습니다: " + folder); return; }
+        { Debug.LogWarning("R50: 전투 프리팹 폴더를 찾지 못했습니다: " + folder); return; }
         AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(r.folder + "/MainBoss5_AC.controller");
         AnimationClip death = AssetDatabase.LoadAssetAtPath<AnimationClip>(r.folder + "/MainBoss5_Death.anim");
         Texture2D typhoon = r.visual.GetComponent<Stage5MainBossSpinEffect>().sheet;
@@ -1498,13 +1717,14 @@ public static class Stage5BossAnimationBuilder
             {
                 var candidates = root.GetComponentsInChildren<Transform>(true)
                     .Where(t => t.name == "MainBoss 5" && t.Find("Body") != null).ToArray();
-                if (candidates.Length != 1) { Debug.LogWarning("R38: 시각 루트 확인 필요: " + path); continue; }
+                if (candidates.Length != 1) { Debug.LogWarning("R50: 시각 루트 확인 필요: " + path); continue; }
                 Transform visual = candidates[0];
                 var animator = visual.GetComponent<Animator>(); if (animator == null) animator = visual.gameObject.AddComponent<Animator>();
                 animator.runtimeAnimatorController = controller; animator.applyRootMotion = false;
                 var relay = visual.GetComponent<Stage5BossAnimationRelay>(); if (relay == null) relay = visual.gameObject.AddComponent<Stage5BossAnimationRelay>();
                 relay.ConfigureVisuals(visual.Find(r.paths[HB]).GetComponent<SpriteRenderer>(),
                     visual.Find(r.paths[Weapon]).GetComponent<SpriteRenderer>(), visual.GetComponentsInChildren<SpriteRenderer>(true));
+                if (visual.GetComponent<Stage5MainBossPathPreview>() == null) visual.gameObject.AddComponent<Stage5MainBossPathPreview>();
                 var fx = visual.GetComponent<Stage5MainBossSpinEffect>(); if (fx == null) fx = visual.gameObject.AddComponent<Stage5MainBossSpinEffect>();
                 fx.body = visual.Find("Body"); fx.sword = visual.Find(r.paths[Weapon]).GetComponent<SpriteRenderer>(); fx.sheet = typhoon;
                 foreach (var component in root.GetComponentsInChildren<MonoBehaviour>(true))
@@ -1518,12 +1738,12 @@ public static class Stage5BossAnimationBuilder
                     so.ApplyModifiedPropertiesWithoutUndo();
                 }
                 PrefabUtility.SaveAsPrefabAsset(root, path, out bool saved);
-                if (!saved) throw new InvalidOperationException("R38: 전투 프리팹 저장 실패 " + path);
-                updated++; Debug.Log("[MainBoss5 R38 전투 프리팹 갱신] " + path);
+                if (!saved) throw new InvalidOperationException("R50: 전투 프리팹 저장 실패 " + path);
+                updated++; Debug.Log("[MainBoss5 R50 전투 프리팹 갱신] " + path);
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }
         }
-        if (updated == 0) Debug.LogWarning("R38: Stage5_MainBoss가 붙은 전투 프리팹을 찾지 못했습니다. " + folder);
+        if (updated == 0) Debug.LogWarning("R50: Stage5_MainBoss가 붙은 전투 프리팹을 찾지 못했습니다. " + folder);
         AssetDatabase.SaveAssets();
     }
 
@@ -2114,8 +2334,8 @@ public static class Stage5BossAnimationBuilder
             Number(so, "skills.Array.data[4].postDelay", 0.833333333f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].actionType", 4f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].preDelay", 0f);
-            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].postDelay", 0.25f);
-            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].duration", 0.25f);
+            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].postDelay", 0.333333333f);
+            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].duration", 0.666666667f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].interval", 0f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].attackCount", 1f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].damage", 10f);
@@ -2135,8 +2355,8 @@ public static class Stage5BossAnimationBuilder
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[0].persistentFixedCadence", 0f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].actionType", 4f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].preDelay", 0f);
-            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].postDelay", 0.25f);
-            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].duration", 0.25f);
+            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].postDelay", 0.333333333f);
+            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].duration", 0.666666667f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].interval", 0f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].attackCount", 1f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].damage", 10f);
@@ -2156,8 +2376,8 @@ public static class Stage5BossAnimationBuilder
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[1].persistentFixedCadence", 0f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].actionType", 4f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].preDelay", 0f);
-            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].postDelay", 0.25f);
-            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].duration", 0.25f);
+            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].postDelay", 0.333333333f);
+            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].duration", 0.666666667f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].interval", 0f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].attackCount", 1f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].damage", 10f);
@@ -2177,8 +2397,8 @@ public static class Stage5BossAnimationBuilder
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[2].persistentFixedCadence", 0f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].actionType", 4f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].preDelay", 0f);
-            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].postDelay", 0.25f);
-            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].duration", 0.25f);
+            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].postDelay", 0.333333333f);
+            Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].duration", 0.666666667f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].interval", 0f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].attackCount", 1f);
             Number(so, "skills.Array.data[4].active.attackSteps.Array.data[3].damage", 10f);

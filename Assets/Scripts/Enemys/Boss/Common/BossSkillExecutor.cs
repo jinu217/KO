@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 
@@ -137,7 +137,7 @@ public static class BossSkillExecutor
             context.BossTransform.GetComponent<BossEffects>()?.BeginStep(step);
             context.RefreshSkillDirection();
 
-            if (step.preDelay > 0f)
+            if (step.preDelay > 0f && !(context.BossTransform.GetComponent<BossEffects>()?.UsesMotionDamageClock ?? false))
                 yield return new WaitForSeconds(context.GetSkillDelay(step.preDelay));
 
             switch (step.actionType)
@@ -182,7 +182,7 @@ public static class BossSkillExecutor
             }
 
             context.BossTransform.GetComponent<BossEffects>()?.EndStep();
-            if (step.postDelay > 0f)
+            if (step.postDelay > 0f && (!(context.BossTransform.GetComponent<BossEffects>()?.UsesMotionDamageClock ?? false) || step == active.attackSteps[active.attackSteps.Count - 1]))
                 yield return new WaitForSeconds(context.GetSkillDelay(step.postDelay));
         }
     }
@@ -195,7 +195,7 @@ public static class BossSkillExecutor
             if (fx != null) yield return fx.WaitForImpact(step, i);
             PlayAttackEffect(step, context);
             HitPlayer(step, context);
-            if (i < step.attackCount - 1 && step.interval > 0f)
+            if (i < step.attackCount - 1 && step.interval > 0f && !(fx != null && fx.UsesMotionDamageClock))
                 yield return new WaitForSeconds(context.GetSkillDelay(step.interval));
         }
     }

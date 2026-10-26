@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 // 일반 패턴의 특수 이동과 전용 욕망 컴포넌트의 공통 보스 연결을 담당한다.
@@ -15,9 +15,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     private float vaultArcHeight = 2.1f;
 
     [Header("5스킬 콘티 이동 (화면 기준, 좌우 반전하지 않음)")]
-    [SerializeField, Min(.5f)] private float crossSideDistance = 2.8f;
     [SerializeField, Min(.2f)] private float crossUpperHeight = 1.8f;
-    [SerializeField, Min(.2f)] private float thirdStartRightOffset = 1.1f;
     [SerializeField, Min(1f)] private float finalRushDistance = 8f;
     private Vector2 crossOrigin, crossCenter;
     private readonly RaycastHit2D[] crossWallHits = new RaycastHit2D[16];
@@ -64,7 +62,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     private IEnumerator GroggyPose(float seconds)
     {
         specialAnimation = true; isAttacking = true; Play("Groggy", true);
-        yield return new WaitForSeconds(Mathf.Max(0, seconds - 8f / 12f));
+        yield return new WaitForSeconds(Mathf.Max(0, seconds - 12f / 12f));
         if (!isDead) { Play("GroggyEnd", true); if (Relay != null) yield return Relay.WaitForEnd(); }
         specialAnimation = false; isAttacking = false;
     }
@@ -286,7 +284,8 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
             float elapsed = 0f;
             while (!isDead && elapsed < duration)
             {
-                float progress = Mathf.Clamp01(elapsed / duration);
+                float u = Mathf.Clamp01(elapsed / duration);
+                float progress = u * u * (3 - 2 * u);
                 Vector2 arc = Vector2.Lerp(start, target, progress)
                     + Vector2.up * (Mathf.Sin(progress * Mathf.PI) * vaultArcHeight);
                 rb.MovePosition(arc);
@@ -314,23 +313,14 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     {
         if (rb == null || index < 0 || index >= 4) yield break;
         if (step.preDelay > 0) yield return new WaitForSeconds(Delay(step.preDelay));
-        Vector2 start = rb.position, end;
-        if (index == 0) end = crossCenter + new Vector2(crossSideDistance, crossUpperHeight);
-        else if (index == 1) end = crossCenter + new Vector2(-crossSideDistance, -crossUpperHeight);
-        else if (index == 2)
-        {
-            start = crossCenter + new Vector2(thirdStartRightOffset, 0);
-            end = crossCenter + new Vector2(-crossSideDistance, crossUpperHeight);
-        }
-        else
-        {
-            start = crossOrigin; end = crossOrigin + Vector2.right * finalRushDistance;
-        }
-        start = AboveFloor(start); end = AboveFloor(end);
+        Vector2 start = rb.position;
+        if (index == 2) start = crossOrigin + Vector2.right * finalRushDistance * 2;
+        else if (index == 3) start = crossOrigin;
+        start = AboveFloor(start);
         try
         {
             rb.linearVelocity = Vector2.zero;
-            if (index >= 2 && Relay != null) Relay.SetRuntimeHidden(true);
+            // Keep the character visible during the pre-pass pause and reposition.
             yield return new WaitForSeconds(Delay(2f / 12f));
             if (isDead) yield break;
             if (index >= 2)
@@ -340,6 +330,12 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
                 else start = rb.position;
             }
             else start = rb.position;
+            // Equal screen-space X travel for all four attacks; keep the second pass above ground.
+            float direction = index == 0 || index == 3 ? 1 : -1;
+            float endY = index == 0 || index == 2
+                ? Mathf.Max(start.y, crossCenter.y + crossUpperHeight * 2)
+                : index == 1 ? crossOrigin.y + .25f : start.y;
+            Vector2 end = AboveFloor(new Vector2(start.x + direction * finalRushDistance * 2, endY));
             if (Relay != null) Relay.SetRuntimeHidden(false);
             lookDirection = end.x >= start.x ? 1 : -1; ApplyFacingDirection();
             float duration = Mathf.Max(.01f, Delay(step.duration)), elapsed = 0;
@@ -347,7 +343,10 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
             while (!isDead && elapsed < duration)
             {
                 float next = Mathf.Min(duration, elapsed + Time.fixedDeltaTime);
-                Vector2 target = Vector2.Lerp(start, end, next / duration);
+                // Two frames of fast attack, followed by the unchanged six-frame inertial brake.
+                float u = next / duration;
+                float progress = CrossSlashProgress(u);
+                Vector2 target = AboveFloor(Vector2.Lerp(start, end, progress));
                 if (!blocked)
                 {
                     Vector2 delta = target - rb.position; float distance = delta.magnitude;
@@ -374,6 +373,12 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
             if (rb != null) rb.linearVelocity = Vector2.zero;
             // Keep gravity disabled across the inter-pass pauses; RestoreAir runs at action end/death.
         }
+    }
+    public static float CrossSlashProgress(float u)
+    {
+        u = Mathf.Clamp01(u);
+        float brake = Mathf.Clamp01((u - .25f) / .75f);
+        return u < .25f ? 3.2f * u : .8f + .2f * (1 - (1 - brake) * (1 - brake));
     }
     private Vector2 AboveFloor(Vector2 target)
     {
