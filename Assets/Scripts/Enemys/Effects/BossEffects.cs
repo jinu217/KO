@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
@@ -154,41 +154,9 @@ public sealed class BossEffects : MonoBehaviour
                 if (s != null && (s.actionType == BossActionType.MeleeAttack || s.actionType == BossActionType.Slam)) n += Mathf.Max(1, s.attackCount);
         return n;
     }
-    // Only pure melee patterns with an exact authored hit count opt into this clock.
-    // Jump/landing, persistent hitboxes and conditional movement retain their existing controllers.
-    BossClipEffects.Track MotionDamageTrack()
-    {
-        if (executing?.active?.attackSteps == null || motionAnimator == null) return null;
-        if (executing.active.attackSteps.Exists(s => s != null && s.actionType != BossActionType.MeleeAttack)) return null;
-        var driver = GetComponentInChildren<BossClipEffects>();
-        if (driver == null || !driver.runtimeEnabled) return null;
-        foreach (var info in motionAnimator.GetCurrentAnimatorClipInfo(0))
-        {
-            var track = driver.Find(info.clip);
-            if (info.weight > .5f && track != null && track.runtime && track.damageTimes != null && track.damageTimes.Length > 0 && track.damageTimes.Length == TotalHits()) return track;
-        }
-        return null;
-    }
-    public bool UsesMotionDamageClock => MotionDamageTrack() != null;
     public IEnumerator WaitForImpact(BossAttackStepData step, int pulse)
     {
-        var authored = MotionDamageTrack();
-        if (authored != null)
-        {
-            int ordinal = Ordinal(step, pulse);
-            if (ordinal < authored.damageTimes.Length)
-            {
-                float elapsed = 0, target = authored.damageTimes[ordinal];
-                while (enemy != null && !enemy.IsDead && motionAnimator.isActiveAndEnabled && elapsed < 12f)
-                {
-                    if (MotionDamageTrack() != authored) yield break;
-                    if (motionAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime * authored.clip.length + .001f >= target) yield break;
-                    elapsed += Time.deltaTime; yield return null;
-                }
-                yield break;
-            }
-        }
-        // Legacy fallback for an unconfigured MidBoss1 clip.
+        // MidBoss1: 모든 콤보 타격을 실제 클립 시각까지 판정과 FX 함께 보류한다.
         if (stage != 1 || mainBoss || TotalHits() < 2 ||
             motionAnimator == null || comboTimings == null) yield break;
         float waited = 0;
@@ -367,4 +335,3 @@ public sealed class BossEffects : MonoBehaviour
             order + sortingOrderOffset, gameObject.scene, loop || ReferenceEquals(effect, chase), ReferenceEquals(effect, death) ? 1f : 1.5f, speedMultiplier);
     }
 }
-

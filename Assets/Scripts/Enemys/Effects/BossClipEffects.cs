@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -8,26 +8,23 @@ using UnityEngine.SceneManagement;
 public sealed class BossClipEffects : MonoBehaviour
 {
     public enum Style { Down, Up, Thrust, Spin, Punch, Dash, Dust, Hit, Death, Buff }
-    public enum Anchor { Body, Weapon, Feet, Hitbox, FrontHand, BackHand }
+    public enum Anchor { Body, Weapon, Feet, Hitbox }
     [Serializable] public class Cue
     {
         public float time, duration = .28f, angle, scale = 1;
         public Style style;
         public Anchor anchor = Anchor.Weapon;
         public Vector2 offset;
-        public bool alignBlade, loop, weaponSide, fitDuration, followRotation;
-        public float referenceAngle;
-        public AnimationCurve progress;
+        public bool alignBlade, loop, weaponSide;
     }
     [Serializable] public class Track
     {
         public AnimationClip clip;
         public bool runtime;
-        public float[] damageTimes = Array.Empty<float>();
         public Cue[] cues = Array.Empty<Cue>();
     }
     public Animator animator;
-    public Transform body, weapon, feet, frontHand, backHand;
+    public Transform body, weapon, feet;
     public BossEffects source;
     public Track[] tracks = Array.Empty<Track>();
     public bool runtimeEnabled;
@@ -92,9 +89,7 @@ public sealed class BossClipEffects : MonoBehaviour
             if (sheet.Length == 0) continue;
             bool combat = cue.style <= Style.Punch;
             float fps = Mathf.Max(1, effect.fps) * (combat ? 1.5f : 1);
-            float phase = Mathf.Clamp01(age / cue.duration);
-            if (cue.progress != null && cue.progress.length > 1) phase = cue.progress.Evaluate(phase);
-            int frame = cue.fitDuration && !cue.loop ? Mathf.FloorToInt(phase * sheet.Length) : Mathf.FloorToInt(Mathf.Max(0, age) * fps);
+            int frame = Mathf.FloorToInt(Mathf.Max(0, age) * fps);
             frame = cue.loop ? frame % sheet.Length : Mathf.Min(frame, sheet.Length - 1);
             float cueFacing = cue.weaponSide && weapon != null && body != null
                 ? (weapon.position.x >= body.position.x ? 1 : -1) : facing;
@@ -102,7 +97,7 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.enabled = true; sr.sprite = sheet[frame];
             sr.flipX = effect.artFacesRight ? cueFacing < 0 : cueFacing > 0; sr.flipY = effect.flipY;
             sr.sortingLayerID = SortingLayer.NameToID("Front"); sr.sortingOrder = sortingOrder;
-            Transform anchor = cue.anchor == Anchor.FrontHand ? frontHand : cue.anchor == Anchor.BackHand ? backHand : cue.anchor == Anchor.Weapon ? weapon : cue.anchor == Anchor.Feet ? feet : body;
+            Transform anchor = cue.anchor == Anchor.Weapon ? weapon : cue.anchor == Anchor.Feet ? feet : body;
             Vector3 position = anchor != null ? anchor.position : transform.position;
             if (cue.anchor == Anchor.Hitbox) position = source != null ? source.transform.position : transform.position;
             if (cue.anchor == Anchor.Weapon && weapon != null)
@@ -118,13 +113,6 @@ public sealed class BossClipEffects : MonoBehaviour
             {
                 Vector3 axis = weapon.TransformVector(Vector3.up);
                 angle = Mathf.Atan2(axis.y, axis.x) * Mathf.Rad2Deg - (facing < 0 ? 180 : 0);
-            }
-            if (cue.followRotation && !cue.alignBlade && weapon != null)
-            {
-                Vector3 axis = weapon.TransformVector(Vector3.up);
-                float current = Mathf.Atan2(axis.y, axis.x) * Mathf.Rad2Deg;
-                float reference = facing < 0 ? 180 - cue.referenceAngle : cue.referenceAngle;
-                angle += Mathf.DeltaAngle(reference, current);
             }
             sr.transform.rotation = Quaternion.Euler(0, 0, angle);
             float multiplier = cue.style == Style.Death ? 1 : 1.5f;
@@ -184,4 +172,3 @@ public sealed class BossClipEffects : MonoBehaviour
     static void Dispose(UnityEngine.Object obj)
     { if (Application.isPlaying) Destroy(obj); else DestroyImmediate(obj); }
 }
-

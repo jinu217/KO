@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +12,8 @@ using A = BossClipEffects.Anchor;
 public static class BossClipEffectsSetup
 {
     static BossClipEffects preview;
-    const string InstallRequest = "Library/BossFX_R52.install";
-    static bool installRequested = System.IO.File.Exists(InstallRequest); // R52: normalized sheet cells support imported texture resizing.
+    const string InstallRequest = "Library/BossFX_R51.install";
+    static bool installRequested = System.IO.File.Exists(InstallRequest); // R51: normalized sheet cells support imported texture resizing.
     static void InstallWhenReady()
     {
         if (!installRequested || EditorApplication.isCompiling || EditorApplication.isUpdating ||
@@ -22,7 +22,7 @@ public static class BossClipEffectsSetup
         try { ApplyAndVerify(); System.IO.File.Delete(InstallRequest); }
         catch (Exception error)
         {
-            System.IO.File.WriteAllText("Library/BossFX_R52_Verification_ERROR.txt", error.ToString());
+            System.IO.File.WriteAllText("Library/BossFX_R51_Verification_ERROR.txt", error.ToString());
             Debug.LogException(error);
         }
     }
@@ -34,7 +34,7 @@ public static class BossClipEffectsSetup
         EditorApplication.playModeStateChanged += _ => ClearPreview();
         Selection.selectionChanged += ClearPreview;
     }
-    [MenuItem("Tools/Effects/Bosses/Setup All Boss FX And Scene Preview (R52)")]
+    [MenuItem("Tools/Effects/Bosses/Setup All Boss FX And Scene Preview (R51)")]
     public static void ApplyAll()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
@@ -81,7 +81,7 @@ public static class BossClipEffectsSetup
             finally { PrefabUtility.UnloadPrefabContents(root); }
         }
         AssetDatabase.SaveAssets();
-        Debug.Log("[Boss FX R52] " + count + "개 보스 프리팹: 클립 이펙트와 씬 미리보기 연결 완료.");
+        Debug.Log("[Boss FX R51] " + count + "개 보스 프리팹: 클립 이펙트와 씬 미리보기 연결 완료.");
     }
     static Texture2D Sheet(string suffix)
     {
@@ -142,7 +142,6 @@ public static class BossClipEffectsSetup
         var transforms = animator.GetComponentsInChildren<Transform>(true);
         driver.body = transforms.FirstOrDefault(t => t.name == "Body") ?? animator.transform;
         driver.weapon = transforms.FirstOrDefault(t => new[] { "Sword", "Weapon", "Axe", "Scythe", "Spear", "Mace" }.Contains(t.name));
-        if (driver.weapon == null) driver.weapon = transforms.FirstOrDefault(t => t.name == "Hand_B");
         driver.feet = transforms.FirstOrDefault(t => t.name == "Foot_B") ?? transforms.FirstOrDefault(t => t.name.Contains("Foot")) ?? animator.transform;
         var clips = animator.runtimeAnimatorController.animationClips.Distinct().ToList();
         var folders = clips.Select(c => System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(c)).Replace('\\', '/')).Distinct();
@@ -152,9 +151,7 @@ public static class BossClipEffectsSetup
                 var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(guid));
                 if (clip != null && Regex.IsMatch(clip.name, "(?i)" + (main ? "main" : "mid") + @"boss\s*" + stage) && !clips.Contains(clip)) clips.Add(clip);
             }
-        driver.frontHand = transforms.FirstOrDefault(t => t.name == "Hand_F"); driver.backHand = transforms.FirstOrDefault(t => t.name == "Hand_B");
         driver.tracks = clips.Select(c => BuildTrack(c, source, stage, main)).ToArray();
-        BossMotionEffects.Apply(driver, source, stage, main);
         foreach (var track in driver.tracks) Validate(track);
         EditorUtility.SetDirty(driver);
     }
@@ -283,20 +280,8 @@ public static class BossClipEffectsSetup
     static void Validate(BossClipEffects.Track track)
     {
         foreach (var cue in track.cues)
-        {
             if (cue.time < 0 || cue.duration <= 0 || float.IsNaN(cue.time))
                 throw new InvalidOperationException("Invalid FX cue: " + track.clip.name);
-            if(cue.progress!=null && cue.progress.length>1)
-            {
-                float previous=-1;
-                foreach(var key in cue.progress.keys)
-                { if(float.IsNaN(key.value)||key.value<previous-.0001f||key.value<0||key.value>1.0001f) throw new InvalidOperationException("Invalid motion progress: "+track.clip.name); previous=key.value; }
-                if(Mathf.Abs(cue.progress.Evaluate(0))>.001f || Mathf.Abs(cue.progress.Evaluate(1)-1)>.001f) throw new InvalidOperationException("Incomplete motion progress: "+track.clip.name);
-            }
-        }
-        float lastHit=-1;
-        foreach(float hit in track.damageTimes)
-        { if(hit<=lastHit||hit>track.clip.length) throw new InvalidOperationException("Invalid damage clock: "+track.clip.name); lastHit=hit; }
         if (track.clip.name.Equals("MainBoss5_skill5", StringComparison.OrdinalIgnoreCase))
         {
             var cuts = track.cues.Where(c => c.style == S.Down).ToArray();
@@ -348,69 +333,15 @@ public static class BossClipEffectsSetup
         }
         if (identities.Count != 10) throw new InvalidOperationException("Expected all 10 bosses, found " + identities.Count);
         report.Insert(0, "PASS: 10 bosses; " + sampled + " FX cue samples; forward/reverse sampling and cleanup completed.");
-        System.IO.File.WriteAllLines("Library/BossFX_R52_Verification.txt", report);
+        System.IO.File.WriteAllLines("Library/BossFX_R51_Verification.txt", report);
         Debug.Log(string.Join("\n", report));
         AssetDatabase.SaveAssets();
         CaptureMainFive();
-        CaptureMotionAudit();
-    }
-    static void CaptureMotionAudit()
-    {
-        string folder="Library/BossFX_R52_MotionAudit"; System.IO.Directory.CreateDirectory(folder);
-        var report=new List<string>();
-        foreach(var guid in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Prefab"}))
-        {
-            string path=AssetDatabase.GUIDToAssetPath(guid);
-            var asset=AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if(asset==null || asset.GetComponent<BossClipEffects>()==null) continue;
-            var root=PrefabUtility.LoadPrefabContents(path);
-            try
-            {
-                var driver=root.GetComponent<BossClipEffects>();
-                foreach(var track in driver.tracks)
-                    foreach(var cue in track.cues.Where(c=>c.style<=BossClipEffects.Style.Punch))
-                        report.Add(track.clip.name+" | "+cue.style+" | "+(cue.time*track.clip.frameRate).ToString("F2")+".."+((cue.time+cue.duration)*track.clip.frameRate).ToString("F2")+" frames | "+cue.anchor);
-                var basic=driver.tracks.FirstOrDefault(t=>t.clip.name.EndsWith("_Attack", StringComparison.OrdinalIgnoreCase) && t.cues.Any(c=>c.style<=BossClipEffects.Style.Punch));
-                if(root.name.Contains("MidBoss 1")) basic=driver.tracks.First(t=>t.clip.name.Contains("Combo2"));
-                if(basic==null) continue;
-                var first=basic.cues.First(c=>c.style<=BossClipEffects.Style.Punch);
-                var times=new List<float>{Mathf.Max(0,first.time-.05f),first.time+first.duration*.35f,first.time+first.duration*.75f};
-                if(root.name.Contains("MainBoss 1")) times.Add(3f/12);
-                if(root.name.Contains("MidBoss 1")) times.Add(45f/60);
-                foreach(float t in times)
-                {
-                    basic.clip.SampleAnimation(root,t); driver.Sample(basic.clip,t);
-                    if(root.name.Contains("MainBoss 1") && Mathf.Abs(t-.25f)<.001f && driver.VisibleCount!=0) throw new InvalidOperationException("MainBoss1 windup still emits an effect at frame 3");
-                    CapturePose(root,folder+"/"+root.name+"_"+(t*basic.clip.frameRate).ToString("F1")+"f.png");
-                    driver.Release();
-                }
-            }
-            finally { PrefabUtility.UnloadPrefabContents(root); }
-        }
-        System.IO.File.WriteAllLines(folder+"/StrokeWindows.txt",report);
-    }
-    static void CapturePose(GameObject root,string path)
-    {
-        var sprites=root.GetComponentsInChildren<SpriteRenderer>(true).Where(r=>r.enabled&&r.sprite!=null).ToArray();
-        Bounds bounds=sprites[0].bounds; foreach(var r in sprites) bounds.Encapsulate(r.bounds);
-        var obj=new GameObject("Motion audit camera"){hideFlags=HideFlags.HideAndDontSave};
-        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(obj,root.scene);
-        var camera=obj.AddComponent<Camera>(); var target=new RenderTexture(480,480,24); var image=new Texture2D(480,480,TextureFormat.RGB24,false);
-        var previous=RenderTexture.active;
-        try
-        {
-            camera.scene=root.scene; camera.orthographic=true; camera.orthographicSize=Mathf.Max(bounds.extents.x,bounds.extents.y)*1.5f;
-            camera.transform.position=new Vector3(bounds.center.x,bounds.center.y,-20);
-            camera.clearFlags=CameraClearFlags.SolidColor; camera.backgroundColor=new Color(.13f,.14f,.16f,1);
-            camera.targetTexture=target; camera.Render(); RenderTexture.active=target;
-            image.ReadPixels(new Rect(0,0,480,480),0,0); image.Apply(); System.IO.File.WriteAllBytes(path,image.EncodeToPNG());
-        }
-        finally { RenderTexture.active=previous; UnityEngine.Object.DestroyImmediate(obj); target.Release(); UnityEngine.Object.DestroyImmediate(target); UnityEngine.Object.DestroyImmediate(image); }
     }
     static void CaptureMainFive()
     {
         string path = "Assets/Prefab/5/MainBoss 5.prefab";
-        string folder = "Library/BossFX_R52_Previews"; System.IO.Directory.CreateDirectory(folder);
+        string folder = "Library/BossFX_R51_Previews"; System.IO.Directory.CreateDirectory(folder);
         foreach (var sample in new[] { ("MainBoss5_skill5", 23f / 12), ("MainBoss5_skill1", 13f / 12), ("MainBoss5_skill4", 19f / 12) })
         {
             var root = PrefabUtility.LoadPrefabContents(path);
@@ -464,5 +395,3 @@ public static class BossClipEffectsSetup
     }
 }
 #endif
-
-
