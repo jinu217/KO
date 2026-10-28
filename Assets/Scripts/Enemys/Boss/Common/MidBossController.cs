@@ -86,6 +86,27 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     private float basicCooldownAdd;
     private float maxHpBonus;
 
+     //============== FX 연동 시작 ==============
+    // BossEffects는 같은 오브젝트에 붙어 있으며, 파생 클래스(Stage4_MidBoss 등)에서 Effects?.BeginSkill(...) 형태로 사용합니다.
+    private BossEffects fxCache;
+    private bool fxSearched;
+    protected BossEffects Effects
+    {
+        get
+        {
+            if (!fxSearched) { fxCache = GetComponent<BossEffects>(); fxSearched = true; }
+            return fxCache;
+        }
+    }
+
+    // BossEffects / BossClipEffects가 이펙트 방향을 정할 때 사용 (1 = 오른쪽, -1 = 왼쪽)
+    public int FXDirection => lookDirection < 0 ? -1 : 1;
+
+    // 추적 이동 중일 때만 true → 먼지 이펙트에 사용 (BossEffects 쪽에서 지면 판정과 시작 지연도 추가로 확인)
+    public bool FXChasing => !isDead && !isAttacking && !dialoguePaused && isChasing
+        && rb != null && Mathf.Abs(rb.linearVelocity.x) > 0.05f;
+    //============== FX 연동 끝 ==============
+
     
     //============== 대화 중 AI 정지 ==============
     protected bool dialoguePaused;
