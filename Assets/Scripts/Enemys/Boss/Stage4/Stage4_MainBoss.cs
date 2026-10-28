@@ -93,7 +93,7 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
     public void BeginDesirePose() { PlayDesireAnimation(); }
     public IEnumerator FinishDesirePose() { yield return WaitForDesireAnimation(); }
     public void BeginGroggyPose() { isAttacking = true; PlayAction("Groggy", false); }
-    public void EndGroggyPose() { isAttacking = false; DeferNextCombatAction(); }
+    public void EndGroggyPose() { isAttacking = false; }
     public override void OnSkillAttackHit(BossAttackStepData step)
     {
         int position = executing?.active.attackSteps.IndexOf(step) ?? -1;

@@ -250,6 +250,7 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
 
         int direction = owner.DesireLookDirection;
         Vector2 center = (Vector2)transform.position + new Vector2(direction * returnAttackOffset.x, returnAttackOffset.y);
+        GetComponent<BossEffects>()?.PlayReturnAttack(center, direction);
         Collider2D hit = Physics2D.OverlapBox(center, returnAttackSize, 0f, owner.DesirePlayerLayer);
         IDamageable target = hit != null ? hit.GetComponentInParent<IDamageable>() : null;
         if (target != null && BossSkillExecutor.CanDamagePlayer(hit) && CanHitPlayer(hit))

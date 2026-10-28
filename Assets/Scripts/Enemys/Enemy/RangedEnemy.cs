@@ -185,6 +185,7 @@ public class RangedEnemy : EnemyController
                 if (proj.TryGetComponent<Enemy_Projectile>(out var projectile))
                 {
                     projectile.Setup(targetPos, data.damage);
+                    Effects?.PlayAttack(spawnPos, walkDirection, true);
                     if (showAttackLog) Debug.Log($"{gameObject.name} 발사!");
                 }
                 else

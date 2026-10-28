@@ -5,15 +5,19 @@ using UnityEngine;
 public static class Stage5MainBossFactory
 {
     private const string DataPath = "Assets/Data/Enemys/Stage5/Stage5_MainBoss.asset";
-    private const string PrefabPath = "Assets/Prefabs/Stage5_Enemy 1/Stage5_MainBoss.prefab";
+    private const string PrefabPath = "Assets/Prefabs/Stage5_Enemy/Stage5_MainBoss.prefab";
 
     [InitializeOnLoadMethod]
     private static void ScheduleFirstImport() => EditorApplication.delayCall += CreateIfMissing;
 
     private static void CreateIfMissing()
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        // A renamed/missing source prefab is not something this factory can recreate.
+        // Skip automatic setup without repeatedly throwing after every recompile.
+        if (!TryResolvePrefabPath(out string prefabPath, false)) return;
         MainBossData data = AssetDatabase.LoadAssetAtPath<MainBossData>(DataPath);
-        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         if (data != null && prefab != null && prefab.GetComponent<Stage5_MainBoss>() != null
             && prefab.GetComponent<Stage5_MainBossDesireSkill>() != null) return;
         CreateOrUpdate();
@@ -22,6 +26,8 @@ public static class Stage5MainBossFactory
     [MenuItem("Tools/Boss/Create Stage5 MainBoss")]
     public static void CreateOrUpdate()
     {
+        // Resolve the source before creating data or loading prefab contents.
+        if (!TryResolvePrefabPath(out string prefabPath, true)) return;
         MainBossData data = AssetDatabase.LoadAssetAtPath<MainBossData>(DataPath);
         if (data == null)
         {
@@ -30,7 +36,7 @@ public static class Stage5MainBossFactory
             AssetDatabase.CreateAsset(data, DataPath);
         }
 
-        GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
+        GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
         if (root == null) throw new System.InvalidOperationException("Stage5_MainBoss 프리팹을 찾지 못했습니다.");
         try
         {
@@ -54,7 +60,7 @@ public static class Stage5MainBossFactory
             boss.wallLayer = wall;
             boss.wallCheck = check;
             EditorUtility.SetDirty(boss);
-            PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+            PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
         }
         finally { PrefabUtility.UnloadPrefabContents(root); }
         AssetDatabase.SaveAssets();
@@ -80,11 +86,17 @@ public static class Stage5MainBossFactory
         var risingSpin = new BossAttackStepData
         {
             stepName = "2타 검 회전하며 일어서기 (넉백 없음)",
-            actionType = BossActionType.PersistentHitbox, duration = .72f,
-            interval = .18f, attackCount = 4, damage = 3f,
-            hitboxSize = sharedSize, hitboxOffset = sharedOffset,
-            knockbackForce = Vector2.zero, persistentFixedCadence = true,
-            preDelay = .1f, postDelay = .12f
+            actionType = BossActionType.PersistentHitbox,
+            duration = .72f,
+            interval = .18f,
+            attackCount = 4,
+            damage = 3f,
+            hitboxSize = sharedSize,
+            hitboxOffset = sharedOffset,
+            knockbackForce = Vector2.zero,
+            persistentFixedCadence = true,
+            preDelay = .1f,
+            postDelay = .12f
         };
         var lunge = Dash("3타 전방 검 내지르기", 16f,
             new Vector2(2.5f, 1.5f), new Vector2(1.5f, 0f),
@@ -100,8 +112,11 @@ public static class Stage5MainBossFactory
             swordWalk.active.attackSteps.Add(new BossAttackStepData
             {
                 stepName = $"{i + 1}걸음 플레이어에게 접근",
-                actionType = BossActionType.MoveForward, moveSpeed = 1.25f,
-                duration = .32f, maxMoveDistance = .5f, stopAtWall = true
+                actionType = BossActionType.MoveForward,
+                moveSpeed = 1.25f,
+                duration = .32f,
+                maxMoveDistance = .5f,
+                stopAtWall = true
             });
             var cuts = Hit($"{i + 1}걸음 주변 4회 검격", 2.5f,
                 new Vector2(3.4f, 2.4f), Vector2.zero, Vector2.zero, .04f, .08f);
@@ -112,14 +127,18 @@ public static class Stage5MainBossFactory
 
         BossSkillData buff2 = new BossSkillData
         {
-            skillName = "2스킬 버프 (내용 미정)", skillType = BossSkillType.Buff,
-            minimumPhase = 99, cooldown = 20f
+            skillName = "2스킬 버프 (내용 미정)",
+            skillType = BossSkillType.Buff,
+            minimumPhase = 99,
+            cooldown = 20f
         };
 
         var floatUp = new BossAttackStepData
         {
-            stepName = "1단계 살짝 떠오르기", actionType = BossActionType.Jump,
-            jumpForce = new Vector2(0f, 4.5f), duration = .65f
+            stepName = "1단계 살짝 떠오르기",
+            actionType = BossActionType.Jump,
+            jumpForce = new Vector2(0f, 4.5f),
+            duration = .65f
         };
         var rush = Dash("2단계 공중 전방 돌진", 15f,
             new Vector2(2.5f, 2.4f), new Vector2(1.25f, -.5f),
@@ -135,8 +154,10 @@ public static class Stage5MainBossFactory
 
         BossSkillData buff4 = new BossSkillData
         {
-            skillName = "4스킬 버프 (내용 미정)", skillType = BossSkillType.Buff,
-            minimumPhase = 99, cooldown = 20f
+            skillName = "4스킬 버프 (내용 미정)",
+            skillType = BossSkillType.Buff,
+            minimumPhase = 99,
+            cooldown = 20f
         };
 
         BossSkillData cross = Active("5스킬 플레이어 주변 교차 베기", 15f, 9f);
@@ -165,8 +186,10 @@ public static class Stage5MainBossFactory
     {
         var skill = new BossSkillData
         {
-            skillName = name, skillType = BossSkillType.Active,
-            cooldown = cooldown, castRange = range
+            skillName = name,
+            skillType = BossSkillType.Active,
+            cooldown = cooldown,
+            castRange = range
         };
         skill.active.attackSteps.AddRange(steps);
         return skill;
@@ -176,27 +199,39 @@ public static class Stage5MainBossFactory
         Vector2 offset, Vector2 knockback, float preDelay, float postDelay)
         => new BossAttackStepData
         {
-            stepName = name, actionType = BossActionType.MeleeAttack,
-            attackCount = 1, damage = damage,
-            hitboxSize = size, hitboxOffset = offset,
-            knockbackForce = knockback, preDelay = preDelay, postDelay = postDelay
+            stepName = name,
+            actionType = BossActionType.MeleeAttack,
+            attackCount = 1,
+            damage = damage,
+            hitboxSize = size,
+            hitboxOffset = offset,
+            knockbackForce = knockback,
+            preDelay = preDelay,
+            postDelay = postDelay
         };
 
     private static BossAttackStepData Dash(string name, float damage, Vector2 size,
         Vector2 offset, Vector2 knockback, float speed, float distance, float duration)
         => new BossAttackStepData
         {
-            stepName = name, actionType = BossActionType.DashAttack,
-            attackCount = 1, damage = damage,
-            hitboxSize = size, hitboxOffset = offset, knockbackForce = knockback,
-            moveSpeed = speed, maxMoveDistance = distance,
-            duration = duration, stopAtWall = true
+            stepName = name,
+            actionType = BossActionType.DashAttack,
+            attackCount = 1,
+            damage = damage,
+            hitboxSize = size,
+            hitboxOffset = offset,
+            knockbackForce = knockback,
+            moveSpeed = speed,
+            maxMoveDistance = distance,
+            duration = duration,
+            stopAtWall = true
         };
 
     public static void Validate()
     {
+        if (!TryResolvePrefabPath(out string prefabPath, true)) return;
         MainBossData data = AssetDatabase.LoadAssetAtPath<MainBossData>(DataPath);
-        GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
+        GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
         if (root == null) throw new System.InvalidOperationException("Stage5_MainBoss 프리팹이 없습니다.");
         try
         {
@@ -233,6 +268,36 @@ public static class Stage5MainBossFactory
             Debug.Log("Stage5 MainBoss 검증 통과: 전용 연결, 기본 3연타, 8×4 검격, 조건부 3타, 네 방향 베기, 욕망 컴포넌트");
         }
         finally { PrefabUtility.UnloadPrefabContents(root); }
+    }
+
+    private static bool TryResolvePrefabPath(out string prefabPath, bool logError)
+    {
+        prefabPath = PrefabPath;
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null) return true;
+
+        // If the folder is renamed again, locate the uniquely named source prefab.
+        string found = null;
+        foreach (string guid in AssetDatabase.FindAssets("Stage5_MainBoss t:Prefab"))
+        {
+            string candidate = AssetDatabase.GUIDToAssetPath(guid);
+            if (!string.Equals(System.IO.Path.GetFileName(candidate), "Stage5_MainBoss.prefab",
+                System.StringComparison.OrdinalIgnoreCase)) continue;
+            if (found != null)
+            {
+                if (logError) Debug.LogError("Stage5_MainBoss.prefab이 여러 개입니다. Stage5MainBossFactory의 PrefabPath를 실제 경로로 지정하세요.");
+                prefabPath = null;
+                return false;
+            }
+            found = candidate;
+        }
+        if (found != null)
+        {
+            prefabPath = found;
+            return true;
+        }
+        if (logError) Debug.LogError("Stage5_MainBoss 원본 프리팹을 찾지 못했습니다: " + PrefabPath);
+        prefabPath = null;
+        return false;
     }
 
     private static void Require(bool condition, string message)

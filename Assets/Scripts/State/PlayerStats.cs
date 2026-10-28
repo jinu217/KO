@@ -7,7 +7,8 @@ public enum ShamanUpgradeType
     DashCount,
     DashCooldownReduction,
     StartingCoin,
-    EquipmentRerollCount
+    EquipmentRerollCount,
+    DoubleJump
 }
 
 [System.Serializable]

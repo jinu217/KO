@@ -20,8 +20,8 @@ public static class Stage4BossPatterns
             Punch("잽", 9, .25f, true), Punch("잽", 9, .07f, true),
             Punch("훅", 12, .08f, true), Punch("보디 블로", 12, .08f, true), Punch("스트레이트", 18, .12f, true)));
         var upper = Punch("보디 적중 후 어퍼컷", 22, .12f);
-        upper.hitboxSize = new Vector2(2.34f, 3.748f);
-        upper.hitboxOffset = new Vector2(1.27f, -1.25f);
+        upper.hitboxSize = new Vector2(1.8f, 2.8f);
+        upper.hitboxOffset = new Vector2(1, .6f);
         upper.knockbackForce = new Vector2(1.5f, 11);
         data.skills.Add(Skill("2스킬 보디 블로 어퍼컷", 9, 2.7f,
             new BossAttackStepData { stepName = "한 발 전진", actionType = BossActionType.MoveForward, preDelay = .35f, moveSpeed = 5, maxMoveDistance = .6f, duration = .15f, stopAtWall = true },
@@ -41,7 +41,7 @@ public static class Stage4BossPatterns
         {
             stepName = name, actionType = advance ? BossActionType.DashAttack : BossActionType.MeleeAttack,
             attackCount = 1, damage = damage, preDelay = delay, postDelay = .07f,
-            hitboxSize = new Vector2(2.47f, 2.356f), hitboxOffset = new Vector2(1.335f, -1.85f),
+            hitboxSize = new Vector2(1.9f, 1.6f), hitboxOffset = new Vector2(1.05f, 0),
             knockbackForce = new Vector2(1.5f, .4f), moveSpeed = advance ? 4 : 0,
             maxMoveDistance = advance ? .45f : 0, duration = advance ? .12f : 0, stopAtWall = true
         };

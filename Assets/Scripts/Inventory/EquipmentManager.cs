@@ -94,7 +94,7 @@ public class EquipmentManager : MonoBehaviour
     {
         if (startEquipItems == null)
         {
-            playerAppearance?.ClearWeapon();
+            playerAppearance?.ClearWeapon("Start Equip Items 배열이 없음");
             return;
         }
 
@@ -123,7 +123,9 @@ public class EquipmentManager : MonoBehaviour
         }
 
         if (GetItem(weaponSlot) == null)
-            playerAppearance?.ClearWeapon();
+            playerAppearance?.ClearWeapon(isTutorialScene
+                ? "Tutorial_0 시작 시 무기 미장착"
+                : "시작 장비 적용 후 Weapon Slot에 장착된 아이템 없음");
     }
 
     //============== 시작 무기 뒤늦게 지급 (튜토리얼_0 이후 씬) ==============
@@ -253,7 +255,7 @@ public class EquipmentManager : MonoBehaviour
 
         // 캐릭터 외형 적용
         if (weapon != null) ApplyAppearance(weapon);
-        else playerAppearance?.ClearWeapon();
+        else playerAppearance?.ClearWeapon("저장 데이터에서 무기 아이템을 복원하지 못했거나 저장된 장착 무기가 없음");
         ApplyAppearance(hand);
         ApplyAppearance(head);
         ApplyAppearance(body);
@@ -317,7 +319,6 @@ public class EquipmentManager : MonoBehaviour
 
         // 현재 장비를 RunData에 저장
         SaveCurrentEquipmentToRunData();
-        Debug.Log($"기계장비 개수: {EndingManager.Instance.MachineEquipmentCount}");
         return true;
     }
 
@@ -364,7 +365,7 @@ public class EquipmentManager : MonoBehaviour
         slot.SetItem(null);
 
         if (slot == weaponSlot)
-            playerAppearance?.ClearWeapon();
+            playerAppearance?.ClearWeapon("무기 장착 해제");
 
         if (item != null && inventory != null)
             inventory.AddItem(item);

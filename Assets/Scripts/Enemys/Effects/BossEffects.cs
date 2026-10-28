@@ -1,0 +1,337 @@
+﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.Rendering;
+
+[DisallowMultipleComponent]
+public sealed class BossEffects : MonoBehaviour
+{
+    public MobEffects.Effect attack = new MobEffects.Effect { flipY = true };
+    public MobEffects.Effect shot = new MobEffects.Effect();
+    public MobEffects.Effect hit = new MobEffects.Effect();
+    public MobEffects.Effect death = new MobEffects.Effect { columns = 24, scale = 1.3f };
+    public MobEffects.Effect notice = new MobEffects.Effect { columns = 1, fps = 20, scale = 1.5f, artFacesRight = false };
+    public MobEffects.Effect chase = new MobEffects.Effect { columns = 8, fps = 16, scale = 1.5f, offset = new Vector2(-.3f, .05f), artFacesRight = false };
+    [Min(1)] public float pixelsPerUnit = 64;
+    [Min(.05f)] public float chaseInterval = .18f;
+    public string sortingLayerOverride = "";
+    public int sortingOrderOffset = 5;
+    public int stage;
+    public bool mainBoss;
+    public MobEffects.Effect upward = new MobEffects.Effect();
+    public MobEffects.Effect horizontal = new MobEffects.Effect();
+    public MobEffects.Effect spin = new MobEffects.Effect();
+    public MobEffects.Effect punch = new MobEffects.Effect();
+    public MobEffects.Effect dash = new MobEffects.Effect { fps = 20, scale = 3f, artFacesRight = false };
+    [Header("둔기 / 도끼 보스 가로베기 이펙트")]
+    [Min(.01f)] public float midBoss1HorizontalScale = 1.35f;
+    public float midBoss1HorizontalHeight = .25f;
+    public float additionalHeavyHorizontalHeight = .15f;
+    public Transform weaponAnchor;
+    public Animator motionAnimator;
+    [System.Serializable]
+    public class ImpactTiming
+    {
+        public AnimationClip clip;
+        public float horizontalImpact;
+        public float[] impacts;
+    }
+    public ImpactTiming[] comboTimings;
+    public enum Kind { None, Down, Up, Horizontal, Thrust, Spin, Punch, Uppercut }
+    [System.Serializable]
+    public class StepOverride
+    {
+        public int skillIndex = -1, stepIndex, pulse;
+        public Kind kind;
+        public float angle;
+        public Vector2 offset;
+    }
+    public StepOverride[] overrides;
+    BossSkillData executing;
+    int skillIndex;
+    BossAttackStepData currentStep;
+    readonly Dictionary<BossAttackStepData, int> pulses = new Dictionary<BossAttackStepData, int>();
+    MobEffectInstance dashInstance;
+    Vector3 previousPosition;
+    float lastDashMotion;
+    MidBossController enemy;
+    bool noticed;
+    float movingTime;
+    [Min(0)] public float chaseStartDelay = .3f;
+    Collider2D body;
+    float nextDust;
+    MobEffectInstance dust;
+
+    void Awake() { enemy = GetComponent<MidBossController>(); body = GetComponent<Collider2D>(); }
+    void OnEnable() { nextDust = 0; movingTime = 0; noticed = false; previousPosition = transform.position; }
+    void OnDisable() { EndSkill(); if (dust != null) Destroy(dust.gameObject); dust = null; }
+    Vector3 Center() { return body != null ? body.bounds.center : transform.position; }
+    Vector3 Feet() { Vector3 p = Center(); if (body != null) p.y = body.bounds.min.y; return p; }
+    void Update()
+    {
+        if (enemy == null || !enemy.FXChasing || !Grounded())
+        { movingTime = 0; if (dust != null) dust.StopAndFade(); dust = null; return; }
+        movingTime += Time.deltaTime;
+        if (movingTime < chaseStartDelay) return;
+        if (dust != null)
+        {
+            dust.transform.position = Feet() + new Vector3(chase.offset.x * enemy.FXDirection, chase.offset.y, 0);
+            dust.SetFacing(enemy.FXDirection, chase.artFacesRight);
+            return;
+        }
+        if (Time.time < nextDust) return;
+        nextDust = Time.time + chaseInterval;
+        dust = Play(chase, Feet(), enemy.FXDirection);
+    }
+    public void BeginSkill(BossSkillData skill, int index)
+    { EndSkill(); executing = skill; skillIndex = index; pulses.Clear(); }
+    public void BeginStep(BossAttackStepData step) { currentStep = step; }
+    public void EndStep() { currentStep = null; ClearDash(); }
+    public void EndSkill() { executing = null; EndStep(); }
+    void ClearDash() { if (dashInstance != null) Destroy(dashInstance.gameObject); dashInstance = null; }
+    BossClipEffects clipEffects;
+    bool ClipOwnsAttack
+    {
+        get
+        {
+            if (!mainBoss || stage != 5) return false;
+            if (clipEffects == null) clipEffects = GetComponentInChildren<BossClipEffects>(true);
+            return clipEffects != null && clipEffects.OwnsCurrentAttack;
+        }
+    }
+    void LateUpdate()
+    {
+        if (ClipOwnsAttack) { ClearDash(); previousPosition = transform.position; return; }
+        Vector3 delta = transform.position - previousPosition;
+        previousPosition = transform.position;
+        if (delta.sqrMagnitude > .000001f) lastDashMotion = Time.time;
+        bool moving = Time.time - lastDashMotion < .08f;
+        bool dashStep = currentStep != null && (currentStep.actionType == BossActionType.DashAttack ||
+            (mainBoss && stage == 4 && skillIndex == 3 && currentStep.actionType == BossActionType.MoveForward));
+        if (!dashStep || !moving || enemy == null || enemy.IsDead) { ClearDash(); return; }
+        if (dashInstance == null) dashInstance = Play(dash, DashOrigin(), enemy.FXDirection, true);
+        if (dashInstance != null)
+        {
+            dashInstance.transform.position = DashOrigin() + new Vector3(dash.offset.x * enemy.FXDirection, dash.offset.y, 0);
+            float angle = Mathf.Atan2(delta.y, Mathf.Abs(delta.x)) * Mathf.Rad2Deg;
+            dashInstance.transform.rotation = Quaternion.Euler(0, 0, angle * enemy.FXDirection);
+        }
+    }
+    bool UsesHeavyWeapon()
+    {
+        if ((stage == 1 && !mainBoss) || (stage == 2 && mainBoss)) return true;
+        if (weaponAnchor == null) return false;
+        string name = weaponAnchor.name.ToLowerInvariant();
+        return name == "axe" || name == "club" || name == "mace" || name == "hammer";
+    }
+    float HeavyHorizontalHeight => midBoss1HorizontalHeight + additionalHeavyHorizontalHeight;
+    Vector3 DashOrigin()
+    {
+        if (!UsesHeavyWeapon()) return Center();
+        Vector3 p = Feet();
+        // Root의 바닥 기준 + 진행 반대쪽. collider 폭도 반영하여 발 뒤에 배치.
+        p.x -= enemy.FXDirection * (body != null ? body.bounds.extents.x : .35f);
+        return p;
+    }
+    int StepIndex(BossAttackStepData step) => executing?.active?.attackSteps?.IndexOf(step) ?? -1;
+    int Ordinal(BossAttackStepData step, int pulse)
+    {
+        int n = pulse;
+        if (executing?.active?.attackSteps == null) return n;
+        foreach (var s in executing.active.attackSteps)
+        {
+            if (ReferenceEquals(s, step)) break;
+            if (s != null && (s.actionType == BossActionType.MeleeAttack || s.actionType == BossActionType.Slam ||
+                (stage == 4 && mainBoss && s.actionType == BossActionType.DashAttack))) n += Mathf.Max(1, s.attackCount);
+        }
+        return n;
+    }
+    int TotalHits()
+    {
+        int n = 0;
+        if (executing?.active?.attackSteps != null)
+            foreach (var s in executing.active.attackSteps)
+                if (s != null && (s.actionType == BossActionType.MeleeAttack || s.actionType == BossActionType.Slam)) n += Mathf.Max(1, s.attackCount);
+        return n;
+    }
+    public IEnumerator WaitForImpact(BossAttackStepData step, int pulse)
+    {
+        // MidBoss1: 모든 콤보 타격을 실제 클립 시각까지 판정과 FX 함께 보류한다.
+        if (stage != 1 || mainBoss || TotalHits() < 2 ||
+            motionAnimator == null || comboTimings == null) yield break;
+        float waited = 0;
+        while (motionAnimator.isActiveAndEnabled && enemy != null && !enemy.IsDead && waited < 8f)
+        {
+            bool matched = false, pending = false;
+            var state = motionAnimator.GetCurrentAnimatorStateInfo(0);
+            foreach (var clip in motionAnimator.GetCurrentAnimatorClipInfo(0))
+                foreach (var timing in comboTimings)
+                    if (timing.clip == clip.clip)
+                    {
+                        int ordinal = Ordinal(step, pulse);
+                        float impact = timing.impacts != null && ordinal < timing.impacts.Length
+                            ? timing.impacts[ordinal] : ordinal == TotalHits() - 1 ? timing.horizontalImpact : -1f;
+                        matched = true;
+                        pending |= state.normalizedTime * clip.clip.length + .001f < impact;
+                    }
+            if (matched && !pending) yield break;
+            if (!matched && waited > .4f) yield break;
+            waited += Time.deltaTime;
+            yield return null;
+        }
+    }
+    Kind Resolve(BossAttackStepData step, int pulse, out float angle)
+    {
+        angle = 0;
+        int ordinal = Ordinal(step, pulse), index = StepIndex(step);
+        if (step.actionType == BossActionType.SpawnPrefab) return Kind.None;
+        if (stage == 4 && mainBoss)
+        {
+            if (skillIndex == 1 && ordinal == 1) return Kind.Uppercut;
+            if (skillIndex == 0 && ordinal == 3) { angle = 20; return Kind.Punch; }
+            if (skillIndex == 3) { angle = ordinal % 2 == 0 ? -25 : 25; return Kind.Punch; }
+            return Kind.Punch;
+        }
+        if (stage == 4 && !mainBoss && skillIndex < 0 && StepIndex(step) == 2) return Kind.Thrust;
+        if (step.actionType == BossActionType.DashAttack)
+            return mainBoss && stage == 5 && skillIndex == 2 && index == 2 ? Kind.Spin : Kind.None;
+        if (step.actionType == BossActionType.Slam) return Kind.Down;
+        if (stage == 1)
+            return !mainBoss && TotalHits() >= 2 && ordinal == TotalHits() - 1 ? Kind.Horizontal : Kind.Down;
+        if (stage == 2)
+        {
+            if (!mainBoss)
+            {
+                if (skillIndex == 2) return Kind.Down;
+                return ordinal % 2 == 0 ? Kind.Thrust : Kind.Up;
+            }
+            if (skillIndex < 0) return Kind.Up;
+            if (skillIndex == 1) return ordinal == 0 ? Kind.Up : Kind.Down;
+            return Kind.Down;
+        }
+        if (stage == 3)
+        {
+            if (!mainBoss) return skillIndex < 0 && ordinal == 1 ? Kind.Up : Kind.Down;
+            if (skillIndex == 1) return Kind.Thrust;
+            if (step.actionType == BossActionType.PersistentHitbox || (skillIndex < 0 && ordinal == 0)) return Kind.Spin;
+            return Kind.Down;
+        }
+        if (stage == 4)
+        {
+            if (skillIndex == 0 || skillIndex == 1) return Kind.Spin;
+            return ordinal >= 2 ? Kind.Thrust : Kind.Down;
+        }
+        if (stage == 5)
+        {
+            if (skillIndex == 0)
+            {
+                if (!mainBoss)
+                {
+                    switch (pulse % 5)
+                    {
+                        case 0: angle = -45; return Kind.Thrust;
+                        case 1: return Kind.Up;
+                        case 2: angle = 45; return Kind.Thrust;
+                        case 3: return Kind.Down;
+                        default: return Kind.Thrust;
+                    }
+                }
+                switch (pulse % 4)
+                { case 0: return Kind.Down; case 1: return Kind.Spin; case 2: return Kind.None; default: return Kind.Thrust; }
+            }
+            if (step.actionType == BossActionType.PersistentHitbox) return Kind.Spin;
+        }
+        return Kind.Down;
+    }
+    public Kind ResolveForPreview(BossSkillData skill, int index, BossAttackStepData step, int pulse, out float angle)
+    {
+        var oldSkill = executing; int oldIndex = skillIndex;
+        try
+        {
+            executing = skill; skillIndex = index;
+            Kind kind = Resolve(step, pulse, out angle);
+            if (overrides != null) foreach (var rule in overrides)
+                if (rule.skillIndex == index && rule.stepIndex == StepIndex(step) && rule.pulse == pulse)
+                { kind = rule.kind; angle = rule.angle; break; }
+            return kind;
+        }
+        finally { executing = oldSkill; skillIndex = oldIndex; }
+    }
+    public void PlayStep(BossAttackStepData step, Vector3 center, float direction)
+    {
+        if (ClipOwnsAttack) return;
+        if (step == null || step.damage <= 0) return;
+        int pulse = pulses.TryGetValue(step, out int n) ? n : 0;
+        pulses[step] = pulse + 1;
+        Kind kind = Resolve(step, pulse, out float angle);
+        Vector2 extra = Vector2.zero;
+        if (overrides != null)
+            foreach (var rule in overrides)
+                if (rule.skillIndex == skillIndex && rule.stepIndex == StepIndex(step) && rule.pulse == pulse)
+                { kind = rule.kind; angle = rule.angle; extra = rule.offset; break; }
+        if (kind == Kind.None) return;
+        // 이기어검은 몸 앞에 고정하지 않고 실제 떠 있는 검 위치를 사용한다.
+        if (stage == 5 && skillIndex == 0 && weaponAnchor != null)
+        { var sr = weaponAnchor.GetComponent<SpriteRenderer>(); center = sr != null ? sr.bounds.center : weaponAnchor.position; }
+        var effect = kind == Kind.Up ? upward : kind == Kind.Horizontal || kind == Kind.Thrust ? horizontal :
+            kind == Kind.Spin ? spin : kind == Kind.Punch || kind == Kind.Uppercut ? punch : attack;
+        if (kind == Kind.Uppercut) angle = 65;
+        bool heavyHorizontal = UsesHeavyWeapon() && kind == Kind.Horizontal;
+        if (heavyHorizontal) center.y += HeavyHorizontalHeight;
+        var instance = Play(effect, center + new Vector3(extra.x * direction, extra.y, 0), direction, false, 1.5f);
+        if (instance != null)
+        {
+            if (heavyHorizontal) instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
+            float worldAngle = angle * direction;
+            if (kind == Kind.Thrust && stage == 5 && skillIndex == 0 && weaponAnchor != null)
+            {
+                Vector3 blade = weaponAnchor.TransformVector(Vector3.up);
+                worldAngle = Mathf.Atan2(blade.y, blade.x) * Mathf.Rad2Deg - (direction < 0 ? 180f : 0f);
+            }
+            instance.transform.rotation = Quaternion.Euler(0, 0, worldAngle);
+        }
+    }
+    bool Grounded()
+    {
+        if (body == null || enemy == null) return false;
+        Vector3 feet = Feet();
+        return Physics2D.Raycast(feet + Vector3.up * .05f, Vector2.down, .15f, enemy.wallLayer).collider != null;
+    }
+    public void PlayReturnAttack(Vector3 position, float direction)
+    {
+        bool heavy = UsesHeavyWeapon();
+        if (heavy) position.y += HeavyHorizontalHeight;
+        var instance = Play(horizontal, position, direction, false, 1.5f);
+        if (heavy && instance != null)
+            instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
+    }
+    public void PlayShot(Vector3 position, float direction) { } // 생성물에는 추가 FX를 붙이지 않음
+    public void PlayAttack(Vector3 position, float direction, bool ranged = false)
+    { Play(ranged ? shot : attack, position, direction, false, 1.5f); }
+    public void PlayHit(Vector2 source) { Play(hit, Center(), source.x < transform.position.x ? -1 : 1); }
+    public void PlayDeath() { Play(death, Center(), enemy != null ? enemy.FXDirection : 1); }
+    public void PlayNotice(float direction) { if (noticed) return; noticed = true; Play(notice, Feet(), direction); }
+    MobEffectInstance Play(MobEffects.Effect effect, Vector3 position, float direction, bool loop = false, float speedMultiplier = 1f)
+    {
+        if (!isActiveAndEnabled || effect == null) return null;
+        if (effect.sheet == null && (effect.frames == null || effect.frames.Length == 0)) return null;
+        int layer = 0, order = 0, best = int.MinValue;
+        foreach (var renderer in GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            int value = SortingLayer.GetLayerValueFromID(renderer.sortingLayerID);
+            if (value > best || (value == best && renderer.sortingOrder > order))
+            { best = value; layer = renderer.sortingLayerID; order = renderer.sortingOrder; }
+        }
+        // Detached effects must also render above the outer sorting group.
+        foreach (var group in GetComponentsInParent<SortingGroup>(true))
+        {
+            int value = SortingLayer.GetLayerValueFromID(group.sortingLayerID);
+            if (value > best || (value == best && group.sortingOrder > order))
+            { best = value; layer = group.sortingLayerID; order = group.sortingOrder; }
+        }
+        if (!string.IsNullOrEmpty(sortingLayerOverride)) layer = SortingLayer.NameToID(sortingLayerOverride);
+        position += new Vector3(effect.offset.x * Mathf.Sign(direction), effect.offset.y, 0);
+        return MobEffectInstance.Spawn(effect, position, direction, pixelsPerUnit, layer,
+            order + sortingOrderOffset, gameObject.scene, loop || ReferenceEquals(effect, chase), ReferenceEquals(effect, death) ? 1f : 1.5f, speedMultiplier);
+    }
+}

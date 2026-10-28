@@ -33,7 +33,7 @@ public sealed class Stage1_MainBoss : MainBossController
         base.Update();
         TryReduceRemainingSkillCooldownByDistance(1, skill2ReductionDistance);
         TryReduceRemainingSkillCooldownByDistance(3, skill4ReductionDistance);
-        if (isDead || isAttacking || AnimatorRecoveryPending || !isChasing || desireSkill == null) return;
+        if (isDead || isAttacking || !isChasing || desireSkill == null) return;
         if (desireSkill.CanActivate(currentPhase)) StartCoroutine(UseDesire());
     }
 

@@ -56,6 +56,7 @@ public class BuffShamanShopNPC : NPCShopBase
         ShamanUpgradeType.Speed,
         ShamanUpgradeType.DashCount,
         ShamanUpgradeType.DashCooldownReduction,
+        ShamanUpgradeType.DoubleJump,
         ShamanUpgradeType.StartingCoin,
         ShamanUpgradeType.EquipmentRerollCount
     };
@@ -915,6 +916,7 @@ public class BuffShamanShopNPC : NPCShopBase
             ShamanUpgradeType.Speed => "속도",
             ShamanUpgradeType.DashCount => "대쉬횟수",
             ShamanUpgradeType.DashCooldownReduction => "대쉬쿨타임",
+            ShamanUpgradeType.DoubleJump => "더블 점프",
             ShamanUpgradeType.StartingCoin => "시작코인",
             ShamanUpgradeType.EquipmentRerollCount => "장비리롤",
             _ => type.ToString()

@@ -180,9 +180,46 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     private float originalGravity;  // 초기 gravityScale 저장 (경사 정지 시 복구용)
     private int lastFacingDirection = 1;
 
+    // Optional common-mob FX hooks. No animation events or combat timing changes.
+    private MobEffects mobEffects;
+    protected MobEffects Effects { get { if (mobEffects == null) mobEffects = GetComponent<MobEffects>(); return mobEffects; } }
+    public int FXDirection => lastFacingDirection;
+    public bool FXChasingOnGround => !isDead && isChasing && !isReacting && !isAttacking &&
+        !isHitStunned && !isKnockback && !isWandering && rb != null &&
+        Mathf.Abs(rb.linearVelocity.x) > .1f && IsGroundedNow();
+
     // 읽기 전용 상태 프로퍼티
     protected bool isKnockback => knockbackTimer > 0;
-    protected bool isAttacking => attackTimer > 0;
+    [SerializeField] private bool waitForAttackAnimation;
+    [SerializeField] private AnimationClip[] movementLockAttackClips;
+    private bool attackAnimationRequested;
+    private float attackAnimationRequestedAt;
+    protected bool isAttacking => attackTimer > 0 || AttackAnimationBlocksMovement();
+
+    private bool AttackAnimationBlocksMovement()
+    {
+        if (!waitForAttackAnimation || !attackAnimationRequested || animator == null ||
+            !animator.isActiveAndEnabled || animator.runtimeAnimatorController == null) return false;
+        // Trigger가 Animator에 반영될 때까지 짧게 대기한다.
+        if (Time.time - attackAnimationRequestedAt < .2f) return true;
+        var state = animator.GetCurrentAnimatorStateInfo(0);
+        foreach (var info in animator.GetCurrentAnimatorClipInfo(0))
+            if (IsMovementLockClip(info.clip) && state.normalizedTime < 1f) return true;
+        if (animator.IsInTransition(0))
+        {
+            var next = animator.GetNextAnimatorStateInfo(0);
+            foreach (var info in animator.GetNextAnimatorClipInfo(0))
+                if (IsMovementLockClip(info.clip) && next.normalizedTime < 1f) return true;
+        }
+        attackAnimationRequested = false;
+        return false;
+    }
+    private bool IsMovementLockClip(AnimationClip clip)
+    {
+        if (movementLockAttackClips == null) return false;
+        foreach (var candidate in movementLockAttackClips) if (candidate == clip) return true;
+        return false;
+    }
     protected bool isHitStunned => hitStunTimer > 0 || Time.time < reactionUntil;
 
     [Header("피격 / 사망 애니메이션 (일괄 설정 도구에서 연결)")]
@@ -201,6 +238,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     {
         if (!isDead) return;
         isDead = false;
+        attackAnimationRequested = false;
         if (data != null) currentHp = data.maxHp;
         attackTimer = hitStunTimer = knockbackTimer = reactionUntil = 0f;
         hasWallImpactPending = false;
@@ -213,7 +251,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         ScheduleNextPatrolIdle(); ScheduleNextPatrolPause();
     }
 
-    protected virtual void CancelAttackForReaction() { attackTimer = 0f; }
+    protected virtual void CancelAttackForReaction() { attackTimer = 0f; attackAnimationRequested = false; }
 
     private bool HasReactionParameter(string name, AnimatorControllerParameterType type)
     {
@@ -254,17 +292,14 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     {
         if (isDead) return;
         isDead = true;
+        Effects?.PlayDeath();
         CancelAttackForReaction();
         StopAllCoroutines();
         hasWallImpactPending = false;
         deathBodySimulated = rb != null && rb.simulated;
         var dummy = GetComponent<TutorialTrainingDummy>();
         dummy?.NotifyDefeated();
-        if (dummy == null)
-        {
-            StageClearManager.NotifyEnemyDefeated(this);
-            if (SaveData.Instance != null) SaveData.Instance.run.killCount++;
-        }
+        if (dummy == null && SaveData.Instance != null) SaveData.Instance.run.killCount++;
         if (!gameObject.activeInHierarchy) return;
         deathColliders = GetComponentsInChildren<Collider2D>(true);
         deathColliderEnabled = new bool[deathColliders.Length];
@@ -324,8 +359,6 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             Debug.LogWarning($"[{gameObject.name}] Flip 대상 비주얼 Transform을 찾지 못했습니다. " +
                 "Body의 부모의 부모가 있는지 확인하거나, Inspector의 'Visual Transform' 필드에 직접 연결해주세요.");
         hitFlash = GetComponent<HitFlashEffect>();
-        if (hitFlash == null)
-            hitFlash = gameObject.AddComponent<HitFlashEffect>();
         bodyCollider = GetComponent<Collider2D>();
 
         walkDirection = (Random.value < 0.5f) ? -1 : 1;
@@ -722,6 +755,8 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     {
         if (isDead || isHitStunned) return;
         lastAttackTime = Time.time;
+        attackAnimationRequested = waitForAttackAnimation;
+        attackAnimationRequestedAt = Time.time;
 
         if (animator != null)
             animator.SetTrigger("Attack");
@@ -738,6 +773,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         if (isDead || isHitStunned) return;
         Vector2 attackPos = (Vector2)transform.position + new Vector2(walkDirection * data.attackOffset, data.attackHeightOffset);
         Vector2 attackSize = new Vector2(data.attackRange, data.attackHeight);
+        Effects?.PlayAttack(attackPos, walkDirection);
 
         Collider2D hit = Physics2D.OverlapBox(attackPos, attackSize, 0, playerLayer);
 
@@ -820,6 +856,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
     // 반응 상태 시작(최초 감지 후 반응 지연)
     protected void StartReaction()
     {
+        Effects?.PlayNotice(playerTransform != null && playerTransform.position.x < transform.position.x ? -1 : 1);
         isReacting = true;
         isIdle = false;
         reactionTimer = data.reactionTime;
@@ -1199,6 +1236,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             return;
 
         currentHp -= damage;
+        if (damage > 0f) Effects?.PlayHit(sourcePos);
 
         // 데미지 텍스트 생성
         DamageTextManager.Instance?.ShowDamage(
@@ -1206,8 +1244,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
             transform.position + Vector3.up * 1.5f
         );
 
-        if (GameManager.Instance != null)
-            hitFlash?.Play(GameManager.Instance.enemyHitFlashDuration);
+        hitFlash?.Play();
 
         forcedAggroTimer = 2f;
         isChasing = true;
@@ -1315,6 +1352,12 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
                 GiveCoinReward();
             }
 
+            //============== 처치 횟수 기록 ==============
+            if (tutorialDummy == null && SaveData.Instance != null)
+            {
+                SaveData.Instance.run.killCount++;
+            }
+
             // boss-ani-test의 사망 처리
             BeginDeath();
         }
@@ -1374,6 +1417,7 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         if (totalWallDamage > 0f)
         {
             currentHp -= totalWallDamage;
+            Effects?.PlayHit((Vector2)transform.position + Vector2.right * moveDir);
             if (currentHp <= 0f)
             {
                 GiveCoinReward();

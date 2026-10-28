@@ -60,6 +60,7 @@ public class SaveManager : MonoBehaviour
         file.persistent.attackSpeedUpgradeCount = SaveData.Instance.persistent.attackSpeedUpgradeCount;
         file.persistent.dashCountUpgradeCount = SaveData.Instance.persistent.dashCountUpgradeCount;
         file.persistent.dashCooldownUpgradeCount = SaveData.Instance.persistent.dashCooldownUpgradeCount;
+        file.persistent.doubleJumpUpgradeCount = SaveData.Instance.persistent.doubleJumpUpgradeCount;
         file.persistent.startingCoinUpgradeCount = SaveData.Instance.persistent.startingCoinUpgradeCount;
         file.persistent.equipmentRerollBonus = SaveData.Instance.persistent.equipmentRerollBonus;
         file.persistent.equipmentRerollUpgradeCount = SaveData.Instance.persistent.equipmentRerollUpgradeCount;
@@ -148,6 +149,7 @@ public class SaveManager : MonoBehaviour
         SaveData.Instance.persistent.attackSpeedUpgradeCount = file.persistent.attackSpeedUpgradeCount;
         SaveData.Instance.persistent.dashCountUpgradeCount = file.persistent.dashCountUpgradeCount;
         SaveData.Instance.persistent.dashCooldownUpgradeCount = file.persistent.dashCooldownUpgradeCount;
+        SaveData.Instance.persistent.doubleJumpUpgradeCount = file.persistent.doubleJumpUpgradeCount;
         SaveData.Instance.persistent.startingCoinUpgradeCount = file.persistent.startingCoinUpgradeCount;
         SaveData.Instance.persistent.equipmentRerollBonus = file.persistent.equipmentRerollBonus;
         SaveData.Instance.persistent.equipmentRerollUpgradeCount = file.persistent.equipmentRerollUpgradeCount;
