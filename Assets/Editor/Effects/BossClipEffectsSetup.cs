@@ -138,11 +138,15 @@ public static class BossClipEffectsSetup
         driver.buff = new MobEffects.Effect { sheet = Sheet("공격&데미지받을시&사망&대쉬등 다있는곳/charge_spiral_01.png"), columns = 24, fps = 30, scale = 2 };
         // A visual-only prefab must not reference a component in a different prefab asset at runtime.
         driver.source = source.transform.IsChildOf(animator.transform.root) ? source : null;
-        driver.runtimeEnabled = stage == 5 && main;
+        driver.runtimeEnabled = (stage == 5 && main) || (stage == 1 && !main);
+        if (stage == 1 && !main)
+        {
+            driver.buff = MidOneSheet("typhoon_01"); driver.sand = MidOneSheet("sand_03");
+        }
         var transforms = animator.GetComponentsInChildren<Transform>(true);
         driver.body = transforms.FirstOrDefault(t => t.name == "Body") ?? animator.transform;
         driver.weapon = transforms.FirstOrDefault(t => new[] { "Sword", "Weapon", "Axe", "Scythe", "Spear", "Mace" }.Contains(t.name));
-        driver.feet = transforms.FirstOrDefault(t => t.name == "Foot_B") ?? transforms.FirstOrDefault(t => t.name.Contains("Foot")) ?? animator.transform;
+        driver.feet = transforms.FirstOrDefault(t => t.name == (stage == 1 && !main ? "Foot_F" : "Foot_B")) ?? transforms.FirstOrDefault(t => t.name.Contains("Foot")) ?? animator.transform;
         var clips = animator.runtimeAnimatorController.animationClips.Distinct().ToList();
         var folders = clips.Select(c => System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(c)).Replace('\\', '/')).Distinct();
         foreach (var folder in folders.ToArray())
@@ -155,6 +159,14 @@ public static class BossClipEffectsSetup
         foreach (var track in driver.tracks) Validate(track);
         EditorUtility.SetDirty(driver);
     }
+    static MobEffects.Effect MidOneSheet(string name)
+    {
+        string path = AssetDatabase.GetAssetPath(Sheet("공격&데미지받을시&사망&대쉬등 다있는곳/" + name + ".png"));
+        // Single import mode: use sheet cells instead of stale sliced sprite IDs.
+        int columns = 24;
+        return new MobEffects.Effect { sheet = AssetDatabase.LoadAssetAtPath<Texture2D>(path),
+            columns = columns, fps = columns / .5f, scale = 2 };
+    }
     public static BossClipEffects.Track BuildTrack(AnimationClip clip, BossEffects fx, int stage, bool main)
     {
         var cues = new List<BossClipEffects.Cue>();
@@ -165,8 +177,19 @@ public static class BossClipEffectsSetup
             StageFive(clip, cues, main);
         else if (name.Contains("death")) Add(cues, S.Death, Mathf.Max(0, clip.length - .65f), .65f, A.Body);
         else if (name.Contains("hit")) Add(cues, S.Hit, 0, .3f, A.Body);
+        else if (stage == 1 && !main && name.Contains("walk")) { }
         else if (Regex.IsMatch(name, "walk|run|chase")) Add(cues, S.Dust, .3f, Mathf.Max(.01f, clip.length - .3f), A.Feet, true);
         else Generic(clip, cues, fx);
+        if (stage == 1 && !main)
+        {
+            runtime = name.Contains("buff") || name.Contains("combo3");
+            if (name.Contains("combo3"))
+            {
+                var down = cues.Where(c => c.style == S.Down).Skip(1).FirstOrDefault();
+                if (down != null) { down.time += .1f; down.style = S.Sand; down.anchor = A.WeaponTip;
+                    down.offset = Vector2.zero; down.duration = .5f; }
+            }
+        }
         return new BossClipEffects.Track { clip = clip, runtime = runtime, cues = cues.ToArray() };
     }
     static BossClipEffects.Cue Add(List<BossClipEffects.Cue> list, S style, float time, float duration = .28f, A anchor = A.Weapon, bool loop = false)
@@ -389,8 +412,14 @@ public static class BossClipEffectsSetup
         if (window == null || selected == null) { ClearPreview(); return; }
         var candidate = selected.GetComponentInParent<BossClipEffects>() ?? selected.GetComponentInChildren<BossClipEffects>(true);
         if (candidate == null || candidate.Find(window.animationClip) == null) { ClearPreview(); return; }
+        string clipName = window.animationClip.name.ToLowerInvariant();
+        // Movement is rendered by the same BossEffects factory used in-game.
+        if (clipName.Contains("run") || clipName.Contains("walk") ||
+            (clipName.Contains("dash") && !clipName.Contains("prepare") && !clipName.Contains("end")))
+        { ClearPreview(); return; }
         if (preview != candidate) { ClearPreview(); preview = candidate; }
-        preview.Sample(window.animationClip, window.time);
+        bool sharedTrack = candidate.runtimeEnabled && System.Text.RegularExpressions.Regex.IsMatch(window.animationClip.name, @"(?i)mainboss\s*5") && candidate.Find(window.animationClip).runtime;
+        preview.Sample(window.animationClip, window.time, false, !sharedTrack);
         SceneView.RepaintAll();
     }
 }

@@ -69,19 +69,19 @@ public sealed class BossEffects : MonoBehaviour
     Vector3 Feet() { Vector3 p = Center(); if (body != null) p.y = body.bounds.min.y; return p; }
     void Update()
     {
-        if (enemy == null || !enemy.FXChasing || !Grounded())
+        if (enemy == null || !enemy.FXChasing || !Grounded() || (stage == 1 && !mainBoss && !MidOneRunning()))
         { movingTime = 0; if (dust != null) dust.StopAndFade(); dust = null; return; }
         movingTime += Time.deltaTime;
         if (movingTime < chaseStartDelay) return;
         if (dust != null)
         {
-            dust.transform.position = Feet() + new Vector3(chase.offset.x * enemy.FXDirection, chase.offset.y, 0);
+            dust.transform.position = ChaseOrigin() + new Vector3(chase.offset.x * enemy.FXDirection, chase.offset.y, 0);
             dust.SetFacing(enemy.FXDirection, chase.artFacesRight);
             return;
         }
         if (Time.time < nextDust) return;
         nextDust = Time.time + chaseInterval;
-        dust = Play(chase, Feet(), enemy.FXDirection);
+        dust = Play(chase, ChaseOrigin(), enemy.FXDirection);
     }
     public void BeginSkill(BossSkillData skill, int index)
     { EndSkill(); executing = skill; skillIndex = index; pulses.Clear(); }
@@ -101,6 +101,8 @@ public sealed class BossEffects : MonoBehaviour
     }
     void LateUpdate()
     {
+        if (stage == 1 && !mainBoss && enemy != null && dust != null)
+            AlignTrail(dust.GetComponent<SpriteRenderer>(), RearFeet(motionAnimator != null ? motionAnimator.transform : transform, enemy.FXDirection), enemy.FXDirection);
         if (ClipOwnsAttack) { ClearDash(); previousPosition = transform.position; return; }
         Vector3 delta = transform.position - previousPosition;
         previousPosition = transform.position;
@@ -115,6 +117,11 @@ public sealed class BossEffects : MonoBehaviour
             dashInstance.transform.position = DashOrigin() + new Vector3(dash.offset.x * enemy.FXDirection, dash.offset.y, 0);
             float angle = Mathf.Atan2(delta.y, Mathf.Abs(delta.x)) * Mathf.Rad2Deg;
             dashInstance.transform.rotation = Quaternion.Euler(0, 0, angle * enemy.FXDirection);
+            if (stage == 1 && !mainBoss)
+            {
+                dashInstance.transform.rotation = Quaternion.identity;
+                AlignTrail(dashInstance.GetComponent<SpriteRenderer>(), RearFeet(motionAnimator != null ? motionAnimator.transform : transform, enemy.FXDirection), enemy.FXDirection);
+            }
         }
     }
     bool UsesHeavyWeapon()
@@ -125,8 +132,36 @@ public sealed class BossEffects : MonoBehaviour
         return name == "axe" || name == "club" || name == "mace" || name == "hammer";
     }
     float HeavyHorizontalHeight => midBoss1HorizontalHeight + additionalHeavyHorizontalHeight;
+    bool MidOneRunning()
+    {
+        if (motionAnimator == null || !motionAnimator.isActiveAndEnabled) return false;
+        foreach (var clip in motionAnimator.GetCurrentAnimatorClipInfo(0))
+            if (clip.weight > .5f && clip.clip.name.ToLowerInvariant().Contains("run")) return true;
+        return false;
+    }
+    Vector3 ChaseOrigin() => stage == 1 && !mainBoss
+        ? RearFeet(motionAnimator != null ? motionAnimator.transform : transform, enemy.FXDirection) - new Vector3(chase.offset.x * enemy.FXDirection, chase.offset.y, 0) : Feet();
+    // Authored front leg is Foot_F, independent of facing or stride.
+    public static Vector3 RearFeet(Transform root, float direction)
+    {
+        foreach (var foot in root.GetComponentsInChildren<Transform>(true))
+            if (foot.name == "Foot_F")
+                return foot.TransformPoint(new Vector3(-.4f, -.65f, 0));
+        return root.position;
+    }
+
+    // The contact point is the leading bottom edge, not the sheet centre.
+    public static void AlignTrail(SpriteRenderer sr, Vector3 contact, float facing)
+    {
+        if (sr == null || sr.sprite == null) return;
+        Bounds bounds = sr.bounds;
+        Vector3 edge = new Vector3(facing > 0 ? bounds.max.x : bounds.min.x, bounds.min.y, sr.transform.position.z);
+        sr.transform.position += contact - edge;
+    }
+
     Vector3 DashOrigin()
     {
+        if (stage == 1 && !mainBoss) return RearFeet(motionAnimator != null ? motionAnimator.transform : transform, enemy.FXDirection) - new Vector3(dash.offset.x * enemy.FXDirection, dash.offset.y, 0);
         if (!UsesHeavyWeapon()) return Center();
         Vector3 p = Feet();
         // Root의 바닥 기준 + 진행 반대쪽. collider 폭도 반영하여 발 뒤에 배치.
@@ -263,6 +298,7 @@ public sealed class BossEffects : MonoBehaviour
         if (step == null || step.damage <= 0) return;
         int pulse = pulses.TryGetValue(step, out int n) ? n : 0;
         pulses[step] = pulse + 1;
+        if (stage == 1 && !mainBoss && skillIndex == 1 && Ordinal(step, pulse) == 1) return;
         Kind kind = Resolve(step, pulse, out float angle);
         Vector2 extra = Vector2.zero;
         if (overrides != null)
@@ -311,6 +347,52 @@ public sealed class BossEffects : MonoBehaviour
     public void PlayHit(Vector2 source) { Play(hit, Center(), source.x < transform.position.x ? -1 : 1); }
     public void PlayDeath() { Play(death, Center(), enemy != null ? enemy.FXDirection : 1); }
     public void PlayNotice(float direction) { if (noticed) return; noticed = true; Play(notice, Feet(), direction); }
+#if UNITY_EDITOR
+    public MobEffectInstance PreviewStep(BossSkillData skill, int index, BossAttackStepData step, int pulse, Vector3 center, float direction, float age)
+    {
+        if (Application.isPlaying || age < 0) return null;
+        var oldSkill = executing; int oldIndex = skillIndex;
+        bool existed = pulses.TryGetValue(step, out int oldPulse);
+        MobEffectInstance.LastPreviewSpawn = null;
+        try
+        {
+            executing = skill; skillIndex = index; pulses[step] = pulse;
+            PlayStep(step, center, direction);
+            var result = MobEffectInstance.LastPreviewSpawn;
+            if (result != null) result.PreviewSample(age);
+            return result;
+        }
+        finally
+        {
+            executing = oldSkill; skillIndex = oldIndex;
+            if (existed) pulses[step] = oldPulse; else pulses.Remove(step);
+            MobEffectInstance.LastPreviewSpawn = null;
+        }
+    }
+    public MobEffectInstance PreviewMovement(bool dashMotion, float direction, float age)
+    {
+        if (Application.isPlaying || age < 0) return null;
+        var effect = dashMotion ? dash : chase;
+        var collider = GetComponent<Collider2D>();
+        Vector3 origin = collider != null ? new Vector3(collider.bounds.center.x, collider.bounds.min.y, transform.position.z) : transform.position;
+        if (stage == 1 && !mainBoss)
+            origin = RearFeet(motionAnimator != null ? motionAnimator.transform : transform, direction)
+                - new Vector3(effect.offset.x * direction, effect.offset.y, 0);
+        else if (dashMotion)
+        {
+            if (!UsesHeavyWeapon()) origin = collider != null ? collider.bounds.center : transform.position;
+            else origin.x -= direction * (collider != null ? collider.bounds.extents.x : .35f);
+        }
+        var instance = Play(effect, origin, direction, true);
+        if (instance != null)
+        {
+            instance.PreviewSample(age);
+            if (stage == 1 && !mainBoss)
+                AlignTrail(instance.GetComponent<SpriteRenderer>(), RearFeet(motionAnimator != null ? motionAnimator.transform : transform, direction), direction);
+        }
+        return instance;
+    }
+#endif
     MobEffectInstance Play(MobEffects.Effect effect, Vector3 position, float direction, bool loop = false, float speedMultiplier = 1f)
     {
         if (!isActiveAndEnabled || effect == null) return null;

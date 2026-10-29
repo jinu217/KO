@@ -9966,7 +9966,7 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 11008
-  currentWeapon: 2
+  currentWeapon: 0
   knockbackForceX: 3
   knockbackForceY: 5
   knockbackDuration: 0.2
@@ -10043,6 +10043,8 @@ MonoBehaviour:
   sortingLayer: Front
   sortingOrder: 20
   groundAnchor: {fileID: 1189624008}
+  walkStartDelay: 0.15
+  additionalWalkStartDelay: 0.15
 --- !u!114 &533087167
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10064,6 +10066,7 @@ MonoBehaviour:
   framesPerSecond: 24
   effectScale: 1
   attackOffset: {x: 0, y: 0.15}
+  daggerEffectPullback: 0.8
   damageOffset: {x: 0, y: 0.1}
   sortingLayerOverride: 
   sortingOrderOffset: 5

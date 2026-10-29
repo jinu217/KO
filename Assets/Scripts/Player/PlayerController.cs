@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -1001,6 +1001,54 @@ public class PlayerController : MonoBehaviour, IDamageable
         canDash = availableDashCount > 0;
     }
 
+    private AnimatorOverrideController weaponMotionController;
+    private AnimationClip baseAttackMotion;
+    private readonly Dictionary<string, AnimationClip> weaponAttackMotions = new Dictionary<string, AnimationClip>();
+
+    public static string WeaponAttackClipName(WeaponType weapon)
+    {
+        switch (weapon)
+        {
+            case WeaponType.Dagger: return "Attack_SSword";
+            case WeaponType.Blunt: return "Attack_Club";
+            case WeaponType.Scythe: return "Attack_Sythe";
+            default: return "Attack_Sword"; // Axe has no dedicated motion yet.
+        }
+    }
+
+    public static WeaponType WeaponForAttackClip(string clipName, WeaponType fallback)
+    {
+        switch (clipName)
+        {
+            case "Attack_SSword": return WeaponType.Dagger;
+            case "Attack_Club": return WeaponType.Blunt;
+            case "Attack_Sythe": return WeaponType.Scythe;
+            case "Attack_Sword": return fallback == WeaponType.Axe ? WeaponType.Axe : WeaponType.Sword;
+            default: return fallback;
+        }
+    }
+
+    private void ApplyWeaponAttackMotion()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+        if (weaponMotionController == null)
+        {
+            foreach (var clip in animator.runtimeAnimatorController.animationClips)
+                weaponAttackMotions[clip.name] = clip;
+            if (!weaponAttackMotions.TryGetValue("Attack_Sword", out baseAttackMotion)) return;
+            weaponMotionController = new AnimatorOverrideController(animator.runtimeAnimatorController);
+            weaponMotionController.name = "Player weapon motions (runtime)";
+            animator.runtimeAnimatorController = weaponMotionController;
+        }
+        if (weaponAttackMotions.TryGetValue(WeaponAttackClipName(currentWeapon), out var motion))
+            weaponMotionController[baseAttackMotion] = motion;
+    }
+
+    private void OnDestroy()
+    {
+        if (weaponMotionController != null) Destroy(weaponMotionController);
+    }
+
     // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)
     public void OnAttack(InputAction.CallbackContext context)
     {
@@ -1022,7 +1070,10 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
 
         if (animator != null)
+        {
+            ApplyWeaponAttackMotion();
             animator.SetTrigger(AnimAttack);
+        }
 
         playerStatus.OnAttack();
         lastAttackTime = Time.time;

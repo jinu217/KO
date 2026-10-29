@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -26,6 +26,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
     [SerializeField, Min(1f)] private float framesPerSecond = 24f;
     [SerializeField, Min(0.01f)] private float effectScale = 1f;
     [SerializeField] private Vector2 attackOffset = new Vector2(0f, 0.15f);
+    [SerializeField, Min(0f)] private float daggerEffectPullback = 0.8f;
     [SerializeField] private Vector2 damageOffset = new Vector2(0f, 0.1f);
     [SerializeField] private string sortingLayerOverride = "";
     [SerializeField] private int sortingOrderOffset = 5;
@@ -42,7 +43,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
     private readonly Dictionary<Sprite, Sprite[]> frameCache = new Dictionary<Sprite, Sprite[]>();
     private readonly List<ActiveEffect> activeEffects = new List<ActiveEffect>();
 
-    public void PlayAttackEffect(WeaponType weapon, Vector2 position, float facing)
+    public void PlayAttackEffect(WeaponType weapon, Vector2 position, float facing, float? daggerWeaponHeight = null)
     {
         Sprite sheet;
         bool flipY = false;
@@ -70,7 +71,27 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         }
 
         float direction = facing < 0f ? -1f : 1f;
-        Play(sheet, position + new Vector2(direction * attackOffset.x, attackOffset.y), direction, flipY, 1.5f);
+        // The long dagger hitbox center is farther forward than the visible thrust.
+        // Apply this visual correction here so runtime and scene preview stay identical.
+        float horizontalOffset = attackOffset.x - (weapon == WeaponType.Dagger ? daggerEffectPullback : 0f);
+        Vector2 effectPosition = position + new Vector2(direction * horizontalOffset, attackOffset.y);
+        if (weapon == WeaponType.Dagger)
+        {
+            var anchor = DaggerEffectAnchor;
+            if (daggerWeaponHeight.HasValue || anchor != null)
+                effectPosition.y = (daggerWeaponHeight ?? anchor.position.y) - 0.05f;
+        }
+        Play(sheet, effectPosition, direction, flipY, 1.5f);
+    }
+
+    public Transform DaggerEffectAnchor
+    {
+        get
+        {
+            foreach (var node in GetComponentsInChildren<Transform>(true))
+                if (node.name == "Sword" && node.parent != null && node.parent.name == "Hand_B") return node;
+            return null;
+        }
     }
 
     public void PlayDamageEffect(float actualDamage)
@@ -115,7 +136,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         });
         effectObject.SetActive(true);
         // Update가 중단되더라도 별도 GameObject가 영구히 남지 않도록 수명을 예약합니다.
-        Destroy(effectObject, (FrameCount + 1f) / fps);
+        if (Application.isPlaying) Destroy(effectObject, (FrameCount + 1f) / fps);
     }
 
     private Sprite[] GetFrames(Sprite sheet)
@@ -155,6 +176,29 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         return frames;
     }
 
+#if UNITY_EDITOR
+    // Runs the actual runtime spawn path; the editor only supplies event age.
+    public void PreviewAttack(WeaponType weapon, Vector2 position, float facing, float age, float? daggerWeaponHeight = null)
+    {
+        if (Application.isPlaying) return;
+        ClearActiveEffects();
+        if (age < 0) return;
+        PlayAttackEffect(weapon, position, facing, daggerWeaponHeight);
+        foreach (var effect in activeEffects)
+        {
+            int frame = Mathf.FloorToInt(age * effect.fps);
+            effect.renderer.sprite = frame < effect.frames.Length ? effect.frames[frame] : null;
+        }
+    }
+    public void ClearPreview()
+    {
+        if (Application.isPlaying) return;
+        ClearActiveEffects();
+        foreach (var list in frameCache.Values)
+            foreach (var frame in list) if (frame != null) DestroyImmediate(frame);
+        frameCache.Clear();
+    }
+#endif
     private void Update()
     {
         for (int i = activeEffects.Count - 1; i >= 0; i--)
@@ -222,7 +266,8 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         if (effect.gameObject != null)
         {
             effect.gameObject.SetActive(false);
-            Destroy(effect.gameObject);
+            if (Application.isPlaying) Destroy(effect.gameObject);
+            else DestroyImmediate(effect.gameObject);
         }
         activeEffects.RemoveAt(index);
     }
@@ -238,7 +283,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         foreach (Sprite[] frames in frameCache.Values)
             foreach (Sprite frame in frames)
                 if (frame != null)
-                    Destroy(frame);
+                    if (Application.isPlaying) Destroy(frame); else DestroyImmediate(frame);
         frameCache.Clear();
     }
 

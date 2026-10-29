@@ -1,9 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Independent lifetime: death effects finish even when the enemy is disabled or pooled.
 public sealed class MobEffectInstance : MonoBehaviour
 {
+#if UNITY_EDITOR
+    public static MobEffectInstance LastPreviewSpawn;
+#endif
     Sprite[] frames;
     SpriteRenderer spriteRenderer;
     bool ownsFrames;
@@ -42,6 +45,9 @@ public sealed class MobEffectInstance : MonoBehaviour
         instance.spriteRenderer.flipX = effect.artFacesRight ? direction < 0 : direction > 0;
         instance.spriteRenderer.flipY = effect.flipY;
         instance.spriteRenderer.sprite = instance.frames[0];
+#if UNITY_EDITOR
+        if (!Application.isPlaying) LastPreviewSpawn = instance;
+#endif
         // Update owns the lifetime so stop-fade can finish past the last animation frame.
         return instance;
     }
@@ -80,8 +86,19 @@ public sealed class MobEffectInstance : MonoBehaviour
         { spriteRenderer.sprite = null; gameObject.SetActive(false); Destroy(gameObject); return; }
         spriteRenderer.sprite = frames[index];
     }
+#if UNITY_EDITOR
+    public void PreviewSample(float age)
+    {
+        if (Application.isPlaying || spriteRenderer == null) return;
+        gameObject.hideFlags = HideFlags.HideAndDontSave;
+        int index = Mathf.FloorToInt(Mathf.Max(0, age) * fps);
+        if (looping) index %= frames.Length;
+        spriteRenderer.enabled = age >= 0 && index < frames.Length;
+        if (spriteRenderer.enabled) spriteRenderer.sprite = frames[index];
+    }
+#endif
     void OnDestroy()
     {
-        if (ownsFrames && frames != null) foreach (var frame in frames) if (frame != null) Destroy(frame);
+        if (ownsFrames && frames != null) foreach (var frame in frames) if (frame != null) { if (Application.isPlaying) Destroy(frame); else DestroyImmediate(frame); }
     }
 }

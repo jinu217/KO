@@ -7,8 +7,8 @@ using UnityEngine.SceneManagement;
 [ExecuteAlways, DisallowMultipleComponent, DefaultExecutionOrder(1000)]
 public sealed class BossClipEffects : MonoBehaviour
 {
-    public enum Style { Down, Up, Thrust, Spin, Punch, Dash, Dust, Hit, Death, Buff }
-    public enum Anchor { Body, Weapon, Feet, Hitbox }
+    public enum Style { Down, Up, Thrust, Spin, Punch, Dash, Dust, Hit, Death, Buff, Sand }
+    public enum Anchor { Body, Weapon, Feet, Hitbox, WeaponTip }
     [Serializable] public class Cue
     {
         public float time, duration = .28f, angle, scale = 1;
@@ -28,12 +28,15 @@ public sealed class BossClipEffects : MonoBehaviour
     public BossEffects source;
     public Track[] tracks = Array.Empty<Track>();
     public bool runtimeEnabled;
-    public MobEffects.Effect down, up, thrust, spin, punch, dash, dust, hit, death, buff;
+    public MobEffects.Effect down, up, thrust, spin, punch, dash, dust, hit, death, buff, sand;
     public float pixelsPerUnit = 64;
     public int sortingOrder = 100;
     readonly Dictionary<MobEffects.Effect, Sprite[]> frames = new Dictionary<MobEffects.Effect, Sprite[]>();
     readonly HashSet<Sprite> owned = new HashSet<Sprite>();
     readonly List<SpriteRenderer> renderers = new List<SpriteRenderer>();
+    readonly Dictionary<Cue, Vector3> contactPositions = new Dictionary<Cue, Vector3>();
+    AnimationClip contactClip;
+    float contactTime;
     public int VisibleCount => renderers.FindAll(r => r != null && r.enabled && r.sprite != null).Count;
     public bool OwnsCurrentAttack
     {
@@ -68,8 +71,10 @@ public sealed class BossClipEffects : MonoBehaviour
     }
     public Track Find(AnimationClip clip)
     { foreach (var t in tracks) if (t.clip == clip) return t; return null; }
-    public void Sample(AnimationClip clip, float time, bool runtime = false)
+    public void Sample(AnimationClip clip, float time, bool runtime = false, bool supplementalOnly = false)
     {
+        if (clip != contactClip || time < contactTime) contactPositions.Clear();
+        contactClip = clip; contactTime = time;
         Track track = Find(clip);
         if (track == null || (runtime && !track.runtime)) { ClearVisuals(); return; }
 
@@ -82,6 +87,8 @@ public sealed class BossClipEffects : MonoBehaviour
         }
         foreach (var cue in track.cues)
         {
+            if (supplementalOnly && cue.style != Style.Buff && cue.style != Style.Sand) continue;
+            if (runtime && clip.name.StartsWith("MidBoss 1") && cue.style != Style.Buff && cue.style != Style.Sand) continue;
             float age = time - cue.time;
             if (age < -.0001f || age >= cue.duration) continue;
             MobEffects.Effect effect = GetEffect(cue.style);
@@ -105,8 +112,32 @@ public sealed class BossClipEffects : MonoBehaviour
                 var blade = weapon.GetComponent<SpriteRenderer>();
                 if (blade != null && blade.sprite != null) position = blade.bounds.center;
             }
+            if (cue.anchor == Anchor.Feet && clip.name.StartsWith("MidBoss 1"))
+                position = BossEffects.RearFeet(animator != null ? animator.transform : transform, facing);
+            if (cue.anchor == Anchor.WeaponTip && weapon != null)
+            {
+                var blade = weapon.GetComponent<SpriteRenderer>();
+                if (blade != null && blade.sprite != null)
+                {
+                    var bounds = blade.sprite.bounds;
+                    Vector3 a = weapon.TransformPoint(new Vector3(bounds.center.x, bounds.min.y, 0));
+                    Vector3 b = weapon.TransformPoint(new Vector3(bounds.center.x, bounds.max.y, 0));
+                    position = a.y < b.y ? a : b;
+                }
+            }
             Vector2 offset = cue.offset + effect.offset;
             position += new Vector3(offset.x * facing, offset.y, 0);
+            if (cue.anchor == Anchor.Feet && clip.name.StartsWith("MidBoss 1"))
+                position = BossEffects.RearFeet(animator != null ? animator.transform : transform, facing);
+            if (cue.style == Style.Sand)
+            {
+#if UNITY_EDITOR
+                if (!runtime) position = PreviewContact(clip, cue.time, position);
+#endif
+                position.x -= .8f;
+                if (runtime && contactPositions.TryGetValue(cue, out var contact)) position = contact;
+                else contactPositions[cue] = position;
+            }
             sr.transform.position = position;
             float angle = cue.angle * facing;
             if (cue.alignBlade && weapon != null)
@@ -117,19 +148,57 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.transform.rotation = Quaternion.Euler(0, 0, angle);
             float multiplier = cue.style == Style.Death ? 1 : 1.5f;
             sr.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale * cue.scale * multiplier);
-            Color color = cue.style == Style.Buff ? new Color(.55f, .85f, 1, .55f) : Color.white;
+            if (clip.name.StartsWith("MidBoss 1") && (cue.style == Style.Dash || cue.style == Style.Dust))
+                BossEffects.AlignTrail(sr, position, facing);
+            Color color = cue.style == Style.Buff && !clip.name.StartsWith("MidBoss 1") ? new Color(.55f, .85f, 1, .55f) : Color.white;
             color.a *= Mathf.Clamp01((cue.duration - age) / Mathf.Min(.12f, cue.duration * .35f));
             sr.color = color;
         }
         for (int i = count; i < renderers.Count; i++) if (renderers[i] != null) renderers[i].enabled = false;
     }
+#if UNITY_EDITOR
+    // Evaluate the contact pose without changing the scene's currently sampled pose.
+    Vector3 PreviewContact(AnimationClip clip, float time, Vector3 fallback)
+    {
+        if (weapon == null || animator == null) return fallback;
+        var blade = weapon.GetComponent<SpriteRenderer>();
+        if (blade == null || blade.sprite == null) return fallback;
+        var chain = new List<Transform>();
+        Transform root = animator.transform;
+        for (Transform t = weapon; t != null && t != root; t = t.parent) chain.Add(t);
+        Matrix4x4 matrix = root.localToWorldMatrix;
+        var bindings = UnityEditor.AnimationUtility.GetCurveBindings(clip);
+        for (int i = chain.Count - 1; i >= 0; i--)
+        {
+            Transform t = chain[i];
+            string path = UnityEditor.AnimationUtility.CalculateTransformPath(t, root);
+            Vector3 p = t.localPosition, e = t.localEulerAngles, scale = t.localScale;
+            foreach (var binding in bindings)
+            {
+                if (binding.path != path || binding.type != typeof(Transform)) continue;
+                string n = binding.propertyName;
+                int axis = n.EndsWith(".x") ? 0 : n.EndsWith(".y") ? 1 : n.EndsWith(".z") ? 2 : -1;
+                if (axis < 0) continue;
+                float value = UnityEditor.AnimationUtility.GetEditorCurve(clip, binding).Evaluate(time);
+                if (n.StartsWith("m_LocalPosition")) p[axis] = value;
+                else if (n.StartsWith("m_LocalScale")) scale[axis] = value;
+                else if (n.StartsWith("localEulerAngles")) e[axis] = value;
+            }
+            matrix *= Matrix4x4.TRS(p, Quaternion.Euler(e), scale);
+        }
+        var bounds = blade.sprite.bounds;
+        Vector3 a = matrix.MultiplyPoint3x4(new Vector3(bounds.center.x, bounds.min.y, 0));
+        Vector3 b = matrix.MultiplyPoint3x4(new Vector3(bounds.center.x, bounds.max.y, 0));
+        return a.y < b.y ? a : b;
+    }
+#endif
     MobEffects.Effect GetEffect(Style style)
     {
         switch (style)
         {
             case Style.Up: return up; case Style.Thrust: return thrust; case Style.Spin: return spin;
             case Style.Punch: return punch; case Style.Dash: return dash; case Style.Dust: return dust;
-            case Style.Hit: return hit; case Style.Death: return death; case Style.Buff: return buff;
+            case Style.Hit: return hit; case Style.Death: return death; case Style.Buff: return buff; case Style.Sand: return sand;
             default: return down;
         }
     }
@@ -164,6 +233,7 @@ public sealed class BossClipEffects : MonoBehaviour
     public void Release()
     {
         foreach (var sr in renderers) if (sr != null) Dispose(sr.gameObject);
+        contactPositions.Clear();
         renderers.Clear(); foreach (var sprite in owned) if (sprite != null) Dispose(sprite);
         owned.Clear(); frames.Clear();
     }

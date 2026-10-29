@@ -1365,7 +1365,7 @@ MonoBehaviour:
   animator: {fileID: -4083179747717211529}
   body: {fileID: 7763895284117365642}
   weapon: {fileID: 6638785186148824483}
-  feet: {fileID: 1375431258102939792}
+  feet: {fileID: 5424025673320399380}
   source: {fileID: 0}
   tracks:
   - clip: {fileID: 7400000, guid: bd2f0cc3214c0314185e793263581c0a, type: 2}
@@ -1373,17 +1373,7 @@ MonoBehaviour:
     cues: []
   - clip: {fileID: 7400000, guid: ded25266af6236441b0ea4571ea5aec7, type: 2}
     runtime: 0
-    cues:
-    - time: 0.3
-      duration: 0.7
-      angle: 0
-      scale: 1
-      style: 6
-      anchor: 2
-      offset: {x: 0, y: 0}
-      alignBlade: 0
-      loop: 1
-      weaponSide: 0
+    cues: []
   - clip: {fileID: 7400000, guid: e12c47bde75f1c240b9a1a35c91bc3f3, type: 2}
     runtime: 0
     cues:
@@ -1400,7 +1390,7 @@ MonoBehaviour:
   - clip: {fileID: 7400000, guid: 1a283f7cf00fa1540a4773cf4abbc062, type: 2}
     runtime: 0
     cues:
-    - time: 0.74
+    - time: 0.64
       duration: 0.28
       angle: 0
       scale: 1
@@ -1421,9 +1411,9 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
   - clip: {fileID: 7400000, guid: e4f0bdb84de49f94f99fe528015d64fa, type: 2}
-    runtime: 0
+    runtime: 1
     cues:
-    - time: 0.74
+    - time: 0.64
       duration: 0.28
       angle: 0
       scale: 1
@@ -1434,12 +1424,12 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
     - time: 1.6883333
-      duration: 0.28
+      duration: 0.5
       angle: 0
       scale: 1
-      style: 0
-      anchor: 3
-      offset: {x: 1.39, y: -1.37}
+      style: 10
+      anchor: 4
+      offset: {x: 0, y: 0}
       alignBlade: 0
       loop: 0
       weaponSide: 0
@@ -1454,7 +1444,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
   - clip: {fileID: 7400000, guid: 10dafd2b2bdc66c4d8ac48e081c5b9e3, type: 2}
-    runtime: 0
+    runtime: 1
     cues:
     - time: 1.1638095
       duration: 0.5
@@ -1593,7 +1583,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
-  runtimeEnabled: 0
+  runtimeEnabled: 1
   down:
     sheet: {fileID: 2800000, guid: 4c696c1001b33c943be90cb1f55f5d94, type: 3}
     frames: []
@@ -1682,16 +1672,23 @@ MonoBehaviour:
     artFacesRight: 1
     flipY: 0
   buff:
-    sheet: {fileID: 2800000, guid: ce9b94b8ea40bfa48b4685028ecc239f, type: 3}
+    sheet: {fileID: 2800000, guid: 29d87d5593d1d564c8bdf48bc83b66d2, type: 3}
     frames: []
     columns: 24
-    fps: 30
+    fps: 48
     scale: 2
     offset: {x: 0, y: 0}
     artFacesRight: 1
     flipY: 0
-  pixelsPerUnit: 64
-  sortingOrder: 100
+  sand:
+    sheet: {fileID: 2800000, guid: ba5e4f56df7f9f747a66d4ef0e0e40b4, type: 3}
+    frames: []
+    columns: 24
+    fps: 48
+    scale: 2
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
 --- !u!1 &7615721267841723086
 GameObject:
   m_ObjectHideFlags: 0
