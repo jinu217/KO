@@ -1360,11 +1360,12 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         // 파괴 가능 오브젝트(모든 레이어 탐색)
         Collider2D[] breakableHits = Physics2D.OverlapBoxAll(pos, size, 0f, ~0);
+        var hitBreakables = new HashSet<BreakableObject>();
         foreach (var bHit in breakableHits)
         {
             if (bHit == null) continue;
             BreakableObject breakable = bHit.GetComponentInParent<BreakableObject>();
-            if (breakable != null) breakable.TakeDamage();
+            if (breakable != null && hitBreakables.Add(breakable)) breakable.TakeDamage();
         }
     }
 

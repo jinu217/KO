@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public enum ItemRarity
 {
@@ -81,6 +81,9 @@ public class ItemData : ScriptableObject
     // 발
     public Sprite footLeftSprite;
     public Sprite footRightSprite;
+
+    [Header("장비별 외형 보정")]
+    public System.Collections.Generic.List<EquipmentVisualAdjustment> visualAdjustments = new System.Collections.Generic.List<EquipmentVisualAdjustment>();
 
 #if UNITY_EDITOR
     private void OnValidate()

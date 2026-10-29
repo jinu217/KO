@@ -1,4 +1,4 @@
-//플레이어 외형(장비) 변경 연결 
+﻿//플레이어 외형(장비) 변경 연결 
 using UnityEngine;
 
 public class PlayerAppearance : MonoBehaviour
@@ -23,6 +23,22 @@ public class PlayerAppearance : MonoBehaviour
     [Header("발")]
     public SpriteRenderer footLeftRenderer;
     public SpriteRenderer footRightRenderer;
+
+    [Tooltip("위치 보정 비교용. 스프라이트 피봇과 정렬 설정은 유지합니다.")]
+    public bool applyEquipmentPositionOffsets = true;
+    private EquipmentVisualState visualState;
+    private void EnsureVisualState()
+    {
+        if (visualState == null) visualState = new EquipmentVisualState(transform, GetComponentsInChildren<SpriteRenderer>(true));
+    }
+    private void Update() { visualState?.Restore(); }
+    private void LateUpdate()
+    {
+        if (visualState == null) return;
+        visualState.ApplyPositionOffsets = applyEquipmentPositionOffsets;
+        visualState.Apply();
+    }
+    private void OnDisable() { visualState?.Restore(); }
 
     private void Awake()
     {
@@ -76,6 +92,9 @@ public class PlayerAppearance : MonoBehaviour
         if (item == null)
             return;
 
+        EnsureVisualState();
+        visualState.Restore();
+        visualState.SetItem(item);
         switch (item.equipType)
         {
             case EquipmentType.Weapon:

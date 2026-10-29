@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 // [파괴 가능 오브젝트]
 // - hitCountToBreak 회 타격 시 SetActive(false)로 비활성화 (재사용 가능)
@@ -27,6 +27,7 @@ public class BreakableObject : MonoBehaviour
         if (isBroken) return;
 
         currentHits++;
+        ObjectHitReaction.Play(gameObject, currentHits >= hitCountToBreak);
 
         if (showDebugLog)
             Debug.Log($"[{name}] 타격 {currentHits}/{hitCountToBreak}");
