@@ -166,7 +166,7 @@ public sealed class EquipmentJointPreview : EditorWindow
         go.transform.localPosition = original.localPosition; go.transform.localRotation = original.localRotation; go.transform.localScale = original.localScale;
         transforms[original] = go.transform;
         var sr = original.GetComponent<SpriteRenderer>();
-        if (sr != null) { var copy = go.AddComponent<SpriteRenderer>(); EditorUtility.CopySerialized(sr, copy); SetPreviewSorting(copy); renderers[sr] = copy; }
+        if (sr != null) { var copy = go.AddComponent<SpriteRenderer>(); EditorUtility.CopySerialized(sr, copy); renderers[sr] = copy; }
         var group = original.GetComponent<SortingGroup>();
         if (group != null) EditorUtility.CopySerialized(group, go.AddComponent<SortingGroup>());
         foreach (Transform child in original) Copy(child, go.transform);
@@ -260,7 +260,7 @@ public sealed class EquipmentJointPreview : EditorWindow
         var root = animator != null && transforms.TryGetValue(animator.transform, out var t) ? t : preview.transform;
         visualState?.Restore();
         clip.SampleAnimation(root.gameObject, time);
-        foreach (var renderer in renderers.Values) SetPreviewSorting(renderer);
+
         visualState?.Apply();
         if (playing) Repaint(); SceneView.RepaintAll();
     }

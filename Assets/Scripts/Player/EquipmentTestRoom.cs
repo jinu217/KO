@@ -7,7 +7,7 @@ using UnityEngine.Playables;
 using UnityEngine.InputSystem;
 
 // A runtime appearance sandbox: uses the game's PlayerAppearance and authored motion clips.
-[DefaultExecutionOrder(500)]
+[DefaultExecutionOrder(-100)]
 public sealed class EquipmentTestRoom : MonoBehaviour
 {
     [Serializable] public class ArmorSet { public string name; public ItemData[] items; }
@@ -63,7 +63,7 @@ public sealed class EquipmentTestRoom : MonoBehaviour
         if (!motions.TryGetValue(name, out var clip)) return;
         if (motion.IsValid()) graph.DestroyPlayable(motion);
         motion = AnimationClipPlayable.Create(graph, clip); motion.SetApplyFootIK(false); motion.SetSpeed(0);
-        output.SetSourcePlayable(motion); currentMotion = name; elapsed = 0; graph.Play();
+        output.SetSourcePlayable(motion); output.SetWeight(1f); currentMotion = name; elapsed = 0; paused = false; graph.Play();
     }
     void Attack()
     {
@@ -91,9 +91,15 @@ public sealed class EquipmentTestRoom : MonoBehaviour
         }
         if (!motion.IsValid()) return;
         var clip = motions[currentMotion];
-        if (!paused) elapsed += Time.deltaTime * speed;
+        if (!paused) elapsed += Time.unscaledDeltaTime * speed;
         if (elapsed >= clip.length && automatic && (currentMotion.StartsWith("Attack_") || currentMotion == "Dash")) SetMotion("Player_Idle");
-        clip = motions[currentMotion]; motion.SetTime(clip.length > 0 ? elapsed % clip.length : 0); graph.Evaluate(0);
+    }
+    // Evaluate after the Animator, but before PlayerAppearance applies equipment offsets.
+    void LateUpdate()
+    {
+        if (!motion.IsValid()) return;
+        var clip = motions[currentMotion];
+        motion.SetTime(clip.length > 0 ? elapsed % clip.length : 0); graph.Evaluate(0);
     }
     void OnGUI()
     {
