@@ -26,6 +26,11 @@ public class PlayerAppearance : MonoBehaviour
 
     private void Awake()
     {
+        FindWeaponRenderer();
+    }
+
+    private void FindWeaponRenderer()
+    {
         if (weaponRenderer != null) return;
 
         // 기존 플레이어 프리팹과 씬의 손 아래 Sword 렌더러를 자동으로 연결한다.
@@ -39,7 +44,31 @@ public class PlayerAppearance : MonoBehaviour
 
     public void ClearWeapon()
     {
-        if (weaponRenderer != null) weaponRenderer.sprite = null;
+        ClearWeapon("장착 무기 없음");
+    }
+
+    public void ClearWeapon(string reason)
+    {
+        FindWeaponRenderer();
+        if (weaponRenderer == null) return;
+        weaponRenderer.sprite = null;
+        Debug.Log($"[PlayerAppearance] 무기 숨김: {reason}", this);
+    }
+
+    private void EquipWeapon(ItemData item)
+    {
+        FindWeaponRenderer();
+        if (weaponRenderer == null)
+        {
+            Debug.LogWarning("[PlayerAppearance] 무기 SpriteRenderer를 찾지 못했습니다. Weapon Renderer에 Hand_B/Sword의 렌더러를 연결하세요.", this);
+            return;
+        }
+        if (item.previewSprite == null)
+        {
+            Debug.LogWarning($"[PlayerAppearance] 무기 '{item.itemName}'(ID={item.id})의 Preview Sprite가 비어 있습니다. 기존 무기 Sprite를 유지합니다. 해당 ItemData 에셋에 무기 그림을 지정하세요.", item);
+            return;
+        }
+        weaponRenderer.sprite = item.previewSprite;
     }
 
     public void Equip(ItemData item)
@@ -50,7 +79,7 @@ public class PlayerAppearance : MonoBehaviour
         switch (item.equipType)
         {
             case EquipmentType.Weapon:
-                if (weaponRenderer != null) weaponRenderer.sprite = item.previewSprite;
+                EquipWeapon(item);
                 break;
 
             case EquipmentType.Head:

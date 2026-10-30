@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Events;
 
 public class MainBossController : MidBossController
 {
@@ -25,18 +24,6 @@ public class MainBossController : MidBossController
     [SerializeField] private bool playEncounterDialogue = true;
     private bool encounterDialogueStarted;
     private bool encounterDialogueRunning;
-
-    //============== 처치 후 선택지 ==============
-    [Header("처치 후 선택지")]
-    [Tooltip("선택 결과(true=획득, false=거부)를 받을 이벤트.")]
-    [SerializeField]
-    private UnityEvent<bool> onEquipmentChoiceMade;
-
-    // 모든 메인보스는 처치 후 기계이식 선택지를 표시합니다.
-    protected virtual bool ShouldOfferEquipmentChoice()
-    {
-        return true;
-    }
 
     protected MainBossData MainData => data as MainBossData;
     protected virtual string AnimationPrefix => "MainBoss1_";
@@ -158,30 +145,8 @@ public class MainBossController : MidBossController
         }
 
         Debug.Log($"[{name}] 쓰러진 상태에서 처치 후 보스 대화를 시작합니다.", this);
-        yield return dialogueController.PlayAfterDefeat(
-            this,
-            bossId,
-            ShouldOfferEquipmentChoice(),
-            OnEquipmentChoiceMade
-        );
+        yield return dialogueController.PlayAfterDefeat(this, bossId);
         Debug.Log($"[{name}] 처치 후 보스 대화가 끝났습니다.", this);
-    }
-
-    //============== 기계 장치 이식 선택 결과 ==============
-    private void OnEquipmentChoiceMade(bool accepted)
-    {
-        Debug.Log($"[{name}] 기계 장치 이식 선택 결과: {(accepted ? "이식" : "거부")}", this);
-
-        //============== 이식을 선택했으면 기계장비 개수 증가 (엔딩 판정에 사용) ==============
-        if (accepted)
-        {
-            if (EndingManager.Instance != null)
-                EndingManager.Instance.AddMachineEquipment();
-            else
-                Debug.LogWarning($"[{name}] EndingManager가 없어 기계장비 개수를 올리지 못했습니다.", this);
-        }
-
-        onEquipmentChoiceMade?.Invoke(accepted);
     }
 
     protected virtual void LateUpdate()

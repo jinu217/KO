@@ -26,7 +26,7 @@ public class MidBoss1_AnimGenerators
 
     const float RUN_LOWER_BODY_SPEED = 1.25f;
 
-    [MenuItem("Tools/1/MidBoss1/Generate AC")]
+    [MenuItem("Tools/1/MidBoss 1/Generate AC")]
     public static void GenerateAC()
     {
         string acPath = $"{SAVE_PATH}/{AC_NAME}.controller";
@@ -117,7 +117,7 @@ public class MidBoss1_AnimGenerators
         );
     }
 
-    [MenuItem("Tools/1/MidBoss1/Generate Walk and Run")]
+    [MenuItem("Tools/1/MidBoss 1/Generate Walk and Run")]
     public static void GenerateWalkAndRun()
     {
         EnsureFolders();
@@ -410,7 +410,7 @@ public class MidBoss1_AnimGenerators
         }
     }
 
-    [MenuItem("Tools/1/MidBoss1/Generate Combo Attacks")]
+    [MenuItem("Tools/1/MidBoss 1/Generate Combo Attacks")]
     public static void GenerateComboAttacks()
     {
         EnsureFolders();
@@ -490,7 +490,7 @@ public class MidBoss1_AnimGenerators
             SaveOrReplaceClip(combo3, $"{SAVE_PATH}/{MOB_PREFIX}Combo3.anim");
             AssetDatabase.SaveAssets();
             GenerateAC();
-            Debug.Log("[MidBoss1] 2연격: 세로 → 가로 / 3연격: 세로 → 양손찍기 2 → 가로 생성 완료. 기본공격은 기존 양손찍기를 유지합니다.");
+            Debug.Log("[MidBoss1] 2연격: 세로 → 가로 / 3연격: 세로 → 양손찍기 2 → 가로 생성 완료. 기본공격은 Combo2, 2스킬은 Combo3입니다.");
         }
         finally
         {
@@ -501,6 +501,32 @@ public class MidBoss1_AnimGenerators
 
     // 원본 HB 회전의 키와 접선을 시간 이동만 하여 복사합니다.
     // 360도 이상 누적되는 Euler 회전을 정규화하거나 최단 경로로 바꾸지 않습니다.
+    public static float[] GetComboImpactTimes(AnimationClip clip)
+    {
+        if (clip == null) throw new System.ArgumentNullException(nameof(clip));
+        float horizontal = -1f;
+        foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+        {
+            if (binding.propertyName != "m_LocalScale.y" || !binding.path.EndsWith("/Weapon")) continue;
+            var keys = AnimationUtility.GetEditorCurve(clip, binding).keys;
+            for (int i = 1; i < keys.Length; i++)
+                if (keys[i - 1].value < 0f && keys[i].value > 0f) horizontal = keys[i].time;
+        }
+        if (horizontal < 0) throw new System.InvalidOperationException(clip.name + ": 가로 타격 반전 키 없음");
+        // GenerateComboAttacks: Rest(.001)+연결(.239), 첫 세로는 .6/1.2초.
+        float first = .001f + .239f + .6f / 1.2f;
+        if (clip.name.Contains("Combo3"))
+        {
+            // 마지막 가로 타격 키에서 두 번째 세로 구간의 시작을 역산.
+            float secondStart = horizontal - (.87f + .22f + 1f / 60f + 5f / 60f + (.64f - .48f));
+            float second = secondStart + 40f / 60f;
+            if (!(first < second && second < horizontal))
+                throw new System.InvalidOperationException(clip.name + ": 콤보 구간 시간이 맞지 않습니다. 콤보를 재생성하세요.");
+            return new[] { first, second, horizontal };
+        }
+        return new[] { first, horizontal };
+    }
+
     static void CopyComboHandRotation(AnimationClip combo, AnimationClip source, float start, float duration)
     {
         const string handPath = "Body/ShoulderJoint_B/Shoulder_B/ArmJoint_B/Arm_B/Hand_B";
@@ -804,7 +830,7 @@ public class MidBoss1_AnimGenerators
         return clip;
     }
 
-    [MenuItem("Tools/1/MidBoss1/Generate Buff and Dash")]
+    [MenuItem("Tools/1/MidBoss 1/Generate Buff and Dash")]
     public static void GenerateBuffAndDash()
     {
         EnsureFolders();
@@ -928,14 +954,14 @@ public class MidBoss1_AnimGenerators
         SavePattern(clip, "Dash");
     }
 
-    [MenuItem("Tools/1/MidBoss1/Setup Gameplay Animator")]
+    [MenuItem("Tools/1/MidBoss 1/Setup Gameplay Animator")]
     public static void SetupGameplayAnimator()
     {
         EnsureFolders();
-        AnimationClip basicAttackClip = LoadClip("양손찍기");
+        AnimationClip basicAttackClip = LoadClip("Combo2");
         if (basicAttackClip == null)
         {
-            Debug.LogError("[MidBoss1] " + SAVE_PATH + "/MidBoss 1_양손찍기.anim을 먼저 넣어주세요.");
+            Debug.LogError("[MidBoss1] " + SAVE_PATH + "/MidBoss 1_Combo2.anim을 먼저 생성하세요.");
             return;
         }
         // Rest 좌표는 제작 기준일 뿐, 실제 대기는 사용자가 지정한 Idle 클립입니다.
@@ -948,7 +974,7 @@ public class MidBoss1_AnimGenerators
         GenerateDashPhases();
         GenerateAC();
         AnimatorController ac = AssetDatabase.LoadAssetAtPath<AnimatorController>($"{SAVE_PATH}/{AC_NAME}.controller");
-        string[] triggers = { "BasicAttack", "Buff", "Combo2", "Combo3", "Dash" };
+        string[] triggers = { "Buff", "Combo2", "Combo3", "Dash" };
         // 기존 동명 파라미터의 타입이 다르면 임의 변경하지 않고 알려줍니다.
         foreach (string trigger in triggers) EnsureGameplayParameter(ac, trigger, AnimatorControllerParameterType.Trigger);
         EnsureGameplayParameter(ac, "MoveSpeed", AnimatorControllerParameterType.Float);
@@ -1005,6 +1031,7 @@ public class MidBoss1_AnimGenerators
                 trigger == "BasicAttack" ? basicAttackClip : LoadClip(trigger);
             AnimatorState state = FindGameplayState(sm, clip);
             if (state == null) { Debug.LogWarning("[MidBoss1] 클립이 없어 전환을 생략했습니다: " + trigger); continue; }
+            state.speed = 1f;
             state.speedParameter = "AttackSpeed";
             state.speedParameterActive = true;
             string transitionName = "MidBoss1_Auto_" + trigger;
@@ -1027,7 +1054,7 @@ public class MidBoss1_AnimGenerators
         }
         EditorUtility.SetDirty(ac);
         AssetDatabase.SaveAssets();
-        Debug.Log("[MidBoss1] BasicAttack(양손찍기), 패턴 Trigger, MoveSpeed, IsChasing, IsAttacking, AttackSpeed 및 전환 연결 완료. 보스 Animator에 MidBoss 1_AC를 연결하세요.");
+        Debug.Log("[MidBoss1] Combo2(기본 공격), Combo3(2스킬), Dash(3스킬), 패턴 Trigger, MoveSpeed, IsChasing, IsAttacking, AttackSpeed 및 전환 연결 완료. 보스 Animator에 MidBoss 1_AC를 연결하세요.");
     }
 
     // 대기/걷기/달리기는 반복 재생, 공격/버프/돌진의 루프 설정은 건드리지 않습니다.
@@ -1177,11 +1204,11 @@ public class MidBoss1_AnimGenerators
     }
 
     static bool IsReferenceAttackParameter(string name)
-        => name == "VerticalAttack" || name == "HorizontalAttack";
+        => name == "BasicAttack" || name == "VerticalAttack" || name == "HorizontalAttack";
 
     static bool IsReferenceAttackName(string name)
     {
-        foreach (string action in new[] { "VerticalAttack", "HorizontalAttack", "세로공격", "가로공격" })
+        foreach (string action in new[] { "BasicAttack", "양손찍기", "양손찍기 2", "TwoHandSlam", "TwoHandSlam2", "VerticalAttack", "HorizontalAttack", "세로공격", "가로공격" })
             if (string.Equals(name, action, System.StringComparison.OrdinalIgnoreCase) || IsNamedClip(name, action))
                 return true;
         return false;
@@ -1194,26 +1221,115 @@ public class MidBoss1_AnimGenerators
         return false;
     }
 
-    static void RemoveReferenceAttackStates(AnimatorStateMachine sm)
+    static void RemoveReferenceAttackStates(AnimatorStateMachine root)
     {
-        foreach (var transition in sm.anyStateTransitions)
-            if (UsesReferenceAttackParameter(transition)) sm.RemoveAnyStateTransition(transition);
-        foreach (var transition in sm.entryTransitions)
-            foreach (var condition in transition.conditions)
-                if (IsReferenceAttackParameter(condition.parameter))
-                { sm.RemoveEntryTransition(transition); break; }
-        foreach (var child in sm.states)
+        if (root == null) return;
+        var machines = new System.Collections.Generic.List<AnimatorStateMachine>();
+        GatherGraphMachines(root, machines);
+        var validStates = new System.Collections.Generic.HashSet<AnimatorState>();
+        var removedStates = new System.Collections.Generic.HashSet<AnimatorState>();
+        var validMachines = new System.Collections.Generic.HashSet<AnimatorStateMachine>(machines);
+        foreach (var sm in machines)
+            foreach (var child in sm.states)
+            {
+                var state = child.state;
+                if (state == null) continue;
+                var clip = state.motion as AnimationClip;
+                if (IsReferenceAttackName(state.name) || (clip != null && IsReferenceAttackName(clip.name)))
+                    removedStates.Add(state);
+                else validStates.Add(state);
+            }
+        // 상태를 삭제하기 전에 모든 유입/유출 연결을 먼저 정리한다.
+        // 조건 이름만 확인하면 다른 Trigger로 연결된 양손찍기 전환이 남을 수 있다.
+        foreach (var sm in machines)
         {
-            foreach (var transition in child.state.transitions)
-                if (UsesReferenceAttackParameter(transition)) child.state.RemoveTransition(transition);
-            AnimationClip clip = child.state.motion as AnimationClip;
-            if (IsReferenceAttackName(child.state.name) || (clip != null && IsReferenceAttackName(clip.name)))
-                sm.RemoveState(child.state);
+            sm.anyStateTransitions = FilterGraphEdges(sm.anyStateTransitions, validStates, validMachines);
+            sm.entryTransitions = FilterGraphEdges(sm.entryTransitions, validStates, validMachines);
+            foreach (var child in sm.states)
+            {
+                var state = child.state;
+                if (state == null) continue;
+                state.transitions = removedStates.Contains(state) ? new AnimatorStateTransition[0] :
+                    FilterGraphEdges(state.transitions, validStates, validMachines);
+                EditorUtility.SetDirty(state);
+            }
+            foreach (var child in sm.stateMachines)
+                sm.SetStateMachineTransitions(child.stateMachine,
+                    FilterGraphEdges(sm.GetStateMachineTransitions(child.stateMachine), validStates, validMachines));
+            if (sm.defaultState == null || !validStates.Contains(sm.defaultState))
+            {
+                AnimatorState fallback = null;
+                foreach (var child in sm.states)
+                {
+                    if (!validStates.Contains(child.state)) continue;
+                    if (fallback == null) fallback = child.state;
+                    if (child.state.name.EndsWith("Idle")) { fallback = child.state; break; }
+                }
+                sm.defaultState = fallback;
+            }
+            EditorUtility.SetDirty(sm);
         }
-        foreach (var child in sm.stateMachines) RemoveReferenceAttackStates(child.stateMachine);
+        foreach (var sm in machines)
+            foreach (var child in sm.states)
+                if (removedStates.Contains(child.state)) sm.RemoveState(child.state);
     }
 
-    [MenuItem("Tools/1/MidBoss1/Generate Two Hand Slam Versions")]
+    static void GatherGraphMachines(AnimatorStateMachine sm,
+        System.Collections.Generic.List<AnimatorStateMachine> result)
+    {
+        if (sm == null || result.Contains(sm)) return;
+        result.Add(sm);
+        var states = new System.Collections.Generic.List<ChildAnimatorState>();
+        foreach (var child in sm.states) if (child.state != null) states.Add(child);
+        sm.states = states.ToArray();
+        var children = new System.Collections.Generic.List<ChildAnimatorStateMachine>();
+        foreach (var child in sm.stateMachines) if (child.stateMachine != null) children.Add(child);
+        sm.stateMachines = children.ToArray();
+        foreach (var child in children) GatherGraphMachines(child.stateMachine, result);
+    }
+
+    static T[] FilterGraphEdges<T>(T[] source,
+        System.Collections.Generic.HashSet<AnimatorState> states,
+        System.Collections.Generic.HashSet<AnimatorStateMachine> machines) where T : AnimatorTransitionBase
+    {
+        var keep = new System.Collections.Generic.List<T>();
+        if (source == null) return keep.ToArray();
+        foreach (var transition in source)
+        {
+            if (transition == null) continue;
+            bool obsolete = false;
+            foreach (var condition in transition.conditions)
+                if (IsReferenceAttackParameter(condition.parameter)) { obsolete = true; break; }
+            if (obsolete) continue;
+            // Exit는 목적지 상태가 없는 것이 정상이다.
+            if (!transition.isExit &&
+                !(transition.destinationState != null && states.Contains(transition.destinationState)) &&
+                !(transition.destinationStateMachine != null && machines.Contains(transition.destinationStateMachine))) continue;
+            keep.Add(transition);
+        }
+        return keep.ToArray();
+    }
+
+    [MenuItem("Tools/1/MidBoss 1/Repair Animator Graph")]
+    public static void RepairAnimatorGraph()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        string path = $"{SAVE_PATH}/{AC_NAME}.controller";
+        if (System.IO.File.Exists(path))
+        {
+            string backup = "Library/MidBoss1GraphBackups/" +
+                System.DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".controller";
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(backup));
+            System.IO.File.Copy(path, backup);
+        }
+        GenerateAC();
+        SetupGameplayAnimator();
+        AssetDatabase.SaveAssets();
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        Debug.Log("[MidBoss1] 끊어진 연결 정리 및 게임플레이 전환 재설정 완료. Animator 창을 다시 열어주세요.");
+    }
+
+    [MenuItem("Tools/1/MidBoss 1/Generate Two Hand Slam Versions")]
     public static void GenerateTwoHandSlamVersions()
     {
         EnsureFolders();
@@ -1224,8 +1340,8 @@ public class MidBoss1_AnimGenerators
         SaveOrReplaceClip(alternative, FindOrCreateClipPath("양손찍기 2"));
         AssetDatabase.SaveAssets();
         GenerateAC();
-        // BasicAttack은 기존 양손찍기에만 연결됩니다. 2번에는 전환을 만들지 않습니다.
-        Debug.Log("[MidBoss1] 양손찍기 / 양손찍기 2 생성 완료. 각 1.35초, 60 FPS 기준 임팩트 40프레임. 2번은 비교용입니다.");
+        // 두 클립은 콤보 제작 원본으로 보존하며 Animator 단독 상태는 만들지 않습니다.
+        Debug.Log("[MidBoss1] 양손찍기 / 양손찍기 2 생성 완료. 각 1.35초, 60 FPS 기준 임팩트 40프레임. Animator에는 등록하지 않고 콤보 제작 원본으로 보존합니다.");
     }
 
     static AnimationClip DecodeTwoHandSlam(string data, string action)

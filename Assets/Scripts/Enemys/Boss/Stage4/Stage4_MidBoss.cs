@@ -88,6 +88,7 @@ public sealed class Stage4_MidBoss : MidBossController
     protected override void OnSkillExecutionStarted(BossSkillData skill, int index)
     {
         sourceSkill = index < 0 ? data.basicAttack : data.skills[index];
+        Effects?.BeginSkill(sourceSkill, index);
         lockedDirection = lookDirection;
         ApplyFacingDirection();
         actionLock = true;
@@ -246,6 +247,7 @@ public sealed class Stage4_MidBoss : MidBossController
     private void Damage(BossAttackStepData step, Vector2 center)
     {
         if (step.damage <= 0) return;
+        Effects?.PlayStep(step, center, lockedDirection);
         hitTargets.Clear();
         foreach (Collider2D hit in Physics2D.OverlapBoxAll(center, step.hitboxSize, 0, playerLayer))
         {

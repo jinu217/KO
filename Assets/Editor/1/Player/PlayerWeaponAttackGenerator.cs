@@ -94,9 +94,10 @@ public static class PlayerWeaponAttackGenerator
             var curves = new AnimationCurve[nodes.Length, 9];
             for (int i = 0; i < nodes.Length; i++) for (int j = 0; j < 9; j++) curves[i, j] = new AnimationCurve();
             int count = Mathf.CeilToInt(duration * 60);
-            for (int frame = 0; frame <= count; frame++)
+            float daggerImpactTop = 0f;
+            for (int frame = kind == WeaponKind.SSword ? -1 : 0; frame <= count; frame++)
             {
-                float t = duration * frame / count;
+                float t = frame < 0 ? motion.times[3] : duration * frame / count;
                 float[] angles = (float[])restAngles.Clone();
                 for (int i = 0; i < nodes.Length; i++)
                 {
@@ -116,12 +117,37 @@ public static class PlayerWeaponAttackGenerator
                     angles[i] += delta; nodes[i].localPosition = p; nodes[i].localRotation = Quaternion.Euler(0, 0, angles[i]); nodes[i].localScale = scale[i];
                 }
                 int sword = Array.FindIndex(nodes, n => n == weapon);
-                // Keep the grip/blade local rotation at the prefab's rest value.
+                // Other weapons retain their prefab-local blade rotation.
                 // Shoulder winds up negatively, then increases for the cut.
                 // Forearm supports the shoulder windup; the wrist adds only a small follow-through.
-                // SSword uses a compact raised-arm cut with the same rotation convention.
                 angles[sword] = restAngles[sword];
+                if (kind == WeaponKind.SSword)
+                {
+                    // Aim at the supplied impact orientation by the first preparation pose.
+                    // Counter-rotate the weapon against torso + shoulder + forearm + wrist,
+                    // so the blade keeps its screen-space inclination during the thrust.
+                    // At impact the weapon still reaches the requested local 60 degrees.
+                    float impactAim = 60f - restAngles[sword];
+                    foreach (int row in new[] { 0, 4, 5, 6 }) impactAim += motion.rows[row][3];
+                    float aim = Track(t, motion.times, new float[] { 0f, impactAim, impactAim, impactAim, impactAim, impactAim, 0f });
+                    float armRotation = motion.Sample(0, t) + motion.Sample(4, t) + motion.Sample(5, t) + motion.Sample(6, t);
+                    angles[sword] = restAngles[sword] + aim - armRotation;
+                }
                 nodes[sword].localRotation = Quaternion.Euler(0, 0, angles[sword]);
+                if (kind == WeaponKind.SSword)
+                {
+                    // Measure the actual supplied dagger canvas, not whichever equipment
+                    // sprite happens to be assigned to the shared Sword in the prefab.
+                    float top = DaggerTop(root, weapon);
+                    if (frame < 0) { daggerImpactTop = top; continue; }
+                    if (t < motion.times[3])
+                    {
+                        float blend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(motion.times[1], motion.times[2], t));
+                        float lower = Mathf.Max(0f, top - daggerImpactTop) * blend;
+                        // Lower the torso as one unit; keep all arm joints connected.
+                        body.position -= root.TransformVector(Vector3.up * lower);
+                    }
+                }
                 // Preserve root-space foot pivot heights despite torso rotation.
                 foreach (string footName in new[] { "Foot_F", "Foot_B" })
                 {
@@ -168,7 +194,8 @@ public static class PlayerWeaponAttackGenerator
     // Rows: body rotation, body X, body Y, head, rear shoulder, rear forearm,
     // rear wrist, front shoulder, front forearm. Rotation values are rest-relative.
     // Sword/Sythe/Club: clockwise (-) windup -> counterclockwise (+) strike.
-    // SSword: compact clockwise windup followed by a short counterclockwise cut.
+    // SSword: retract -> extend along a nearly horizontal line -> retract.
+    // Sythe: compact, quick sweep with little vertical weight; Club keeps its heavy slam.
     static Motion GetMotion(WeaponKind kind)
     {
         switch (kind)
@@ -185,16 +212,16 @@ public static class PlayerWeaponAttackGenerator
                 new float[] { 0f, -12f, -20f, -32f, -25f, -10f, 0f },
                 new float[] { 0f, 12f, 20f, 8f, 5f, 2f, 0f });
             case WeaponKind.Sythe:
-                return new Motion(new float[] { 0f, 0.19f, 0.32f, 0.44f, 0.57f, 0.78f, 1.05f },
-                new float[] { 0f, -3f, -5f, 8f, 7f, 3f, 0f },
-                new float[] { 0f, 0.025f, 0.055f, -0.09f, -0.12f, -0.03f, 0f },
-                new float[] { 0f, -0.018f, -0.04f, -0.05f, -0.06f, -0.018f, 0f },
-                new float[] { 0f, 2f, 3f, -4f, -3f, -1f, 0f },
-                new float[] { 0f, -55f, -120f, -30f, -5f, -2f, 0f },
-                new float[] { 0f, -4f, -8f, -6f, -4f, -2f, 0f },
-                new float[] { 0f, 0f, -2f, 4f, 5f, 2f, 0f },
-                new float[] { 0f, -18f, -32f, 18f, 35f, 8f, 0f },
-                new float[] { 0f, 15f, 28f, 10f, 5f, 3f, 0f });
+                return new Motion(new float[] { 0f, 0.10f, 0.17f, 0.25f, 0.32f, 0.43f, 0.60f },
+                new float[] { 0f, -1f, -2f, 3f, 4f, 1f, 0f },
+                new float[] { 0f, 0.015f, 0.025f, -0.055f, -0.07f, -0.02f, 0f },
+                new float[] { 0f, -0.003f, -0.008f, -0.012f, -0.01f, -0.003f, 0f },
+                new float[] { 0f, 1f, 1f, -2f, -2f, 0f, 0f },
+                new float[] { 0f, -35f, -72f, -22f, 6f, 2f, 0f },
+                new float[] { 0f, -8f, -20f, -8f, 10f, 4f, 0f },
+                new float[] { 0f, 0f, -3f, 3f, 6f, 2f, 0f },
+                new float[] { 0f, -8f, -16f, 8f, 14f, 4f, 0f },
+                new float[] { 0f, 8f, 15f, 8f, 4f, 2f, 0f });
             case WeaponKind.Club:
                 return new Motion(new float[] { 0f, 0.25f, 0.43f, 0.55f, 0.64f, 0.92f, 1.25f },
                 new float[] { 0f, -2f, -4f, 10f, 9f, 3f, 0f },
@@ -208,17 +235,28 @@ public static class PlayerWeaponAttackGenerator
                 new float[] { 0f, 18f, 32f, 12f, 8f, 4f, 0f });
             case WeaponKind.SSword:
                 return new Motion(new float[] { 0f, 0.07f, 0.13f, 0.19f, 0.23f, 0.34f, 0.48f },
-                new float[] { 0f, -1f, -2f, 4f, 3f, 1f, 0f },
-                new float[] { 0f, 0.02f, 0.045f, -0.12f, -0.1f, -0.02f, 0f },
-                new float[] { 0f, -0.005f, -0.015f, -0.03f, -0.025f, -0.007f, 0f },
-                new float[] { 0f, 1f, 1f, -2f, -1f, 0f, 0f },
-                new float[] { 0f, -30f, -75f, -22f, -5f, -2f, 0f },
-                new float[] { 0f, -4f, -10f, -6f, -4f, -2f, 0f },
-                new float[] { 0f, 0f, -2f, 2f, 3f, 1f, 0f },
-                new float[] { 0f, -8f, -15f, 18f, 14f, 2f, 0f },
-                new float[] { 0f, 10f, 18f, 8f, 6f, 2f, 0f });
+                new float[] { 0f, -1f, -2f, 3f, 3f, 1f, 0f },
+                new float[] { 0f, 0.02f, 0.04f, -0.10f, -0.10f, 0.015f, 0f },
+                new float[] { 0f, 0f, -0.005f, -0.008f, -0.008f, -0.003f, 0f },
+                new float[] { 0f, 1f, 2f, -2f, -2f, 0f, 0f },
+                new float[] { 0f, -12f, -20f, -60f, -60f, -20f, 0f },
+                new float[] { 0f, -30f, -50f, 0f, 0f, -50f, 0f },
+                new float[] { 0f, 10.75f, 18f, 21.75f, 21.75f, 17.25f, 0f },
+                new float[] { 0f, -8f, -14f, -18f, -18f, -8f, 0f },
+                new float[] { 0f, 10f, 18f, 22f, 22f, 10f, 0f });
             default: throw new ArgumentOutOfRangeException("kind");
         }
+    }
+    // User supplied dagger: 64x35 pixels, pivot (0.85,0.28), PPU 64.
+    static float DaggerTop(Transform root, Transform weapon)
+    {
+        float top = float.NegativeInfinity;
+        for (int x = 0; x < 2; x++) for (int y = 0; y < 2; y++)
+            {
+                Vector3 corner = new Vector3(x - 0.85f, (y - 0.28f) * 35f / 64f, 0f);
+                top = Mathf.Max(top, root.InverseTransformPoint(weapon.TransformPoint(corner)).y);
+            }
+        return top;
     }
     static void EnsureFolder(string path)
     { if (AssetDatabase.IsValidFolder(path)) return; string parent = Path.GetDirectoryName(path).Replace('\\', '/'); EnsureFolder(parent); AssetDatabase.CreateFolder(parent, Path.GetFileName(path)); }

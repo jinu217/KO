@@ -15,8 +15,8 @@ public enum WeaponType
 {
     Sword,
     Blunt,
-    Spear,
     Dagger,
+    Axe,
     Scythe
 }
 
@@ -321,7 +321,13 @@ public class PlayerController : MonoBehaviour, IDamageable
     private static readonly int AnimIsGrounded = Animator.StringToHash("IsGrounded");
     private static readonly int AnimIsDownJumping = Animator.StringToHash("IsDownJumping");
     private static readonly int AnimAttack = Animator.StringToHash("Attack");
-    private static readonly int AnimAttackSword = Animator.StringToHash("Base Layer.Attack_Sword");
+    private float empoweredLandingAnimationUntil;
+    private bool HasPlungeParameter(string name, AnimatorControllerParameterType type)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return false;
+        foreach (var p in animator.parameters) if (p.name == name && p.type == type) return true;
+        return false;
+    }
     private static readonly int AnimDash = Animator.StringToHash("Dash");
 
     // -------------------- 이동/점프 --------------------
@@ -404,6 +410,31 @@ public class PlayerController : MonoBehaviour, IDamageable
         : 0);
     public int AvailableDashCount => availableDashCount;
     public bool IsDodging => isDashing;
+
+    // PlayerMovementEffects가 읽는 이동 이펙트 인터페이스
+    public event Action<float> MovementFXJump;
+    public event Action<float> MovementFXDash;
+
+    // 루트 스케일은 좌우 표시가 반전되어 있으므로 실제 진행 방향은 부호를 뒤집습니다.
+    public float MovementFXDirection
+    {
+        get
+        {
+            float direction = Mathf.Sign(lastHorizontalDirection);
+            if (Mathf.Approximately(direction, 0f))
+                direction = transform.localScale.x < 0f ? 1f : -1f;
+            return direction;
+        }
+    }
+
+    public bool MovementFXWalking => enabled
+        && isGrounded
+        && Mathf.Abs(moveInput.x) > 0.01f
+        && !isDashing && !isKnockback && !isMoveDelayed && !isMeditating
+        && !isDownJumping && !isInventoryOpen && !isKeyboardControlPaused
+        && (playerStatus == null || playerStatus.CanMove)
+        && !ChestRewardPanel.IsAnyOpen;
+
     public float EffectiveDashCooldown => dashCooldown * (1f - (SaveData.Instance != null
         ? Mathf.Clamp(SaveData.Instance.persistent.dashCooldownReduction, 0f, 0.8f)
         : 0f));
@@ -495,8 +526,14 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     private bool isHitStopRunning;
 
+    [Header("피격 보정")]
+    [Tooltip("피격 직후 추가 피해를 무시하는 무적 시간")]
+    public float damageInvincibleTime = 0.1f;
 
+    private bool isDamageInvincible;
+    private Coroutine invincibleRoutine;
     private HitFlashEffect hitFlash;   // 피격 깜빡임 효과 컴포넌트
+    private PlayerCombatEffects combatEffects;
 
     //============== 명상 ==============
     [Header("명상")]
@@ -521,12 +558,6 @@ public class PlayerController : MonoBehaviour, IDamageable
     // -------------------- 내부 보조 값 --------------------
     private float lastHorizontalDirection = 1f; // 마지막으로 바라본 좌우 방향
     private float lastAttackTime;               // 마지막 공격 시각
-    private float attackAnimationDuration = 0.75f;
-    private float attackAnimatorBaseSpeed;
-    private bool attackAnimationActive;
-    private bool attackAwaitingHit;
-    private bool attackStateSeen;
-    private int attackStartFrame;
     private float originalGravity;              // 초기 중력 값(대쉬 시 복원용)
 
     // -------------------- 데스시 화면 전환 --------------------
@@ -543,19 +574,9 @@ public class PlayerController : MonoBehaviour, IDamageable
         rb = GetComponent<Rigidbody2D>();
         if (bodyCollider == null) bodyCollider = GetComponent<Collider2D>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
-        if (animator != null && animator.runtimeAnimatorController != null)
-        {
-            foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
-            {
-                if (clip.name == "Attack_Sword")
-                {
-                    attackAnimationDuration = clip.length;
-                    break;
-                }
-            }
-        }
 
         hitFlash = GetComponent<HitFlashEffect>();
+        combatEffects = GetComponent<PlayerCombatEffects>();
         runtimeState = GetComponent<PlayerRuntimeState>();
         if (runtimeState == null)
             runtimeState = gameObject.AddComponent<PlayerRuntimeState>();
@@ -707,44 +728,6 @@ public class PlayerController : MonoBehaviour, IDamageable
         UpdateAnimatorParameters();
     }
 
-    private void LateUpdate()
-    {
-        if (!attackAnimationActive || animator == null) return;
-
-        bool inAttack = animator.GetCurrentAnimatorStateInfo(0).fullPathHash == AnimAttackSword;
-        bool enteringAttack = animator.IsInTransition(0)
-            && animator.GetNextAnimatorStateInfo(0).fullPathHash == AnimAttackSword;
-        if (inAttack || enteringAttack)
-        {
-            attackStateSeen = true;
-            return;
-        }
-
-        if (attackStateSeen || Time.frameCount > attackStartFrame + 1)
-            EndAttackAnimation();
-    }
-
-    private void OnDisable()
-    {
-        EndAttackAnimation();
-    }
-
-    private void EndAttackAnimation()
-    {
-        if (!attackAnimationActive) return;
-
-        if (attackAwaitingHit)
-        {
-            lastAttackTime = -999f;
-            if (animator != null) animator.ResetTrigger(AnimAttack);
-        }
-
-        if (animator != null) animator.speed = attackAnimatorBaseSpeed;
-        attackAnimationActive = false;
-        attackAwaitingHit = false;
-        attackStateSeen = false;
-    }
-
     // 매 프레임 애니메이터 파라미터 갱신(MoveSpeed/VerticalVelocity/IsGrounded/IsDownJumping)
     private void UpdateAnimatorParameters()
     {
@@ -761,11 +744,14 @@ public class PlayerController : MonoBehaviour, IDamageable
         animator.SetFloat(AnimVerticalVelocity, suppressAir ? 0f : rb.linearVelocity.y);
         animator.SetBool(AnimIsGrounded, suppressAir || isGrounded);
         animator.SetBool(AnimIsDownJumping, isDownJumping);
+        if (HasPlungeParameter("IsEmpoweredDownJump", AnimatorControllerParameterType.Bool))
+            animator.SetBool("IsEmpoweredDownJump", isEmpoweredDownJump || Time.time < empoweredLandingAnimationUntil);
     }
 
     // 입력 콜백: 이동(인벤토리 열림 중에는 인벤토리 커서 이동에 사용)
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (isGameOver) return;
         if (isMeditating)
         {
             Vector2 meditationMoveInput = context.ReadValue<Vector2>();
@@ -813,6 +799,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 점프/하향 점프(점프 버퍼 + 코요테 타임 적용)
     public void OnJump(InputAction.CallbackContext context)
     {
+        if (isGameOver) return;
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (playerStatus != null && !playerStatus.CanMove) return;
@@ -879,6 +866,12 @@ public class PlayerController : MonoBehaviour, IDamageable
             float fallenDist = Mathf.Max(0f, fallStartY - transform.position.y);
             ApplyEmpoweredDownJumpImpact(fallenDist);
             ApplyMoveDelay(empoweredDownJumpMoveDelay);
+            if (HasPlungeParameter("EmpoweredLand", AnimatorControllerParameterType.Trigger))
+            {
+                empoweredLandingAnimationUntil = Time.time + .35f;
+                animator.ResetTrigger("EmpoweredLand");
+                animator.SetTrigger("EmpoweredLand");
+            }
         }
 
         isEmpoweredDownJump = false;
@@ -936,6 +929,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 대쉬
     public void OnDash(InputAction.CallbackContext context)
     {
+        if (isGameOver) return;
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDash()) return;
@@ -971,7 +965,6 @@ public class PlayerController : MonoBehaviour, IDamageable
     private IEnumerator DashAction()
     {
         isDashing = true;
-        EndAttackAnimation();
         if (animator != null) animator.SetTrigger(AnimDash);
 
         float prevGravity = rb.gravityScale;
@@ -982,6 +975,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         // 대쉬 동안에는 시작 방향으로 고정합니다. 반대 입력은 종료 후 적용됩니다.
         lastHorizontalDirection = dashDir;
         transform.localScale = new Vector3(-dashDir, 1f, 1f);
+        MovementFXDash?.Invoke(dashDir);
         float effectiveDashDistance = dashDistance * (playerStatus != null ? playerStatus.DashDistanceMultiplier : 1f);
         float effectiveDashSpeed = dashSpeed * (playerStatus != null ? playerStatus.DashSpeedMultiplier : 1f);
         float moved = 0f;
@@ -1020,6 +1014,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)
     public void OnAttack(InputAction.CallbackContext context)
     {
+        if (isGameOver) return;
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
@@ -1031,22 +1026,15 @@ public class PlayerController : MonoBehaviour, IDamageable
             ? playerStatus.AttackSpeedMultiplier
             : 1f;
 
-        if (animator == null || attackAnimationActive) return;
+        float effectiveAttackSpeed = stats.attackSpeed * attackSpeedMultiplier;
 
-        float effectiveAttackSpeed = Mathf.Max(0.01f, stats.attackSpeed * attackSpeedMultiplier);
-        float baseSpeed = Mathf.Max(0.01f, animator.speed);
-        float attackInterval = Mathf.Max(1f / effectiveAttackSpeed,
-            attackAnimationDuration / (baseSpeed * effectiveAttackSpeed));
-        if (Time.time < lastAttackTime + attackInterval)
+        if (Time.time < lastAttackTime + (1f / effectiveAttackSpeed))
             return;
 
-        attackAnimatorBaseSpeed = animator.speed;
-        attackAnimationActive = true;
-        attackAwaitingHit = true;
-        attackStateSeen = false;
-        attackStartFrame = Time.frameCount;
-        animator.speed = baseSpeed * effectiveAttackSpeed;
-        animator.SetTrigger(AnimAttack);
+        if (animator != null)
+            animator.SetTrigger(AnimAttack);
+
+        playerStatus.OnAttack();
         lastAttackTime = Time.time;
     }
 
@@ -1272,10 +1260,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 실제 공격 판정 처리(무기별 박스/넉백 + 일반몹/중간보스/메인보스 모두 적용)
     void Attack()
     {
-        if (!attackAnimationActive || !attackAwaitingHit) return;
-        attackAwaitingHit = false;
-        playerStatus?.OnAttack();
-
+        if (isGameOver) return;
         float dmg = stats.attackDamage;
         if (playerStatus != null)
             dmg *= playerStatus.AttackDamageMultiplier;
@@ -1286,6 +1271,11 @@ public class PlayerController : MonoBehaviour, IDamageable
         float dir = -Mathf.Sign(transform.localScale.x);
         Vector2 size = GetWeaponAttackSize();
         Vector2 pos = (Vector2)transform.position + Vector2.right * dir * GetWeaponOffset();
+
+        // 실제 타격 이벤트 위치에서 무기 타입에 맞는 공격 이펙트를 재생합니다.
+        if (combatEffects == null)
+            combatEffects = GetComponent<PlayerCombatEffects>();
+        combatEffects?.PlayAttackEffect(currentWeapon, pos, dir);
 
         // IDamageable 구현 오브젝트에 데미지 전달 (적/보스 통합)
         Collider2D[] hits = Physics2D.OverlapBoxAll(pos, size, 0f, enemyLayer);
@@ -1410,16 +1400,12 @@ public class PlayerController : MonoBehaviour, IDamageable
                 currentWeapon = WeaponType.Blunt;
                 break;
             case InventoryWeaponType.Spear:
-                currentWeapon = WeaponType.Spear;
-                break;
-            case InventoryWeaponType.Dagger:
                 currentWeapon = WeaponType.Dagger;
                 break;
             case InventoryWeaponType.Scythe:
                 currentWeapon = WeaponType.Scythe;
                 break;
             default:
-                currentWeapon = WeaponType.Sword;
                 break;
         }
 
@@ -1430,7 +1416,16 @@ public class PlayerController : MonoBehaviour, IDamageable
     // IDamageable 구현 — applyKnockback/applyIFrame으로 동작 제어
     public void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = true, bool applyIFrame = true)
     {
-        TakeDamageInternal(damage, sourcePos, applyKnockback);
+        float actualDamage = TakeDamageInternal(damage, sourcePos, applyIFrame, applyKnockback);
+        if (actualDamage > 0f)
+        {
+            if (combatEffects == null)
+                combatEffects = GetComponent<PlayerCombatEffects>();
+            combatEffects?.PlayDamageEffect(actualDamage);
+        }
+        // iFrame 여부와 무관하게 항상 깜빡임 실행
+        // (applyIFrame=true면 DamageInvincibleRoutine에서도 호출되지만 중복 호출 안전)
+        StartHitBlink();
     }
 
     // 방향 자동 계산 버전
@@ -1448,10 +1443,10 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 하위 호환 — 기존 NoIFrame 호출 대체
     public void TakeDamageNoIFrame(float damage, Vector2 sourcePos)
         => TakeDamage(damage, sourcePos, true, false);
-    private void TakeDamageInternal(float damage, Vector2 enemyPos, bool applyKnockback = true)
+    private float TakeDamageInternal(float damage, Vector2 enemyPos, bool applyIFrame, bool applyKnockback = true)
     {
-        if (hitFlash != null && hitFlash.IsFlashing) return;
-        if (isDashing) return;
+        if (isGameOver || isDashing) return 0f;
+        if (applyIFrame && isDamageInvincible) return 0f;
         if (isMeditating)
             StopMeditating();
 
@@ -1460,13 +1455,11 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         bool suppressHpDamage = TutorialManager.Instance != null && TutorialManager.Instance.ShouldSuppressPlayerHpDamage();
         if (!suppressHpDamage)
-        playerStatus.TakeDamage(finalDamage, enemyPos);
-        StartHitBlink();
+            playerStatus.TakeDamage(finalDamage, enemyPos);
         Debug.Log(gameObject.name + " 피격! 원래 데미지: " + damage + " -> 최종 데미지: " + finalDamage + " | 남은 HP: " + playerStatus.currentHp);
 
         if (applyKnockback)
         {
-            EndAttackAnimation();
             if (!isDownJumping && (suppressKnockbackAirAnimation
                 || (isGrounded && rb.linearVelocity.y <= 0.1f)))
             {
@@ -1486,8 +1479,14 @@ public class PlayerController : MonoBehaviour, IDamageable
             StartCoroutine(IgnoreEnemyCollisionRoutine());
         }
 
+        if (applyIFrame)
+        {
+            if (invincibleRoutine != null) StopCoroutine(invincibleRoutine);
+            invincibleRoutine = StartCoroutine(DamageInvincibleRoutine());
+        }
 
         if (playerStatus.currentHp <= 0) GameOver();
+        return suppressHpDamage ? 0f : finalDamage;
     }
 
     // 넉백 상태 해제 루틴
@@ -1498,11 +1497,19 @@ public class PlayerController : MonoBehaviour, IDamageable
     }
 
     // 피격 무적 + 깜빡임: HitFlashEffect 컴포넌트에 시각 효과 위임
+    private IEnumerator DamageInvincibleRoutine()
+    {
+        isDamageInvincible = true;
+        yield return new WaitForSeconds(damageInvincibleTime);
+        isDamageInvincible = false;
+        invincibleRoutine = null;
+    }
 
     // 환경 피해(함정 등) 깜빡임: iFrame 없이 시각 효과만
     private void StartHitBlink()
     {
-        hitFlash?.Play();
+        if (isGameOver) return;
+        hitFlash?.Play(damageInvincibleTime);
     }
 
     // 공격 적중 시 짧은 히트 스탑(타격감 강화)
@@ -1558,8 +1565,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             case WeaponType.Sword: return new Vector2(2.0f, 1.2f);
             case WeaponType.Blunt: return new Vector2(1.2f, 2.0f);
-            case WeaponType.Spear: return new Vector2(3.5f, 0.6f);
-            case WeaponType.Dagger: return new Vector2(1.2f, 1.0f);
+            case WeaponType.Dagger: return new Vector2(3.5f, 0.6f);
+            case WeaponType.Axe: return new Vector2(1.8f, 1.8f);
             case WeaponType.Scythe: return new Vector2(2.5f, 1.5f);
             default: return new Vector2(2.0f, 1.2f);
         }
@@ -1570,12 +1577,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         switch (currentWeapon)
         {
-            case WeaponType.Sword: return 1.2f;
-            case WeaponType.Blunt: return 0.8f;
-            case WeaponType.Spear: return 2.0f;
-            case WeaponType.Dagger: return 0.8f;
-            case WeaponType.Scythe: return 1.5f;
-            default: return 1.2f;
+            case WeaponType.Sword: return 0.95f;
+            case WeaponType.Blunt: return 0.65f;
+            case WeaponType.Dagger: return 1.75f;
+            case WeaponType.Axe: return 0.8f;
+            case WeaponType.Scythe: return 1.2f;
+            default: return 0.95f;
         }
     }
 
@@ -1586,8 +1593,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             case WeaponType.Sword: return 5f;
             case WeaponType.Blunt: return 10f;
-            case WeaponType.Spear: return 10f;
-            case WeaponType.Dagger: return 3f;
+            case WeaponType.Dagger: return 10f;
+            case WeaponType.Axe: return 8f;
             case WeaponType.Scythe: return 6f;
             default: return 5f;
         }
@@ -1599,25 +1606,32 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isGameOver) return;
 
         isGameOver = true;
+        StopAllCoroutines();
+        if (bodyCollider != null && ignoredThinFloorCollider != null)
+        { Physics2D.IgnoreCollision(bodyCollider, ignoredThinFloorCollider, false); ignoredThinFloorCollider = null; }
+        int playerLayerIndex = LayerMask.NameToLayer("Player"), enemyLayerIndex = LayerMask.NameToLayer("Enemy");
+        if (playerLayerIndex != -1 && enemyLayerIndex != -1) Physics2D.IgnoreLayerCollision(playerLayerIndex, enemyLayerIndex, false);
+        if (isHitStopRunning) { Time.timeScale = 1f; Time.fixedDeltaTime = .02f; isHitStopRunning = false; }
         StartCoroutine(GameOverRoutine());
     }
 
     private IEnumerator GameOverRoutine()
     {
-        // 플레이어 정지
-        rb.linearVelocity = Vector2.zero;
-        rb.simulated = false;      // Rigidbody2D 정지
-        enabled = false;           // PlayerController 비활성화 (선택 사항)
-
-        // 사망 횟수 증가
-        SaveData.Instance.persistent.deathCount++;
+        enabled = false;
+        moveInput = Vector2.zero;
+        isDashing = false;
+        rb.gravityScale = originalGravity;
+        var input = GetComponent<PlayerInput>();
+        if (input != null) input.DeactivateInput();
+        if (SaveData.Instance != null) SaveData.Instance.persistent.deathCount++;
+        yield return PlayerDeathMotion.Play(gameObject, animator, rb, groundLayer | thinFloorLayer);
 
         float t = 0f;
 
         while (t < fadeDuration)
         {
-            t += Time.deltaTime;
-            fadeGroup.alpha = Mathf.Lerp(0, 1, t / fadeDuration);
+            t += Time.unscaledDeltaTime;
+            if (fadeGroup != null) fadeGroup.alpha = Mathf.Lerp(0, 1, t / fadeDuration);
             yield return null;
         }
 
@@ -1689,6 +1703,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         // (isGrounded 여부와 무관하게 점프 성공 시 항상 초기화)
         coyoteTimer = 0f;
         hasBurnedGroundJumpAfterCoyote = true;
+        MovementFXJump?.Invoke(MovementFXDirection);
 
         return true;
     }
@@ -1929,14 +1944,13 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
         }
 
-        if (!isDownJumping && fallenHeight >= fallDamageMinHeight && (hitFlash == null || !hitFlash.IsFlashing))
+        if (!isDownJumping && fallenHeight >= fallDamageMinHeight)
         {
             // 낙하 거리 비례 데미지: 기본 데미지 + (초과 낙하 거리 × 거리 계수)
             float excessHeight = fallenHeight - fallDamageMinHeight;
             float totalFallDamage = fallDamageAmount + excessHeight * fallDamagePerUnit;
 
             playerStatus.TakeDamage(totalFallDamage, transform.position);
-            StartHitBlink();
             ApplyMoveDelay(fallDamageStunDelay);
 
             if (debugEmpoweredDownJump)

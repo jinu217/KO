@@ -22,7 +22,7 @@ public sealed class Stage1_MidBoss : MidBossController, IBossDashAnimationContex
     [System.Serializable]
     public class SkillAnimationOverride
     {
-        [Tooltip("0: Skills 첫 번째, 1: 두 번째 ... 기본 공격은 BasicAttack으로 고정됩니다.")]
+        [Tooltip("0: Skills 첫 번째, 1: 두 번째 ... 기본 공격은 Combo2, 2스킬은 Combo3, 3스킬은 Dash로 고정됩니다.")]
         public int skillIndex;
         public PatternAnimation animation = PatternAnimation.Auto;
     }
@@ -157,9 +157,16 @@ public sealed class Stage1_MidBoss : MidBossController, IBossDashAnimationContex
         }
     }
 
+    [Header("도끼 판정")]
+    [SerializeField, Min(0f)] private float meleeReachBonus = 0.2f;
+    [SerializeField, Min(0f)] private float additionalMeleeReach = .15f;
+    public float MeleeReachBonus => Mathf.Max(0, meleeReachBonus) + Mathf.Max(0, additionalMeleeReach);
+
     private PatternAnimation ResolvePatternAnimation(BossSkillData skill, int index)
     {
-        if (index < 0) return PatternAnimation.BasicAttack;
+        if (index < 0) return PatternAnimation.Combo2;
+        if (index == 1) return PatternAnimation.Combo3;
+        if (index == 2) return PatternAnimation.Dash;
         if (animationOverrides != null)
             foreach (var entry in animationOverrides)
                 if (entry != null && entry.skillIndex == index && entry.animation != PatternAnimation.Auto &&
@@ -178,7 +185,7 @@ public sealed class Stage1_MidBoss : MidBossController, IBossDashAnimationContex
         if (hits >= 3) return PatternAnimation.Combo3;
         if (hits == 2) return PatternAnimation.Combo2;
         if (hits == 0 && skill != null && skill.HasBuff) return PatternAnimation.Buff;
-        return PatternAnimation.BasicAttack;
+        return PatternAnimation.Combo2;
     }
     private void SetDashAnimationBool(string parameter, bool value)
     {
