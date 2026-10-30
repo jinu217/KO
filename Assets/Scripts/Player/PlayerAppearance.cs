@@ -65,6 +65,7 @@ public class PlayerAppearance : MonoBehaviour
 
     public void ClearWeapon(string reason)
     {
+        visualState?.ClearItem(EquipmentType.Weapon);
         FindWeaponRenderer();
         if (weaponRenderer == null) return;
         weaponRenderer.sprite = null;

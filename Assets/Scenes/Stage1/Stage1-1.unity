@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!29 &1
 OcclusionCullingSettings:
@@ -32632,6 +32632,7 @@ MonoBehaviour:
   handRightRenderer: {fileID: 1927459258}
   footLeftRenderer: {fileID: 132623608}
   footRightRenderer: {fileID: 2011546843}
+  applyEquipmentPositionOffsets: 1
 --- !u!114 &1162793517
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32981,6 +32982,8 @@ MonoBehaviour:
   sortingLayer: Front
   sortingOrder: 20
   groundAnchor: {fileID: 272994788}
+  walkStartDelay: 0.15
+  additionalWalkStartDelay: 0.15
 --- !u!114 &1162793527
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33002,6 +33005,7 @@ MonoBehaviour:
   framesPerSecond: 24
   effectScale: 1
   attackOffset: {x: 0, y: 0.15}
+  daggerEffectPullback: 0.8
   damageOffset: {x: 0, y: 0.1}
   sortingLayerOverride: 
   sortingOrderOffset: 5

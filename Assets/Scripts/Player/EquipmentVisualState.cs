@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,6 +19,7 @@ public sealed class EquipmentVisualState
     readonly SpriteRenderer[] renderers;
     readonly Dictionary<EquipmentType, ItemData> items = new Dictionary<EquipmentType, ItemData>();
     readonly Dictionary<Transform, Vector3> appliedLocal = new Dictionary<Transform, Vector3>();
+    readonly Dictionary<Transform, Quaternion> appliedRotation = new Dictionary<Transform, Quaternion>();
     readonly Dictionary<SpriteRenderer, Vector3> baseRootPositions = new Dictionary<SpriteRenderer, Vector3>();
     readonly Dictionary<SpriteRenderer, int> baseOrders = new Dictionary<SpriteRenderer, int>();
     public bool ApplyPositionOffsets = true;
@@ -29,8 +30,28 @@ public sealed class EquipmentVisualState
         foreach (var r in renderers) if (r != null) baseOrders[r] = r.sortingOrder;
     }
     public void SetItem(ItemData item) { if (item != null) items[item.equipType] = item; }
+    public void ClearItem(EquipmentType type) { Restore(); items.Remove(type); }
+    // Player clips are authored with a zero-degree Sword rest rotation.
+    // Add the equipment rest angle after sampling so authored motion deltas survive.
+    public static float WeaponRestAngle(InventoryWeaponType type)
+    {
+        switch (type)
+        {
+            case InventoryWeaponType.Sword:
+                return 70f;
+            case InventoryWeaponType.Dagger:
+                return 80f;
+            case InventoryWeaponType.Spear:
+            case InventoryWeaponType.Scythe:
+            case InventoryWeaponType.Blunt: return 70f;
+            default: return 0f;
+        }
+    }
     public void Restore()
     {
+        foreach (var pair in appliedRotation)
+            if (pair.Key != null) pair.Key.localRotation *= Quaternion.Inverse(pair.Value);
+        appliedRotation.Clear();
         foreach (var pair in appliedLocal) if (pair.Key != null) pair.Key.localPosition -= pair.Value;
         appliedLocal.Clear();
     }
@@ -72,5 +93,14 @@ public sealed class EquipmentVisualState
         // GetComponentsInChildren supplies parent-before-child order, keeping offsets independent.
         foreach (var r in renderers) if (r != null && positions.TryGetValue(r.transform, out var position)) r.transform.position = position;
         foreach (var pair in locals) appliedLocal[pair.Key] = pair.Key.localPosition - pair.Value;
+        foreach (var r in renderers)
+        {
+            if (r == null || r.transform.name != "Sword") continue;
+            var item = ItemFor("Sword");
+            if (item == null) continue;
+            var delta = Quaternion.Euler(0, 0, WeaponRestAngle(item.weaponType));
+            r.transform.localRotation *= delta;
+            appliedRotation[r.transform] = delta;
+        }
     }
 }
