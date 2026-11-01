@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 // Basic Attack + Skills 데이터만 실행하는 중간보스 공통 컨트롤러
@@ -762,7 +762,10 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             );
             if (Effects != null && Effects.TryWeaponImpact(step, out var weaponPoint))
                 center = weaponPoint + Vector3.up * (step.hitboxSize.y * .5f);
-            Gizmos.DrawWireCube(center, new Vector3(step.hitboxSize.x, step.hitboxSize.y, 0f));
+            Vector3 size = step.hitboxSize;
+            if (Effects != null && Effects.TryPunchGeometry(skill == data.basicAttack ? -1 : data.skills.IndexOf(skill),
+                skill.active.attackSteps.IndexOf(step), out _, out var fist)) { center = fist.center; size = fist.size; }
+            Gizmos.DrawWireCube(center, size);
             visibleHitIndex++;
         }
     }

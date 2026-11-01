@@ -25,6 +25,11 @@ public interface IBossConditionalStepContext
     bool ShouldExecuteStep(BossAttackStepData step);
 }
 
+public interface IBossTimedAttackContext
+{
+    bool UsesTimedAttack(BossAttackStepData step);
+    IEnumerator ExecuteTimedAttack(BossAttackStepData step);
+}
 public interface IBossHitValidationContext
 {
     bool CanHitPlayer(Collider2D player);
@@ -67,8 +72,12 @@ public static class BossSkillExecutor
 #if UNITY_EDITOR
     // Editor diagnostics observes the real query; no change to damage or timing.
     public static event Action<IBossSkillContext, BossAttackStepData, Vector2, Collider2D> HitboxObserved;
+    public static Bounds LastObservedBounds { get; private set; }
     public static void ObserveHitbox(IBossSkillContext context, BossAttackStepData step, Vector2 center, Collider2D hit)
-        => HitboxObserved?.Invoke(context, step, center, hit);
+    {
+        LastObservedBounds = new Bounds(center, step.hitboxSize);
+        HitboxObserved?.Invoke(context, step, center, hit);
+    }
 #endif
     public static IEnumerator Execute(BossSkillData skill, IBossSkillContext context)
     {
@@ -142,6 +151,16 @@ public static class BossSkillExecutor
                 && context is IBossScheduledSpawnContext scheduled
                 && scheduled.IsScheduledSpawn(step))
                 continue;
+
+            if (context is IBossTimedAttackContext attack && attack.UsesTimedAttack(step))
+            {
+                var attackFX = context.BossTransform.GetComponent<BossEffects>();
+                attackFX?.BeginStep(step);
+                try { yield return attack.ExecuteTimedAttack(step); }
+                finally { attackFX?.EndStep(); }
+                if (step.postDelay > 0f) yield return new WaitForSeconds(context.GetSkillDelay(step.postDelay));
+                continue;
+            }
 
             if (context is IBossTimedMovementContext timed && timed.UsesTimedMovement(step))
             {
@@ -596,9 +615,16 @@ public static class BossSkillExecutor
         fx.PlayStep(step, center, context.LookDirection);
     }
 
+    public static Bounds AttackBounds(BossAttackStepData step, IBossSkillContext context)
+    {
+        var effects = context.BossTransform.GetComponent<BossEffects>();
+        if (effects != null && effects.TryAttackBounds(step, out var fist)) return fist;
+        return new Bounds(MeleeCenter(step, context), step.hitboxSize);
+    }
     private static Vector3 MeleeCenter(BossAttackStepData step, IBossSkillContext context)
     {
         var fx = context.BossTransform.GetComponent<BossEffects>();
+        if (fx != null && fx.TryAttackBounds(step, out var fist)) return fist.center;
         if (fx != null && fx.TryWeaponImpact(step, out var weaponPoint))
             return weaponPoint + Vector3.up * (step.hitboxSize.y * .5f);
         float reach = 0f;
@@ -613,11 +639,18 @@ public static class BossSkillExecutor
         if (step.damage <= 0f || step.hitboxSize.x <= 0f || step.hitboxSize.y <= 0f)
             return false;
 
-        Vector2 center = MeleeCenter(step, context);
+        Bounds bounds = AttackBounds(step, context);
+        return HitPlayerAt(step, context, bounds);
+    }
 
-        Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer);
+    public static bool HitPlayerAt(BossAttackStepData step, IBossSkillContext context, Bounds bounds)
+    {
+        if (step.damage <= 0f || bounds.size.x <= 0f || bounds.size.y <= 0f) return false;
+        Vector2 center = bounds.center;
+        Collider2D hit = Physics2D.OverlapBox(center, bounds.size, 0f, context.PlayerLayer);
 #if UNITY_EDITOR
-        ObserveHitbox(context, step, center, hit);
+        LastObservedBounds = bounds;
+        HitboxObserved?.Invoke(context, step, center, hit);
 #endif
         if (!CanDamagePlayer(hit))
             return false;

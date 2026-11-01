@@ -91,6 +91,7 @@ public sealed class Stage5_MainBossDesireSkill : MonoBehaviour
         endTime = Time.time + duration;
         nextUseTime = Time.time + cooldown;
         owner.DesireLog("욕망 시작: 체력 저장, 스택 0");
+        owner.BeginDesirePose();
     }
 
     private void Succeed()
@@ -100,6 +101,7 @@ public sealed class Stage5_MainBossDesireSkill : MonoBehaviour
         owner.DesireRestoreHp(savedHp);
         nextUseTime = Time.time + rewindCooldown;
         owner.DesireLog("욕망 성공: 시전 전 체력 복원, 재사용 대기시간 1초");
+        owner.BeginDesireSuccessPose();
     }
 
     private void Fail()
@@ -109,6 +111,7 @@ public sealed class Stage5_MainBossDesireSkill : MonoBehaviour
         groggyEndTime = Time.time + groggyDuration;
         owner.DesireStop();
         owner.DesireLog("욕망 실패: 체력 유지, 3초 그로기");
+        owner.BeginGroggyPose(groggyDuration);
     }
 
     public void Cancel()

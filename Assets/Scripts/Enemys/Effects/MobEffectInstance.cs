@@ -51,6 +51,19 @@ public sealed class MobEffectInstance : MonoBehaviour
         // Update owns the lifetime so stop-fade can finish past the last animation frame.
         return instance;
     }
+    Transform followAnchor;
+    Vector3 anchorPoint;
+    public void FollowAnchor(Transform anchor, Vector3 worldPoint)
+    {
+        followAnchor = anchor; anchorPoint = anchor.InverseTransformPoint(worldPoint);
+        AlignToAnchor();
+    }
+    void LateUpdate() { AlignToAnchor(); }
+    void AlignToAnchor()
+    {
+        if (followAnchor == null || spriteRenderer == null || spriteRenderer.sprite == null) return;
+        transform.position += followAnchor.TransformPoint(anchorPoint) - BossEffects.VisibleBounds(spriteRenderer).center;
+    }
     public void SetFacing(float direction, bool artFacesRight)
     {
         if (spriteRenderer != null && !fading)
@@ -59,6 +72,7 @@ public sealed class MobEffectInstance : MonoBehaviour
     public void StopAndFade(float hold = .06f, float duration = .14f)
     {
         if (fading || spriteRenderer == null) return;
+        followAnchor = null;
         fading = true;
         fadeAge = 0;
         fadeHold = Mathf.Max(0, hold);
@@ -95,6 +109,7 @@ public sealed class MobEffectInstance : MonoBehaviour
         if (looping) index %= frames.Length;
         spriteRenderer.enabled = age >= 0 && index < frames.Length;
         if (spriteRenderer.enabled) spriteRenderer.sprite = frames[index];
+        AlignToAnchor();
     }
 #endif
     void OnDestroy()

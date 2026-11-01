@@ -488,6 +488,26 @@ public sealed class BossEffects : MonoBehaviour
         }
         finally { executing = oldSkill; skillIndex = oldIndex; }
     }
+    SpriteRenderer punchFront, punchBack;
+    // The animation generator uses this same front/rear-hand sequence.
+    public bool TryPunchGeometry(int index, int stepIndex, out SpriteRenderer hand, out Bounds bounds)
+    {
+        hand = null; bounds = default;
+        if (stage != 4 || !mainBoss || stepIndex < 0) return false;
+        bool front = index < 0 ? stepIndex >= 2 : index == 3 ? (stepIndex == 5 || stepIndex % 2 == 0)
+            : index == 1 ? stepIndex != 1 : stepIndex == 2 || stepIndex == 4;
+        if (punchFront == null || punchBack == null)
+            foreach (var renderer in GetComponentsInChildren<SpriteRenderer>(true))
+            { if (renderer.name == "Hand_F") punchFront = renderer; else if (renderer.name == "Hand_B") punchBack = renderer; }
+        hand = front ? punchFront : punchBack;
+        if (hand == null || hand.sprite == null) return false;
+        bounds = VisibleBounds(hand);
+        // A small contact margin around the visible fist, scaled with the rig.
+        bounds.Expand(new Vector3(.7f * Mathf.Abs(hand.transform.lossyScale.x), .7f * Mathf.Abs(hand.transform.lossyScale.y), 0));
+        return true;
+    }
+    public bool TryAttackBounds(BossAttackStepData step, out Bounds bounds)
+        => TryPunchGeometry(skillIndex, StepIndex(step), out _, out bounds);
     public void PlayStep(BossAttackStepData step, Vector3 center, float direction)
     {
         if (ClipOwnsAttack) return;
@@ -510,6 +530,8 @@ public sealed class BossEffects : MonoBehaviour
         if (TryWeaponImpact(step, out var weaponPoint))
             center = weaponPoint - new Vector3(effect.offset.x * direction, effect.offset.y, 0);
         if (kind == Kind.Uppercut) angle = 65;
+        bool fromFist = TryPunchGeometry(skillIndex, StepIndex(step), out var fist, out var fistBounds);
+        if (fromFist) center = fistBounds.center - new Vector3((effect.offset.x + extra.x) * direction, effect.offset.y + extra.y, 0);
         bool heavyHorizontal = UsesHeavyWeapon() && kind == Kind.Horizontal;
         if (heavyHorizontal) center.y += HeavyHorizontalHeight;
         var instance = Play(effect, center + new Vector3(extra.x * direction, extra.y, 0), direction, false, 1.5f);
@@ -521,6 +543,14 @@ public sealed class BossEffects : MonoBehaviour
             {
                 Vector3 blade = weaponAnchor.TransformVector(Vector3.up);
                 worldAngle = Mathf.Atan2(blade.y, blade.x) * Mathf.Rad2Deg - (direction < 0 ? 180f : 0f);
+            }
+            if (fromFist)
+            {
+                var arm = fist.transform.parent.GetComponent<SpriteRenderer>();
+                Vector3 axis = fistBounds.center - (arm != null ? VisibleBounds(arm).center : fist.transform.parent.position);
+                if (axis.sqrMagnitude > .0001f) worldAngle = Mathf.Atan2(axis.y, axis.x) * Mathf.Rad2Deg - (direction < 0 ? 180f : 0f);
+                instance.transform.localScale *= Mathf.Abs(fist.transform.lossyScale.y);
+                instance.FollowAnchor(fist.transform, fistBounds.center);
             }
             instance.transform.rotation = Quaternion.Euler(0, 0, worldAngle);
         }

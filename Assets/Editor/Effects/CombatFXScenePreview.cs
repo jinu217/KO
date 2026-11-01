@@ -143,10 +143,15 @@ static class CombatFXScenePreview
         index = BossEffects.ClipSkillIndex(boss.stage, boss.mainBoss, activeClip.name, index);
         BossSkillData skill = index < 0 ? controller.data.basicAttack : index < controller.data.skills.Count ? controller.data.skills[index] : null;
         if (skill?.active?.attackSteps == null) return;
-        float onset = skill.preDelay; int ordinal = 0;
+        bool main4 = boss.stage == 4 && boss.mainBoss;
+        bool uppercut = main4 && name.Contains("uppercut");
+        float onset = uppercut ? 0 : skill.preDelay; int ordinal = 0;
         foreach (var step in skill.active.attackSteps)
         {
             if (step == null) continue;
+            int stepIndex = skill.active.attackSteps.IndexOf(step);
+            if (uppercut && stepIndex < 2) continue;
+            if (main4 && index == 1 && !uppercut && stepIndex >= 2) continue;
             onset += step.preDelay;
             bool motionWindow = BossEffects.TryMovementWindow(activeClip, step.actionType, out float windowStart, out float windowEnd);
             if (motionWindow) onset = windowStart;
@@ -162,6 +167,8 @@ static class CombatFXScenePreview
                 float impact = onset + pulse * step.interval;
                 if ((step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam)
                     && boss.TryMotionImpact(activeClip, hitOrdinal, out float authoredImpact)) impact = authoredImpact;
+                if (main4 && step.damage > 0 && (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.DashAttack))
+                    impact += Stage4_MainBoss.PunchLaunchTime(index, stepIndex, step) - step.preDelay;
                 if (time < impact) continue;
                 float reach = controller is Stage1_MidBoss mid && (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam) ? mid.MeleeReachBonus : 0;
                 Vector3 center = SamplePosition(owner.transform, impact) + new Vector3(direction * (step.hitboxOffset.x + reach), step.hitboxOffset.y, 0);

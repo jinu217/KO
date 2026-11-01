@@ -1,7 +1,7 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
-public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepContext, IBossTimedMovementContext, IBossHitValidationContext
+public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepContext, IBossTimedMovementContext, IBossHitValidationContext, IBossTimedAttackContext
 {
     [SerializeField, Tooltip("생존 본능의 강화, 회복 및 종료 판정을 담당하는 컴포넌트입니다.")]
     private Stage4_MainBossDesireSkill desireSkill;
@@ -112,6 +112,61 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
             patternHealed = true;
             Heal(desireSkill.HealRatio(currentSkillIndex));
         }
+    }
+    public bool UsesTimedAttack(BossAttackStepData step)
+        => step.damage > 0 && (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.DashAttack);
+    // Matches the launch portion of MainBoss4_AnimGenerators.StepPose.
+    public static float PunchLaunchTime(int skill, int n, BossAttackStepData step)
+    {
+        float impact = Mathf.Max(.04f, step.preDelay);
+        bool hook = (skill == 0 && n == 2) || (skill == 3 && n >= 1 && n <= 4);
+        bool body = (skill == 0 && n == 3) || (skill == 1 && n == 1);
+        return (hook || body || (skill == 3 && n == 5)) ? Mathf.Max(0, impact - .055f) : impact * .65f;
+    }
+    public IEnumerator ExecuteTimedAttack(BossAttackStepData step)
+    {
+        int n = executing.active.attackSteps.IndexOf(step);
+        float launch = PunchLaunchTime(currentSkillIndex, n, step);
+        float impact = Mathf.Max(.04f, step.preDelay);
+        if (launch > 0) yield return new WaitForSeconds(GetSkillDelay(launch));
+        var fx = GetComponent<BossEffects>();
+        Bounds previous = BossSkillExecutor.AttackBounds(step, this);
+        fx?.PlayStep(step, previous.center, LookDirection);
+        bool hit = false;
+        float start = Time.time, startX = transform.position.x;
+        float extension = GetSkillDelay(impact - launch);
+        float duration = step.actionType == BossActionType.DashAttack ? step.duration : 0;
+        try
+        {
+            do
+            {
+                yield return null;
+                float elapsed = Time.time - start;
+                if (step.actionType == BossActionType.DashAttack && elapsed >= extension)
+                {
+                    bool stopped = (step.stopAtWall && IsWallAhead())
+                        || (step.maxMoveDistance > 0 && Mathf.Abs(transform.position.x - startX) >= step.maxMoveDistance)
+                        || (hit && step.stopOnPlayerHit);
+                    if (stopped) StopMove();
+                    else rb.linearVelocity = new Vector2(LookDirection * step.moveSpeed, rb.linearVelocity.y);
+                }
+                Bounds current = BossSkillExecutor.AttackBounds(step, this);
+                if (!hit)
+                {
+                    // Subdivide the actual fist travel so fast hooks/uppercuts cannot skip a player.
+                    float spacing = Mathf.Max(.02f, Mathf.Min(current.size.x, current.size.y) * .4f);
+                    int samples = Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(previous.center, current.center) / spacing), 1, 32);
+                    for (int i = 0; i <= samples && !hit; i++)
+                    {
+                        float t = (float)i / samples;
+                        var contact = new Bounds(Vector3.Lerp(previous.center, current.center, t), Vector3.Lerp(previous.size, current.size, t));
+                        hit = BossSkillExecutor.HitPlayerAt(step, this, contact);
+                    }
+                }
+                previous = current;
+            } while (!isDead && Time.time - start < extension + duration);
+        }
+        finally { if (step.actionType == BossActionType.DashAttack) StopMove(); }
     }
     public bool UsesTimedMovement(BossAttackStepData step)
         => currentSkillIndex == 3 && executing?.active.attackSteps.IndexOf(step) == 0;
