@@ -18,6 +18,9 @@ public class AudioManager : MonoBehaviour
     [Header("Audio Sources")]
     public AudioSource bgmSource;
     public AudioSource sfxSource;
+    private UIAudioLibrary uiLibrary;
+    private int lastUISoundFrame = -1;
+    private UISoundId lastUISound;
 
     //============== PlayerPrefs Key ==============
     private const string MASTER_KEY = "MasterVolume";
@@ -36,9 +39,36 @@ public class AudioManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(transform.root.gameObject);
+        uiLibrary = Resources.Load<UIAudioLibrary>("Audio/UIAudioLibrary");
+        if (bgmSource == null) bgmSource = gameObject.AddComponent<AudioSource>();
+        if (sfxSource == null) sfxSource = gameObject.AddComponent<AudioSource>();
+        if (uiLibrary != null)
+        {
+            audioMixer = uiLibrary.mixer;
+            bgmSource.outputAudioMixerGroup = uiLibrary.bgmGroup;
+            sfxSource.outputAudioMixerGroup = uiLibrary.sfxGroup;
+        }
+        bgmSource.playOnAwake = sfxSource.playOnAwake = false;
+        bgmSource.spatialBlend = sfxSource.spatialBlend = 0f;
+        sfxSource.ignoreListenerPause = true;
+    }
 
-        // 저장된 볼륨 적용
-        LoadVolume();
+    private void Start() => LoadVolume();
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+    }
+
+    public void PlayUI(UISoundId id)
+    {
+        UIAudioLibrary.Entry entry = uiLibrary != null ? uiLibrary.Find(id) : null;
+        if (entry == null || entry.clip == null || sfxSource == null) return;
+        // Dropdown callbacks and keyboard navigation can report the same change in one frame.
+        if (lastUISoundFrame == Time.frameCount && lastUISound == id) return;
+        lastUISoundFrame = Time.frameCount;
+        lastUISound = id;
+        sfxSource.PlayOneShot(entry.clip, entry.volume);
     }
 
     // BGM CONTROL
@@ -74,11 +104,11 @@ public class AudioManager : MonoBehaviour
 
     private void SetVolume(string prefKey, string mixerParam, float value)
     {
-        value = Mathf.Clamp(value, 0.0001f, 1f);
+        value = Mathf.Clamp01(value);
 
-        float db = Mathf.Log10(value) * 20f;
+        float db = value <= 0f ? -80f : Mathf.Log10(value) * 20f;
 
-        audioMixer.SetFloat(mixerParam, db);
+        if (audioMixer != null) audioMixer.SetFloat(mixerParam, db);
         PlayerPrefs.SetFloat(prefKey, value);
     }
 

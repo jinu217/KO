@@ -65,6 +65,8 @@ public class TitleMenuController : MonoBehaviour
     //==================================================
 
     private int index = 0;
+    private int lastMenuSoundIndex = -1;
+    private int lastSlotSoundIndex = -1;
 
     private bool isSelecting = false;
     private bool isOptionOpen = false;
@@ -168,6 +170,9 @@ public class TitleMenuController : MonoBehaviour
 
     void UpdateSelection()
     {
+        if (lastMenuSoundIndex >= 0 && lastMenuSoundIndex != index)
+            UISound.Play(UISoundId.TitleNavigate);
+        lastMenuSoundIndex = index;
         Debug.Log($"UpdateSelection : {index}");
 
         for (int i = 0; i < menuChoices.Length; i++)
@@ -235,6 +240,7 @@ public class TitleMenuController : MonoBehaviour
     // 실제 새 게임 시작
     void BeginNewGame(int slot)
     {
+        UISound.Play(UISoundId.SlotConfirm);
         Debug.Log($"새 게임 시작 - 슬롯 {slot}");
 
         SaveData.Instance.currentSlot = slot;
@@ -300,6 +306,9 @@ public class TitleMenuController : MonoBehaviour
     // 현재 선택된 슬롯 표시
     void UpdateLoadSelection()
     {
+        if (isLoadOpen && lastSlotSoundIndex >= 0 && lastSlotSoundIndex != index)
+            UISound.Play(UISoundId.SlotNavigate);
+        lastSlotSoundIndex = index;
         for (int i = 0; i < saveSlotUI.Length; i++)
         {
             saveSlotUI[i].SetSelected(i == index, isNewGameMode);
@@ -309,6 +318,7 @@ public class TitleMenuController : MonoBehaviour
     // 슬롯 메뉴 열기
     void OpenLoadMenu()
     {
+        lastSlotSoundIndex = -1;
         isLoadOpen = true;
 
         mainMenu.SetActive(false);
@@ -415,6 +425,9 @@ public class TitleMenuController : MonoBehaviour
     // 슬롯 메뉴 닫기
     void CloseLoadMenu()
     {
+        UISound.Play(UISoundId.Cancel);
+        lastMenuSoundIndex = -1;
+        lastSlotSoundIndex = -1;
         isLoadOpen = false;
 
         loadPanel.SetActive(false);
@@ -478,6 +491,7 @@ public class TitleMenuController : MonoBehaviour
     // 확인창 열기
     void OpenConfirmation(ConfirmationType type, string message)
     {
+        if (!isConfirmationOpen) UISound.Play(UISoundId.DialogOpen);
         confirmationType = type;
 
         confirmationText.text = message;
@@ -550,6 +564,7 @@ public class TitleMenuController : MonoBehaviour
             return;
 
         SaveManager.Instance.Delete(deleteTargetSlot);
+        UISound.Play(UISoundId.DeleteConfirm);
 
         Debug.Log($"슬롯 {deleteTargetSlot} 삭제 완료");
 
@@ -598,6 +613,7 @@ public class TitleMenuController : MonoBehaviour
     // 확인 취소
     void CancelConfirmation()
     {
+        UISound.Play(UISoundId.Cancel);
         confirmationType = ConfirmationType.None;
 
         deleteTargetSlot = -1;
@@ -633,6 +649,7 @@ public class TitleMenuController : MonoBehaviour
 
     public void CloseSetting()
     {
+        lastMenuSoundIndex = -1;
         isOptionOpen = false;
 
         if (optionController != null)
@@ -662,6 +679,7 @@ public class TitleMenuController : MonoBehaviour
             return;
         }
 
+        UISound.Play(UISoundId.SlotConfirm);
         SaveData.Instance.currentSlot = slot;
 
         SaveManager.Instance.Load(slot);

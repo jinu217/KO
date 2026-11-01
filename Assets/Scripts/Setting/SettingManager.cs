@@ -30,6 +30,9 @@ public class SettingManager : MonoBehaviour
     public TMP_Dropdown displayModeDropdown;
 
     private Resolution[] resolutions;
+    private int appliedResolutionIndex = -1;
+    private int appliedDisplayMode = -1;
+    private bool settingsLoaded;
 
     //====================================================
     // FIXED ASPECT RATIO
@@ -48,6 +51,7 @@ public class SettingManager : MonoBehaviour
         InitializeResolution();
         InitializeDisplayMode();
         LoadSettings();
+        settingsLoaded = true;
     }
 
     //====================================================
@@ -206,6 +210,10 @@ public class SettingManager : MonoBehaviour
 
         Resolution res = resolutions[index];
 
+        if (settingsLoaded && appliedResolutionIndex != index)
+            UISound.Play(UISoundId.DisplayAdjust);
+        appliedResolutionIndex = index;
+
         Screen.SetResolution(
             res.width,
             res.height,
@@ -217,6 +225,10 @@ public class SettingManager : MonoBehaviour
 
     public void SetDisplayMode(int mode)
     {
+        if (mode < 0 || mode > 2) return;
+        if (settingsLoaded && appliedDisplayMode != mode)
+            UISound.Play(UISoundId.DisplayAdjust);
+        appliedDisplayMode = mode;
         switch (mode)
         {
             case 0:
