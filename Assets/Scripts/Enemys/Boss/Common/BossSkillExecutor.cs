@@ -584,11 +584,8 @@ public static class BossSkillExecutor
 
     private static bool IsPlayerInHitbox(BossAttackStepData step, IBossSkillContext context)
     {
-        Vector2 center = (Vector2)context.BossTransform.position + new Vector2(
-            context.LookDirection * step.hitboxOffset.x,
-            step.hitboxOffset.y
-        );
-        return Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer) != null;
+        Bounds bounds = AttackBounds(step, context);
+        return Physics2D.OverlapBox(bounds.center, bounds.size, 0f, context.PlayerLayer) != null;
     }
 
     // 피해를 거부하는 회피는 적중 알림과 별도 넉백도 발생시키지 않는다.

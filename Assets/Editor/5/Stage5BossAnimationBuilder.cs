@@ -272,9 +272,9 @@ public static class Stage5BossAnimationBuilder
         {
             bool front = side == 0; int foot = front ? FF : FB;
             float u = Mathf.Repeat(phase + side * .5f, 1);
-            float stride = run ? .32f : .18f;
+            float stride = run ? (r.main ? .70f : .50f) : .18f;
             float x = u < .5f ? Mathf.Lerp(stride, -stride, S(u * 2)) : Mathf.Lerp(-stride, stride, S((u - .5f) * 2));
-            float lift = u < .5f ? 0 : (run ? .20f : .10f) * Mathf.Pow(Mathf.Sin((u - .5f) * 2 * Mathf.PI), 2);
+            float lift = u < .5f ? 0 : (run ? (r.main ? .30f : .27f) : .10f) * Mathf.Pow(Mathf.Sin((u - .5f) * 2 * Mathf.PI), 2);
             Vector2 target = r.World(r.rest, foot) + new Vector2(x, lift);
             r.Leg(p, front, target, u > .68f && u < .94f ? 10 * Mathf.Sin((u - .68f) / .26f * Mathf.PI) : 0);
         }
@@ -1567,7 +1567,9 @@ public static class Stage5BossAnimationBuilder
             if (r.main && m.name == "skill3") continue;
             for (int to = 0; to < 3; to++)
             {
-                var back = Transition(states[m.name], states[moving[to]], true); Moving(back, to);
+                // Runtime releases IsAttacking after the action ends; an exit-time
+                // window at 1 can already have passed by then.
+                var back = Transition(states[m.name], states[moving[to]], false); Moving(back, to);
                 back.AddCondition(AnimatorConditionMode.IfNot, 0, "IsAttacking");
             }
         }
@@ -1808,7 +1810,7 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.preDelay", 0f);
             Number(so, "basicAttack.postDelay", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[0].actionType", 2f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[0].preDelay", 0.75f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[0].preDelay", 5f / 12f);
             Number(so, "basicAttack.active.attackSteps.Array.data[0].postDelay", 0.25f);
             Number(so, "basicAttack.active.attackSteps.Array.data[0].duration", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[0].interval", 0f);
@@ -1850,9 +1852,9 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.active.attackSteps.Array.data[1].pullTargetOffset.y", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[1].persistentFixedCadence", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].actionType", 4f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].preDelay", 0.5f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].preDelay", 2f / 12f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].postDelay", 0.416666667f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].duration", 0.333333333f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].duration", 8f / 12f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].interval", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].attackCount", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].damage", 16f);
@@ -1863,7 +1865,7 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackForce.x", 7f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackForce.y", 2f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackAwayFromCenter", 0f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].moveSpeed", 8.4f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].moveSpeed", 4.2f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].maxMoveDistance", 2.8f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].stopAtWall", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].stopOnPlayerHit", 0f);

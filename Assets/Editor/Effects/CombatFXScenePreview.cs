@@ -155,7 +155,9 @@ static class CombatFXScenePreview
             onset += step.preDelay;
             bool motionWindow = BossEffects.TryMovementWindow(activeClip, step.actionType, out float windowStart, out float windowEnd);
             if (motionWindow) onset = windowStart;
-            if (step.actionType == BossActionType.DashAttack && time >= onset && time < (motionWindow ? windowEnd : onset + step.duration))
+            bool movementTrail = step.actionType == BossActionType.DashAttack
+                || (main4 && index == 3 && step.actionType == BossActionType.MoveForward);
+            if (movementTrail && time >= onset && time < (motionWindow ? windowEnd : onset + step.duration))
             {
                 var trail = boss.PreviewMovement(true, direction, time - onset);
                 if (trail != null) attacks.Add(trail);

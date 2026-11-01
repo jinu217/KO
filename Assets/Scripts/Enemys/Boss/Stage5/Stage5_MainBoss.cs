@@ -18,6 +18,8 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     [SerializeField, Min(.2f)] private float crossUpperHeight = 1.8f;
     [SerializeField, Min(1f)] private float finalRushDistance = 8f;
     private Vector2 crossOrigin, crossCenter;
+    private Vector2 crossReturnPosition;
+    private bool? crossTrigger;
     private readonly RaycastHit2D[] crossWallHits = new RaycastHit2D[16];
     private readonly Collider2D[] crossOverlaps = new Collider2D[16];
 
@@ -35,7 +37,16 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     private void Play(string action, bool unscaled = false)
     { if (Relay != null) Relay.PlayState("MainBoss5_" + action, unscaled ? 1 : 1f / Mathf.Max(.01f, actionDelay)); }
     protected override IEnumerator WaitForSkillAnimation(BossSkillData skill, int index)
-    { if (Relay != null) yield return Relay.WaitForEnd(); }
+    {
+        if (Relay != null) yield return Relay.WaitForEnd();
+        if(index==4 && crossTrigger.HasValue && rb!=null && !isDead)
+        {
+            Vector2 start=rb.position,target=CrossGroundPosition();
+            for(float t=0;t<.2f;t+=Time.fixedDeltaTime)
+            { rb.MovePosition(Vector2.Lerp(start,target,Mathf.SmoothStep(0,1,t/.2f)));yield return new WaitForFixedUpdate(); }
+            rb.position=target;
+        }
+    }
     private Coroutine specialRoutine;
     public void BeginDesirePose() { StartSpecial(DesirePose()); }
     public void BeginDesireSuccessPose() { StartSpecial(DesireSuccessPose()); }
@@ -67,7 +78,20 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         specialAnimation = false; isAttacking = false;
     }
     private void RestoreAir()
-    { if (airGravity.HasValue && rb != null) rb.gravityScale = airGravity.Value; airGravity = null; if (Relay != null) Relay.SetRuntimeHidden(false); }
+    {
+        if(crossTrigger.HasValue && bossCollider!=null)
+        {
+            if(rb!=null)rb.position=CrossGroundPosition();
+            bossCollider.isTrigger=crossTrigger.Value;crossTrigger=null;
+        }
+        if (airGravity.HasValue && rb != null) rb.gravityScale = airGravity.Value;
+        airGravity = null; if (Relay != null) Relay.SetRuntimeHidden(false);
+    }
+    private Vector2 CrossGroundPosition()
+    {
+        Vector2 target=AboveFloor(rb.position);
+        return CanOccupy(target)?target:crossReturnPosition;
+    }
 
 
     protected override string AnimationPrefix => "MainBoss5_";
@@ -143,8 +167,12 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         if (index == 4 && rb != null)
         {
             crossOrigin = rb.position;
+            crossReturnPosition = rb.position;
             crossCenter = playerTransform != null ? (Vector2)playerTransform.position : crossOrigin;
-            crossCenter.y = Mathf.Max(crossCenter.y, crossOrigin.y);
+            // The four screen-space passes must straddle the target even when it
+            // is left of the caster. Keep the authored 16-unit travel and poses.
+            crossOrigin = crossCenter + new Vector2(-finalRushDistance,-crossUpperHeight);
+            if(bossCollider!=null) { crossTrigger=bossCollider.isTrigger;bossCollider.isTrigger=true; }
             airGravity = rb.gravityScale; rb.gravityScale = 0; rb.linearVelocity = Vector2.zero;
         }
         base.OnSkillExecutionStarted(skill, index);
@@ -314,39 +342,41 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         if (rb == null || index < 0 || index >= 4) yield break;
         if (step.preDelay > 0) yield return new WaitForSeconds(Delay(step.preDelay));
         Vector2 start = rb.position;
-        if (index == 2) start = crossOrigin + Vector2.right * finalRushDistance * 2;
-        else if (index == 3) start = crossOrigin;
-        start = AboveFloor(start);
+        if (index == 0) start = crossOrigin;
+        else if (index == 2) start = crossOrigin + Vector2.right * finalRushDistance * 2;
+        else if (index == 3) start = new Vector2(crossOrigin.x,crossCenter.y);
         try
         {
             rb.linearVelocity = Vector2.zero;
             // Keep the character visible during the pre-pass pause and reposition.
             yield return new WaitForSeconds(Delay(2f / 12f));
             if (isDead) yield break;
-            if (index >= 2)
+            if (index == 0 || index >= 2)
             {
-                // A wall may now occupy the intended reappearance position; never teleport into it.
-                if (CanOccupy(start)) rb.position = start;
-                else start = rb.position;
+                // Ground overlap is intentional during this attack; restore a
+                // solid grounded body only after the last motion finishes.
+                rb.position = start;
+                transform.position = new Vector3(start.x,start.y,transform.position.z);
             }
             else start = rb.position;
-            // Equal screen-space X travel for all four attacks; keep the second pass above ground.
+            // Symmetric paths around the player, including the low halves below ground.
             float direction = index == 0 || index == 3 ? 1 : -1;
             float endY = index == 0 || index == 2
-                ? Mathf.Max(start.y, crossCenter.y + crossUpperHeight * 2)
-                : index == 1 ? crossOrigin.y + .25f : start.y;
-            Vector2 end = AboveFloor(new Vector2(start.x + direction * finalRushDistance * 2, endY));
+                ? crossCenter.y + crossUpperHeight
+                : index == 1 ? crossOrigin.y : start.y;
+            Vector2 end = new Vector2(start.x + direction * finalRushDistance * 2, endY);
             if (Relay != null) Relay.SetRuntimeHidden(false);
             lookDirection = end.x >= start.x ? 1 : -1; ApplyFacingDirection();
             float duration = Mathf.Max(.01f, Delay(step.duration)), elapsed = 0;
             bool dealtDamage = false, blocked = false;
+            Bounds previous=BossSkillExecutor.AttackBounds(step,this);
             while (!isDead && elapsed < duration)
             {
                 float next = Mathf.Min(duration, elapsed + Time.fixedDeltaTime);
                 // Two frames of fast attack, followed by the unchanged six-frame inertial brake.
                 float u = next / duration;
                 float progress = CrossSlashProgress(u);
-                Vector2 target = AboveFloor(Vector2.Lerp(start, end, progress));
+                Vector2 target = Vector2.Lerp(start, end, progress);
                 if (!blocked)
                 {
                     Vector2 delta = target - rb.position; float distance = delta.magnitude;
@@ -356,15 +386,18 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
                         int count = bossCollider.Cast(delta / distance, filter, crossWallHits, distance + .02f);
                         float allowed = distance;
                         for (int i = 0; i < count; i++)
-                            if (crossWallHits[i].collider != null && crossWallHits[i].collider.attachedRigidbody != rb)
+                            if (crossWallHits[i].collider != null && crossWallHits[i].collider.attachedRigidbody != rb
+                                && crossWallHits[i].distance>.001f && Mathf.Abs(crossWallHits[i].normal.x)>.65f)
                                 allowed = Mathf.Min(allowed, Mathf.Max(0, crossWallHits[i].distance - .02f));
                         if (allowed < distance) { target = rb.position + delta / distance * allowed; blocked = true; }
                     }
                     rb.MovePosition(target);
                 }
                 yield return new WaitForFixedUpdate(); elapsed = next;
-                if (!isDead && !dealtDamage && PlayerInHitbox(step))
-                { dealtDamage = true; yield return BossSkillExecutor.ExecuteRepeatedAttacks(step, this); }
+                Bounds current=BossSkillExecutor.AttackBounds(step,this);
+                if (!isDead && !dealtDamage)
+                    dealtDamage=Stage5PatternMotion.SweepAttack(step,this,previous,current);
+                previous=current;
             }
         }
         finally
@@ -384,7 +417,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     {
         if (bossCollider == null || rb == null) return target;
         float footOffset = rb.position.y - bossCollider.bounds.min.y;
-        Vector2 origin = new Vector2(target.x, Mathf.Max(crossOrigin.y, crossCenter.y) + crossUpperHeight + 2);
+        Vector2 origin = new Vector2(target.x, Mathf.Max(crossReturnPosition.y, target.y) + crossUpperHeight + 2);
         var hit = Physics2D.Raycast(origin, Vector2.down, 30, wallLayer);
         if (hit.collider != null) target.y = Mathf.Max(target.y, hit.point.y + footOffset + .025f);
         return target;

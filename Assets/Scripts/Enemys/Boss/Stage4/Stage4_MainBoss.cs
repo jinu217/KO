@@ -8,6 +8,7 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
     private BossSkillData executing;
     private bool enhancedAnimation;
     private string patternAction;
+    private float patternStepStart, patternLength;
     private bool bodyHit;
     private bool patternHealed, uppercutHealed;
     protected override string AnimationPrefix => "MainBoss4_";
@@ -75,6 +76,7 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
         }
         // Same integrated state, no generated per-hit clips. Seek only at executor boundaries.
         Animator patternAnimator = GetDeathAnimator();
+        patternStepStart = offset; patternLength = length;
         if (patternAnimator != null && PlayAction(action))
         {
             patternAnimator.ResetTrigger(action);
@@ -164,9 +166,23 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
                     }
                 }
                 previous = current;
-            } while (!isDead && Time.time - start < extension + duration);
+            } while (!isDead && PunchWindowOpen(impact, duration, start, extension));
         }
         finally { if (step.actionType == BossActionType.DashAttack) StopMove(); }
+    }
+    private bool PunchWindowOpen(float impact, float duration, float started, float extension)
+    {
+        // Coroutines resume before Animator sampling. Keep the contact window open
+        // until the visible impact pose has actually been sampled (also at low FPS).
+        var a = GetDeathAnimator();
+        if (a != null && a.isActiveAndEnabled && patternLength > 0
+            && Time.time - started < extension + duration + .25f)
+        {
+            var state = a.GetCurrentAnimatorStateInfo(0);
+            if (state.shortNameHash == Animator.StringToHash("MainBoss4_" + patternAction))
+                return state.normalizedTime * patternLength < patternStepStart + impact + duration;
+        }
+        return Time.time - started < extension + duration;
     }
     public bool UsesTimedMovement(BossAttackStepData step)
         => currentSkillIndex == 3 && executing?.active.attackSteps.IndexOf(step) == 0;

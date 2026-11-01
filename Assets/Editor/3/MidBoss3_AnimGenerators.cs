@@ -131,7 +131,7 @@ public static class MidBoss3_AnimGenerators
             if (sortingState == null) sortingState = states[i].AddStateMachineBehaviour<MidBoss3WeaponSortingState>();
             sortingState.isSkill3 = i == 6;
             EditorUtility.SetDirty(sortingState);
-            states[i].motion = clip; states[i].speed = 1f; states[i].speedParameter = "AttackSpeed"; states[i].speedParameterActive = i >= 3 && i <= 6; states[i].writeDefaultValues = false;
+            states[i].motion = clip; states[i].speed = i == 2 ? 1.2f : 1f; states[i].speedParameter = "AttackSpeed"; states[i].speedParameterActive = i >= 3 && i <= 6; states[i].writeDefaultValues = false;
             foreach (var tr in states[i].transitions) if (tr.name.StartsWith("MidBoss3_Generated_")) states[i].RemoveTransition(tr);
             var settings = AnimationUtility.GetAnimationClipSettings(clip); settings.loopTime = i < 3; AnimationUtility.SetAnimationClipSettings(clip, settings); EditorUtility.SetDirty(clip);
         }
@@ -283,9 +283,9 @@ public static class MidBoss3_AnimGenerators
     }
     private static void Step(Pose p, bool front, float phase, bool run)
     {
-        float u = Mathf.Repeat(phase, 1), stride = run ? .28f : .19f, x, lift;
+        float u = Mathf.Repeat(phase, 1), stride = run ? .49f : .19f, x, lift;
         if (u < .5f) { x = Mathf.Lerp(stride, -stride, u * 2); lift = 0; }
-        else { float v = (u - .5f) * 2; x = Mathf.Lerp(-stride, stride, Smooth(v)); lift = (run ? .14f : .08f) * Mathf.Pow(Mathf.Sin(v * Mathf.PI), 2); }
+        else { float v = (u - .5f) * 2; x = Mathf.Lerp(-stride, stride, Smooth(v)); lift = (run ? .23f : .08f) * Mathf.Pow(Mathf.Sin(v * Mathf.PI), 2); }
         Foot(p, front, x, lift);
     }
     // Key: time, body angle, crouch, rear shoulder/forearm/wrist, sword world angle, front shoulder/forearm.

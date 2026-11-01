@@ -127,6 +127,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     // 플레이어를 처음 인식했을 때 보스별 추가 처리를 위한 훅
     protected virtual void OnPlayerDetected()
     {
+        Effects?.PlayNotice(lookDirection);
     }
 
     // 사망 애니메이션 이후, 보스 비활성화 전에 실행할 추가 처리
@@ -323,6 +324,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (runningSkill == null) return;
         StopCoroutine(runningSkill);
         runningSkill = null;
+        Effects?.EndSkill();
         OnSkillExecutionFinished(currentSkillIndex);
         currentSkillIndex = -1;
         isAttacking = false;
@@ -344,9 +346,11 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             distanceCooldownReduced[index] = false;
         }
         LogSkillDebug(index < 0 ? "기본 공격 시작" : $"{index + 1}스킬 시작", skill);
+        Effects?.BeginSkill(skill, index);
         OnSkillExecutionStarted(skill, index);
         yield return BossSkillExecutor.Execute(skill, this);
         yield return WaitForSkillAnimation(skill, index);
+        Effects?.EndSkill();
         OnSkillExecutionFinished(index);
         LogSkillDebug(index < 0 ? "기본 공격 종료" : $"{index + 1}스킬 종료", skill);
         currentSkillIndex = -1;
@@ -385,7 +389,9 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = false, bool applyIFrame = false)
     {
         if (isDead) return;
-        currentHp -= Mathf.Max(0f, damage - defenseBonus) * (1f - buffDamageReduction);
+        float actualDamage = Mathf.Max(0f, damage - defenseBonus) * (1f - buffDamageReduction);
+        currentHp -= actualDamage;
+        if (actualDamage > 0f) Effects?.PlayHit(sourcePos);
         UpdateHealthUI();
         isChasing = true;
         if (currentHp <= 0f) Die();
@@ -394,6 +400,8 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected virtual void Die()
     {
         if (isDead) return;
+        Effects?.EndSkill();
+        Effects?.PlayDeath();
         isDead = true;
         //====== 코인 지급 ======
         CoinReward coinReward = GetComponent<CoinReward>();

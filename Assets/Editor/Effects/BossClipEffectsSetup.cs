@@ -12,6 +12,25 @@ using A = BossClipEffects.Anchor;
 public static class BossClipEffectsSetup
 {
     static BossClipEffects preview;
+    public static void RefreshStageFive()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Edit Mode required.");
+        foreach(var path in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Prefab/5","Assets/Prefabs/Stage5_Enemy"}).Select(AssetDatabase.GUIDToAssetPath))
+        {
+            var asset=AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if(asset.GetComponentInChildren<BossClipEffects>(true)==null)continue;
+            var root=PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                foreach(var fx in root.GetComponentsInChildren<BossClipEffects>(true))
+                    if(fx.animator!=null && fx.source!=null)
+                        Configure(fx.animator,fx.source,5,fx.animator.runtimeAnimatorController.animationClips.Any(c=>c.name.StartsWith("MainBoss5_")));
+                PrefabUtility.SaveAsPrefabAsset(root,path);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+        AssetDatabase.SaveAssets();
+    }
     const string InstallRequest = "Library/BossFX_R51.install";
     static bool installRequested = System.IO.File.Exists(InstallRequest); // R51: normalized sheet cells support imported texture resizing.
     static void InstallWhenReady()
@@ -231,7 +250,7 @@ public static class BossClipEffectsSetup
                 string[] parts = signal.Split('.'); int hit = int.Parse(parts[parts.Length - 1]);
                 if (hit == 2) continue; // The middle two damage slots are one uninterrupted rotation.
                 var cue = Add(cues, hit == 0 ? S.Down : hit == 1 ? S.Spin : S.Thrust,
-                    e.time - 1.5f / 12, hit == 1 ? 3.1f / 12 : 1.5f / 12);
+                    e.time - 1.5f / 12, hit == 1 ? 3.8f / 12 : 2.5f / 12);
                 cue.scale = .7f; cue.alignBlade = hit == 3; cue.weaponSide = true;
             }
             else if (signal.StartsWith("Skill1.Pulse"))

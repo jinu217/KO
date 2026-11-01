@@ -60,6 +60,14 @@ public static class MainBoss4_AnimGenerators
 
     [MenuItem("Tools/4/MainBoss 4/Generate Animations")]
     public static void GenerateAll() { BuildSpecs(); EnsureFolder(Folder); foreach (var spec in specs) Save(spec); SetupAnimator(); }
+    // Refresh only punching clips; keep the merged controller and other authored actions intact.
+    public static void RebuildPunchAiming()
+    {
+        BuildSpecs();
+        foreach (var spec in specs)
+            if (spec.name.StartsWith("Attack") || spec.name == "skill1" || spec.name.StartsWith("skill2") || spec.name.StartsWith("skill4")) Save(spec);
+        AssetDatabase.SaveAssets();
+    }
     [MenuItem("Tools/4/MainBoss 4/Clips/Idle")] public static void IdleMenu() => One("Idle");
     [MenuItem("Tools/4/MainBoss 4/Clips/Walk")] public static void WalkMenu() => One("Walk");
     [MenuItem("Tools/4/MainBoss 4/Clips/Run")] public static void RunMenu() => One("Run");
@@ -118,7 +126,7 @@ public static class MainBoss4_AnimGenerators
             }
         if (timingChanged) EditorUtility.SetDirty(data);
         specs = new List<ClipSpec>{new ClipSpec("Idle",2.6f,true,Idle),new ClipSpec("Walk",1.1f,true,t=>Walk(t,1.1f,false)),
-            new ClipSpec("Run",.36f,true,t=>Walk(t,.36f,true)),new ClipSpec("Death",2f,false,Death),
+            new ClipSpec("Run",.48f,true,t=>Walk(t,.48f,true,true)),new ClipSpec("Death",2f,false,Death),
 
             new ClipSpec("Dskill",2.2f,false,DesirePose),new ClipSpec("Groggy",3f,false,Groggy)};
         AddPattern(data.basicAttack, -1, false);
@@ -475,6 +483,9 @@ public static class MainBoss4_AnimGenerators
         // Skill1: lower jab, hook and straight impacts without changing the body blow.
         if (skill == 0 && !body) hit.angle[front ? SF : SB] -= 8f;
         bool airborneStrike = skill == 1 && n >= 4;
+        // At 0.6 visual scale the opponent is below the boss's chin. Aim the
+        // extended fist down-forward, retaining the elbow/wrist articulation.
+        if (!upper) hit.angle[front ? SF : SB] -= skill < 0 && !front ? 32f : 18f;
         if (airborneStrike)
         {
             wind = Mix(hit, hit, 0);
@@ -500,6 +511,9 @@ public static class MainBoss4_AnimGenerators
             {
                 var forward = Mix(wind, hit, .45f);
                 ArmAngles(forward, true, 128f, -18f, 18f);
+                forward.angle[SF] -= 18f;
+                forward.position[Body].x += .25f;
+                Ground(forward);
                 pose = u < .45f ? Mix(wind, forward, u / .45f) : Mix(forward, hit, (u - .45f) / .55f);
             }
             if (hook)
@@ -549,7 +563,7 @@ public static class MainBoss4_AnimGenerators
         }
         return p;
     }
-    static Pose Walk(float t, float duration, bool run)
+    static Pose Walk(float t, float duration, bool run, bool fullStride = false)
     {
         float phase = t / duration, w = Mathf.Sin(phase * Mathf.PI * 2); var p = run ? AttackGuard() : new Pose();
         if (!run) p.position[Body].y = -.025f;
@@ -568,9 +582,9 @@ public static class MainBoss4_AnimGenerators
         // Replant feet after applying the torso/pelvis motion.
         for (int side = 0; side < 2; side++)
         {
-            float u = Mathf.Repeat(phase + side * .5f, 1), stride = run ? .42f : .24f;
+            float u = Mathf.Repeat(phase + side * .5f, 1), stride = run ? (fullStride ? .70f : .42f) : .24f;
             float x = u < .5f ? Mathf.Lerp(stride, -stride, Smooth(u * 2)) : Mathf.Lerp(-stride, stride, Smooth((u - .5f) * 2));
-            float lift = u < .5f ? 0 : (run ? .22f : .10f) * Mathf.Pow(Mathf.Sin((u - .5f) * 2 * Mathf.PI), 2);
+            float lift = u < .5f ? 0 : (run ? (fullStride ? .30f : .22f) : .10f) * Mathf.Pow(Mathf.Sin((u - .5f) * 2 * Mathf.PI), 2);
             PlantLeg(p, side == 0, x, lift);
         }
         if (run) { ProtectChin(p, true); ProtectChin(p, false); }

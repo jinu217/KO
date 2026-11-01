@@ -106,7 +106,9 @@ public sealed class BossEffects : MonoBehaviour
         if (ClipOwnsAttack) { ClearDash(); previousPosition = transform.position; return; }
         Vector3 delta = transform.position - previousPosition;
         previousPosition = transform.position;
-        if (delta.sqrMagnitude > .000001f) lastDashMotion = Time.time;
+        // Boxing footwork needs horizontal travel, not gravity/contact jitter.
+        bool translated = mainBoss && stage == 4 ? Mathf.Abs(delta.x) > .001f : delta.sqrMagnitude > .000001f;
+        if (translated) lastDashMotion = Time.time;
         bool moving = Time.time - lastDashMotion < .08f;
         bool dashStep = currentStep != null && (currentStep.actionType == BossActionType.DashAttack ||
             (mainBoss && stage == 4 && skillIndex == 3 && currentStep.actionType == BossActionType.MoveForward));
@@ -302,6 +304,15 @@ public sealed class BossEffects : MonoBehaviour
     {
         impact = 0;
         if (clip == null || ordinal < 0) return false;
+        if (clip.name.StartsWith("MainBoss5_"))
+        {
+            int n = 0;
+            foreach (var cue in clip.events)
+                if (cue.stringParameter == "Attack.Slam" || cue.stringParameter.StartsWith("Skill1.Hit."))
+                {
+                    if (n++ == ordinal) { impact = cue.time; return true; }
+                }
+        }
         if (MotionImpacts.TryGetValue(clip.name, out var authored) && ordinal < authored.Length)
         { impact = authored[ordinal]; return true; }
         if (comboTimings != null)
@@ -503,11 +514,19 @@ public sealed class BossEffects : MonoBehaviour
         if (hand == null || hand.sprite == null) return false;
         bounds = VisibleBounds(hand);
         // A small contact margin around the visible fist, scaled with the rig.
-        bounds.Expand(new Vector3(.7f * Mathf.Abs(hand.transform.lossyScale.x), .7f * Mathf.Abs(hand.transform.lossyScale.y), 0));
+        bounds.Expand(new Vector3(.9f * Mathf.Abs(hand.transform.lossyScale.x), .9f * Mathf.Abs(hand.transform.lossyScale.y), 0));
         return true;
     }
     public bool TryAttackBounds(BossAttackStepData step, out Bounds bounds)
-        => TryPunchGeometry(skillIndex, StepIndex(step), out _, out bounds);
+    {
+        if (TryPunchGeometry(skillIndex, StepIndex(step), out _, out bounds)) return true;
+        if (stage != 5 || step == null || step.damage <= 0 || weaponAnchor == null) return false;
+        var blade = weaponAnchor.GetComponent<SpriteRenderer>();
+        if (blade == null || blade.sprite == null) return false;
+        bounds = VisibleBounds(blade);
+        bounds.Expand(new Vector3(.2f, .2f, 0));
+        return true;
+    }
     public void PlayStep(BossAttackStepData step, Vector3 center, float direction)
     {
         if (ClipOwnsAttack) return;

@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &119548601581648448
 GameObject:
@@ -498,7 +498,7 @@ Transform:
   m_GameObject: {fileID: 2673088325904739842}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.3, y: -1.1, z: 0}
+  m_LocalPosition: {x: -0.4, y: -1.43, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -881,8 +881,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.08, y: -0.1712}
-  m_Size: {x: 0.66, y: 1.9424}
+  m_Offset: {x: -0.12, y: -0.1918}
+  m_Size: {x: 0.99, y: 2.7836}
   m_Direction: 0
 --- !u!114 &2017086758911001854
 MonoBehaviour:
@@ -918,11 +918,8 @@ MonoBehaviour:
   visualRoot: {fileID: 0}
   artworkFacesLeft: 0
   dialogueController: {fileID: 0}
-  bossId: Knight1
+  bossId: Knight4
   playEncounterDialogue: 1
-  onEquipmentChoiceMade:
-    m_PersistentCalls:
-      m_Calls: []
   desireSkill: {fileID: 7324719135890965601}
 --- !u!114 &7324719135890965601
 MonoBehaviour:
@@ -1603,7 +1600,7 @@ Transform:
   m_GameObject: {fileID: 7738030062326856143}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -1.1424, z: 0}
+  m_LocalPosition: {x: 0, y: -1.5836, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1637,7 +1634,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.4, y: 0.4, z: 1}
+  m_LocalScale: {x: 0.6, y: 0.6, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4598852125087783026}
@@ -2248,6 +2245,15 @@ MonoBehaviour:
     offset: {x: 0, y: 0}
     artFacesRight: 1
     flipY: 0
+  sand:
+    sheet: {fileID: 0}
+    frames: []
+    columns: 10
+    fps: 24
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
   pixelsPerUnit: 64
   sortingOrder: 100
 --- !u!1 &8448077958175738222
@@ -2473,7 +2479,7 @@ Transform:
   m_GameObject: {fileID: 9164218825349333276}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.3, y: -0.4, z: 0}
+  m_LocalPosition: {x: 0.4, y: -0.52, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

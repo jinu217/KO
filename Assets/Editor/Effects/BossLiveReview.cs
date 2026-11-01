@@ -6,21 +6,23 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 
 // Opt-in review of the actual stage instance, using its normal skill coroutine.
-// Commands only affect Play Mode instances. Original scenes/data are never saved.
+// Play commands affect instances only. Explicit editor commands rebuild/save reviewed assets.
 [InitializeOnLoad]
 public static class BossLiveReview
 {
     const string Folder = "C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/boss_live_review";
     const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-    [Serializable] class Command { public string id, op, scene; public int index=-1, phase=1, facing=1; public float distance=3; }
+    [Serializable] class Command { public string id, op, scene; public int index=-1, phase=1, facing=1; public float distance=3, height; }
     [Serializable] class State { public string commandId, scene, boss, clip, error, run; public bool playing, attacking; public float time, hp, normalized; public Vector3 bossPosition, playerPosition; public int skills, captures, hits; }
-    [Serializable] class Frame { public string file, clip; public float elapsed, normalized; public Vector3 bossPosition, playerPosition; public Hit[] hits; }
-    [Serializable] class Hit { public string step, action, collider; public Vector2 center, size, minViewport, maxViewport; public float time; }
+    [Serializable] class Frame { public string file, clip; public float elapsed, normalized; public Vector3 bossPosition, playerPosition; public Hit[] hits; public int fxVisible; }
+    [Serializable] class Hit { public string step, action, collider; public Vector2 center, size, minViewport, maxViewport, playerMin, playerMax; public float time; }
     static MidBossController boss;
     static PlayerController player;
     static Animator animator;
@@ -32,6 +34,8 @@ public static class BossLiveReview
     static bool specialRunning;
     static double nextPoll;
     static Vector3 home;
+    static float playerGravity;
+    static RigidbodyConstraints2D playerConstraints;
     static BossLiveReview()
     {
         EditorApplication.update += Update; BossSkillExecutor.HitboxObserved += HitObserved;
@@ -88,6 +92,24 @@ public static class BossLiveReview
     static void Execute(Command c)
     {
         if(c.op=="stop") { run=null; EditorApplication.isPlaying=false; return; }
+        if(c.op=="rebuild4")
+        {
+            if(EditorApplication.isPlayingOrWillChangePlaymode)throw new Exception("Stop play before rebuilding clips.");
+            if(AnimationMode.InAnimationMode())AnimationMode.StopAnimationMode();
+            MainBoss4_AnimGenerators.RebuildPunchAiming();return;
+        }
+        if(c.op=="save")
+        {
+            if(EditorApplication.isPlayingOrWillChangePlaymode)throw new Exception("Stop play before saving the scene.");
+            if(AnimationMode.InAnimationMode())AnimationMode.StopAnimationMode();
+            EditorSceneManager.SaveScene(SceneManager.GetActiveScene());return;
+        }
+        if(c.op=="apply4")
+        {
+            if(EditorApplication.isPlayingOrWillChangePlaymode)throw new Exception("Stop play before applying reviewed sizing.");
+            Boss4SizingReview.ApplyReviewedSize();return;
+        }
+        if(c.op=="fx5") { BossClipEffectsSetup.RefreshStageFive();return; }
         if(c.op=="scene")
         {
             if(EditorApplication.isPlayingOrWillChangePlaymode)throw new Exception("Stop play before opening another stage.");
@@ -103,15 +125,37 @@ public static class BossLiveReview
         {
             boss=UnityEngine.Object.FindFirstObjectByType<MidBossController>();
             player=UnityEngine.Object.FindFirstObjectByType<PlayerController>();
+            // Stage5-3 currently has no boss placement. Review the real prefab in
+            // this stage without adding/saving a scene instance.
+            if(boss==null && player!=null && SceneManager.GetActiveScene().name=="Stage5-3")
+            {
+                var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Stage5_Enemy/Stage5_MidBoss.prefab");
+                var instance=UnityEngine.Object.Instantiate(prefab,player.transform.position+Vector3.right*12,Quaternion.identity);
+                instance.name="Stage5_MidBoss_ReviewOnly";boss=instance.GetComponent<MidBossController>();
+                var col=instance.GetComponent<Collider2D>();
+                var floor=Physics2D.Raycast(instance.transform.position+Vector3.up,Vector2.down,10,boss.wallLayer);
+                if(floor.collider!=null)instance.transform.position+=Vector3.up*(floor.point.y-col.bounds.min.y+.01f);
+                Physics2D.SyncTransforms();
+            }
             if(boss==null || player==null)throw new Exception("Stage boss/player missing.");
             animator=boss.GetComponentInChildren<Animator>(); home=boss.transform.position;
+            playerGravity=player.GetComponent<Rigidbody2D>().gravityScale;
+            playerConstraints=player.GetComponent<Rigidbody2D>().constraints;
             boss.StopAllCoroutines(); Set(boss,"isAttacking",false);
             boss.GetComponent<BossEffects>()?.EndSkill();
             var copy=UnityEngine.Object.Instantiate(boss.data); copy.hideFlags=HideFlags.DontSave; boss.data=copy;
             copy.basicAttack.cooldown=100000; foreach(var s in copy.skills)s.cooldown=100000;
             Set(boss,"lastBasicTime",Time.time); Set(boss,"lastSkillTimes",Enumerable.Repeat(Time.time,copy.skills.Count).ToArray());
             Set(boss,"initialCooldownsApplied",true); Set(boss,"playEncounterDialogue",false); Set(boss,"dialoguePaused",false);
+            foreach(var dialogue in UnityEngine.Object.FindObjectsByType<MainBossDialogueController>(FindObjectsSortMode.None))
+            {
+                dialogue.StopAllCoroutines();
+                (Get(dialogue,"dialoguePanel") as GameObject)?.SetActive(false);
+                dialogue.enabled=false;
+            }
             player.PauseKeyboardControl(); Time.timeScale=1;
+            foreach(var background in UnityEngine.Object.FindObjectsByType<BackgroundLoop>(FindObjectsSortMode.None))
+                if(background.backgrounds==null || background.backgrounds.Length<4 || background.backgrounds.Any(x=>x==null))background.enabled=false;
             var status=player.GetComponent<PlayerStatus>(); if(status!=null)status.currentHp=100000;
             foreach(var component in boss.GetComponents<MonoBehaviour>())
                 if(component!=null && component.GetType().Name.Contains("Desire"))
@@ -121,6 +165,19 @@ public static class BossLiveReview
             return;
         }
         if(boss==null)throw new Exception("Prepare this stage first.");
+        if(c.op=="playerattack") { player.StartCoroutine(ReviewPlayerAttackMovement());return; }
+        if(c.op=="size")
+        {
+            if(!(boss is Stage4_MainBoss) || Attacking || run!=null)throw new Exception("Idle MainBoss4 required.");
+            float scale=Mathf.Clamp(c.distance,.3f,1f);
+            var visual=boss.transform.Find("MainBoss 4");var capsule=boss.GetComponent<CapsuleCollider2D>();
+            float floor=home.y+capsule.offset.y-capsule.size.y*.5f;
+            visual.localScale=new Vector3(Mathf.Sign(visual.localScale.x)*scale,scale,1);Set(boss,"visualScaleX",scale);
+            float bottom=-2.856f*scale+.13f,top=2*scale;
+            capsule.offset=new Vector2(-.2f*scale,(bottom+top)*.5f);capsule.size=new Vector2(1.65f*scale,top-bottom);
+            home.y=floor-bottom;
+            c.distance=scale/.46f*1.65f;Position(c);return;
+        }
         if(c.op=="position") { Position(c); return; }
         if(c.op=="desire")
         {
@@ -178,11 +235,53 @@ public static class BossLiveReview
         var p=home+new Vector3((c.facing<0?-1:1)*c.distance,0,0);
         var bc=boss.GetComponent<Collider2D>();var pc=player.GetComponent<Collider2D>();
         if(bc!=null && pc!=null)p.y=bc.bounds.min.y+(player.transform.position.y-pc.bounds.min.y)+.03f;
-        player.transform.position=p;var pr=player.GetComponent<Rigidbody2D>();if(pr!=null){pr.position=p;pr.linearVelocity=Vector2.zero;}
+        p.y+=c.height;
+        player.transform.position=p;var pr=player.GetComponent<Rigidbody2D>();if(pr!=null){pr.position=p;pr.linearVelocity=Vector2.zero;pr.gravityScale=c.height!=0?0:playerGravity;pr.constraints=c.height!=0?playerConstraints|RigidbodyConstraints2D.FreezePositionY:playerConstraints;}
         Physics2D.SyncTransforms();
         // Keep the normal camera and lighting, framing both combatants during the review.
         var camera=Camera.main;
-        if(camera!=null){var follow=camera.GetComponent<CameraFollow2D>();if(follow!=null)follow.enabled=false;camera.transform.position=new Vector3(home.x+(c.facing<0?-1:1)*1.5f,home.y+1,-10);if(boss is Stage4_MainBoss)camera.orthographicSize=3.5f;}
+        if(camera!=null){var follow=camera.GetComponent<CameraFollow2D>();if(follow!=null)follow.enabled=false;camera.transform.position=new Vector3(home.x+(c.facing<0?-1:1)*1.5f,home.y+1,-10);}
+    }
+    static IEnumerator ReviewPlayerAttackMovement()
+    {
+        var lines=new List<string>();var rb=player.GetComponent<Rigidbody2D>();
+        var pad=InputSystem.AddDevice<Gamepad>("MovementReviewPad");
+        var action=new InputAction("ReviewAttack",InputActionType.Button,pad.buttonNorth.path);
+        var oldWeapon=player.currentWeapon;bool wasPaused=(bool)Get(player,"isKeyboardControlPaused");
+        var start=player.transform.position;
+        boss.enabled=false;boss.StopAllCoroutines();boss.GetComponent<Rigidbody2D>().linearVelocity=Vector2.zero;
+        Set(player,"isKeyboardControlPaused",false);
+        action.started+=player.OnAttack;action.Enable();
+        try
+        {
+            foreach(var weapon in new[]{WeaponType.Sword,WeaponType.Dagger,WeaponType.Blunt,WeaponType.Axe,WeaponType.Scythe})
+            foreach(int facing in new[]{-1,1})
+            {
+                rb.position=start;rb.linearVelocity=Vector2.zero;
+                player.currentWeapon=weapon;Set(player,"moveInput",new Vector2(facing,0));Set(player,"lastAttackTime",-999f);
+                yield return new WaitForFixedUpdate();yield return new WaitForFixedUpdate();
+                InputSystem.QueueStateEvent(pad,new GamepadState().WithButton(GamepadButton.North));
+                yield return null;
+                InputSystem.QueueStateEvent(pad,new GamepadState());
+                yield return null;
+                bool accepted=player.AttackMovementLocked;float origin=rb.position.x,maxSlide=0,until=Time.time+5f;
+                while(player.AttackMovementLocked && Time.time<until)
+                {
+                    maxSlide=Mathf.Max(maxSlide,Mathf.Abs(rb.position.x-origin));yield return new WaitForFixedUpdate();
+                }
+                bool released=!player.AttackMovementLocked;float stoppedX=rb.position.x;
+                for(int i=0;i<4;i++)yield return new WaitForFixedUpdate();
+                float resumed=(rb.position.x-stoppedX)*facing;
+                lines.Add(weapon+" facing="+facing+" accepted="+accepted+" slide="+maxSlide.ToString("0.00000")+" released="+released+" resumed="+resumed.ToString("0.000")+" PASS="+(accepted&&released&&maxSlide<.025f&&resumed>.01f));
+                Set(player,"moveInput",Vector2.zero);yield return new WaitForSeconds(.15f);
+            }
+        }
+        finally
+        {
+            action.Dispose();InputSystem.RemoveDevice(pad);player.currentWeapon=oldWeapon;
+            Set(player,"moveInput",Vector2.zero);Set(player,"isKeyboardControlPaused",wasPaused);
+            File.WriteAllLines(Path.Combine(Folder,"player_attack_movement_review.txt"),lines);
+        }
     }
     static string Clip() => animator!=null?string.Join("+",animator.GetCurrentAnimatorClipInfo(0).Select(c=>c.clip.name)):"";
     static void HitObserved(IBossSkillContext context,BossAttackStepData step,Vector2 center,Collider2D collider)
@@ -190,7 +289,7 @@ public static class BossLiveReview
         if(run==null || boss==null || context.BossTransform!=boss.transform)return;
         var camera=Camera.main;
         Vector2 actualSize=BossSkillExecutor.LastObservedBounds.size;
-        pending.Add(new Hit{step=step.stepName,action=step.actionType.ToString(),center=center,size=actualSize,collider=collider!=null?collider.name:"none",time=Time.time-started,
+        pending.Add(new Hit{step=step.stepName,action=step.actionType.ToString(),center=center,size=actualSize,playerMin=player!=null?(Vector2)player.GetComponent<Collider2D>().bounds.min:Vector2.zero,playerMax=player!=null?(Vector2)player.GetComponent<Collider2D>().bounds.max:Vector2.zero,collider=collider!=null?collider.name:"none",time=Time.time-started,
             minViewport=camera!=null?(Vector2)camera.WorldToViewportPoint(center-actualSize*.5f):Vector2.zero,
             maxViewport=camera!=null?(Vector2)camera.WorldToViewportPoint(center+actualSize*.5f):Vector2.zero});hits++;
     }
@@ -209,7 +308,7 @@ public static class BossLiveReview
                     int w=960,h=Mathf.RoundToInt(w*(float)screen.height/screen.width);rt=RenderTexture.GetTemporary(w,h,0);
                     Graphics.Blit(screen,rt);RenderTexture.active=rt;small=new Texture2D(w,h,TextureFormat.RGB24,false);small.ReadPixels(new Rect(0,0,w,h),0,0);small.Apply();
                     string file=captures.ToString("D4")+".jpg";File.WriteAllBytes(Path.Combine(Folder,current,file),small.EncodeToJPG(85));
-                    var frame=new Frame{file=file,clip=Clip(),elapsed=Time.time-started,normalized=animator.GetCurrentAnimatorStateInfo(0).normalizedTime,bossPosition=boss.transform.position,playerPosition=player.transform.position,hits=pending.ToArray()};
+                    var frame=new Frame{file=file,clip=Clip(),elapsed=Time.time-started,normalized=animator.GetCurrentAnimatorStateInfo(0).normalizedTime,bossPosition=boss.transform.position,playerPosition=player.transform.position,hits=pending.ToArray(),fxVisible=boss.GetComponentInChildren<BossClipEffects>()?.VisibleCount??0};
                     File.AppendAllText(Path.Combine(Folder,current,"frames.jsonl"),JsonUtility.ToJson(frame)+"\n");pending.Clear();captures++;
                 }
             }
