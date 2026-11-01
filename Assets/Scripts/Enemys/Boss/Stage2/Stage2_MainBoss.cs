@@ -8,6 +8,7 @@ public sealed class Stage2_MainBoss : MainBossController, IBossScheduledSpawnCon
     protected override bool HasPhaseEntryAnimations => false;
     protected override bool UsesPhase3ActionStates => false;
     protected override string DesireAnimationAction => "Buff";
+    protected override bool WaitForAnimationExit => false;
     protected override string SkillAnimationAction(int index)
     {
         switch (index)

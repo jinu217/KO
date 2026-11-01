@@ -13005,19 +13005,65 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4196881363146405425, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 933369386}
   m_SourcePrefab: {fileID: 100100000, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
 --- !u!114 &933369384 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4422395347486997663, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
   m_PrefabInstance: {fileID: 933369383}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 933369385}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6f10f23be865c4f44bb37a3e138fa2e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage2_MainBoss
+--- !u!1 &933369385 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4196881363146405425, guid: a76d2d6f2c6cb474fa630e749565029a, type: 3}
+  m_PrefabInstance: {fileID: 933369383}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &933369386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 933369385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b207724c86e44cf887324f0b8e9dcc3e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Stage2_MainBossDesireSkill
+  cooldown: 60
+  castDelay: 0.8
+  fieldDuration: 25
+  damageEffectDuration: 30
+  fieldPrefab: {fileID: 8399009758184244419, guid: a34a12f3a97657a49bd80e48c42a587d, type: 3}
+  fieldSpawnEffectPrefab: {fileID: 2824871969973266948, guid: 9f3c8d405b75242498a7611a9d15826a, type: 3}
+  fieldSlowRevealDuration: 0.1
+  fieldFastRevealDuration: 0.1
+  fieldSpawnYOffset: 0
+  activationKnockbackRadius: 4.5
+  activationKnockbackForce: {x: 14, y: 5}
+  baseDamageReduction: 0.25
+  fieldDamageReduction: 0.5
+  fieldAttackMultiplier: 1.1
+  healInterval: 3
+  healMaxHpRatio: 0.03
+  postFieldDamageTakenIncrease: 0.25
+  returnAttackDelay: 5
+  forcedReturnDelay: 10
+  returnAttackPreDelay: 0.7
+  returnAttackDamage: 10
+  returnAttackSize: {x: 4.55, y: 2.59}
+  returnAttackOffset: {x: 2.325, y: -1.55}
+  returnAttackKnockback: {x: 16, y: 5}
+  missedAttackStunDuration: 3
+  returnMoveSpeed: 8
 --- !u!1 &935760246
 GameObject:
   m_ObjectHideFlags: 0
@@ -34939,7 +34985,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1553989987
 Transform:
   m_ObjectHideFlags: 0
@@ -46986,6 +47032,8 @@ MonoBehaviour:
   sortingLayer: Front
   sortingOrder: 20
   groundAnchor: {fileID: 6852483028742810990}
+  walkStartDelay: 0.15
+  additionalWalkStartDelay: 0.15
 --- !u!114 &9104716021800673539
 MonoBehaviour:
   m_ObjectHideFlags: 0

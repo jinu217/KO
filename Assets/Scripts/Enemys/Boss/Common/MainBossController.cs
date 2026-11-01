@@ -31,6 +31,7 @@ public class MainBossController : MidBossController
     protected virtual bool HasPhaseEntryAnimations => true;
     protected virtual bool UsesPhase3ActionStates => true;
     protected virtual string DesireAnimationAction => "Dskill";
+    protected virtual bool WaitForAnimationExit => true;
     protected virtual string SkillAnimationAction(int index) => index < 0 ? "Attack" : "skill" + (index + 1);
 
 
@@ -220,6 +221,7 @@ public class MainBossController : MidBossController
                     // 공격 종료 조건을 Animator가 평가하고 실제로 상태를 빠져나갈 때까지 잠근다.
                     animationReturningToIdle = true;
                     SetBusy(false);
+                    if (!WaitForAnimationExit) yield break;
                     float exitWait = 0f;
                     while (!isDead && bossAnimator != null && bossAnimator.isActiveAndEnabled
                         && bossAnimator.GetCurrentAnimatorStateInfo(0).shortNameHash == hash
