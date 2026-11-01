@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using UnityEngine;
-using UnityEngine.Events;
 
 public class MainBossController : MidBossController
 {
@@ -17,7 +16,7 @@ public class MainBossController : MidBossController
     private bool animationReturningToIdle;
     private string activeAnimation;
     private bool desireOwnsAttackLock;
-
+    
     //============== 메인보스 대화 ==============
     [Header("메인보스 대화")]
     [SerializeField] private MainBossDialogueController dialogueController;
@@ -25,18 +24,6 @@ public class MainBossController : MidBossController
     [SerializeField] private bool playEncounterDialogue = true;
     private bool encounterDialogueStarted;
     private bool encounterDialogueRunning;
-
-    //============== 처치 후 선택지 ==============
-    [Header("처치 후 선택지")]
-    [Tooltip("선택 결과(true=획득, false=거부)를 받을 이벤트.")]
-    [SerializeField]
-    private UnityEvent<bool> onEquipmentChoiceMade;
-
-    // 모든 메인보스는 처치 후 기계이식 선택지를 표시합니다.
-    protected virtual bool ShouldOfferEquipmentChoice()
-    {
-        return true;
-    }
 
     protected MainBossData MainData => data as MainBossData;
     protected virtual string AnimationPrefix => "MainBoss1_";
@@ -78,7 +65,7 @@ public class MainBossController : MidBossController
         scale.x = visualScaleX * (lookDirection < 0 ? -1f : 1f) * (artworkFacesLeft ? -1f : 1f);
         visualRoot.localScale = scale;
     }
-
+    
     //============== 조우 대화 시작 (감지/트리거 공통 진입점) ==============
     // 보스 감지와 BossDialogueTrigger 양쪽에서 이 메서드로만 조우 대화를 시작합니다.
     // 보스당 한 번만 시도하며, 대화가 실제로 시작되면 true를 반환합니다.
@@ -105,9 +92,6 @@ public class MainBossController : MidBossController
         {
             // 대화가 시작되면 감지 처리(HP바 표시 등)는 대화가 끝난 뒤로 미룹니다.
             encounterDialogueRunning = true;
-            dialoguePaused = true;
-            InterruptCurrentSkill();
-            StopMove();
             return true;
         }
 
@@ -134,8 +118,6 @@ public class MainBossController : MidBossController
     public void OnEncounterDialogueFinished()
     {
         encounterDialogueRunning = false;
-        dialoguePaused = false;
-        DeferNextCombatAction();
 
         // 대화 중 이미 죽은 경우에는 아무것도 하지 않습니다.
         if (isDead)
@@ -163,30 +145,8 @@ public class MainBossController : MidBossController
         }
 
         Debug.Log($"[{name}] 쓰러진 상태에서 처치 후 보스 대화를 시작합니다.", this);
-        yield return dialogueController.PlayAfterDefeat(
-            this,
-            bossId,
-            ShouldOfferEquipmentChoice(),
-            OnEquipmentChoiceMade
-        );
+        yield return dialogueController.PlayAfterDefeat(this, bossId);
         Debug.Log($"[{name}] 처치 후 보스 대화가 끝났습니다.", this);
-    }
-
-    //============== 기계 장치 이식 선택 결과 ==============
-    private void OnEquipmentChoiceMade(bool accepted)
-    {
-        Debug.Log($"[{name}] 기계 장치 이식 선택 결과: {(accepted ? "이식" : "거부")}", this);
-
-        //============== 이식을 선택했으면 기계장비 개수 증가 (엔딩 판정에 사용) ==============
-        if (accepted)
-        {
-            if (EndingManager.Instance != null)
-                EndingManager.Instance.AddMachineEquipment();
-            else
-                Debug.LogWarning($"[{name}] EndingManager가 없어 기계장비 개수를 올리지 못했습니다.", this);
-        }
-
-        onEquipmentChoiceMade?.Invoke(accepted);
     }
 
     protected virtual void LateUpdate()

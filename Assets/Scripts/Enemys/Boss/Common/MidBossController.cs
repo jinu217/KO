@@ -58,26 +58,16 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected bool isAttacking;
     protected bool isDead;
     private bool healthUIShown;
-    protected bool dialoguePaused;
-    private int nextCombatFrame = -1;
-    protected bool AnimatorRecoveryPending => Time.frameCount <= nextCombatFrame;
-
-    // Give the Animator one update after an action releases its attack lock.
-    protected void DeferNextCombatAction()
-    {
-        nextCombatFrame = Mathf.Max(nextCombatFrame, Time.frameCount + 1);
-    }
-    private BossEffects bossEffects;
-    protected BossEffects Effects { get { if (bossEffects == null) bossEffects = GetComponent<BossEffects>(); return bossEffects; } }
-    public int FXDirection => lookDirection;
-    public bool FXChasing => !isDead && !dialoguePaused && isChasing && !isAttacking &&
-        rb != null && Mathf.Abs(rb.linearVelocity.x) > .1f;
     public bool IsDead => isDead;
     public event System.Action Defeated;
     protected int currentPhase = 1;
     protected int currentSkillIndex = -1;
     private bool buffActive;
     private bool initialCooldownsApplied;
+    // 공격 종료 플래그를 Animator가 한 번 평가한 뒤 다음 패턴을 시작한다.
+    private int nextCombatFrame = -1;
+    protected bool AnimatorRecoveryPending => Time.frameCount <= nextCombatFrame;
+    protected void DeferNextCombatAction() => nextCombatFrame = Time.frameCount + 1;
     private float lastBasicTime = -999f;
     private float[] lastSkillTimes;
     private int[] skillUseCounts;
@@ -95,6 +85,55 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     private float cooldownAdd;
     private float basicCooldownAdd;
     private float maxHpBonus;
+
+     //============== FX 연동 시작 ==============
+    // BossEffects는 같은 오브젝트에 붙어 있으며, 파생 클래스(Stage4_MidBoss 등)에서 Effects?.BeginSkill(...) 형태로 사용합니다.
+    private BossEffects fxCache;
+    private bool fxSearched;
+    protected BossEffects Effects
+    {
+        get
+        {
+            if (!fxSearched) { fxCache = GetComponent<BossEffects>(); fxSearched = true; }
+            return fxCache;
+        }
+    }
+
+    // BossEffects / BossClipEffects가 이펙트 방향을 정할 때 사용 (1 = 오른쪽, -1 = 왼쪽)
+    public int FXDirection => lookDirection < 0 ? -1 : 1;
+
+    // 추적 이동 중일 때만 true → 먼지 이펙트에 사용 (BossEffects 쪽에서 지면 판정과 시작 지연도 추가로 확인)
+    public bool FXChasing => !isDead && !isAttacking && !dialoguePaused && isChasing
+        && rb != null && Mathf.Abs(rb.linearVelocity.x) > 0.05f;
+    //============== FX 연동 끝 ==============
+
+    
+    //============== 대화 중 AI 정지 ==============
+    protected bool dialoguePaused;
+
+    public void SetDialoguePaused(bool paused)
+    {
+        dialoguePaused = paused;
+
+        if (paused)
+        {
+            StopMove();
+
+            if (rb != null)
+                rb.angularVelocity = 0f;
+        }
+    }
+
+    // 플레이어를 처음 인식했을 때 보스별 추가 처리를 위한 훅
+    protected virtual void OnPlayerDetected()
+    {
+    }
+
+    // 사망 애니메이션 이후, 보스 비활성화 전에 실행할 추가 처리
+    protected virtual IEnumerator BeforeDeactivateAfterDeath()
+    {
+        yield break;
+    }
 
     protected virtual void Awake()
     {
@@ -131,11 +170,16 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     {
         if (data == null || isDead) return;
         FindAndDetectPlayer();
-        if (dialoguePaused || AnimatorRecoveryPending) { StopMove(); return; }
+        // 대화 중에는 페이즈 변경 및 전투 AI를 실행하지 않습니다.
+        if (dialoguePaused)
+        {
+            StopMove();
+            return;
+        }
         UpdatePhase();
         ApplyInitialCooldownsOnFirstDetection();
         // 스킬 실행 중 이동은 BossSkillExecutor가 담당합니다.
-        if (isAttacking) return;
+        if (isAttacking || AnimatorRecoveryPending) return;
         if (UpdatePriorityBehavior()) { StopMove(); return; }
         if (!CanRunCombatAI()) { StopMove(); return; }
         if (!isChasing || playerTransform == null) { StopMove(); return; }
@@ -153,7 +197,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
 
     protected virtual void FixedUpdate()
     {
-        if (data == null || isDead || dialoguePaused || AnimatorRecoveryPending || isAttacking || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
+        if (data == null || isDead || dialoguePaused || isAttacking || AnimatorRecoveryPending || !CanRunCombatAI() || !isChasing || playerTransform == null) return;
         BossSkillData skill = GetReadySkill(out _) ?? GetBasicAttackData();
         if (InCastRange(skill)) { StopMove(); return; }
         if (IsWallInFront()) { StopMove(); return; }
@@ -166,13 +210,27 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (playerTransform == null)
         {
             GameObject player = GameObject.FindWithTag("Player");
-            if (player != null) playerTransform = player.transform;
+            if (player != null)
+                playerTransform = player.transform;
         }
-        if (playerTransform == null) return;
-        float distance = Vector2.Distance(transform.position, playerTransform.position);
+
+        if (playerTransform == null)
+            return;
+
+        float distance = Vector2.Distance(
+            transform.position,
+            playerTransform.position
+        );
+
         if (!isChasing && distance <= data.detectRange)
         {
+            isChasing = true;
+
+            //============== 최초 감지 이벤트 ==============
             OnPlayerDetected();
+
+            // 보스별 조건을 통과한 경우에만 HP UI를 표시합니다.
+            ShowHealthUIIfAllowed();
         }
         else if (isChasing && distance > data.chaseRange)
         {
@@ -180,47 +238,22 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         }
     }
 
-    // Public entry point used by MainBossDialogueController.
-    public virtual void SetDialoguePaused(bool paused)
+    // 일반 미드보스는 즉시 표시합니다.
+    // 메인보스는 조우 대사가 끝날 때까지 표시를 보류할 수 있습니다.
+    protected virtual bool CanShowHealthUIOnDetection()
     {
-        if (dialoguePaused == paused)
-        {
-            if (paused) StopMove();
-            return;
-        }
-        dialoguePaused = paused;
-        if (isDead) return;
-        if (paused)
-        {
-            InterruptCurrentSkill();
-            StopMove();
-        }
-        else
-        {
-            DeferNextCombatAction();
-        }
+        return true;
     }
-
-    // Main bosses can defer this until their encounter dialogue finishes.
-    protected virtual void OnPlayerDetected()
-    {
-        if (isDead) return;
-        isChasing = true;
-        ShowHealthUIIfAllowed();
-        Effects?.PlayNotice(lookDirection);
-    }
-
-    protected virtual bool CanShowHealthUIOnDetection() => true;
 
     protected void ShowHealthUIIfAllowed()
     {
-        if (isDead || healthUIShown || data == null || !CanShowHealthUIOnDetection()) return;
+        if (healthUIShown || !CanShowHealthUIOnDetection())
+            return;
+
         healthUIShown = true;
         ShowHealthUI();
     }
 
-    // Main bosses keep their final death pose while the defeat dialogue runs.
-    protected virtual IEnumerator BeforeDeactivateAfterDeath() { yield break; }
 
     // 최초 인식 시 일반 공격은 즉시 준비하고, 나머지 스킬은 쿨타임이 50% 지난 상태로 시작한다.
     private void ApplyInitialCooldownsOnFirstDetection()
@@ -290,10 +323,10 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (runningSkill == null) return;
         StopCoroutine(runningSkill);
         runningSkill = null;
-        Effects?.EndSkill();
         OnSkillExecutionFinished(currentSkillIndex);
         currentSkillIndex = -1;
         isAttacking = false;
+        DeferNextCombatAction();
         StopMove();
     }
 
@@ -311,17 +344,15 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             distanceCooldownReduced[index] = false;
         }
         LogSkillDebug(index < 0 ? "기본 공격 시작" : $"{index + 1}스킬 시작", skill);
-        Effects?.BeginSkill(skill, index);
         OnSkillExecutionStarted(skill, index);
         yield return BossSkillExecutor.Execute(skill, this);
         yield return WaitForSkillAnimation(skill, index);
-        Effects?.EndSkill();
         OnSkillExecutionFinished(index);
         LogSkillDebug(index < 0 ? "기본 공격 종료" : $"{index + 1}스킬 종료", skill);
         currentSkillIndex = -1;
         isAttacking = false;
-        runningSkill = null;
         DeferNextCombatAction();
+        runningSkill = null;
     }
 
     private void EnsureTimers()
@@ -354,9 +385,7 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     public virtual void TakeDamage(float damage, Vector2 sourcePos, bool applyKnockback = false, bool applyIFrame = false)
     {
         if (isDead) return;
-        float actualDamage = Mathf.Max(0f, damage - defenseBonus) * (1f - buffDamageReduction);
-        currentHp -= actualDamage;
-        if (actualDamage > 0f) Effects?.PlayHit(sourcePos);
+        currentHp -= Mathf.Max(0f, damage - defenseBonus) * (1f - buffDamageReduction);
         UpdateHealthUI();
         isChasing = true;
         if (currentHp <= 0f) Die();
@@ -365,8 +394,6 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
     protected virtual void Die()
     {
         if (isDead) return;
-        Effects?.EndSkill();
-        Effects?.PlayDeath();
         isDead = true;
         //====== 코인 지급 ======
         CoinReward coinReward = GetComponent<CoinReward>();
@@ -471,8 +498,10 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
             }
             if (deathEndHold > 0f) yield return new WaitForSeconds(deathEndHold);
         }
+        // 사망 후 대화
         yield return BeforeDeactivateAfterDeath();
-        // After the defeat sequence: deactivate first, then notify room clear/rewards.
+
+        // Retain the original event order: deactivate first, then notify room clear/rewards.
         gameObject.SetActive(false);
         Defeated?.Invoke();
     }

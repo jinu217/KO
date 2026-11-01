@@ -175,6 +175,8 @@ public class PlayerController : MonoBehaviour, IDamageable
         baseStats.maxHp += persistent.bonusMaxHp;
         baseStats.attackSpeed += persistent.bonusAttackSpeed;
         baseStats.moveSpeed += persistent.bonusMoveSpeed;
+        if (persistent.doubleJumpUpgradeCount > 0)
+            baseStats.maxJumpCount = Mathf.Max(baseStats.maxJumpCount, 2);
         availableDashCount = MaxDashCount;
         RecalculateCurrentEquipmentStats();
     }
@@ -220,6 +222,11 @@ public class PlayerController : MonoBehaviour, IDamageable
                 if (persistent != null)
                     persistent.startingCoinBonus += Mathf.Max(1, Mathf.RoundToInt(amount));
                 break;
+            case ShamanUpgradeType.DoubleJump:
+                int extraJumps = Mathf.Max(0, 2 - baseStats.maxJumpCount);
+                baseStats.maxJumpCount += extraJumps;
+                currentJumpCount += extraJumps;
+                break;
             case ShamanUpgradeType.EquipmentRerollCount:
                 if (persistent != null)
                     persistent.equipmentRerollBonus += Mathf.Max(1, Mathf.RoundToInt(amount));
@@ -247,6 +254,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             ShamanUpgradeType.Speed => persistent.attackSpeedUpgradeCount,
             ShamanUpgradeType.DashCount => persistent.dashCountUpgradeCount,
             ShamanUpgradeType.DashCooldownReduction => persistent.dashCooldownUpgradeCount,
+            ShamanUpgradeType.DoubleJump => persistent.doubleJumpUpgradeCount,
             ShamanUpgradeType.StartingCoin => persistent.startingCoinUpgradeCount,
             ShamanUpgradeType.EquipmentRerollCount => persistent.equipmentRerollUpgradeCount,
             _ => 0
@@ -266,6 +274,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             case ShamanUpgradeType.Speed: persistent.attackSpeedUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.DashCount: persistent.dashCountUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.DashCooldownReduction: persistent.dashCooldownUpgradeCount += purchaseCount; break;
+            case ShamanUpgradeType.DoubleJump: persistent.doubleJumpUpgradeCount = 1; break;
             case ShamanUpgradeType.StartingCoin: persistent.startingCoinUpgradeCount += purchaseCount; break;
             case ShamanUpgradeType.EquipmentRerollCount: persistent.equipmentRerollUpgradeCount += purchaseCount; break;
         }
@@ -308,6 +317,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 애니메이터 파라미터 해시(문자열 비교보다 빠름)
     private static readonly int AnimMoveSpeed = Animator.StringToHash("MoveSpeed");
     private static readonly int AnimVerticalVelocity = Animator.StringToHash("VerticalVelocity");
+    private static readonly int AnimJumpState = Animator.StringToHash("Base Layer.Jump");
     private static readonly int AnimIsGrounded = Animator.StringToHash("IsGrounded");
     private static readonly int AnimIsDownJumping = Animator.StringToHash("IsDownJumping");
     private static readonly int AnimAttack = Animator.StringToHash("Attack");
@@ -1646,8 +1656,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     void GameOver()
     {
         if (isGameOver) return;
-
         isGameOver = true;
+        //============== 보스 HP바 즉시 숨기기 ==============
+        if (MainBossHealthUI.Instance != null)
+            MainBossHealthUI.Instance.HideImmediate();
+        if (MidBossHealthUI.Instance != null)
+            MidBossHealthUI.Instance.HideImmediate();
         StopAllCoroutines();
         if (bodyCollider != null && ignoredThinFloorCollider != null)
         { Physics2D.IgnoreCollision(bodyCollider, ignoredThinFloorCollider, false); ignoredThinFloorCollider = null; }
@@ -1724,9 +1738,18 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (jumpBufferTimer <= 0f) return false;
         if (!CanJumpNow()) return false;
 
+        bool isExtraJump = !isGrounded && coyoteTimer <= 0f
+            && currentJumpCount < stats.maxJumpCount;
         suppressKnockbackAirAnimation = false;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
         currentJumpCount--;
+
+        if (isExtraJump && animator != null && animator.HasState(0, AnimJumpState))
+        {
+            animator.SetBool(AnimIsGrounded, false);
+            animator.SetFloat(AnimVerticalVelocity, stats.jumpForce);
+            animator.Play(AnimJumpState, 0, 0f);
+        }
 
         isJumpHeld = true;
         jumpHoldTimer = 0f;
