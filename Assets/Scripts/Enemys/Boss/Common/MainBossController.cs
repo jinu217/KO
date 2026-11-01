@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -240,7 +240,8 @@ public class MainBossController : MidBossController
         activeAnimation = state;
         animationReturningToIdle = false;
         SetBusy(true);
-        bossAnimator.SetTrigger(action);
+        bossAnimator.Play(Animator.StringToHash("Base Layer." + state), 0, 0f);
+        bossAnimator.Update(0f);
         return true;
     }
 

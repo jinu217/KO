@@ -760,6 +760,8 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
                 step.hitboxOffset.y,
                 0f
             );
+            if (Effects != null && Effects.TryWeaponImpact(step, out var weaponPoint))
+                center = weaponPoint + Vector3.up * (step.hitboxSize.y * .5f);
             Gizmos.DrawWireCube(center, new Vector3(step.hitboxSize.x, step.hitboxSize.y, 0f));
             visibleHitIndex++;
         }

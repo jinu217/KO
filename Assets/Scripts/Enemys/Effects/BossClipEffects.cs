@@ -112,8 +112,8 @@ public sealed class BossClipEffects : MonoBehaviour
                 var blade = weapon.GetComponent<SpriteRenderer>();
                 if (blade != null && blade.sprite != null) position = blade.bounds.center;
             }
-            if (cue.anchor == Anchor.Feet && clip.name.StartsWith("MidBoss 1"))
-                position = BossEffects.RearFeet(animator != null ? animator.transform : transform, facing);
+            if (cue.anchor == Anchor.Feet && (cue.style == Style.Dash || cue.style == Style.Dust) && source != null)
+                position = source.MovementContact(facing);
             if (cue.anchor == Anchor.WeaponTip && weapon != null)
             {
                 var blade = weapon.GetComponent<SpriteRenderer>();
@@ -127,8 +127,8 @@ public sealed class BossClipEffects : MonoBehaviour
             }
             Vector2 offset = cue.offset + effect.offset;
             position += new Vector3(offset.x * facing, offset.y, 0);
-            if (cue.anchor == Anchor.Feet && clip.name.StartsWith("MidBoss 1"))
-                position = BossEffects.RearFeet(animator != null ? animator.transform : transform, facing);
+            if (cue.anchor == Anchor.Feet && (cue.style == Style.Dash || cue.style == Style.Dust) && source != null)
+                position = source.MovementContact(facing);
             if (cue.style == Style.Sand)
             {
 #if UNITY_EDITOR
@@ -148,7 +148,7 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.transform.rotation = Quaternion.Euler(0, 0, angle);
             float multiplier = cue.style == Style.Death ? 1 : 1.5f;
             sr.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale * cue.scale * multiplier);
-            if (clip.name.StartsWith("MidBoss 1") && (cue.style == Style.Dash || cue.style == Style.Dust))
+            if (cue.style == Style.Dash || cue.style == Style.Dust)
                 BossEffects.AlignTrail(sr, position, facing);
             Color color = cue.style == Style.Buff && !clip.name.StartsWith("MidBoss 1") ? new Color(.55f, .85f, 1, .55f) : Color.white;
             color.a *= Mathf.Clamp01((cue.duration - age) / Mathf.Min(.12f, cue.duration * .35f));

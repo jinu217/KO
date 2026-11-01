@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 
@@ -64,6 +64,12 @@ public interface IBossSpawnedSkillObject
 // BossSkillData의 액티브 단계와 버프를 공통 방식으로 실행한다.
 public static class BossSkillExecutor
 {
+#if UNITY_EDITOR
+    // Editor diagnostics observes the real query; no change to damage or timing.
+    public static event Action<IBossSkillContext, BossAttackStepData, Vector2, Collider2D> HitboxObserved;
+    public static void ObserveHitbox(IBossSkillContext context, BossAttackStepData step, Vector2 center, Collider2D hit)
+        => HitboxObserved?.Invoke(context, step, center, hit);
+#endif
     public static IEnumerator Execute(BossSkillData skill, IBossSkillContext context)
     {
         if (skill == null || context == null)
@@ -73,8 +79,22 @@ public static class BossSkillExecutor
         float lockedTargetX = context.PlayerPosition.x;
         int lockedDirection = context.LookDirection < 0 ? -1 : 1;
 
-        if (skill.preDelay > 0f)
-            yield return new WaitForSeconds(context.GetSkillDelay(skill.preDelay));
+        var effects = context.BossTransform.GetComponent<BossEffects>();
+        var steps = skill.active?.attackSteps;
+        bool timedFirst = steps != null && steps.Count > 0 && effects != null && effects.HasMotionTiming(steps[0]);
+        float preparation = timedFirst ? 0f : skill.preDelay;
+        if (context is Stage3_MidBoss)
+        {
+            if (skill.skillType == BossSkillType.Buff) preparation = .90f;
+            else if (skill.active != null && skill.active.attackSteps != null)
+                foreach (var step in skill.active.attackSteps)
+                {
+                    if (step.actionType == BossActionType.DashAttack) preparation = 1.08f;
+                    if (step.actionType == BossActionType.Jump) { preparation = .85f; break; }
+                }
+        }
+        if (preparation > 0f)
+            yield return new WaitForSeconds(context.GetSkillDelay(preparation));
 
         if (skill.skillType == BossSkillType.Active)
         {
@@ -137,7 +157,7 @@ public static class BossSkillExecutor
             context.BossTransform.GetComponent<BossEffects>()?.BeginStep(step);
             context.RefreshSkillDirection();
 
-            if (step.preDelay > 0f)
+            if (step.preDelay > 0f && !(context.BossTransform.GetComponent<BossEffects>()?.HasMotionTiming(step) ?? false))
                 yield return new WaitForSeconds(context.GetSkillDelay(step.preDelay));
 
             switch (step.actionType)
@@ -192,10 +212,14 @@ public static class BossSkillExecutor
         for (int i = 0; i < step.attackCount; i++)
         {
             var fx = context.BossTransform.GetComponent<BossEffects>();
-            if (fx != null) yield return fx.WaitForImpact(step, i);
+            if (fx != null)
+            {
+                yield return fx.WaitForImpact(step, i);
+                if (!fx.ImpactAllowed) yield break;
+            }
             PlayAttackEffect(step, context);
             HitPlayer(step, context);
-            if (i < step.attackCount - 1 && step.interval > 0f)
+            if (i < step.attackCount - 1 && step.interval > 0f && !(fx != null && fx.HasMotionTiming(step, i + 1)))
                 yield return new WaitForSeconds(context.GetSkillDelay(step.interval));
         }
     }
@@ -574,6 +598,9 @@ public static class BossSkillExecutor
 
     private static Vector3 MeleeCenter(BossAttackStepData step, IBossSkillContext context)
     {
+        var fx = context.BossTransform.GetComponent<BossEffects>();
+        if (fx != null && fx.TryWeaponImpact(step, out var weaponPoint))
+            return weaponPoint + Vector3.up * (step.hitboxSize.y * .5f);
         float reach = 0f;
         if ((step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam) &&
             context is Stage1_MidBoss midBoss1) reach = midBoss1.MeleeReachBonus;
@@ -589,6 +616,9 @@ public static class BossSkillExecutor
         Vector2 center = MeleeCenter(step, context);
 
         Collider2D hit = Physics2D.OverlapBox(center, step.hitboxSize, 0f, context.PlayerLayer);
+#if UNITY_EDITOR
+        ObserveHitbox(context, step, center, hit);
+#endif
         if (!CanDamagePlayer(hit))
             return false;
 

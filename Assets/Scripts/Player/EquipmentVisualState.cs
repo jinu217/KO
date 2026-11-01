@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -98,7 +98,7 @@ public sealed class EquipmentVisualState
             if (r == null || r.transform.name != "Sword") continue;
             var item = ItemFor("Sword");
             if (item == null) continue;
-            var delta = Quaternion.Euler(0, 0, WeaponRestAngle(item.weaponType));
+            var delta = Quaternion.Euler(0, 0, (item.previewSprite != null && (item.previewSprite.name == "나무 검" || item.previewSprite.name == "나무 단검" || item.previewSprite.name == "나무 창") ? 0f : WeaponRestAngle(item.weaponType)));
             r.transform.localRotation *= delta;
             appliedRotation[r.transform] = delta;
         }

@@ -131,7 +131,7 @@ public static class MidBoss3_AnimGenerators
             if (sortingState == null) sortingState = states[i].AddStateMachineBehaviour<MidBoss3WeaponSortingState>();
             sortingState.isSkill3 = i == 6;
             EditorUtility.SetDirty(sortingState);
-            states[i].motion = clip; states[i].speed = i == 2 ? 2f : 1f; states[i].speedParameter = "AttackSpeed"; states[i].speedParameterActive = i >= 3 && i <= 6; states[i].writeDefaultValues = false;
+            states[i].motion = clip; states[i].speed = 1f; states[i].speedParameter = "AttackSpeed"; states[i].speedParameterActive = i >= 3 && i <= 6; states[i].writeDefaultValues = false;
             foreach (var tr in states[i].transitions) if (tr.name.StartsWith("MidBoss3_Generated_")) states[i].RemoveTransition(tr);
             var settings = AnimationUtility.GetAnimationClipSettings(clip); settings.loopTime = i < 3; AnimationUtility.SetAnimationClipSettings(clip, settings); EditorUtility.SetDirty(clip);
         }

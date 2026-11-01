@@ -140,24 +140,28 @@ static class CombatFXScenePreview
         if (name.Contains("dskill")) { message = "욕망 스킬은 전용 실행 상태가 필요합니다."; return; }
         if (match.Success) index = int.Parse(match.Groups[1].Value) - 1;
         else if (name.Contains("combo3")) index = 1;
+        index = BossEffects.ClipSkillIndex(boss.stage, boss.mainBoss, activeClip.name, index);
         BossSkillData skill = index < 0 ? controller.data.basicAttack : index < controller.data.skills.Count ? controller.data.skills[index] : null;
         if (skill?.active?.attackSteps == null) return;
         float onset = skill.preDelay; int ordinal = 0;
-        var timing = boss.comboTimings?.FirstOrDefault(t => t.clip == activeClip);
         foreach (var step in skill.active.attackSteps)
         {
             if (step == null) continue;
             onset += step.preDelay;
-            if (step.actionType == BossActionType.DashAttack && time >= onset && time < onset + step.duration)
+            bool motionWindow = BossEffects.TryMovementWindow(activeClip, step.actionType, out float windowStart, out float windowEnd);
+            if (motionWindow) onset = windowStart;
+            if (step.actionType == BossActionType.DashAttack && time >= onset && time < (motionWindow ? windowEnd : onset + step.duration))
             {
                 var trail = boss.PreviewMovement(true, direction, time - onset);
                 if (trail != null) attacks.Add(trail);
             }
             int count = step.damage > 0 && step.actionType != BossActionType.SpawnPrefab ? step.attackCount : 0;
-            for (int pulse = 0; pulse < count; pulse++, ordinal++)
+            for (int pulse = 0; pulse < count; pulse++)
             {
+                int hitOrdinal = ordinal + pulse;
                 float impact = onset + pulse * step.interval;
-                if (timing?.impacts != null && ordinal < timing.impacts.Length) impact = Mathf.Max(impact, timing.impacts[ordinal]);
+                if ((step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam)
+                    && boss.TryMotionImpact(activeClip, hitOrdinal, out float authoredImpact)) impact = authoredImpact;
                 if (time < impact) continue;
                 float reach = controller is Stage1_MidBoss mid && (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam) ? mid.MeleeReachBonus : 0;
                 Vector3 center = SamplePosition(owner.transform, impact) + new Vector3(direction * (step.hitboxOffset.x + reach), step.hitboxOffset.y, 0);
@@ -165,10 +169,13 @@ static class CombatFXScenePreview
                 var instance = boss.PreviewStep(skill, index, step, pulse, center, direction, time - impact);
                 if (instance != null) attacks.Add(instance);
             }
+            if (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam
+                || (boss.stage == 4 && boss.mainBoss && step.actionType == BossActionType.DashAttack)) ordinal += Mathf.Max(1, step.attackCount);
+            if (motionWindow) { onset = windowEnd + step.postDelay; continue; }
             onset += (step.actionType == BossActionType.MeleeAttack ? Mathf.Max(0, step.attackCount - 1) * step.interval :
                 step.actionType == BossActionType.SpawnPrefab ? Mathf.Max(0, step.spawnCount - 1) * step.spawnInterval : step.duration) + step.postDelay;
         }
-        message = "인게임 공격 생성 코드 · 스킬 데이터 시간 / 현재 씬 배치 기준 (추적·충돌 조건 제외)";
+        message = "인게임 공격 생성 코드 · 등록된 모션 시각 우선 / 현재 씬 배치 (추적·충돌 조건 제외)";
     }
     static void PreviewMob(Animator animator, string name, float time, float direction)
     {

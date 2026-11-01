@@ -77,15 +77,15 @@ public sealed class EquipmentTestRoom : MonoBehaviour
         float panel = PanelPixels;
         view.rect = new Rect(panel / Screen.width, 0, 1 - panel / Screen.width, 1);
         var keyboard = Keyboard.current;
-        if (automatic && keyboard != null && GUIUtility.keyboardControl == 0)
+        if (keyboard != null && GUIUtility.keyboardControl == 0)
         {
             float direction = (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1 : 0) - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1 : 0);
             if (direction != 0)
             {
                 var scale = player.transform.localScale; scale.x = -direction * Mathf.Abs(scale.x); player.transform.localScale = scale;
-                if (currentMotion == "Player_Idle") SetMotion("Run");
+                if (automatic && currentMotion == "Player_Idle") SetMotion("Run");
             }
-            else if (currentMotion == "Run") SetMotion("Player_Idle");
+            else if (automatic && currentMotion == "Run") SetMotion("Player_Idle");
             if (keyboard.jKey.wasPressedThisFrame) Attack();
             if (keyboard.kKey.wasPressedThisFrame) SetMotion("Dash");
         }

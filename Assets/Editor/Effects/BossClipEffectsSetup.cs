@@ -146,7 +146,7 @@ public static class BossClipEffectsSetup
         var transforms = animator.GetComponentsInChildren<Transform>(true);
         driver.body = transforms.FirstOrDefault(t => t.name == "Body") ?? animator.transform;
         driver.weapon = transforms.FirstOrDefault(t => new[] { "Sword", "Weapon", "Axe", "Scythe", "Spear", "Mace" }.Contains(t.name));
-        driver.feet = transforms.FirstOrDefault(t => t.name == (stage == 1 && !main ? "Foot_F" : "Foot_B")) ?? transforms.FirstOrDefault(t => t.name.Contains("Foot")) ?? animator.transform;
+        driver.feet = transforms.FirstOrDefault(t => t.name == "Foot_F") ?? transforms.FirstOrDefault(t => t.name.Contains("Foot")) ?? animator.transform;
         var clips = animator.runtimeAnimatorController.animationClips.Distinct().ToList();
         var folders = clips.Select(c => System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(c)).Replace('\\', '/')).Distinct();
         foreach (var folder in folders.ToArray())
@@ -262,6 +262,7 @@ public static class BossClipEffectsSetup
         if (name.Contains("dskill")) return; // Dedicated desire systems must not invent damage or spawn FX.
         if (match.Success) index = int.Parse(match.Groups[1].Value) - 1;
         else if (name.Contains("combo3")) index = 1;
+        index = BossEffects.ClipSkillIndex(fx.stage, fx.mainBoss, clip.name, index);
         BossSkillData skill = index < 0 ? boss.data.basicAttack : index < boss.data.skills.Count ? boss.data.skills[index] : null;
         if (skill == null) return;
         if (name.Contains("dash")) { Add(cues, S.Dash, 0, clip.length, A.Feet, true); return; }
@@ -272,13 +273,15 @@ public static class BossClipEffectsSetup
         {
             if (step == null) continue;
             time += step.preDelay;
-            if (step.actionType == BossActionType.DashAttack) Add(cues, S.Dash, time, Mathf.Max(.01f, step.duration), A.Feet, true);
+            bool motionWindow = BossEffects.TryMovementWindow(clip, step.actionType, out float windowStart, out float windowEnd);
+            if (motionWindow) time = windowStart;
+            if (step.actionType == BossActionType.DashAttack) Add(cues, S.Dash, time, Mathf.Max(.01f, motionWindow ? windowEnd - windowStart : step.duration), A.Feet, true);
             int count = step.damage > 0 && step.actionType != BossActionType.SpawnPrefab ? step.attackCount : 0;
             for (int pulse = 0; pulse < count; pulse++)
             {
                 float impact = time + pulse * step.interval;
-                var timing = fx.comboTimings?.FirstOrDefault(t => t.clip == clip);
-                if (timing?.impacts != null && ordinal < timing.impacts.Length) impact = timing.impacts[ordinal];
+                if ((step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam)
+                    && fx.TryMotionImpact(clip, ordinal + pulse, out float authoredImpact)) impact = authoredImpact;
                 var kind = fx.ResolveForPreview(skill, index, step, pulse, out float angle);
                 if (kind != BossEffects.Kind.None)
                 {
@@ -290,8 +293,10 @@ public static class BossClipEffectsSetup
                     if (kind == BossEffects.Kind.Horizontal && ((fx.stage == 1 && !fx.mainBoss) || (fx.stage == 2 && fx.mainBoss)))
                     { cue.scale = fx.midBoss1HorizontalScale; cue.offset.y += fx.midBoss1HorizontalHeight + fx.additionalHeavyHorizontalHeight; }
                 }
-                ordinal++;
             }
+            if (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam
+                || (fx.stage == 4 && fx.mainBoss && step.actionType == BossActionType.DashAttack)) ordinal += Mathf.Max(1, step.attackCount);
+            if (motionWindow) { time = windowEnd + step.postDelay; continue; }
             float length = step.actionType == BossActionType.MeleeAttack ? Mathf.Max(0, step.attackCount - 1) * step.interval :
                 step.actionType == BossActionType.SpawnPrefab ? Mathf.Max(0, step.spawnCount - 1) * step.spawnInterval : step.duration;
             time += length + step.postDelay;
