@@ -136,7 +136,7 @@ public static class MainBoss4_AnimGenerators
         basic.active.attackSteps.Add(PunchStep("4타 전진 스트레이트", 20, .16f, true)); AddPattern(basic, -1, true);
         var second = JsonUtility.FromJson<BossSkillData>(JsonUtility.ToJson(data.skills[1]));
         second.active.attackSteps.Add(new BossAttackStepData { actionType = BossActionType.Jump, jumpForce = new Vector2(2, 7), duration = .18f });
-        var airStrike = PunchStep("공중 스트레이트", 22, .04f); airStrike.postDelay = .40f;
+        var airStrike = PunchStep("공중 스트레이트", 22, .18f); airStrike.postDelay = .50f;
         second.active.attackSteps.Add(airStrike); AddPattern(second, 1, true);
         var fourth = JsonUtility.FromJson<BossSkillData>(JsonUtility.ToJson(data.skills[3]));
         fourth.active.attackSteps[4].postDelay = .10f;
@@ -489,7 +489,8 @@ public static class MainBoss4_AnimGenerators
         if (airborneStrike)
         {
             wind = Mix(hit, hit, 0);
-            wind.angle[SF] -= 3f;
+            // Keep the elbow chambered, then extend through the full launch interval.
+            ArmAngles(wind, true, 55f, 95f, 12f);
         }
         if (skill == 3 && n == 5)
         {
@@ -497,7 +498,7 @@ public static class MainBoss4_AnimGenerators
         }
         float impact = Mathf.Max(.04f, step.preDelay);
         bool finalStraight = skill == 3 && n == 5;
-        float launchStart = (finalStraight || hook || body) ? Mathf.Max(0f, impact - .055f) : impact * .65f;
+        float launchStart = airborneStrike ? impact * .20f : (finalStraight || hook || body) ? Mathf.Max(0f, impact - .055f) : impact * .65f;
         if (t < launchStart)
         {
             float loadTime = skill == 3 && n == 4 ? Mathf.Max(.01f, launchStart - .045f) : (finalStraight || hook || body) ? Mathf.Min(.12f, launchStart) : launchStart;

@@ -1068,6 +1068,7 @@ public class MainBoss2_AnimGenerators
         L(FOOT_B, "localPosition.x", -0.060f); L(FOOT_B, "localPosition.y", -0.875f); L(FOOT_B, "localPosition.z", 0f);
         C(FOOT_B, "localEulerAngles.z", BUFF2_FOOT_B_ROT);
 
+        BossMotionPolish.GroundBuff(clip);
         Save(clip, clipName);
         GenerateAC();
     }

@@ -504,11 +504,13 @@ public static class BossSkillExecutor
         float nextHitTime = 0f;
         int hitCount = 0;
         bool playerEntered = false;
+        var effects = context.BossTransform.GetComponent<BossEffects>();
 
         while (elapsed <= lifetime && hitCount < step.attackCount)
         {
             bool playerInside = IsPlayerInHitbox(step, context);
-            if (!step.persistentFixedCadence && playerEntered && !playerInside)
+            if (!step.persistentFixedCadence && playerEntered && !playerInside
+                && !(effects != null && effects.UsesMovingWeaponHitbox(step)))
                 yield break;
 
             if (step.persistentFixedCadence)

@@ -16,7 +16,8 @@ public sealed class Stage3_MainBoss : MainBossController, IBossTimedMovementCont
             case -1: return "Attack";
             case 0: return "Skill1";
             case 1: return "Skill2";
-            case 2: return "Buff";
+            case 2:
+            case 4: return "Buff";
             case 3: return "Skill3";
             default: return "Skill" + (index + 1);
         }
@@ -92,8 +93,8 @@ public sealed class Stage3_MainBoss : MainBossController, IBossTimedMovementCont
                 rb.linearVelocity = new Vector2(vx, vy);
                 if (!stopped && singleHit != null && hits < damage.attackCount && now >= nextHit)
                 {
-                    Vector2 center = (Vector2)transform.position + new Vector2(motionDirection * damage.hitboxOffset.x, damage.hitboxOffset.y);
-                    Collider2D hit = Physics2D.OverlapBox(center, damage.hitboxSize, 0f, PlayerLayer);
+                    Bounds contact = BossSkillExecutor.AttackBounds(damage, this);
+                    Collider2D hit = Physics2D.OverlapBox(contact.center, contact.size, 0f, PlayerLayer);
                     if (BossSkillExecutor.CanDamagePlayer(hit))
                     {
                         yield return BossSkillExecutor.ExecuteRepeatedAttacks(singleHit, this);

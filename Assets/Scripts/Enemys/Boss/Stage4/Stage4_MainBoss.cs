@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepContext, IBossTimedMovementContext, IBossHitValidationContext, IBossTimedAttackContext
@@ -121,6 +121,7 @@ public sealed class Stage4_MainBoss : MainBossController, IBossConditionalStepCo
     public static float PunchLaunchTime(int skill, int n, BossAttackStepData step)
     {
         float impact = Mathf.Max(.04f, step.preDelay);
+        if (skill == 1 && n >= 4) return impact * .20f;
         bool hook = (skill == 0 && n == 2) || (skill == 3 && n >= 1 && n <= 4);
         bool body = (skill == 0 && n == 3) || (skill == 1 && n == 1);
         return (hook || body || (skill == 3 && n == 5)) ? Mathf.Max(0, impact - .055f) : impact * .65f;

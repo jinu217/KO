@@ -10,7 +10,8 @@ AnimatorState:
   m_Name: Merchant_IdleCoinPose
   m_Speed: 1
   m_CycleOffset: 0
-  m_Transitions: []
+  m_Transitions:
+  - {fileID: 5728681656436230514}
   m_StateMachineBehaviours:
   - {fileID: -3142302309651503013}
   m_Position: {x: 50, y: 50, z: 0}
@@ -177,7 +178,7 @@ AnimatorStateMachine:
   m_EntryPosition: {x: 50, y: 120, z: 0}
   m_ExitPosition: {x: 800, y: 120, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
-  m_DefaultState: {fileID: -5757043905616707501}
+  m_DefaultState: {fileID: -7174593975726721871}
 --- !u!1102 &3991120246793307134
 AnimatorState:
   serializedVersion: 6
@@ -269,6 +270,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f81d7853c48b6304b87992f41f263edc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RandomizeIdleStart
+--- !u!1101 &5728681656436230514
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions: []
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -7174593975726721871}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.2
+  m_TransitionOffset: 0
+  m_ExitTime: 1
+  m_HasExitTime: 1
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 1
 --- !u!1102 &6623847051524440331
 AnimatorState:
   serializedVersion: 6

@@ -263,9 +263,9 @@ public sealed class BossEffects : MonoBehaviour
     // authored attack poses; movement/landing-only actions keep their own clocks.
     static readonly Dictionary<string, float[]> MotionImpacts = new Dictionary<string, float[]>
     {
-        { "MainBoss1_Attack", new[] { 9f / 12f, 19f / 12f } },
-        { "MainBoss1_Prepared_Attack", new[] { 9f / 12f, 19f / 12f } },
-        { "MainBoss1_Prepared_Attack_Phase3", new[] { 9f / 12f, 19f / 12f } },
+        { "MainBoss1_Attack", new[] { 9f / 12f, 24f / 12f } },
+        { "MainBoss1_Prepared_Attack", new[] { 9f / 12f, 24f / 12f } },
+        { "MainBoss1_Prepared_Attack_Phase3", new[] { 9f / 12f, 24f / 12f } },
         { "MainBoss1_skill1", new[] { 3f / 12f, 12f / 12f, 24f / 12f } },
         { "MainBoss1_Prepared_skill1", new[] { 3f / 12f, 12f / 12f, 24f / 12f } },
         { "MainBoss1_Prepared_skill1_Phase3", new[] { 3f / 12f, 12f / 12f, 24f / 12f } },
@@ -278,11 +278,11 @@ public sealed class BossEffects : MonoBehaviour
         { "MidBoss2_Skill3", new[] { 14f / 12f } },
         { "MidBoss2_Skill3-2", new[] { 14f / 12f } },
         { "MidBoss2_Skill3-3", new[] { 14f / 12f } },
-        { "MainBoss2_Attack", new[] { 20f / 12f } },
+        { "MainBoss2_Attack", new[] { 16f / 12f } },
         { "MainBoss2_Skill1", new[] { 9f / 12f, 23f / 12f } },
-        { "MainBoss2_Skill2", new[] { 15f / 12f, 24f / 12f } },
+        { "MainBoss2_Skill2", new[] { 14f / 12f, 24f / 12f } },
         { "MidBoss3_Attack", new[] { .70f, 1.42f } },
-        { "MainBoss3_Attack", new[] { .34f, 1.10f } },
+        { "MainBoss3_Attack", new[] { .50f, 1.10f } },
         { "MainBoss3_Skill1", new[] { .60f } },
         { "MainBoss3_Skill2", new[] { .34f, .59f, .84f, 1.09f } },
         { "MidBoss4_Attack", new[] { .60f, 1.30f, 2.25f } }
@@ -520,13 +520,21 @@ public sealed class BossEffects : MonoBehaviour
     public bool TryAttackBounds(BossAttackStepData step, out Bounds bounds)
     {
         if (TryPunchGeometry(skillIndex, StepIndex(step), out _, out bounds)) return true;
-        if (stage != 5 || step == null || step.damage <= 0 || weaponAnchor == null) return false;
+        if (step == null || step.damage <= 0 || weaponAnchor == null) return false;
+        bool weaponContact = UsesWeaponContact(step);
+        if (stage != 5 && !weaponContact) return false;
         var blade = weaponAnchor.GetComponent<SpriteRenderer>();
         if (blade == null || blade.sprite == null) return false;
         bounds = VisibleBounds(blade);
         bounds.Expand(new Vector3(.2f, .2f, 0));
         return true;
     }
+    bool UsesWeaponContact(BossAttackStepData step)
+        => mainBoss && stage >= 1 && stage <= 3 && step != null
+            && (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam
+                || (stage == 3 && step.actionType == BossActionType.DashAttack) || UsesMovingWeaponHitbox(step));
+    public bool UsesMovingWeaponHitbox(BossAttackStepData step)
+        => mainBoss && stage == 3 && skillIndex == 0 && step != null && step.actionType == BossActionType.PersistentHitbox;
     public void PlayStep(BossAttackStepData step, Vector3 center, float direction)
     {
         if (ClipOwnsAttack) return;
@@ -551,18 +559,23 @@ public sealed class BossEffects : MonoBehaviour
         if (kind == Kind.Uppercut) angle = 65;
         bool fromFist = TryPunchGeometry(skillIndex, StepIndex(step), out var fist, out var fistBounds);
         if (fromFist) center = fistBounds.center - new Vector3((effect.offset.x + extra.x) * direction, effect.offset.y + extra.y, 0);
-        bool heavyHorizontal = UsesHeavyWeapon() && kind == Kind.Horizontal;
+        Bounds weaponBounds = default;
+        bool fromWeapon = UsesWeaponContact(step) && TryAttackBounds(step, out weaponBounds);
+        if (fromWeapon) center = weaponBounds.center - new Vector3((effect.offset.x + extra.x) * direction, effect.offset.y + extra.y, 0);
+        bool heavyHorizontal = !fromWeapon && UsesHeavyWeapon() && kind == Kind.Horizontal;
         if (heavyHorizontal) center.y += HeavyHorizontalHeight;
         var instance = Play(effect, center + new Vector3(extra.x * direction, extra.y, 0), direction, false, 1.5f);
         if (instance != null)
         {
             if (heavyHorizontal) instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
             float worldAngle = angle * direction;
-            if (kind == Kind.Thrust && stage == 5 && skillIndex == 0 && weaponAnchor != null)
+            if (kind == Kind.Thrust && ((stage == 5 && skillIndex == 0) || fromWeapon) && weaponAnchor != null)
             {
                 Vector3 blade = weaponAnchor.TransformVector(Vector3.up);
+                if (fromWeapon) blade = weaponBounds.center - weaponAnchor.position;
                 worldAngle = Mathf.Atan2(blade.y, blade.x) * Mathf.Rad2Deg - (direction < 0 ? 180f : 0f);
             }
+            if (fromWeapon) instance.FollowAnchor(weaponAnchor, weaponBounds.center);
             if (fromFist)
             {
                 var arm = fist.transform.parent.GetComponent<SpriteRenderer>();

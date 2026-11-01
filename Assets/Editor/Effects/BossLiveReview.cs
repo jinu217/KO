@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -20,9 +20,9 @@ public static class BossLiveReview
     const string Folder = "C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/boss_live_review";
     const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     [Serializable] class Command { public string id, op, scene; public int index=-1, phase=1, facing=1; public float distance=3, height; }
-    [Serializable] class State { public string commandId, scene, boss, clip, error, run; public bool playing, attacking; public float time, hp, normalized; public Vector3 bossPosition, playerPosition; public int skills, captures, hits; }
+    [Serializable] class State { public string commandId, scene, boss, clip, error, run, interpolation, bossId; public bool playing, attacking; public float time, hp, normalized; public Vector3 bossPosition, playerPosition; public int skills, captures, hits; }
     [Serializable] class Frame { public string file, clip; public float elapsed, normalized; public Vector3 bossPosition, playerPosition; public Hit[] hits; public int fxVisible; }
-    [Serializable] class Hit { public string step, action, collider; public Vector2 center, size, minViewport, maxViewport, playerMin, playerMax; public float time; }
+    [Serializable] class Hit { public string step, action, collider, artName; public Vector2 artMin, artMax, center, size, minViewport, maxViewport, playerMin, playerMax; public float time; }
     static MidBossController boss;
     static PlayerController player;
     static Animator animator;
@@ -110,7 +110,22 @@ public static class BossLiveReview
             Boss4SizingReview.ApplyReviewedSize();return;
         }
         if(c.op=="fx5") { BossClipEffectsSetup.RefreshStageFive();return; }
+        if(c.op=="airpunch") { MainBoss4_AnimGenerators.Skill2Menu();AssetDatabase.SaveAssets();return; }
+        if(c.op=="townverify") { BossMotionPolish.ValidateTown();return; }
+        if(c.op=="polishcapture") { BossVisualReview.Capture(new[]{"MainBoss2_Buff","MainBoss4_skill2_Uppercut_Desire"});return; }
+        if(c.op=="polish") { BossMotionPolish.Apply();return; }
         if(c.op=="bufffx") { BossClipEffectsSetup.RefreshBuffs();return; }
+        if(c.op=="heightreport") { BossAttackHeightReview.Report();return; }
+        if(c.op=="heightapply") { BossAttackHeightReview.Apply();return; }
+        if(c.op=="heightfirst") { BossAttackHeightReview.LowerFirstFinisher();return; }
+        if(c.op=="flightaim") { Stage5BossAnimationBuilder.RebuildMainFlightAim();return; }
+        if(c.op=="heightretime") { BossAttackHeightReview.RefreshTimings();return; }
+        if(c.op=="scenecopy") { if(Application.isPlaying)throw new Exception("Edit Mode required");EditorSceneManager.SaveScene(SceneManager.GetActiveScene(),Folder+"/pending_scene.unity",true);return; }
+        if(c.op=="reloadcopied")
+        {
+            if(Application.isPlaying || !File.Exists(Folder+"/pending_scene.unity"))throw new Exception("Edit Mode and preserved scene copy required");
+            EditorSceneManager.OpenScene(SceneManager.GetActiveScene().path);return;
+        }
         if(c.op=="scene")
         {
             if(EditorApplication.isPlayingOrWillChangePlaymode)throw new Exception("Stop play before opening another stage.");
@@ -318,7 +333,11 @@ public static class BossLiveReview
         if(run==null || boss==null || context.BossTransform!=boss.transform)return;
         var camera=Camera.main;
         Vector2 actualSize=BossSkillExecutor.LastObservedBounds.size;
-        pending.Add(new Hit{step=step.stepName,action=step.actionType.ToString(),center=center,size=actualSize,playerMin=player!=null?(Vector2)player.GetComponent<Collider2D>().bounds.min:Vector2.zero,playerMax=player!=null?(Vector2)player.GetComponent<Collider2D>().bounds.max:Vector2.zero,collider=collider!=null?collider.name:"none",time=Time.time-started,
+        var visual=boss.GetComponentInChildren<BossClipEffects>();
+        var art=visual!=null && visual.weapon!=null ? visual.weapon.GetComponent<SpriteRenderer>() : null;
+        if(boss is Stage4_MainBoss)art=boss.GetComponentsInChildren<SpriteRenderer>().Where(s=>s.name=="Hand_F" || s.name=="Hand_B").OrderBy(s=>Vector2.Distance(BossEffects.VisibleBounds(s).center,center)).FirstOrDefault();
+        Bounds artBounds=art!=null?BossEffects.VisibleBounds(art):new Bounds();
+        pending.Add(new Hit{artName=art!=null?art.name:"",artMin=artBounds.min,artMax=artBounds.max,step=step.stepName,action=step.actionType.ToString(),center=center,size=actualSize,playerMin=player!=null?(Vector2)player.GetComponent<Collider2D>().bounds.min:Vector2.zero,playerMax=player!=null?(Vector2)player.GetComponent<Collider2D>().bounds.max:Vector2.zero,collider=collider!=null?collider.name:"none",time=Time.time-started,
             minViewport=camera!=null?(Vector2)camera.WorldToViewportPoint(center-actualSize*.5f):Vector2.zero,
             maxViewport=camera!=null?(Vector2)camera.WorldToViewportPoint(center+actualSize*.5f):Vector2.zero});hits++;
     }
@@ -348,7 +367,7 @@ public static class BossLiveReview
     static void Status()
     {
         var s=new State{commandId=SessionState.GetString("BossLiveReview.command",""),scene=SceneManager.GetActiveScene().path,playing=Application.isPlaying,error=error,run=run,time=Time.time,captures=captures,hits=hits};
-        if(boss!=null){s.boss=boss.name;s.attacking=Attacking;s.bossPosition=boss.transform.position;s.skills=boss.data.skills.Count;s.clip=Clip();s.hp=(float)Get(boss,"currentHp");s.normalized=animator!=null?animator.GetCurrentAnimatorStateInfo(0).normalizedTime:0;}
+        if(boss!=null){s.interpolation=boss.GetComponent<Rigidbody2D>().interpolation.ToString();s.bossId=Get(boss,"bossId") as string;s.boss=boss.name;s.attacking=Attacking;s.bossPosition=boss.transform.position;s.skills=boss.data.skills.Count;s.clip=Clip();s.hp=(float)Get(boss,"currentHp");s.normalized=animator!=null?animator.GetCurrentAnimatorStateInfo(0).normalizedTime:0;}
         if(player!=null)s.playerPosition=player.transform.position;
         File.WriteAllText(Path.Combine(Folder,"status.json"),JsonUtility.ToJson(s,true));
     }

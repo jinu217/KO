@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -298,6 +298,8 @@ public static class BossClipEffectsSetup
             }
             else if (signal.Contains("DashStart") || signal.Contains("PassStart"))
             {
+                // Ground dust does not belong to MainBoss5 flight.
+                if(main && name.StartsWith("mainboss5_skill3"))continue;
                 string endName = signal.Replace("Start", "End");
                 float end = events.FirstOrDefault(x => x.stringParameter == endName)?.time
                     ?? events.FirstOrDefault(x => x.stringParameter == signal.Replace("Start", "Timeout"))?.time ?? clip.length;

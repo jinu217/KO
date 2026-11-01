@@ -1037,7 +1037,8 @@ public static class Stage5BossAnimationBuilder
         Pose lift = rest.Clone(); lift.pos[Body] = new Vector3(.060f, -.080f, 0);
         lift.rot[Body] = -85; lift.rot[Head] = 14.3f;
         lift.rot[SF] = 160; lift.rot[AF] = -25; lift.rot[HF] = 0;
-        lift.rot[SB] = 180; lift.rot[AB] = 0; lift.rot[HB] = 0;
+        // Bring the forward grip down to player height while keeping the airborne body pose.
+        lift.rot[SB] = 150; lift.rot[AB] = 0; lift.rot[HB] = 0;
         lift.pos[Weapon] = new Vector3(.230f, -.228f, 0); lift.rot[Weapon] = 90;
         lift.rot[Bottom] = 15; lift.rot[TF] = -5; lift.rot[CF] = -12; lift.rot[FF] = -60;
         lift.rot[TB] = 15; lift.rot[CB] = -45; lift.rot[FB] = -45;
@@ -1240,6 +1241,15 @@ public static class Stage5BossAnimationBuilder
 
     }
 
+    public static void RebuildMainFlightAim()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
+            throw new InvalidOperationException("Edit Mode required");
+        using(var r=new Rig(true))
+            foreach(var motion in Motions(r).Where(m=>m.name=="skill3" || m.name.StartsWith("skill3_",StringComparison.Ordinal)))
+                BuildClip(r,motion,r.folder+"/"+r.prefix+motion.name+".anim");
+        AssetDatabase.SaveAssets();
+    }
     public static void Generate(bool main, string only = null, bool setupOnly = false)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
