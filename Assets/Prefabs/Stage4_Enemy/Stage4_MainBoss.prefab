@@ -843,7 +843,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
@@ -1696,6 +1696,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 8afc67d346439a147b0784825d540b81, type: 2}
     runtime: 0
     cues:
@@ -1709,6 +1710,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: c28ed2c1e2694f646b35c56175591ae7, type: 2}
     runtime: 0
     cues:
@@ -1722,6 +1724,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 309988b11de102b46a95dee1c81a02d1, type: 2}
     runtime: 0
     cues: []
@@ -1741,6 +1744,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 0.37
       duration: 0.28
       angle: 0
@@ -1751,6 +1755,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 0.59000003
       duration: 0.12
       angle: 0
@@ -1761,6 +1766,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 0.59000003
       duration: 0.28
       angle: 0
@@ -1771,6 +1777,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: cdcfd2b873a8c4446b5151b560b5dbd3, type: 2}
     runtime: 0
     cues:
@@ -1784,6 +1791,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 0.25
       duration: 0.28
       angle: 0
@@ -1794,6 +1802,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 0.51
       duration: 0.12
       angle: 0
@@ -1804,6 +1813,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 0.51
       duration: 0.28
       angle: 0
@@ -1814,6 +1824,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 0.98
       duration: 0.12
       angle: 0
@@ -1824,6 +1835,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 0.98
       duration: 0.28
       angle: 0
@@ -1834,6 +1846,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 1.4200001
       duration: 0.12
       angle: 0
@@ -1844,6 +1857,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 1.4200001
       duration: 0.28
       angle: 20
@@ -1854,6 +1868,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 2.02
       duration: 0.12
       angle: 0
@@ -1864,6 +1879,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 2.02
       duration: 0.28
       angle: 0
@@ -1874,6 +1890,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 6024c4d9c5e00a840b6ac475badcddb2, type: 2}
     runtime: 0
     cues:
@@ -1887,6 +1904,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 1.28
       duration: 0.28
       angle: 65
@@ -1897,9 +1915,21 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: a699664614c6dfd46a24af5b5087f006, type: 2}
-    runtime: 0
-    cues: []
+    runtime: 1
+    cues:
+    - time: 0.40000004
+      duration: 0.7
+      angle: 0
+      scale: 1
+      style: 9
+      anchor: 0
+      offset: {x: 0, y: 0}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      buffKind: 1
   - clip: {fileID: 7400000, guid: df9a4d7ea19636c4fbff05e5edf35ab3, type: 2}
     runtime: 0
     cues:
@@ -1913,6 +1943,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 1.78
       duration: 0.28
       angle: -25
@@ -1923,6 +1954,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 2.32
       duration: 0.12
       angle: 0
@@ -1933,6 +1965,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 2.32
       duration: 0.28
       angle: 25
@@ -1943,6 +1976,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 2.86
       duration: 0.12
       angle: 0
@@ -1953,6 +1987,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 2.86
       duration: 0.28
       angle: -25
@@ -1963,6 +1998,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 3.7399998
       duration: 0.12
       angle: 0
@@ -1973,6 +2009,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 3.7399998
       duration: 0.28
       angle: 25
@@ -1983,9 +2020,21 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 775d9eb124ed0bd40b1670c3b080ee61, type: 2}
-    runtime: 0
-    cues: []
+    runtime: 1
+    cues:
+    - time: 0.40000004
+      duration: 0.7
+      angle: 0
+      scale: 1
+      style: 9
+      anchor: 0
+      offset: {x: 0, y: 0}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      buffKind: 4
   - clip: {fileID: 7400000, guid: b0cce2bf239fc1e4b9f1484cdc7949e3, type: 2}
     runtime: 0
     cues:
@@ -1999,6 +2048,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 0.37
       duration: 0.28
       angle: 0
@@ -2009,6 +2059,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 0.59000003
       duration: 0.12
       angle: 0
@@ -2019,6 +2070,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 0.59000003
       duration: 0.28
       angle: 0
@@ -2029,6 +2081,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 4bc5b082ba9e5234299445e309422ca4, type: 2}
     runtime: 0
     cues:
@@ -2042,6 +2095,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 1.78
       duration: 0.28
       angle: -25
@@ -2052,6 +2106,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 2.32
       duration: 0.12
       angle: 0
@@ -2062,6 +2117,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 2.32
       duration: 0.28
       angle: 25
@@ -2072,6 +2128,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 2.86
       duration: 0.12
       angle: 0
@@ -2082,6 +2139,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 2.86
       duration: 0.28
       angle: -25
@@ -2092,6 +2150,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 3.7399998
       duration: 0.12
       angle: 0
@@ -2102,6 +2161,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      buffKind: 0
     - time: 3.7399998
       duration: 0.28
       angle: 25
@@ -2112,6 +2172,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 5a3dfe9ec55765f44a92e4b56e7a8a5f, type: 2}
     runtime: 0
     cues:
@@ -2125,6 +2186,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 5c41078b35f48994ba793b848236da20, type: 2}
     runtime: 0
     cues:
@@ -2138,6 +2200,7 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      buffKind: 0
     - time: 1.28
       duration: 0.28
       angle: 65
@@ -2148,7 +2211,8 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
-  runtimeEnabled: 0
+      buffKind: 0
+  runtimeEnabled: 1
   down:
     sheet: {fileID: 2800000, guid: 4c696c1001b33c943be90cb1f55f5d94, type: 3}
     frames: []
@@ -2250,6 +2314,42 @@ MonoBehaviour:
     frames: []
     columns: 10
     fps: 24
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  buffOffense:
+    sheet: {fileID: 2800000, guid: f5b9def926bb8fd4b88f610ecc98d7e4, type: 3}
+    frames: []
+    columns: 20
+    fps: 28.571428
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  buffDefense:
+    sheet: {fileID: 2800000, guid: 4e374ac463662c6488e76ca778d2d395, type: 3}
+    frames: []
+    columns: 20
+    fps: 28.571428
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  buffSpeed:
+    sheet: {fileID: 2800000, guid: eef5c83fe159ac1469f7fb432b5ec920, type: 3}
+    frames: []
+    columns: 20
+    fps: 28.571428
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  buffRecovery:
+    sheet: {fileID: 2800000, guid: d994a3f3cad3c104ea047ff7432d563d, type: 3}
+    frames: []
+    columns: 20
+    fps: 28.571428
     scale: 1
     offset: {x: 0, y: 0}
     artFacesRight: 1

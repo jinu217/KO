@@ -9,6 +9,7 @@ public sealed class BossClipEffects : MonoBehaviour
 {
     public enum Style { Down, Up, Thrust, Spin, Punch, Dash, Dust, Hit, Death, Buff, Sand }
     public enum Anchor { Body, Weapon, Feet, Hitbox, WeaponTip }
+    public enum BuffKind { Legacy, Offense, Defense, Speed, Recovery }
     [Serializable] public class Cue
     {
         public float time, duration = .28f, angle, scale = 1;
@@ -16,6 +17,7 @@ public sealed class BossClipEffects : MonoBehaviour
         public Anchor anchor = Anchor.Weapon;
         public Vector2 offset;
         public bool alignBlade, loop, weaponSide;
+        public BuffKind buffKind;
     }
     [Serializable] public class Track
     {
@@ -29,6 +31,7 @@ public sealed class BossClipEffects : MonoBehaviour
     public Track[] tracks = Array.Empty<Track>();
     public bool runtimeEnabled;
     public MobEffects.Effect down, up, thrust, spin, punch, dash, dust, hit, death, buff, sand;
+    public MobEffects.Effect buffOffense, buffDefense, buffSpeed, buffRecovery;
     public float pixelsPerUnit = 64;
     public int sortingOrder = 100;
     readonly Dictionary<MobEffects.Effect, Sprite[]> frames = new Dictionary<MobEffects.Effect, Sprite[]>();
@@ -91,7 +94,8 @@ public sealed class BossClipEffects : MonoBehaviour
             if (runtime && clip.name.StartsWith("MidBoss 1") && cue.style != Style.Buff && cue.style != Style.Sand) continue;
             float age = time - cue.time;
             if (age < -.0001f || age >= cue.duration) continue;
-            MobEffects.Effect effect = GetEffect(cue.style);
+            MobEffects.Effect effect = cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy
+                ? BuffEffect(cue.buffKind) : GetEffect(cue.style);
             Sprite[] sheet = Frames(effect);
             if (sheet.Length == 0) continue;
             bool combat = cue.style <= Style.Punch;
@@ -148,9 +152,18 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.transform.rotation = Quaternion.Euler(0, 0, angle);
             float multiplier = cue.style == Style.Death ? 1 : 1.5f;
             sr.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale * cue.scale * multiplier);
+            if (cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy)
+            {
+                Bounds bounds = BuffBounds();
+                // Fit the full sheet canvas once, avoiding size pumping as particles converge.
+                float height = Mathf.Max(.2f, sheet[0].rect.height / sheet[0].pixelsPerUnit);
+                sr.transform.localScale = Vector3.one * Mathf.Max(.1f, bounds.size.y * .95f / height * cue.scale);
+                sr.transform.position = bounds.center + new Vector3(cue.offset.x * facing, cue.offset.y, 0);
+            }
             if (cue.style == Style.Dash || cue.style == Style.Dust)
                 BossEffects.AlignTrail(sr, position, facing);
-            Color color = cue.style == Style.Buff && !clip.name.StartsWith("MidBoss 1") ? new Color(.55f, .85f, 1, .55f) : Color.white;
+            Color color = cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy ? new Color(1,1,1,.8f) :
+                cue.style == Style.Buff && !clip.name.StartsWith("MidBoss 1") ? new Color(.55f, .85f, 1, .55f) : Color.white;
             color.a *= Mathf.Clamp01((cue.duration - age) / Mathf.Min(.12f, cue.duration * .35f));
             sr.color = color;
         }
@@ -192,6 +205,29 @@ public sealed class BossClipEffects : MonoBehaviour
         return a.y < b.y ? a : b;
     }
 #endif
+    MobEffects.Effect BuffEffect(BuffKind kind)
+    {
+        switch(kind)
+        {
+            case BuffKind.Offense: return buffOffense;
+            case BuffKind.Defense: return buffDefense;
+            case BuffKind.Speed: return buffSpeed;
+            case BuffKind.Recovery: return buffRecovery;
+            default: return buff;
+        }
+    }
+    Bounds BuffBounds()
+    {
+        // Same visual bounds in scene preview and play, independent of physics collider size.
+        bool found=false;Bounds result=new Bounds(body != null ? body.position : transform.position,Vector3.one);
+        foreach(var sr in GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            if(sr.sprite==null || (sr.name!="Body" && sr.name!="Head" && sr.name!="Foot_F" && sr.name!="Foot_B"))continue;
+            var bounds=BossEffects.VisibleBounds(sr);
+            if(!found){result=bounds;found=true;}else result.Encapsulate(bounds);
+        }
+        return result;
+    }
     MobEffects.Effect GetEffect(Style style)
     {
         switch (style)

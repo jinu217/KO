@@ -110,6 +110,7 @@ public static class BossLiveReview
             Boss4SizingReview.ApplyReviewedSize();return;
         }
         if(c.op=="fx5") { BossClipEffectsSetup.RefreshStageFive();return; }
+        if(c.op=="bufffx") { BossClipEffectsSetup.RefreshBuffs();return; }
         if(c.op=="scene")
         {
             if(EditorApplication.isPlayingOrWillChangePlaymode)throw new Exception("Stop play before opening another stage.");
@@ -166,6 +167,7 @@ public static class BossLiveReview
         }
         if(boss==null)throw new Exception("Prepare this stage first.");
         if(c.op=="playerattack") { player.StartCoroutine(ReviewPlayerAttackMovement());return; }
+        if(c.op=="playerrun") { player.StartCoroutine(ReviewPlayerRunInterpolation());return; }
         if(c.op=="size")
         {
             if(!(boss is Stage4_MainBoss) || Attacking || run!=null)throw new Exception("Idle MainBoss4 required.");
@@ -281,6 +283,33 @@ public static class BossLiveReview
             action.Dispose();InputSystem.RemoveDevice(pad);player.currentWeapon=oldWeapon;
             Set(player,"moveInput",Vector2.zero);Set(player,"isKeyboardControlPaused",wasPaused);
             File.WriteAllLines(Path.Combine(Folder,"player_attack_movement_review.txt"),lines);
+        }
+    }
+    static IEnumerator ReviewPlayerRunInterpolation()
+    {
+        var rb=player.GetComponent<Rigidbody2D>();var start=rb.position;
+        var original=rb.interpolation;var lines=new List<string>{"mode,time,playerX,cameraX"};
+        boss.enabled=false;boss.StopAllCoroutines();boss.GetComponent<Rigidbody2D>().simulated=false;
+        var camera=Camera.main;var follow=camera!=null?camera.GetComponent<CameraFollow2D>():null;
+        if(follow!=null)follow.enabled=true;
+        bool paused=(bool)Get(player,"isKeyboardControlPaused");Set(player,"isKeyboardControlPaused",false);
+        try
+        {
+            foreach(var mode in new[]{RigidbodyInterpolation2D.None,RigidbodyInterpolation2D.Interpolate})
+            {
+                rb.position=start;rb.linearVelocity=Vector2.zero;rb.interpolation=mode;
+                Set(player,"moveInput",Vector2.right);float until=Time.time+1.15f,warmup=Time.time+.2f;
+                while(Time.time<until)
+                {
+                    yield return new WaitForEndOfFrame();
+                    if(Time.time>=warmup)lines.Add(mode+","+Time.time.ToString("R",System.Globalization.CultureInfo.InvariantCulture)+","+player.transform.position.x.ToString("R",System.Globalization.CultureInfo.InvariantCulture)+","+camera.transform.position.x.ToString("R",System.Globalization.CultureInfo.InvariantCulture));
+                }
+            }
+        }
+        finally
+        {
+            rb.interpolation=original;Set(player,"moveInput",Vector2.zero);Set(player,"isKeyboardControlPaused",paused);
+            File.WriteAllLines(Path.Combine(Folder,"player_run_interpolation.csv"),lines);
         }
     }
     static string Clip() => animator!=null?string.Join("+",animator.GetCurrentAnimatorClipInfo(0).Select(c=>c.clip.name)):"";

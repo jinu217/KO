@@ -1,6 +1,7 @@
 ﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -12,6 +13,71 @@ using A = BossClipEffects.Anchor;
 public static class BossClipEffectsSetup
 {
     static BossClipEffects preview;
+    [MenuItem("Tools/Effects/Bosses/Refresh Buff Effects Only")]
+    public static void RefreshBuffs()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
+            throw new InvalidOperationException("Edit Mode required.");
+        ClearPreview();
+        int count=0;
+        for(int stage=1;stage<=5;stage++) foreach(bool main in new[]{false,true})
+        {
+            string runtimePath=$"Assets/Prefabs/Stage{stage}_Enemy/Stage{stage}_{(main?"Main":"Mid")}Boss.prefab";
+            var template=AssetDatabase.LoadAssetAtPath<GameObject>(runtimePath)?.GetComponent<BossEffects>();
+            if(template==null)throw new InvalidOperationException("Boss source missing: "+runtimePath);
+            foreach(string path in new[]{runtimePath,$"Assets/Prefab/{stage}/{(main?"Main":"Mid")}Boss {stage}.prefab"})
+            {
+                string backup="C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/buff_motion_before/"+path;
+                Directory.CreateDirectory(Path.GetDirectoryName(backup));if(!File.Exists(backup))File.Copy(path,backup);
+                var root=PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    var driver=root.GetComponentInChildren<BossClipEffects>(true);
+                    if(driver==null)throw new InvalidOperationException("Boss clip driver missing: "+path);
+                    ConfigureBuffs(driver,root.GetComponent<BossEffects>() ?? template);
+                    PrefabUtility.SaveAsPrefabAsset(root,path);count++;
+                }
+                finally{PrefabUtility.UnloadPrefabContents(root);}
+            }
+        }
+        AssetDatabase.SaveAssets();Debug.Log("[Boss Buff FX] Updated "+count+" prefabs; attack and movement tracks preserved.");
+    }
+    static void ConfigureBuffs(BossClipEffects driver,BossEffects fx)
+    {
+        MobEffects.Effect Charge(string name)=>new MobEffects.Effect {
+            sheet=Sheet("공격&데미지받을시&사망&대쉬등 다있는곳/"+name+".png"),columns=20,fps=20/.7f,scale=1
+        };
+        driver.buffOffense=Charge("charge_red_01");driver.buffDefense=Charge("charge_blue_01");
+        driver.buffSpeed=Charge("charge_yellow_01");driver.buffRecovery=Charge("charge_green_01");
+        var controller=fx.GetComponent<MidBossController>();if(controller==null || controller.data==null)return;
+        foreach(var track in driver.tracks)
+        {
+            if(track.clip==null)continue;
+            string name=track.clip.name.ToLowerInvariant();
+            if(name.Contains("dskill") || name.Contains("desire"))continue;
+            var match=Regex.Match(name,@"skill([1-9])");
+            int index=match.Success?int.Parse(match.Groups[1].Value)-1:-1;
+            if(index<0 && name.Contains("buff"))index=fx.stage==1?0:2;
+            if(index<0)continue;
+            index=BossEffects.ClipSkillIndex(fx.stage,fx.mainBoss,track.clip.name,index);
+            if(index>=controller.data.skills.Count)continue;
+            var skill=controller.data.skills[index];if(skill.skillType!=BossSkillType.Buff)continue;
+            // Keep the user's existing MidBoss1 typhoon, including its original size/timing.
+            if(fx.stage==1 && !fx.mainBoss){track.runtime=true;driver.runtimeEnabled=true;continue;}
+            var kind=BossClipEffects.BuffKind.Speed;
+            if(skill.buff.effects.Any(e=>e.stat==BossBuffStat.Damage))kind=BossClipEffects.BuffKind.Offense;
+            if(skill.buff.effects.Any(e=>e.stat==BossBuffStat.Defense || e.stat==BossBuffStat.DamageReduction))kind=BossClipEffects.BuffKind.Defense;
+            if(skill.buff.effects.Any(e=>e.stat==BossBuffStat.HealthRegeneration || e.stat==BossBuffStat.MaxHp))kind=BossClipEffects.BuffKind.Recovery;
+            float impact=fx.stage==3 && !fx.mainBoss ? .9f : skill.preDelay;
+            var apply=AnimationUtility.GetAnimationEvents(track.clip).FirstOrDefault(e=>(e.stringParameter??"").Contains("BuffApply"));
+            if(apply!=null)impact=apply.time;
+            float start=Mathf.Clamp(impact-.22f,0,Mathf.Max(0,track.clip.length-.7f));
+            var cues=track.cues.Where(c=>c.style!=S.Buff).ToList();
+            cues.Add(new BossClipEffects.Cue{style=S.Buff,anchor=A.Body,buffKind=kind,time=start,duration=Mathf.Min(.7f,track.clip.length-start),scale=1});
+            track.cues=cues.ToArray();track.runtime=true;driver.runtimeEnabled=true;
+        }
+        EditorUtility.SetDirty(driver);
+    }
     public static void RefreshStageFive()
     {
         if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Edit Mode required.");
@@ -175,6 +241,7 @@ public static class BossClipEffectsSetup
                 if (clip != null && Regex.IsMatch(clip.name, "(?i)" + (main ? "main" : "mid") + @"boss\s*" + stage) && !clips.Contains(clip)) clips.Add(clip);
             }
         driver.tracks = clips.Select(c => BuildTrack(c, source, stage, main)).ToArray();
+        ConfigureBuffs(driver,source);
         foreach (var track in driver.tracks) Validate(track);
         EditorUtility.SetDirty(driver);
     }
