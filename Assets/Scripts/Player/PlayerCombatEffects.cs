@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -81,7 +81,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
             if (daggerWeaponHeight.HasValue || anchor != null)
                 effectPosition.y = (daggerWeaponHeight ?? anchor.position.y) - 0.05f;
         }
-        Play(sheet, effectPosition, direction, flipY, 1.5f);
+        Play(sheet, effectPosition, direction, flipY, 1.5f, weapon == WeaponType.Scythe ? 1.5f : 1f);
     }
 
     public Transform DaggerEffectAnchor
@@ -100,7 +100,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         Play(sheet, (Vector2)transform.position + damageOffset, 1f, false);
     }
 
-    private void Play(Sprite sheet, Vector2 position, float facing, bool flipY, float speedMultiplier = 1f)
+    private void Play(Sprite sheet, Vector2 position, float facing, bool flipY, float speedMultiplier = 1f, float sizeMultiplier = 1f)
     {
         if (!isActiveAndEnabled || sheet == null)
             return;
@@ -117,7 +117,7 @@ public sealed class PlayerCombatEffects : MonoBehaviour
         if (gameObject.scene.IsValid() && gameObject.scene.isLoaded)
             SceneManager.MoveGameObjectToScene(effectObject, gameObject.scene);
         effectObject.transform.position = new Vector3(position.x, position.y, transform.position.z);
-        effectObject.transform.localScale = Vector3.one * Mathf.Max(0.01f, effectScale) * 1.5f;
+        effectObject.transform.localScale = Vector3.one * Mathf.Max(0.01f, effectScale) * 1.5f * sizeMultiplier;
 
         SpriteRenderer renderer = effectObject.AddComponent<SpriteRenderer>();
         renderer.sprite = frames[0];

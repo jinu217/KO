@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -16,7 +16,7 @@ public sealed class BossClipEffects : MonoBehaviour
         public Style style;
         public Anchor anchor = Anchor.Weapon;
         public Vector2 offset;
-        public bool alignBlade, loop, weaponSide;
+        public bool alignBlade, loop, weaponSide, backwards;
         public BuffKind buffKind;
     }
     [Serializable] public class Track
@@ -103,7 +103,7 @@ public sealed class BossClipEffects : MonoBehaviour
             int frame = Mathf.FloorToInt(Mathf.Max(0, age) * fps);
             frame = cue.loop ? frame % sheet.Length : Mathf.Min(frame, sheet.Length - 1);
             float cueFacing = cue.weaponSide && weapon != null && body != null
-                ? (weapon.position.x >= body.position.x ? 1 : -1) : facing;
+                ? (weapon.position.x >= body.position.x ? 1 : -1) : facing * (cue.backwards ? -1 : 1);
             SpriteRenderer sr = Renderer(count++);
             sr.enabled = true; sr.sprite = sheet[frame];
             sr.flipX = effect.artFacesRight ? cueFacing < 0 : cueFacing > 0; sr.flipY = effect.flipY;
@@ -117,7 +117,7 @@ public sealed class BossClipEffects : MonoBehaviour
                 if (blade != null && blade.sprite != null) position = blade.bounds.center;
             }
             if (cue.anchor == Anchor.Feet && (cue.style == Style.Dash || cue.style == Style.Dust) && source != null)
-                position = source.MovementContact(facing);
+                position = source.MovementContact(cueFacing, cue.backwards);
             if (cue.anchor == Anchor.WeaponTip && weapon != null)
             {
                 var blade = weapon.GetComponent<SpriteRenderer>();
@@ -132,13 +132,13 @@ public sealed class BossClipEffects : MonoBehaviour
             Vector2 offset = cue.offset + effect.offset;
             position += new Vector3(offset.x * facing, offset.y, 0);
             if (cue.anchor == Anchor.Feet && (cue.style == Style.Dash || cue.style == Style.Dust) && source != null)
-                position = source.MovementContact(facing);
+                position = source.MovementContact(cueFacing, cue.backwards);
             if (cue.style == Style.Sand)
             {
 #if UNITY_EDITOR
                 if (!runtime) position = PreviewContact(clip, cue.time, position);
 #endif
-                position.x -= .8f;
+                if (clip.name.StartsWith("MidBoss 1")) position.x -= .8f;
                 if (runtime && contactPositions.TryGetValue(cue, out var contact)) position = contact;
                 else contactPositions[cue] = position;
             }
@@ -161,7 +161,9 @@ public sealed class BossClipEffects : MonoBehaviour
                 sr.transform.position = bounds.center + new Vector3(cue.offset.x * facing, cue.offset.y, 0);
             }
             if (cue.style == Style.Dash || cue.style == Style.Dust)
-                BossEffects.AlignTrail(sr, position, facing);
+                BossEffects.AlignTrail(sr, position, cueFacing);
+            if (cue.style == Style.Sand)
+                sr.transform.position += Vector3.up * (position.y - BossEffects.VisibleBounds(sr).min.y);
             Color color = cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy ? new Color(1,1,1,.8f) :
                 cue.style == Style.Buff && !clip.name.StartsWith("MidBoss 1") ? new Color(.55f, .85f, 1, .55f) : Color.white;
             color.a *= Mathf.Clamp01((cue.duration - age) / Mathf.Min(.12f, cue.duration * .35f));

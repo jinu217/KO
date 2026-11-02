@@ -118,6 +118,8 @@ public static class BossLiveReview
         if(c.op=="heightreport") { BossAttackHeightReview.Report();return; }
         if(c.op=="heightapply") { BossAttackHeightReview.Apply();return; }
         if(c.op=="heightfirst") { BossAttackHeightReview.LowerFirstFinisher();return; }
+        if(c.op=="polishverify") { BossClipEffectsSetup.VerifyCombatPolish();return; }
+        if(c.op=="combatpolish") { Stage5BossAnimationBuilder.RebuildMainCombatPolish();BossClipEffectsSetup.RefreshCombatPolish();return; }
         if(c.op=="flightaim") { Stage5BossAnimationBuilder.RebuildMainFlightAim();return; }
         if(c.op=="heightretime") { BossAttackHeightReview.RefreshTimings();return; }
         if(c.op=="scenecopy") { if(Application.isPlaying)throw new Exception("Edit Mode required");EditorSceneManager.SaveScene(SceneManager.GetActiveScene(),Folder+"/pending_scene.unity",true);return; }

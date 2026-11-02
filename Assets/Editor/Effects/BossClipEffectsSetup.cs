@@ -78,6 +78,84 @@ public static class BossClipEffectsSetup
         }
         EditorUtility.SetDirty(driver);
     }
+    public static void RefreshCombatPolish()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
+            throw new InvalidOperationException("Edit Mode required");
+        ClearPreview();
+        for(int stage=1;stage<=5;stage++) foreach(bool main in new[]{false,true})
+        {
+            string sourcePath=$"Assets/Prefabs/Stage{stage}_Enemy/Stage{stage}_{(main?"Main":"Mid")}Boss.prefab";
+            var template=AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath).GetComponent<BossEffects>();
+            foreach(string path in new[]{sourcePath,$"Assets/Prefab/{stage}/{(main?"Main":"Mid")}Boss {stage}.prefab"})
+            {
+                string backup="C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/boss5_polish_before/"+path;
+                Directory.CreateDirectory(Path.GetDirectoryName(backup));if(!File.Exists(backup))File.Copy(path,backup);
+                var root=PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    var driver=root.GetComponentInChildren<BossClipEffects>(true);
+                    var fx=root.GetComponent<BossEffects>() ?? template;
+                    if(driver==null)continue;
+                    // Preserve all buff tuning; rebuild only the requested attack/movement cues.
+                    foreach(var track in driver.tracks)
+                    {
+                        if(track.clip==null)continue;
+                        var rebuilt=BuildTrack(track.clip,fx,stage,main);
+                        var buffs=track.cues.Where(c=>c.style==S.Buff).ToArray();
+                        track.cues=rebuilt.cues.Where(c=>c.style!=S.Buff).Concat(buffs).OrderBy(c=>c.time).ToArray();
+                    }
+                    if(stage==5 && main)driver.sand=MidOneSheet("sand_03");
+                    PrefabUtility.SaveAsPrefabAsset(root,path);
+                }
+                finally{PrefabUtility.UnloadPrefabContents(root);}
+            }
+        }
+        AssetDatabase.SaveAssets();
+    }
+    public static void VerifyCombatPolish()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Edit Mode required");
+        var report=new System.Text.StringBuilder();int contacts=0,rotations=0;
+        for(int stage=1;stage<=5;stage++)foreach(bool main in new[]{false,true})
+        {
+            string path=$"Assets/Prefabs/Stage{stage}_Enemy/Stage{stage}_{(main?"Main":"Mid")}Boss.prefab";
+            var root=PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                var fx=root.GetComponent<BossEffects>();var driver=root.GetComponentInChildren<BossClipEffects>(true);
+                var foot=root.GetComponentsInChildren<SpriteRenderer>(true).First(r=>r.name=="Foot_B");
+                foreach(float facing in new[]{-1f,1f})
+                {
+                    Vector3 scale=fx.motionAnimator.transform.localScale;scale.x=Mathf.Abs(scale.x)*facing;fx.motionAnimator.transform.localScale=scale;
+                    float travel=-facing;var contact=fx.MovementContact(travel,true);
+                    var instance=fx.PreviewMovement(true,travel,.12f,true);
+                    if(instance==null)throw new Exception("Missing retreat effect: "+path);
+                    try
+                    {
+                        var renderer=instance.GetComponent<SpriteRenderer>();var bounds=BossEffects.VisibleBounds(renderer);
+                        float edge=travel>0?bounds.max.x:bounds.min.x;
+                        float error=Mathf.Max(Mathf.Abs(edge-contact.x),Mathf.Abs(bounds.min.y-BossEffects.VisibleBounds(foot).min.y));
+                        if(error>.001f)throw new Exception("Retreat contact mismatch: "+path+" "+error);
+                        if(renderer.flipX!=(fx.dash.artFacesRight?travel<0:travel>0))throw new Exception("Retreat facing mismatch");
+                        report.AppendLine(path+" facing="+facing+" rear contact error="+error);contacts++;
+                    }
+                    finally{UnityEngine.Object.DestroyImmediate(instance.gameObject);}
+                }
+                foreach(var track in driver.tracks)
+                {
+                    int n=track.cues.Count(c=>c.style==S.Spin);rotations+=n;
+                    if(n>0 && driver.spin.sheet!=null && driver.spin.sheet.name.ToLowerInvariant().Contains("sting"))throw new Exception("Sting on rotation: "+path);
+                    if(stage==5 && main && track.clip.name=="MainBoss5_Attack" && track.cues.Any(c=>c.anchor==A.Feet))throw new Exception("Feet effect on sword attack");
+                    if(stage==5 && main && track.clip.name=="MainBoss5_skill3_Follow" && !track.cues.Any(c=>c.style==S.Sand))throw new Exception("Missing landing sand");
+                }
+            }
+            finally{PrefabUtility.UnloadPrefabContents(root);}
+        }
+        report.AppendLine("PASS: rear contacts="+contacts+", rotation cues without sting="+rotations);
+        File.WriteAllText("C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/combat_polish_verification.txt",report.ToString());
+        Debug.Log(report.ToString());
+    }
     public static void RefreshStageFive()
     {
         if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Edit Mode required.");
@@ -224,6 +302,7 @@ public static class BossClipEffectsSetup
         // A visual-only prefab must not reference a component in a different prefab asset at runtime.
         driver.source = source.transform.IsChildOf(animator.transform.root) ? source : null;
         driver.runtimeEnabled = (stage == 5 && main) || (stage == 1 && !main);
+        if (stage == 5 && main) driver.sand = MidOneSheet("sand_03");
         if (stage == 1 && !main)
         {
             driver.buff = MidOneSheet("typhoon_01"); driver.sand = MidOneSheet("sand_03");
@@ -290,7 +369,12 @@ public static class BossClipEffectsSetup
         foreach (var e in events)
         {
             string signal = e.stringParameter ?? "";
-            if (signal.EndsWith("Slam")) { Add(cues, S.Down, e.time); Add(cues, S.Punch, e.time, .22f, A.Feet).scale = .65f; }
+            if (signal.EndsWith("Slam")) { Add(cues, S.Down, e.time); if(!main) Add(cues, S.Punch, e.time, .22f, A.Feet).scale = .65f; }
+            else if (signal == "Skill3.FollowImpact" && main)
+            {
+                Add(cues,S.Down,e.time-1f/12,.25f,A.Weapon).scale=.8f;
+                Add(cues,S.Sand,e.time,.5f,A.WeaponTip).scale=.6f;
+            }
             else if (signal.Contains("SpinStart"))
             {
                 float end = events.FirstOrDefault(x => x.stringParameter == "Attack.SpinEnd")?.time ?? e.time + .6f;
@@ -299,7 +383,7 @@ public static class BossClipEffectsSetup
             else if (signal.Contains("DashStart") || signal.Contains("PassStart"))
             {
                 // Ground dust does not belong to MainBoss5 flight.
-                if(main && name.StartsWith("mainboss5_skill3"))continue;
+                if(main && (name.StartsWith("mainboss5_skill3") || name.Contains("attack")))continue;
                 string endName = signal.Replace("Start", "End");
                 float end = events.FirstOrDefault(x => x.stringParameter == endName)?.time
                     ?? events.FirstOrDefault(x => x.stringParameter == signal.Replace("Start", "Timeout"))?.time ?? clip.length;
@@ -363,7 +447,8 @@ public static class BossClipEffectsSetup
             time += step.preDelay;
             bool motionWindow = BossEffects.TryMovementWindow(clip, step.actionType, out float windowStart, out float windowEnd);
             if (motionWindow) time = windowStart;
-            if (step.actionType == BossActionType.DashAttack) Add(cues, S.Dash, time, Mathf.Max(.01f, motionWindow ? windowEnd - windowStart : step.duration), A.Feet, true);
+            if (step.actionType == BossActionType.DashAttack || BossEffects.IsRetreatStep(step))
+                Add(cues, S.Dash, time, Mathf.Max(.01f, motionWindow ? windowEnd - windowStart : step.duration), A.Feet, true).backwards=BossEffects.IsRetreatStep(step);
             int count = step.damage > 0 && step.actionType != BossActionType.SpawnPrefab ? step.attackCount : 0;
             for (int pulse = 0; pulse < count; pulse++)
             {
@@ -373,8 +458,8 @@ public static class BossClipEffectsSetup
                 var kind = fx.ResolveForPreview(skill, index, step, pulse, out float angle);
                 if (kind != BossEffects.Kind.None)
                 {
-                    S style = kind == BossEffects.Kind.Up ? S.Up : kind == BossEffects.Kind.Horizontal || kind == BossEffects.Kind.Thrust ? S.Thrust :
-                        kind == BossEffects.Kind.Spin ? S.Spin : kind == BossEffects.Kind.Punch || kind == BossEffects.Kind.Uppercut ? S.Punch : S.Down;
+                    S style = kind == BossEffects.Kind.Up ? S.Up : kind == BossEffects.Kind.Thrust ? S.Thrust :
+                        kind == BossEffects.Kind.Spin || kind == BossEffects.Kind.Horizontal ? S.Spin : kind == BossEffects.Kind.Punch || kind == BossEffects.Kind.Uppercut ? S.Punch : S.Down;
                     var cue = Add(cues, style, impact, .28f, A.Hitbox); cue.offset = step.hitboxOffset;
                     var rule = fx.overrides?.FirstOrDefault(r => r.skillIndex == index && r.stepIndex == skill.active.attackSteps.IndexOf(step) && r.pulse == pulse);
                     if (rule != null) cue.offset += rule.offset; cue.angle = kind == BossEffects.Kind.Uppercut ? 65 : angle;

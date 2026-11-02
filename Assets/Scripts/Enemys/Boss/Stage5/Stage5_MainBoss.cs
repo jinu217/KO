@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 // 일반 패턴의 특수 이동과 전용 욕망 컴포넌트의 공통 보스 연결을 담당한다.
@@ -25,6 +25,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
 
     private BossSkillData executingSkill;
     private bool dashHitPlayer;
+    private int lastSwordCrossing;
     private int lockedDashDirection;
     private Stage5BossAnimationRelay animationRelay;
     private float actionDelay = 1f;
@@ -162,6 +163,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     {
         actionDelay = GetSkillDelay(1f);
         executingSkill = skill;
+        lastSwordCrossing = 0;
         dashHitPlayer = false;
         lockedDashDirection = lookDirection < 0 ? -1 : 1;
         if (index == 4 && rb != null)
@@ -265,25 +267,40 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         ApplyFacingDirection();
     }
 
+    protected override void FixedUpdate()
+    {
+        base.FixedUpdate();
+        if (isDead || !isAttacking || executingSkill == null || currentSkillIndex != 0 || rb == null) return;
+        var animator = Relay != null ? Relay.GetComponent<Animator>() : null;
+        if (animator == null || !animator.isActiveAndEnabled) { StopMove(); return; }
+        var clips = animator.GetCurrentAnimatorClipInfo(0);
+        if (clips.Length == 0 || !clips[0].clip.name.StartsWith("MainBoss5_skill1")) { StopMove(); return; }
+        float frame = animator.GetCurrentAnimatorStateInfo(0).normalizedTime * clips[0].clip.length * 12f;
+        bool active = frame >= 12 && frame < 84;
+        if (active && playerTransform != null) FaceTowards(playerTransform.position.x);
+        bool walk = active && playerTransform != null && Mathf.Abs(playerTransform.position.x - rb.position.x) > .7f && !IsWallAhead();
+        var steps = executingSkill.active.attackSteps;
+        float speed = steps.Count > 0 ? steps[0].moveSpeed : 1.25f;
+        // Own velocity for the entire casting walk, including the intervening attack steps.
+        rb.linearVelocity = new Vector2(walk ? lookDirection * speed / Mathf.Max(.01f, actionDelay) : 0, rb.linearVelocity.y);
+        int crossing = Mathf.FloorToInt((frame - 12) / 9f);
+        if (active && crossing > lastSwordCrossing && crossing <= 7 && frame >= 12 + crossing * 9 + .6f)
+        {
+            lastSwordCrossing = crossing;
+            // Once per side change: close contact through the body, never a continuous damage aura.
+            if (steps.Count > 1 && bossCollider != null)
+            {
+                Bounds close = bossCollider.bounds;
+                close.Expand(new Vector3(.8f, .1f, 0));
+                BossSkillExecutor.HitPlayerAt(steps[1], this, close);
+            }
+        }
+    }
+
     private IEnumerator WalkOneStep(BossAttackStepData step)
     {
         if (step.preDelay > 0f) yield return new WaitForSeconds(Delay(step.preDelay));
-        float elapsed = 0f;
-        float duration = Delay(step.duration);
-        try
-        {
-            while (!isDead && rb != null && elapsed < duration)
-            {
-                if (playerTransform != null) FaceTowards(playerTransform.position.x);
-                bool walk = playerTransform != null
-                    && Mathf.Abs(playerTransform.position.x - transform.position.x) > .7f
-                    && !IsWallAhead();
-                rb.linearVelocity = new Vector2(walk ? lookDirection * step.moveSpeed / Mathf.Max(.01f, actionDelay) : 0f, rb.linearVelocity.y);
-                elapsed += Time.fixedDeltaTime;
-                yield return new WaitForFixedUpdate();
-            }
-        }
-        finally { StopMove(); }
+        yield return new WaitForSeconds(Delay(step.duration));
     }
 
     private IEnumerator VaultBehindPlayer(BossAttackStepData step)
@@ -310,10 +327,17 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
             rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             rb.linearVelocity = Vector2.zero;
             float elapsed = 0f;
+            bool turned = false;
             while (!isDead && elapsed < duration)
             {
                 float u = Mathf.Clamp01(elapsed / duration);
                 float progress = u * u * (3 - 2 * u);
+                if (!turned && u >= .5f)
+                {
+                    // The landing slash faces the player after vaulting past them.
+                    lookDirection = playerTransform.position.x >= target.x ? 1 : -1;
+                    ApplyFacingDirection(); turned = true;
+                }
                 Vector2 arc = Vector2.Lerp(start, target, progress)
                     + Vector2.up * (Mathf.Sin(progress * Mathf.PI) * vaultArcHeight);
                 rb.MovePosition(arc);

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
@@ -110,21 +110,23 @@ public sealed class BossEffects : MonoBehaviour
         bool translated = mainBoss && stage == 4 ? Mathf.Abs(delta.x) > .001f : delta.sqrMagnitude > .000001f;
         if (translated) lastDashMotion = Time.time;
         bool moving = Time.time - lastDashMotion < .08f;
-        bool dashStep = currentStep != null && (currentStep.actionType == BossActionType.DashAttack ||
+        bool retreat = IsRetreatStep(currentStep);
+        bool dashStep = currentStep != null && (currentStep.actionType == BossActionType.DashAttack || retreat ||
             (mainBoss && stage == 4 && skillIndex == 3 && currentStep.actionType == BossActionType.MoveForward));
         if (!dashStep || !moving || enemy == null || enemy.IsDead) { ClearDash(); return; }
-        if (dashInstance == null) dashInstance = Play(dash, DashOrigin(), enemy.FXDirection, true);
+        float travelDirection = enemy.FXDirection * (retreat ? -1 : 1);
+        Vector3 contact = MovementContact(travelDirection, retreat);
+        if (dashInstance == null) dashInstance = Play(dash, contact, travelDirection, true);
         if (dashInstance != null)
         {
-            dashInstance.transform.position = DashOrigin() + new Vector3(dash.offset.x * enemy.FXDirection, dash.offset.y, 0);
-            float angle = Mathf.Atan2(delta.y, Mathf.Abs(delta.x)) * Mathf.Rad2Deg;
-            dashInstance.transform.rotation = Quaternion.Euler(0, 0, angle * enemy.FXDirection);
-            {
-                dashInstance.transform.rotation = Quaternion.identity;
-                AlignTrail(dashInstance.GetComponent<SpriteRenderer>(), MovementContact(enemy.FXDirection), enemy.FXDirection);
-            }
+            dashInstance.SetFacing(travelDirection, dash.artFacesRight);
+            dashInstance.transform.rotation = Quaternion.identity;
+            AlignTrail(dashInstance.GetComponent<SpriteRenderer>(), contact, travelDirection);
         }
     }
+    public static bool IsRetreatStep(BossAttackStepData step)
+        => step != null && ((step.actionType == BossActionType.Jump && step.jumpForce.x < 0)
+            || ((step.actionType == BossActionType.MoveForward || step.actionType == BossActionType.DashAttack) && step.moveSpeed < 0));
     bool UsesHeavyWeapon()
     {
         if ((stage == 1 && !mainBoss) || (stage == 2 && mainBoss)) return true;
@@ -141,14 +143,14 @@ public sealed class BossEffects : MonoBehaviour
         return false;
     }
     Vector3 ChaseOrigin() => MovementContact(enemy.FXDirection) - new Vector3(chase.offset.x * enemy.FXDirection, chase.offset.y, 0);
-    public Vector3 MovementContact(float direction)
+    public Vector3 MovementContact(float direction, bool rear = false)
     {
         var root = motionAnimator != null ? motionAnimator.transform : transform;
         foreach (var foot in root.GetComponentsInChildren<SpriteRenderer>(true))
-            if (foot.name == "Foot_F" && foot.sprite != null)
+            if (foot.name == (rear ? "Foot_B" : "Foot_F") && foot.sprite != null)
             {
                 var b = VisibleBounds(foot);
-                float x = stage == 1 && !mainBoss ? RearFeet(root, direction).x : (direction > 0 ? b.min.x : b.max.x) - direction * .08f;
+                float x = !rear && stage == 1 && !mainBoss ? RearFeet(root, direction).x : (direction > 0 ? b.min.x : b.max.x) - direction * .08f;
                 return new Vector3(x, b.min.y, foot.transform.position.z);
             }
         return Feet();
@@ -552,8 +554,8 @@ public sealed class BossEffects : MonoBehaviour
         // 이기어검은 몸 앞에 고정하지 않고 실제 떠 있는 검 위치를 사용한다.
         if (stage == 5 && skillIndex == 0 && weaponAnchor != null)
         { var sr = weaponAnchor.GetComponent<SpriteRenderer>(); center = sr != null ? sr.bounds.center : weaponAnchor.position; }
-        var effect = kind == Kind.Up ? upward : kind == Kind.Horizontal || kind == Kind.Thrust ? horizontal :
-            kind == Kind.Spin ? spin : kind == Kind.Punch || kind == Kind.Uppercut ? punch : attack;
+        var effect = kind == Kind.Up ? upward : kind == Kind.Thrust ? horizontal :
+            kind == Kind.Spin || kind == Kind.Horizontal ? spin : kind == Kind.Punch || kind == Kind.Uppercut ? punch : attack;
         if (TryWeaponImpact(step, out var weaponPoint))
             center = weaponPoint - new Vector3(effect.offset.x * direction, effect.offset.y, 0);
         if (kind == Kind.Uppercut) angle = 65;
@@ -597,7 +599,7 @@ public sealed class BossEffects : MonoBehaviour
     {
         bool heavy = UsesHeavyWeapon();
         if (heavy) position.y += HeavyHorizontalHeight;
-        var instance = Play(horizontal, position, direction, false, 1.5f);
+        var instance = Play(spin, position, direction, false, 1.5f);
         if (heavy && instance != null)
             instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
     }
@@ -608,7 +610,7 @@ public sealed class BossEffects : MonoBehaviour
     public void PlayDeath() { Play(death, Center(), enemy != null ? enemy.FXDirection : 1); }
     public void PlayNotice(float direction) { if (noticed) return; noticed = true; Play(notice, Feet(), direction); }
 #if UNITY_EDITOR
-    public MobEffectInstance PreviewStep(BossSkillData skill, int index, BossAttackStepData step, int pulse, Vector3 center, float direction, float age)
+    public MobEffectInstance PreviewStep(BossSkillData skill, int index, BossAttackStepData step, int pulse, Vector3 center, float direction, float age, bool rear = false)
     {
         if (Application.isPlaying || age < 0) return null;
         var oldSkill = executing; int oldIndex = skillIndex;
@@ -629,18 +631,18 @@ public sealed class BossEffects : MonoBehaviour
             MobEffectInstance.LastPreviewSpawn = null;
         }
     }
-    public MobEffectInstance PreviewMovement(bool dashMotion, float direction, float age)
+    public MobEffectInstance PreviewMovement(bool dashMotion, float direction, float age, bool rear = false)
     {
         if (Application.isPlaying || age < 0) return null;
         var effect = dashMotion ? dash : chase;
         var collider = GetComponent<Collider2D>();
         Vector3 origin = collider != null ? new Vector3(collider.bounds.center.x, collider.bounds.min.y, transform.position.z) : transform.position;
-        origin = MovementContact(direction) - new Vector3(effect.offset.x * direction, effect.offset.y, 0);
+        origin = MovementContact(direction, rear) - new Vector3(effect.offset.x * direction, effect.offset.y, 0);
         var instance = Play(effect, origin, direction, true);
         if (instance != null)
         {
             instance.PreviewSample(age);
-            AlignTrail(instance.GetComponent<SpriteRenderer>(), MovementContact(direction), direction);
+            AlignTrail(instance.GetComponent<SpriteRenderer>(), MovementContact(direction, rear), direction);
         }
         return instance;
     }

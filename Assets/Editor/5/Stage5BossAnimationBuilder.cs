@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -264,9 +264,15 @@ public static class Stage5BossAnimationBuilder
         p.rot[Head] -= p.rot[Body] * .65f;
         p.pos[Body].y -= (run ? .09f : .045f) * (1 - Mathf.Cos(phase * Mathf.PI * 4)) * .5f;
         p.rot[Bottom] = -p.rot[Body] * .85f;
-        p.rot[SF] += (run ? -8 : 0) + (run ? 18 : 9) * w; p.rot[AF] += run ? 22 : 8;
-        p.rot[SB] += (run ? 12 : 4) - (run ? 9 : 5) * w; p.rot[AB] += run ? 20 : 8;
+        p.rot[SF] += (run ? -8 : 0) + (run ? (r.main ? 7 : 18) : 9) * w; p.rot[AF] += run ? 22 : 8;
+        p.rot[SB] += (run ? 12 : 4) - (run ? (r.main ? 3 : 9) : 5) * w; p.rot[AB] += run ? 20 : 8;
         p.rot[HB] -= 5;
+        if (run && r.main)
+        {
+            p.pos[Body].y *= .8f;
+            // Counter the remaining shoulder/body sway without moving the grip.
+            p.rot[Weapon] -= (1.8f - 3f) * w * .8f;
+        }
         // Keep the authored weapon grip; do not spin the blade during locomotion.
         for (int side = 0; side < 2; side++)
         {
@@ -274,7 +280,7 @@ public static class Stage5BossAnimationBuilder
             float u = Mathf.Repeat(phase + side * .5f, 1);
             float stride = run ? (r.main ? .70f : .50f) : .18f;
             float x = u < .5f ? Mathf.Lerp(stride, -stride, S(u * 2)) : Mathf.Lerp(-stride, stride, S((u - .5f) * 2));
-            float lift = u < .5f ? 0 : (run ? (r.main ? .30f : .27f) : .10f) * Mathf.Pow(Mathf.Sin((u - .5f) * 2 * Mathf.PI), 2);
+            float lift = u < .5f ? 0 : (run ? (r.main ? .24f : .27f) : .10f) * Mathf.Pow(Mathf.Sin((u - .5f) * 2 * Mathf.PI), 2);
             Vector2 target = r.World(r.rest, foot) + new Vector2(x, lift);
             r.Leg(p, front, target, u > .68f && u < .94f ? 10 * Mathf.Sin((u - .68f) / .26f * Mathf.PI) : 0);
         }
@@ -932,6 +938,15 @@ public static class Stage5BossAnimationBuilder
             target = f < 88 ? Vector2.Lerp(end[3], approach, back) : Vector2.Lerp(approach, catchGrip, S((f - 88) / 2));
             angle = Mathf.LerpAngle(toAngle[3], r.Angle(p, Weapon), back);
         }
+        int group = Mathf.FloorToInt((f - 12) / 9f);
+        float crossFrame = f - (12 + group * 9);
+        if (group > 0 && group < 8 && crossFrame < 1.25f)
+        {
+            Pose crossingPose = MainFlyingSword(r, 12 + group * 9 - .001f, variant);
+            float blend = S(crossFrame / 1.25f);
+            target = Vector2.Lerp(r.World(crossingPose, Weapon), target, blend);
+            angle = Mathf.LerpAngle(r.Angle(crossingPose, Weapon), angle, blend);
+        }
         r.WeaponAt(p, target, angle); return p;
     }
     static void MainMotions(Rig r, List<Motion> list)
@@ -1058,31 +1073,21 @@ public static class Stage5BossAnimationBuilder
         over.rot[TF] = 115; over.rot[CF] = -145; over.rot[FF] = -30;
         over.rot[TB] = 125; over.rot[CB] = -150; over.rot[FB] = -30;
         over.rot[SF] = 95; over.rot[AF] = 90; over.rot[SB] = 105; over.rot[AB] = 95;
-        // The sword is tucked before the fast revolution, with no reflection switch at frame 10.
-        Pose landing = rest.Clone(); landing.rot[Body] -= 720;
+        // Finish the revolution into a raised blade, then cut down as both feet land.
+        Pose landing = slam.Clone(); landing.rot[Body] -= 720;
+        Pose landingWind = charge.Clone(); landingWind.rot[Body] -= 720;
         Pose followEnd = rest.Clone(); followEnd.rot[Body] -= 720;
-        Pose tucked = over.Clone(); tucked.rot[Body] = Mathf.Lerp(lift.rot[Body], landing.rot[Body], .5f);
-        list.Add(new Motion("skill3_Follow", 18, false, f =>
+        Pose tucked = over.Clone(); tucked.rot[Body] = Mathf.Lerp(lift.rot[Body], -720, .5f);
+        list.Add(new Motion("skill3_Follow", 22, false, f =>
         {
             Pose p = Track(f, new Key(0, followStart), new Key(2, over), new Key(6, tucked),
-                new Key(12, landing), new Key(18, followEnd));
-            p.rot[Body] = Mathf.Lerp(lift.rot[Body], landing.rot[Body], S(f / 12));
+                new Key(9, landingWind), new Key(12, landing), new Key(14, landing), new Key(22, followEnd));
+            if (f < 9) p.rot[Body] = Mathf.Lerp(lift.rot[Body], landingWind.rot[Body], S(f / 9));
             p.scale[SF] = rest.scale[SF]; p.scale[SB] = rest.scale[SB];
             p.scale[Weapon] = rest.scale[Weapon];
-            // The weapon remains attached to the hand as the tucked pose opens toward Rest.
-            if (f >= 9 && r.vertices[Weapon] != null)
-            {
-                Matrix4x4 blade = r.Matrix(p, Weapon);
-                float low = r.vertices[Weapon].Min(v => blade.MultiplyPoint3x4(v).y);
-                if (low < r.floor)
-                {
-                    Vector3 correction = r.Matrix(p, HB).inverse.MultiplyVector(Vector3.up * (r.floor - low));
-                    p.pos[Weapon] += correction;
-                }
-            }
             return p;
         }).Cue(0, "Skill3.DashEnd").Cue(0, "Skill3.VaultStart").Cue(12, "Skill3.FollowImpact")
-            .Cue(12, "Skill3.VaultEnd").Cue(18, "Action.End"));
+            .Cue(12, "Skill3.VaultEnd").Cue(22, "Action.End"));
         list.Add(new Motion("skill3_Miss", 6, false, f => {
             Pose p = Track(f, new Key(0, lift), new Key(3, hover), new Key(6, rest));
             p.scale[Weapon].x = f < 2 ? -1 : rest.scale[Weapon].x; p.scale[SF].x = f < 2 ? -1 : rest.scale[SF].x; p.scale[SB].x = f < 2 ? -1 : rest.scale[SB].x; return p;
@@ -1241,6 +1246,15 @@ public static class Stage5BossAnimationBuilder
 
     }
 
+    public static void RebuildMainCombatPolish()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
+            throw new InvalidOperationException("Edit Mode required");
+        using(var r=new Rig(true))
+            foreach(var motion in Motions(r).Where(m=>m.name=="Run" || m.name.StartsWith("skill1",StringComparison.Ordinal) || m.name=="skill3_Follow"))
+                BuildClip(r,motion,r.folder+"/"+r.prefix+motion.name+".anim");
+        AssetDatabase.SaveAssets();
+    }
     public static void RebuildMainFlightAim()
     {
         if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())

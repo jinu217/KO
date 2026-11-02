@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -155,11 +155,12 @@ static class CombatFXScenePreview
             onset += step.preDelay;
             bool motionWindow = BossEffects.TryMovementWindow(activeClip, step.actionType, out float windowStart, out float windowEnd);
             if (motionWindow) onset = windowStart;
-            bool movementTrail = step.actionType == BossActionType.DashAttack
+            bool retreat = BossEffects.IsRetreatStep(step);
+            bool movementTrail = step.actionType == BossActionType.DashAttack || retreat
                 || (main4 && index == 3 && step.actionType == BossActionType.MoveForward);
             if (movementTrail && time >= onset && time < (motionWindow ? windowEnd : onset + step.duration))
             {
-                var trail = boss.PreviewMovement(true, direction, time - onset);
+                var trail = boss.PreviewMovement(true, direction * (retreat ? -1 : 1), time - onset, retreat);
                 if (trail != null) attacks.Add(trail);
             }
             int count = step.damage > 0 && step.actionType != BossActionType.SpawnPrefab ? step.attackCount : 0;
