@@ -139,7 +139,7 @@ public static class BossLiveReview
         if(c.op=="scene")
         {
             if(EditorApplication.isPlayingOrWillChangePlaymode)throw new Exception("Stop play before opening another stage.");
-            if(!c.scene.StartsWith("Assets/Scenes/Stage") || !c.scene.EndsWith(".unity"))throw new Exception("Stage path required.");
+            if((!c.scene.StartsWith("Assets/Scenes/Stage") && c.scene!="Assets/Scenes/Equipment_TestRoom.unity") || !c.scene.EndsWith(".unity"))throw new Exception("Stage or equipment test room path required.");
             if(Enumerable.Range(0,SceneManager.sceneCount).Any(i=>SceneManager.GetSceneAt(i).isDirty))throw new Exception("Unsaved scene: leave it untouched.");
             if(AnimationMode.InAnimationMode())AnimationMode.StopAnimationMode();
             EditorSceneManager.OpenScene(c.scene); return;

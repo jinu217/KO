@@ -29,6 +29,12 @@ public sealed class EquipmentTestRoom : MonoBehaviour
     Vector2 scroll;
     string search = "";
     Camera view;
+    public Camera TestCamera => view;
+    public int MachineEquipmentCount => equipped.Values.Count(i => i != null && i.rarity == ItemRarity.Mechanization);
+    public bool previewScreenEffects = true;
+    [Range(91, 220)] public float previewBpm = 91;
+    bool showScreenEffects;
+    int weaponCategory;
     GUISkin readableSkin;
     float UiScale => Mathf.Clamp(Screen.height / 720f, .75f, 3f);
     float PanelPixels => Mathf.Min(380f * UiScale, Screen.width * .46f);
@@ -118,9 +124,15 @@ public sealed class EquipmentTestRoom : MonoBehaviour
         GUILayout.BeginArea(new Rect(8, 8, width - 16, Screen.height / UiScale - 16), GUI.skin.box);
         GUILayout.Label("장비 테스트 룸 · Play 모드");
         GUILayout.Label("A/D 방향·달리기 · J 공격 · K 대시");
-        GUILayout.Label("외형·모션 전용 테스트 / 세이브 변경 없음");
+        GUILayout.Label("외형·모션·화면효과 / 세이브 변경 없음");
+        scroll = GUILayout.BeginScrollView(scroll);
         int next = GUILayout.SelectionGrid(tab, tabs, 3);
         if (next != tab) { tab = next; search = ""; scroll = Vector2.zero; }
+        if (tab == 4)
+        {
+            int category = GUILayout.SelectionGrid(weaponCategory, new[] { "일반 무기", "기계 무기" }, 2);
+            if (category != weaponCategory) { weaponCategory = category; scroll = Vector2.zero; }
+        }
         GUILayout.Label("장비 이름 검색");
         search = GUILayout.TextField(search);
         GUILayout.BeginHorizontal();
@@ -140,8 +152,14 @@ public sealed class EquipmentTestRoom : MonoBehaviour
         GUILayout.Label("재생 속도 " + speed.ToString("0.00")); speed = GUILayout.HorizontalSlider(speed, .1f, 2f);
         GUILayout.Label("확대 " + view.orthographicSize.ToString("0.00")); view.orthographicSize = GUILayout.HorizontalSlider(view.orthographicSize, .7f, 3f);
         if (GUILayout.Button("좌우 방향 반전")) { var s = player.transform.localScale; s.x = -s.x; player.transform.localScale = s; }
+        showScreenEffects = GUILayout.Toggle(showScreenEffects, "화면효과 확인 · 기계 장비 " + MachineEquipmentCount + "개");
+        if (showScreenEffects)
+        {
+            previewScreenEffects = GUILayout.Toggle(previewScreenEffects, "화면효과 켜기 (노이즈: 장착 장비 기준)");
+            GUILayout.Label("시험 BPM " + Mathf.RoundToInt(previewBpm) + " · 130부터 박동 강화");
+            previewBpm = GUILayout.HorizontalSlider(previewBpm, 91, 220);
+        }
         if (tab < types.Length && equipped.TryGetValue(types[tab], out var chosen)) GUILayout.Label("현재: " + chosen.itemName);
-        scroll = GUILayout.BeginScrollView(scroll);
         if (tab == 5)
         {
             foreach (var set in armorSets)
@@ -153,6 +171,7 @@ public sealed class EquipmentTestRoom : MonoBehaviour
             foreach (var item in items)
             {
                 if (item == null || item.equipType != types[tab]) continue;
+                if (tab == 4 && (item.rarity == ItemRarity.Mechanization) != (weaponCategory == 1)) continue;
                 string label = item.id + " · " + item.itemName;
                 if (!string.IsNullOrEmpty(search) && label.IndexOf(search, StringComparison.OrdinalIgnoreCase) < 0) continue;
                 if (GUILayout.Button(label, GUILayout.Height(40))) Equip(item);

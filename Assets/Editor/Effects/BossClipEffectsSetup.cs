@@ -302,7 +302,7 @@ public static class BossClipEffectsSetup
         // A visual-only prefab must not reference a component in a different prefab asset at runtime.
         driver.source = source.transform.IsChildOf(animator.transform.root) ? source : null;
         driver.runtimeEnabled = (stage == 5 && main) || (stage == 1 && !main);
-        if (stage == 5 && main) driver.sand = MidOneSheet("sand_03");
+        if ((stage == 5 && main) || source.UsesHeavyWeapon()) driver.sand = MidOneSheet("sand_03");
         if (stage == 1 && !main)
         {
             driver.buff = MidOneSheet("typhoon_01"); driver.sand = MidOneSheet("sand_03");
@@ -320,6 +320,7 @@ public static class BossClipEffectsSetup
                 if (clip != null && Regex.IsMatch(clip.name, "(?i)" + (main ? "main" : "mid") + @"boss\s*" + stage) && !clips.Contains(clip)) clips.Add(clip);
             }
         driver.tracks = clips.Select(c => BuildTrack(c, source, stage, main)).ToArray();
+        ConfigureHeavySand(driver, source);
         ConfigureBuffs(driver,source);
         foreach (var track in driver.tracks) Validate(track);
         EditorUtility.SetDirty(driver);
@@ -355,7 +356,36 @@ public static class BossClipEffectsSetup
                     down.offset = Vector2.zero; down.duration = .5f; }
             }
         }
+        AddHeavySand(cues, fx, clip);
         return new BossClipEffects.Track { clip = clip, runtime = runtime, cues = cues.ToArray() };
+    }
+    // Supplemental only: retain the existing slash, timing and hitbox owners.
+    public static void ConfigureHeavySand(BossClipEffects driver, BossEffects fx)
+    {
+        if (fx == null || !fx.UsesHeavyWeapon()) return;
+        driver.sand = MidOneSheet("sand_03");
+        driver.runtimeEnabled = true;
+        foreach (var track in driver.tracks)
+        {
+            var cues = track.cues.ToList();
+            AddHeavySand(cues, fx, track.clip);
+            track.cues = cues.ToArray();
+        }
+        EditorUtility.SetDirty(driver);
+    }
+    static void AddHeavySand(List<BossClipEffects.Cue> cues, BossEffects fx, AnimationClip clip)
+    {
+        if (fx == null || !fx.UsesHeavyWeapon()) return;
+        cues.RemoveAll(c => c.style == S.Sand && c.groundContact);
+        if (clip == null || clip.name.IndexOf("Horizontal", StringComparison.OrdinalIgnoreCase) >= 0) return;
+        foreach (var down in cues.Where(c => c.style == S.Down).ToArray())
+        {
+            // Stage2's jump is tied to the landing pose, not the data's old summed delays.
+            float impact = clip.name == "MainBoss2_Skill3" ? 19f / 12f : down.time;
+            if (cues.Any(c => c.style == S.Sand && Mathf.Abs(c.time - impact) < .15f)) continue;
+            cues.Add(new BossClipEffects.Cue { style = S.Sand, anchor = A.WeaponTip,
+                time = impact, duration = .5f, scale = .65f, groundContact = true });
+        }
     }
     static BossClipEffects.Cue Add(List<BossClipEffects.Cue> list, S style, float time, float duration = .28f, A anchor = A.Weapon, bool loop = false)
     {

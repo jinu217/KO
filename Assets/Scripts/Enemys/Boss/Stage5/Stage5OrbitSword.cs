@@ -17,7 +17,9 @@ public sealed class Stage5OrbitSword : MonoBehaviour
     Animator animator;
     Vector3 localPosition, launch, aim;
     Quaternion localRotation;
-    bool posed, hit;
+    bool posed, hit, entryCaptured;
+    Vector3 entryCenter;
+    Quaternion entryRotation;
     float attackStart = -100, nextAttack, baseAngle, frozenAngle;
     int lastStrike = -1;
     Bounds previous;
@@ -31,13 +33,13 @@ public sealed class Stage5OrbitSword : MonoBehaviour
         art = blade != null ? blade.GetComponent<SpriteRenderer>() : null;
         animator = fx != null ? fx.motionAnimator : null;
         Active = art != null && animator != null;
-        nextAttack = 1.5f; attackStart = -100; lastStrike = -1; hit = false;
+        nextAttack = 1.5f; attackStart = -100; lastStrike = -1; hit = false; entryCaptured = false;
         strike = new BossAttackStepData { actionType = BossActionType.MeleeAttack, damage = damage, attackCount = 1, hitboxSize = Vector2.one };
     }
     public void Cancel()
     {
         if (posed && blade != null) { blade.localPosition = localPosition; blade.localRotation = localRotation; }
-        Active = posed = false;
+        Active = posed = entryCaptured = false;
     }
     void OnDisable() { Cancel(); }
     Vector2 Axis(int index)
@@ -56,9 +58,17 @@ public sealed class Stage5OrbitSword : MonoBehaviour
         if (clips.Length == 0 || !clips[0].clip.name.StartsWith("MainBoss5_skill1")) { Cancel(); return; }
         float t = animator.GetCurrentAnimatorStateInfo(0).normalizedTime * clips[0].clip.length;
         localPosition = blade.localPosition; localRotation = blade.localRotation; posed = true;
-        if (t < 1 || t >= 7.5f) return;
-        Vector3 authored = blade.position;
+        if (t < .75f || t >= 7.5f) return;
+        Vector3 authored = art.bounds.center;
         Quaternion authoredRotation = blade.rotation;
+        // Take over before the authored flying-sword attack starts at frame 12.
+        // Blend from one captured release pose, not the moving original attack poses.
+        if (!entryCaptured)
+        {
+            entryCenter = transform.InverseTransformPoint(authored);
+            entryRotation = authoredRotation;
+            entryCaptured = true;
+        }
         float orbitAngle = (t - 1) * 1.7f;
         Vector3 orbit = transform.position + new Vector3(Mathf.Cos(orbitAngle) * orbitRadius,
             .5f + Mathf.Sin(orbitAngle) * 1.1f + Mathf.Sin(t * 4) * .18f, 0);
@@ -106,13 +116,14 @@ public sealed class Stage5OrbitSword : MonoBehaviour
                 desiredAngle = Mathf.LerpAngle(baseAngle + Angles[3], floatingAngle, u);
             }
         }
-        float weight = Mathf.SmoothStep(0, 1, (t - 1) / .3f) * (1 - Mathf.SmoothStep(0, 1, (t - 7) / .5f));
+        float enter = Mathf.SmoothStep(0, 1, (t - .75f) / .65f);
+        float leave = Mathf.SmoothStep(0, 1, (t - 7) / .5f);
         Vector2 currentAxis = blade.TransformVector(Vector3.up);
         float currentAngle = Mathf.Atan2(currentAxis.y, currentAxis.x) * Mathf.Rad2Deg;
-        blade.rotation = Quaternion.AngleAxis(Mathf.DeltaAngle(currentAngle, desiredAngle), Vector3.forward) * blade.rotation;
-        blade.position += point - art.bounds.center;
-        blade.position = Vector3.Lerp(authored, blade.position, weight);
-        blade.rotation = Quaternion.Slerp(authoredRotation, blade.rotation, weight);
+        Quaternion orbitRotation = Quaternion.AngleAxis(Mathf.DeltaAngle(currentAngle, desiredAngle), Vector3.forward) * blade.rotation;
+        blade.rotation = Quaternion.Slerp(Quaternion.Slerp(entryRotation, orbitRotation, enter), authoredRotation, leave);
+        Vector3 center = Vector3.Lerp(Vector3.Lerp(transform.TransformPoint(entryCenter), point, enter), authored, leave);
+        blade.position += center - art.bounds.center;
         Bounds contact = BossEffects.VisibleBounds(art); contact.Expand(.12f);
         if (damagingStrike >= 0)
         {

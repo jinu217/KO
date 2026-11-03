@@ -16,11 +16,18 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
     public Transform weapon;
     public Track[] tracks = Array.Empty<Track>();
     Sprite[] frames;
-    readonly SpriteRenderer[] echoes = new SpriteRenderer[4];
+    readonly SpriteRenderer[] echoes = new SpriteRenderer[3];
     public bool Covers(AnimationClip clip, float time)
     {
         foreach(var track in tracks)if(track.clip==clip)
             foreach(var window in track.windows)if(time>=window.x && time<=window.y)return true;
+        return false;
+    }
+    // A sheet started just before a rotation would otherwise overlap its first echoes.
+    public bool CoversImpact(AnimationClip clip, float time)
+    {
+        foreach(var track in tracks)if(track.clip==clip)
+            foreach(var window in track.windows)if(time<=window.y && time+.16f>=window.x)return true;
         return false;
     }
     void LateUpdate()
@@ -42,17 +49,24 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
         Clear();
         if(source==null || weapon==null || source.GetComponent<Stage5_MainBoss>()?.OrbitSwordActive==true)return;
         Track track=Array.Find(tracks,t=>t.clip==clip);
-        if(track==null || !Covers(clip,time))return;
+        if(track==null || (!Covers(clip,time) && !Covers(clip,time-.145f)))return;
         if(frames==null)BuildFrames();
         if(frames==null || frames.Length==0)return;
         var blade=weapon.GetComponent<SpriteRenderer>();
+        Vector3 lastCenter=Vector3.zero, lastAxis=Vector3.zero;
+        bool hasPrevious=false;
         for(int i=0;i<echoes.Length;i++)
         {
-            float past=time-i*.035f;if(!Covers(clip,past))continue;
+            float past=time-.025f-i*.06f;if(!Covers(clip,past))continue;
             float sample=Mathf.Clamp(past*48,0,track.centers.Length-1);
             int a=Mathf.FloorToInt(sample),b=Mathf.Min(a+1,track.centers.Length-1);float u=sample-a;
             Vector3 center=transform.TransformPoint(Vector3.Lerp(track.centers[a],track.centers[b],u));
             Vector3 tip=transform.TransformPoint(Vector3.Lerp(track.tips[a],track.tips[b],u));
+            Vector3 axis=tip-center;
+            // Slow/stationary sections should not stack several almost identical sheets.
+            if(hasPrevious && Vector3.Angle(lastAxis,axis)<12 && Vector3.Distance(lastCenter,center)<axis.magnitude*.15f)continue;
+            lastCenter=center;lastAxis=axis;hasPrevious=true;
+            center+=axis*.1f;
             if(echoes[i]==null)
             {
                 var go=new GameObject("Weapon Slash Arc "+i){hideFlags=HideFlags.HideAndDontSave};
@@ -61,13 +75,15 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
             }
             var sr=echoes[i];sr.enabled=true;
             sr.sprite=frames[Mathf.Clamp(frames.Length/3+i,0,frames.Length-1)];
-            sr.sortingLayerID=blade.sortingLayerID;sr.sortingOrder=blade.sortingOrder-1;
+            sr.sortingLayerID=blade.sortingLayerID;sr.sortingOrder=blade.sortingOrder-1-i;
             sr.flipX=transform.lossyScale.x<0;
             sr.transform.rotation=Quaternion.Euler(0,0,Mathf.Atan2(tip.y-center.y,tip.x-center.x)*Mathf.Rad2Deg-90);
-            BossEffects.FitWeaponEffect(sr,weapon,1.05f);
+            BossEffects.FitWeaponEffect(sr,weapon,.92f);
+            var scale=sr.transform.localScale;scale.x*=.5f;sr.transform.localScale=scale;
             sr.transform.position=center;
             sr.transform.position+=center-BossEffects.VisibleBounds(sr).center;
-            sr.color=new Color(1,1,1,.32f-i*.07f);
+            if(source.mainBoss && source.stage==2)sr.transform.position+=Vector3.up*.15f;
+            sr.color=new Color(1,1,1,i==0?.2f:i==1?.06f:.015f);
         }
     }
     void BuildFrames()

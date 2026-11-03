@@ -974,19 +974,19 @@ public static class Stage5BossAnimationBuilder
         dashEnd.rot[Weapon] = spinEnd.rot[Weapon] + Mathf.DeltaAngle(spinEnd.rot[Weapon], dash.rot[Weapon]);
         Pose final = rest.Clone();
         final.rot[Weapon] = dashEnd.rot[Weapon] + Mathf.DeltaAngle(dashEnd.rot[Weapon], rest.rot[Weapon]);
-        list.Add(new Motion("Attack", 35, false, f =>
+        list.Add(new Motion("Attack", 34, false, f =>
         {
             Pose p = Track(f, new Key(0, rest), new Key(3, charge), new Key(5, slam), new Key(8, slam),
-                new Key(11, spin), new Key(20, spinEnd), new Key(22, dashEnd), new Key(30, dashEnd), new Key(35, final));
+                new Key(11, spin), new Key(20, spinEnd), new Key(22, dashEnd), new Key(29, dashEnd), new Key(34, final));
             if (f >= 8 && f <= 20)
                 p.rot[Weapon] = Mathf.Lerp(slam.rot[Weapon], spinEnd.rot[Weapon], S((f - 8) / 14));
             // Compensate shoulder/body motion so the blade does not pitch during the dash transition.
-            if (f >= 20 && f <= 30) r.BladeAt(p, Vector2.right);
+            if (f >= 20 && f <= 29) r.BladeAt(p, Vector2.right);
             return p;
         })
             .Cue(5, "Attack.Slam").Cue(8, "Attack.SpinStart").Cue(8, "Attack.Pulse1").Cue(11, "Attack.Pulse2")
             .Cue(14, "Attack.Pulse3").Cue(17, "Attack.Pulse4").Cue(20, "Attack.SpinEnd")
-            .Cue(22, "Attack.DashStart").Cue(30, "Attack.DashEnd").Cue(35, "Action.End"));
+            .Cue(22, "Attack.DashStart").Cue(29, "Attack.DashEnd").Cue(34, "Action.End"));
         AddSwordVariants(r, list);
         Pose frontBuff = CapeSpread(r, false), backBuff = CapeSpread(r, true);
         Pose capeReady = rest.Clone(); capeReady.rot[SF] = 32.5f; capeReady.rot[AF] = 45; capeReady.rot[HF] = 15;
@@ -1879,7 +1879,7 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.active.attackSteps.Array.data[2].actionType", 4f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].preDelay", 2f / 12f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].postDelay", 0.416666667f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].duration", 8f / 12f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].duration", 7f / 12f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].interval", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].attackCount", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].damage", 16f);
@@ -1890,7 +1890,7 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackForce.x", 7f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackForce.y", 2f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackAwayFromCenter", 0f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].moveSpeed", 8.4f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].moveSpeed", 9.6f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].maxMoveDistance", 5.6f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].stopAtWall", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].stopOnPlayerHit", 0f);

@@ -189,7 +189,7 @@ static class CombatFXScenePreview
                 if (step.hitboxSize.x <= 0 || step.hitboxSize.y <= 0) continue;
                 var arc=owner.GetComponent<BossWeaponSlashTrail>();
                 var kind=boss.ResolveForPreview(skill,index,step,pulse,out _);
-                if(!(boss.stage==3 && !boss.mainBoss && step.actionType==BossActionType.Slam) && arc!=null && arc.Covers(activeClip,time) && (kind==BossEffects.Kind.Spin || kind==BossEffects.Kind.Horizontal || kind==BossEffects.Kind.Down || kind==BossEffects.Kind.Up))continue;
+                if(!(boss.stage==3 && !boss.mainBoss && step.actionType==BossActionType.Slam) && arc!=null && arc.CoversImpact(activeClip,impact) && (kind==BossEffects.Kind.Spin || kind==BossEffects.Kind.Horizontal || kind==BossEffects.Kind.Down || kind==BossEffects.Kind.Up))continue;
                 var instance = boss.PreviewStep(skill, index, step, pulse, center, direction, time - impact);
                 if (instance != null) attacks.Add(instance);
             }

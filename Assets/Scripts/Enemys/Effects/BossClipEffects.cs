@@ -16,7 +16,7 @@ public sealed class BossClipEffects : MonoBehaviour
         public Style style;
         public Anchor anchor = Anchor.Weapon;
         public Vector2 offset;
-        public bool alignBlade, loop, weaponSide, backwards;
+        public bool alignBlade, loop, weaponSide, backwards, groundContact;
         public BuffKind buffKind;
     }
     [Serializable] public class Track
@@ -83,7 +83,9 @@ public sealed class BossClipEffects : MonoBehaviour
         if(runtime && clip.name.StartsWith("MainBoss5_skill1") && source!=null && source.GetComponent<Stage5_MainBoss>()?.OrbitSwordActive==true)
         { ClearVisuals(); return; }
         Track track = Find(clip);
-        if (track == null || (runtime && !track.runtime)) { ClearVisuals(); return; }
+        if (track == null) { ClearVisuals(); return; }
+        // Supplemental dust must never take ownership of the existing attack FX.
+        if(runtime && !track.runtime) supplementalOnly = true;
 
         int count = 0;
         float facing = transform.lossyScale.x < 0 ? -1 : 1;
@@ -96,7 +98,7 @@ public sealed class BossClipEffects : MonoBehaviour
         {
             if (supplementalOnly && cue.style != Style.Buff && cue.style != Style.Sand) continue;
             if (runtime && clip.name.StartsWith("MidBoss 1") && cue.style != Style.Buff && cue.style != Style.Sand) continue;
-            if((cue.style==Style.Spin || cue.style==Style.Down || cue.style==Style.Up) && slashTrail!=null && slashTrail.Covers(clip,time))continue;
+            if((cue.style==Style.Spin || cue.style==Style.Down || cue.style==Style.Up) && slashTrail!=null && slashTrail.CoversImpact(clip,cue.time))continue;
             float age = time - cue.time;
             if (age < -.0001f || age >= cue.duration) continue;
             MobEffects.Effect effect = cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy
@@ -144,9 +146,11 @@ public sealed class BossClipEffects : MonoBehaviour
                 if (!runtime) position = PreviewContact(clip, cue.time, position);
 #endif
                 if (clip.name.StartsWith("MidBoss 1")) position.x -= .8f;
+                if(cue.groundContact) position.y = GroundHeight(position);
                 if (runtime && contactPositions.TryGetValue(cue, out var contact)) position = contact;
                 else contactPositions[cue] = position;
             }
+            if(combat && source!=null && source.mainBoss && source.stage==2)position.y+=.15f;
             sr.transform.position = position;
             float angle = cue.angle * facing;
             if (cue.alignBlade && weapon != null)
@@ -177,6 +181,23 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.color = color;
         }
         for (int i = count; i < renderers.Count; i++) if (renderers[i] != null) renderers[i].enabled = false;
+    }
+    float GroundHeight(Vector3 contact)
+    {
+        var controller = source != null ? source.GetComponent<MidBossController>() : GetComponentInParent<MidBossController>();
+        var collider = controller != null ? controller.GetComponent<Collider2D>() : null;
+        float floor = collider != null ? collider.bounds.min.y : feet != null ? feet.position.y : contact.y;
+        if(controller != null)
+        {
+            var hit = Physics2D.Raycast(new Vector2(contact.x, floor + .75f), Vector2.down, 1.5f, controller.wallLayer);
+            if(hit.collider != null) return hit.point.y;
+        }
+        if(feet != null)
+        {
+            var foot = feet.GetComponent<SpriteRenderer>();
+            if(foot != null && foot.sprite != null) floor = BossEffects.VisibleBounds(foot).min.y;
+        }
+        return floor;
     }
 #if UNITY_EDITOR
     // Evaluate the contact pose without changing the scene's currently sampled pose.

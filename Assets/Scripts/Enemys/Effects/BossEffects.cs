@@ -127,7 +127,7 @@ public sealed class BossEffects : MonoBehaviour
     public static bool IsRetreatStep(BossAttackStepData step)
         => step != null && ((step.actionType == BossActionType.Jump && step.jumpForce.x < 0)
             || ((step.actionType == BossActionType.MoveForward || step.actionType == BossActionType.DashAttack) && step.moveSpeed < 0));
-    bool UsesHeavyWeapon()
+    public bool UsesHeavyWeapon()
     {
         if ((stage == 1 && !mainBoss) || (stage == 2 && mainBoss)) return true;
         if (weaponAnchor == null) return false;
@@ -556,7 +556,7 @@ public sealed class BossEffects : MonoBehaviour
         {
             var trail=motionAnimator.GetComponent<BossWeaponSlashTrail>();
             var info=motionAnimator.GetCurrentAnimatorClipInfo(0);
-            if(trail!=null && info.Length>0 && trail.Covers(info[0].clip,motionAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime*info[0].clip.length))return;
+            if(trail!=null && info.Length>0 && trail.CoversImpact(info[0].clip,motionAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime*info[0].clip.length))return;
         }
         // 이기어검은 몸 앞에 고정하지 않고 실제 떠 있는 검 위치를 사용한다.
         if (stage == 5 && skillIndex == 0 && weaponAnchor != null)
@@ -571,6 +571,7 @@ public sealed class BossEffects : MonoBehaviour
         Bounds weaponBounds = default;
         bool fromWeapon = UsesWeaponContact(step) && TryAttackBounds(step, out weaponBounds);
         if (fromWeapon) center = weaponBounds.center - new Vector3((effect.offset.x + extra.x) * direction, effect.offset.y + extra.y, 0);
+        if(mainBoss && stage==2)center.y+=.15f;
         bool heavyHorizontal = !fromWeapon && UsesHeavyWeapon() && kind == Kind.Horizontal;
         if (heavyHorizontal) center.y += HeavyHorizontalHeight;
         var instance = Play(effect, center + new Vector3(extra.x * direction, extra.y, 0), direction, false, 1.5f);
@@ -584,7 +585,7 @@ public sealed class BossEffects : MonoBehaviour
                 if (fromWeapon) blade = weaponBounds.center - weaponAnchor.position;
                 worldAngle = Mathf.Atan2(blade.y, blade.x) * Mathf.Rad2Deg - (direction < 0 ? 180f : 0f);
             }
-            if (fromWeapon) instance.FollowAnchor(weaponAnchor, weaponBounds.center);
+            if (fromWeapon) instance.FollowAnchor(weaponAnchor, weaponBounds.center + (mainBoss && stage==2 ? Vector3.up*.15f : Vector3.zero));
             if (fromFist)
             {
                 var arm = fist.transform.parent.GetComponent<SpriteRenderer>();
