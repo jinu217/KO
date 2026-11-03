@@ -191,7 +191,7 @@ public static class HeavySandFXReview
                 equip.Invoke(room,new object[]{room.items.First(i=>i!=null && i.equipType==type && i.rarity==ItemRarity.Mechanization)});
             typeof(EquipmentTestRoom).GetField("showScreenEffects",flags).SetValue(room,true);
             typeof(EquipmentTestRoom).GetField("scroll",flags).SetValue(room,new Vector2(0,460));
-            foreach(var variant in new[]{MachineNoiseStyle.Static,MachineNoiseStyle.HorizontalInterference,MachineNoiseStyle.DigitalBlocks})
+            foreach(var variant in new[]{MachineNoiseStyle.Static,MachineNoiseStyle.HorizontalInterference,MachineNoiseStyle.VerticalInterference})
             {
                 room.previewNoiseStyle=variant;yield return new WaitForSecondsRealtime(2);
                 var shader=Resources.Load<Shader>("MachineNoiseVariants");

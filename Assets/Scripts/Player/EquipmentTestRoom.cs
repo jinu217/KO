@@ -159,7 +159,7 @@ public sealed class EquipmentTestRoom : MonoBehaviour
             previewScreenEffects = GUILayout.Toggle(previewScreenEffects, "화면효과 켜기 (노이즈: 장착 장비 기준)");
             GUILayout.Label("기계화 노이즈 비교");
             previewNoiseStyle = (MachineNoiseStyle)GUILayout.SelectionGrid((int)previewNoiseStyle,
-                new[] { "기존 지직", "가로 간섭", "디지털 블록" }, 1);
+                new[] { "기존 지직", "가로 간섭", "세로 간섭" }, 1);
             GUILayout.Label("시험 BPM " + Mathf.RoundToInt(previewBpm) + " · 130부터 박동 강화");
             previewBpm = GUILayout.HorizontalSlider(previewBpm, 91, 220);
         }

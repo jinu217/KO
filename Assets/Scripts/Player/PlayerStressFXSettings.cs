@@ -4,7 +4,7 @@ public enum MachineNoiseStyle
 {
     [InspectorName("기존 지직거림")] Static = 0,
     [InspectorName("가로 신호 간섭")] HorizontalInterference = 1,
-    [InspectorName("디지털 블록 오류")] DigitalBlocks = 2
+    [InspectorName("세로 신호 간섭")] VerticalInterference = 2
 }
 
 [CreateAssetMenu(menuName = "Effects/Player Stress Screen Settings")]

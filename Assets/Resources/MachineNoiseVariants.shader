@@ -16,9 +16,10 @@ Shader "Hidden/KO/MachineNoiseVariants"
             float _Style, _Strength, _Tick;
             float hash21(float2 p)
             {
-                p = frac(p * float2(123.34, 456.21));
-                p += dot(p, p + 45.32);
-                return frac(p.x * p.y);
+                // Keep intermediate values small enough for long-running sessions on the GPU.
+                float3 p3 = frac(float3(p.x, p.y, p.x) * .1031);
+                p3 += dot(p3, p3.yzx + 33.33);
+                return frac((p3.x + p3.y) * p3.z);
             }
             float2 safeUV(float2 uv)
             {
@@ -48,20 +49,19 @@ Shader "Hidden/KO/MachineNoiseVariants"
                     color.rgb += active * jitter * .025 * amount;
                     return color;
                 }
-                // Sparse rectangular data faults: displaced/mosaicked patches with cyan/magenta fragments.
-                float2 cell = floor(uv * float2(34, 24));
-                float gate = hash21(cell + float2(_Tick * 7, _Tick * 3));
-                active = step(1 - .095 * saturate(amount), gate);
-                float seed = hash21(cell + float2(_Tick + 13, 71));
-                float2 offset = float2(seed * 2 - 1, hash21(cell + _Tick + 31) * 2 - 1);
-                shifted += offset * float2(.014, .005) * amount * active;
-                float2 grid = float2(240, 135);
-                shifted = lerp(shifted, (floor(shifted * grid) + .5) / grid, active * saturate(amount) * .65);
+                // Vertical signal faults: narrow columns jump up/down with vertical RGB separation.
+                float column = floor(uv.x * 60);
+                float gate = hash21(float2(column + 113, _Tick));
+                active = step(1 - .075 * saturate(amount), gate);
+                float jitter = hash21(float2(column + 164, _Tick + 9)) * 2 - 1;
+                shifted.y += jitter * .012 * amount * active;
                 fixed4 color = tex2D(_MainTex, safeUV(shifted));
-                float3 tint = seed > .5 ? float3(.14, .8, .85) : float3(.65, .18, .55);
-                color.rgb = lerp(color.rgb, tint, active * amount * .10);
-                float edge = step(.86, frac(uv.y * 24));
-                color.rgb += active * edge * .04 * amount;
+                float split = .0024 * amount * active;
+                color.r = tex2D(_MainTex, safeUV(shifted + float2(0, split))).r;
+                color.b = tex2D(_MainTex, safeUV(shifted - float2(0, split))).b;
+                float scan = step(.7, frac(uv.x * abs(_MainTex_TexelSize.z) * .5));
+                color.rgb *= 1 - scan * .018 * amount;
+                color.rgb += active * jitter * .025 * amount;
                 return color;
             }
             ENDCG
