@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 // 일반 패턴의 특수 이동과 전용 욕망 컴포넌트의 공통 보스 연결을 담당한다.
@@ -23,6 +23,10 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     private readonly RaycastHit2D[] crossWallHits = new RaycastHit2D[16];
     private readonly Collider2D[] crossOverlaps = new Collider2D[16];
 
+    [Header("이기어검 예비 버전")]
+    public bool useOrbitSword;
+    private Stage5OrbitSword orbitSword;
+    public bool OrbitSwordActive => orbitSword != null && orbitSword.Active;
     private BossSkillData executingSkill;
     private bool dashHitPlayer;
     private int lastSwordCrossing;
@@ -134,7 +138,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     public bool DesireInCombat => isChasing;
     public Transform DesirePlayer => playerTransform;
     public void DesireStop() => StopMove();
-    public void DesireInterrupt() { InterruptCurrentSkill(); RestoreAir(); executingSkill = null; }
+    public void DesireInterrupt() { orbitSword?.Cancel(); InterruptCurrentSkill(); RestoreAir(); executingSkill = null; }
     public void DesireLog(string message)
         => LogSkillDebug(message, new BossSkillData { skillName = "시간을 되돌리는 애정" });
     public void DesireRestoreHp(float value)
@@ -146,6 +150,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
 
     protected override void Die()
     {
+        orbitSword?.Cancel();
         RestoreAir();
         desireSkill?.Cancel();
         if (specialRoutine != null) StopCoroutine(specialRoutine);
@@ -179,10 +184,16 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         }
         base.OnSkillExecutionStarted(skill, index);
         Play(index < 0 ? "Attack" : "skill" + (index + 1));
+        if(index==0 && useOrbitSword)
+        {
+            orbitSword=GetComponent<Stage5OrbitSword>() ?? gameObject.AddComponent<Stage5OrbitSword>();
+            orbitSword.Begin(this,playerTransform);
+        }
     }
 
     protected override void OnSkillExecutionFinished(int index)
     {
+        orbitSword?.Cancel();
         RestoreAir();
         executingSkill = null;
         dashHitPlayer = false;
@@ -202,7 +213,8 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     }
 
     public bool ShouldExecuteStep(BossAttackStepData step)
-        => currentSkillIndex != 2 || StepIndex(step) != 2 || dashHitPlayer;
+        => !(currentSkillIndex == 0 && useOrbitSword && StepIndex(step) % 2 == 1)
+            && (currentSkillIndex != 2 || StepIndex(step) != 2 || dashHitPlayer);
 
     public bool UsesTimedMovement(BossAttackStepData step)
     {
@@ -284,7 +296,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         // Own velocity for the entire casting walk, including the intervening attack steps.
         rb.linearVelocity = new Vector2(walk ? lookDirection * speed / Mathf.Max(.01f, actionDelay) : 0, rb.linearVelocity.y);
         int crossing = Mathf.FloorToInt((frame - 12) / 9f);
-        if (active && crossing > lastSwordCrossing && crossing <= 7 && frame >= 12 + crossing * 9 + .6f)
+        if (!useOrbitSword && active && crossing > lastSwordCrossing && crossing <= 7 && frame >= 12 + crossing * 9 + .6f)
         {
             lastSwordCrossing = crossing;
             // Once per side change: close contact through the body, never a continuous damage aura.

@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -21,7 +21,7 @@ public static class BossLiveReview
     const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     [Serializable] class Command { public string id, op, scene; public int index=-1, phase=1, facing=1; public float distance=3, height; }
     [Serializable] class State { public string commandId, scene, boss, clip, error, run, interpolation, bossId; public bool playing, attacking; public float time, hp, normalized; public Vector3 bossPosition, playerPosition; public int skills, captures, hits; }
-    [Serializable] class Frame { public string file, clip; public float elapsed, normalized; public Vector3 bossPosition, playerPosition; public Hit[] hits; public int fxVisible; }
+    [Serializable] class Frame { public string file, clip; public float elapsed, normalized; public Vector3 bossPosition, playerPosition; public Hit[] hits; public int fxVisible; public string weaponLayer; public float weaponFront; }
     [Serializable] class Hit { public string step, action, collider, artName; public Vector2 artMin, artMax, center, size, minViewport, maxViewport, playerMin, playerMax; public float time; }
     static MidBossController boss;
     static PlayerController player;
@@ -120,6 +120,14 @@ public static class BossLiveReview
         if(c.op=="heightfirst") { BossAttackHeightReview.LowerFirstFinisher();return; }
         if(c.op=="polishverify") { BossClipEffectsSetup.VerifyCombatPolish();return; }
         if(c.op=="combatpolish") { Stage5BossAnimationBuilder.RebuildMainCombatPolish();BossClipEffectsSetup.RefreshCombatPolish();return; }
+        if(c.op=="midcapture") {
+            var clips=AssetDatabase.FindAssets("t:AnimationClip",new[]{"Assets/Animations"}).Select(g=>AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(g))).Where(a=>a!=null && a.name.StartsWith("MidBoss")).Select(a=>a.name).Distinct().ToArray();
+            BossVisualReview.Capture(clips);return;
+        }
+        if(c.op=="motionaudit") { BossMotionFXAudit.Run();return; }
+        if(c.op=="slashsetup") { BossWeaponSlashTrailSetup.Apply();return; }
+        if(c.op=="orbitaudit") { OrbitSwordSetup.Layers();Stage5BossAnimationBuilder.RebuildMainFlightAim();BossMotionFXAudit.Run();BossWeaponFXAudit.Run();return; }
+        if(c.op=="layercapture") { BossVisualReview.Capture(new[]{"MainBoss2_Attack","MainBoss2_Skill1","MainBoss2_Skill2","MainBoss2_Skill3","MainBoss2_Buff"});return; }
         if(c.op=="flightaim") { Stage5BossAnimationBuilder.RebuildMainFlightAim();return; }
         if(c.op=="heightretime") { BossAttackHeightReview.RefreshTimings();return; }
         if(c.op=="scenecopy") { if(Application.isPlaying)throw new Exception("Edit Mode required");EditorSceneManager.SaveScene(SceneManager.GetActiveScene(),Folder+"/pending_scene.unity",true);return; }
@@ -214,6 +222,8 @@ public static class BossLiveReview
             Position(c); run=boss.name+"_chase_"+c.id; captures=hits=0;pending.Clear();finishedAt=-1;started=Time.time;nextCapture=Time.time;
             Directory.CreateDirectory(Path.Combine(Folder,run)); return;
         }
+        if(c.op=="orbiton") { ((Stage5_MainBoss)boss).useOrbitSword=true;return; }
+        if(c.op=="orbitoff") { ((Stage5_MainBoss)boss).useOrbitSword=false;return; }
         if(c.op=="skill")
         {
             if(Attacking || run!=null)throw new Exception("Previous action still running.");
@@ -359,6 +369,7 @@ public static class BossLiveReview
                     Graphics.Blit(screen,rt);RenderTexture.active=rt;small=new Texture2D(w,h,TextureFormat.RGB24,false);small.ReadPixels(new Rect(0,0,w,h),0,0);small.Apply();
                     string file=captures.ToString("D4")+".jpg";File.WriteAllBytes(Path.Combine(Folder,current,file),small.EncodeToJPG(85));
                     var frame=new Frame{file=file,clip=Clip(),elapsed=Time.time-started,normalized=animator.GetCurrentAnimatorStateInfo(0).normalizedTime,bossPosition=boss.transform.position,playerPosition=player.transform.position,hits=pending.ToArray(),fxVisible=boss.GetComponentInChildren<BossClipEffects>()?.VisibleCount??0};
+                    var layer=animator.GetComponent<MainBoss2WeaponLayer>();if(layer!=null){frame.weaponLayer=layer.weapon.sortingLayerName;frame.weaponFront=layer.front;}
                     File.AppendAllText(Path.Combine(Folder,current,"frames.jsonl"),JsonUtility.ToJson(frame)+"\n");pending.Clear();captures++;
                 }
             }

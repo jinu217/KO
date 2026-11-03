@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
@@ -532,8 +532,9 @@ public sealed class BossEffects : MonoBehaviour
         return true;
     }
     bool UsesWeaponContact(BossAttackStepData step)
-        => mainBoss && stage >= 1 && stage <= 3 && step != null
-            && (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam
+        => step != null && !(mainBoss && stage == 4)
+            && (step.actionType == BossActionType.MeleeAttack || (mainBoss && step.actionType == BossActionType.Slam)
+                || step.actionType == BossActionType.PersistentHitbox
                 || (stage == 3 && step.actionType == BossActionType.DashAttack) || UsesMovingWeaponHitbox(step));
     public bool UsesMovingWeaponHitbox(BossAttackStepData step)
         => mainBoss && stage == 3 && skillIndex == 0 && step != null && step.actionType == BossActionType.PersistentHitbox;
@@ -551,6 +552,12 @@ public sealed class BossEffects : MonoBehaviour
                 if (rule.skillIndex == skillIndex && rule.stepIndex == StepIndex(step) && rule.pulse == pulse)
                 { kind = rule.kind; angle = rule.angle; extra = rule.offset; break; }
         if (kind == Kind.None) return;
+        if(!(stage==3 && !mainBoss && step.actionType==BossActionType.Slam) && (kind==Kind.Spin || kind==Kind.Horizontal || kind==Kind.Down || kind==Kind.Up) && motionAnimator!=null)
+        {
+            var trail=motionAnimator.GetComponent<BossWeaponSlashTrail>();
+            var info=motionAnimator.GetCurrentAnimatorClipInfo(0);
+            if(trail!=null && info.Length>0 && trail.Covers(info[0].clip,motionAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime*info[0].clip.length))return;
+        }
         // 이기어검은 몸 앞에 고정하지 않고 실제 떠 있는 검 위치를 사용한다.
         if (stage == 5 && skillIndex == 0 && weaponAnchor != null)
         { var sr = weaponAnchor.GetComponent<SpriteRenderer>(); center = sr != null ? sr.bounds.center : weaponAnchor.position; }
@@ -587,7 +594,31 @@ public sealed class BossEffects : MonoBehaviour
                 instance.FollowAnchor(fist.transform, fistBounds.center);
             }
             instance.transform.rotation = Quaternion.Euler(0, 0, worldAngle);
+            if(!fromFist && weaponAnchor!=null)FitWeaponEffect(instance.GetComponent<SpriteRenderer>(),weaponAnchor);
+            if(stage==3 && !mainBoss && step.actionType==BossActionType.Slam)
+            {
+                // Preserve the weapon-tip X and world-fixed impact, but keep every sheet frame above the floor.
+                var collider=GetComponent<Collider2D>();
+                float floor=collider!=null?collider.bounds.min.y:center.y;
+                var controller=GetComponent<MidBossController>();
+                if(Application.isPlaying && controller!=null && collider!=null)
+                {
+                    var contact=Physics2D.Raycast(new Vector2(collider.bounds.center.x,collider.bounds.min.y+.25f),Vector2.down,.75f,controller.wallLayer);
+                    if(contact.collider!=null)floor=contact.point.y;
+                }
+                instance.AlignBottomToGround(floor);
+            }
         }
+    }
+    // Use the full cell extent, not each animated frame's changing silhouette.
+    public static void FitWeaponEffect(SpriteRenderer effect,Transform weapon,float multiplier=1.1f)
+    {
+        var blade=weapon!=null?weapon.GetComponent<SpriteRenderer>():null;
+        if(effect==null || effect.sprite==null || blade==null || blade.sprite==null)return;
+        Vector3 size=blade.sprite.bounds.size;
+        float length=Mathf.Max(weapon.TransformVector(Vector3.right*size.x).magnitude,weapon.TransformVector(Vector3.up*size.y).magnitude);
+        float cell=Mathf.Max(effect.sprite.rect.width,effect.sprite.rect.height)/effect.sprite.pixelsPerUnit;
+        effect.transform.localScale=Vector3.one*Mathf.Max(.01f,length*multiplier/Mathf.Max(.01f,cell));
     }
     bool Grounded()
     {
@@ -600,12 +631,15 @@ public sealed class BossEffects : MonoBehaviour
         bool heavy = UsesHeavyWeapon();
         if (heavy) position.y += HeavyHorizontalHeight;
         var instance = Play(spin, position, direction, false, 1.5f);
-        if (heavy && instance != null)
-            instance.transform.localScale *= Mathf.Max(.01f, midBoss1HorizontalScale);
+        if (instance != null && weaponAnchor != null)
+            FitWeaponEffect(instance.GetComponent<SpriteRenderer>(), weaponAnchor);
     }
     public void PlayShot(Vector3 position, float direction) { } // 생성물에는 추가 FX를 붙이지 않음
     public void PlayAttack(Vector3 position, float direction, bool ranged = false)
-    { Play(ranged ? shot : attack, position, direction, false, 1.5f); }
+    {
+        var instance=Play(ranged ? shot : attack, position, direction, false, 1.5f);
+        if(!ranged && instance!=null && weaponAnchor!=null)FitWeaponEffect(instance.GetComponent<SpriteRenderer>(),weaponAnchor);
+    }
     public void PlayHit(Vector2 source) { Play(hit, Center(), source.x < transform.position.x ? -1 : 1); }
     public void PlayDeath() { Play(death, Center(), enemy != null ? enemy.FXDirection : 1); }
     public void PlayNotice(float direction) { if (noticed) return; noticed = true; Play(notice, Feet(), direction); }

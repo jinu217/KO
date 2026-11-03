@@ -53,6 +53,8 @@ public sealed class MobEffectInstance : MonoBehaviour
     }
     Transform followAnchor;
     Vector3 anchorPoint;
+    float? groundHeight;
+    public void AlignBottomToGround(float height){groundHeight=height;AlignToAnchor();}
     public void FollowAnchor(Transform anchor, Vector3 worldPoint)
     {
         followAnchor = anchor; anchorPoint = anchor.InverseTransformPoint(worldPoint);
@@ -61,8 +63,9 @@ public sealed class MobEffectInstance : MonoBehaviour
     void LateUpdate() { AlignToAnchor(); }
     void AlignToAnchor()
     {
-        if (followAnchor == null || spriteRenderer == null || spriteRenderer.sprite == null) return;
-        transform.position += followAnchor.TransformPoint(anchorPoint) - BossEffects.VisibleBounds(spriteRenderer).center;
+        if (spriteRenderer == null || spriteRenderer.sprite == null) return;
+        if(followAnchor!=null)transform.position += followAnchor.TransformPoint(anchorPoint) - BossEffects.VisibleBounds(spriteRenderer).center;
+        if(groundHeight.HasValue)transform.position+=Vector3.up*(groundHeight.Value-BossEffects.VisibleBounds(spriteRenderer).min.y);
     }
     public void SetFacing(float direction, bool artFacesRight)
     {

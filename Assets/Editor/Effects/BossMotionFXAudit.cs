@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -62,9 +62,17 @@ public static class BossMotionFXAudit
                             if (!fx.TryWeaponImpact(slam, out var tip)) { failures++; report.AppendLine("FAIL missing weapon contact"); continue; }
                             var effect = fx.PreviewStep(skill, 1, slam, 0, root.transform.position, facing, 0);
                             if (effect == null) { failures++; report.AppendLine("FAIL missing slam FX"); continue; }
-                            float error = Vector2.Distance(effect.transform.position, tip);
-                            report.AppendLine("Slam facing=" + facing + " tip=" + tip + " fx error=" + error + " hitbox=" + slam.hitboxSize);
-                            if (error > .002f) failures++;
+                            float floor = root.GetComponent<Collider2D>().bounds.min.y;
+                            foreach (float age in new[] { 0f, .08f, .16f, .24f })
+                            {
+                                effect.PreviewSample(age);
+                                var sprite = effect.GetComponent<SpriteRenderer>();
+                                if (!sprite.enabled) continue;
+                                float error = Mathf.Abs(BossEffects.VisibleBounds(sprite).min.y - floor);
+                                float xError = Mathf.Abs(effect.transform.position.x - tip.x);
+                                report.AppendLine("Slam facing=" + facing + " age=" + age + " floor error=" + error + " weapon X error=" + xError);
+                                if (error > .002f || xError > .002f) failures++;
+                            }
                             UnityEngine.Object.DestroyImmediate(effect.gameObject);
                         }
                     }

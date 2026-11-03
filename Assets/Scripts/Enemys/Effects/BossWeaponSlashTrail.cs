@@ -1,0 +1,89 @@
+﻿using System;
+using UnityEngine;
+
+// Pose-sampled slash echoes: the same clip time gives the same arc in preview and play.
+[ExecuteAlways, DefaultExecutionOrder(1200)]
+public sealed class BossWeaponSlashTrail : MonoBehaviour
+{
+    [Serializable] public class Track
+    {
+        public AnimationClip clip;
+        public Vector3[] centers, tips;
+        public Vector2[] windows;
+    }
+    public BossEffects source;
+    public Animator animator;
+    public Transform weapon;
+    public Track[] tracks = Array.Empty<Track>();
+    Sprite[] frames;
+    readonly SpriteRenderer[] echoes = new SpriteRenderer[4];
+    public bool Covers(AnimationClip clip, float time)
+    {
+        foreach(var track in tracks)if(track.clip==clip)
+            foreach(var window in track.windows)if(time>=window.x && time<=window.y)return true;
+        return false;
+    }
+    void LateUpdate()
+    {
+        if(!Application.isPlaying)
+        {
+#if UNITY_EDITOR
+            if(!UnityEditor.AnimationMode.InAnimationMode())Clear();
+#endif
+            return;
+        }
+        if(animator==null || !animator.isActiveAndEnabled){Clear();return;}
+        var clips=animator.GetCurrentAnimatorClipInfo(0);
+        if(clips.Length==0){Clear();return;}
+        Sample(clips[0].clip,animator.GetCurrentAnimatorStateInfo(0).normalizedTime*clips[0].clip.length);
+    }
+    public void Sample(AnimationClip clip,float time)
+    {
+        Clear();
+        if(source==null || weapon==null || source.GetComponent<Stage5_MainBoss>()?.OrbitSwordActive==true)return;
+        Track track=Array.Find(tracks,t=>t.clip==clip);
+        if(track==null || !Covers(clip,time))return;
+        if(frames==null)BuildFrames();
+        if(frames==null || frames.Length==0)return;
+        var blade=weapon.GetComponent<SpriteRenderer>();
+        for(int i=0;i<echoes.Length;i++)
+        {
+            float past=time-i*.035f;if(!Covers(clip,past))continue;
+            float sample=Mathf.Clamp(past*48,0,track.centers.Length-1);
+            int a=Mathf.FloorToInt(sample),b=Mathf.Min(a+1,track.centers.Length-1);float u=sample-a;
+            Vector3 center=transform.TransformPoint(Vector3.Lerp(track.centers[a],track.centers[b],u));
+            Vector3 tip=transform.TransformPoint(Vector3.Lerp(track.tips[a],track.tips[b],u));
+            if(echoes[i]==null)
+            {
+                var go=new GameObject("Weapon Slash Arc "+i){hideFlags=HideFlags.HideAndDontSave};
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go,gameObject.scene);
+                echoes[i]=go.AddComponent<SpriteRenderer>();
+            }
+            var sr=echoes[i];sr.enabled=true;
+            sr.sprite=frames[Mathf.Clamp(frames.Length/3+i,0,frames.Length-1)];
+            sr.sortingLayerID=blade.sortingLayerID;sr.sortingOrder=blade.sortingOrder-1;
+            sr.flipX=transform.lossyScale.x<0;
+            sr.transform.rotation=Quaternion.Euler(0,0,Mathf.Atan2(tip.y-center.y,tip.x-center.x)*Mathf.Rad2Deg-90);
+            BossEffects.FitWeaponEffect(sr,weapon,1.05f);
+            sr.transform.position=center;
+            sr.transform.position+=center-BossEffects.VisibleBounds(sr).center;
+            sr.color=new Color(1,1,1,.32f-i*.07f);
+        }
+    }
+    void BuildFrames()
+    {
+        var effect=source.attack;
+        if(effect.frames!=null && effect.frames.Length>0){frames=effect.frames;return;}
+        if(effect.sheet==null || effect.columns<=0)return;
+        frames=new Sprite[effect.columns];int width=effect.sheet.width/effect.columns;
+        for(int i=0;i<frames.Length;i++)frames[i]=Sprite.Create(effect.sheet,new Rect(i*width,0,width,effect.sheet.height),new Vector2(.5f,.5f),source.pixelsPerUnit);
+    }
+    public void Clear(){foreach(var sr in echoes)if(sr!=null)sr.enabled=false;}
+    void OnDisable(){Clear();}
+    void OnDestroy()
+    {
+        foreach(var sr in echoes)if(sr!=null){if(Application.isPlaying)Destroy(sr.gameObject);else DestroyImmediate(sr.gameObject);}
+        if(frames!=null && source!=null && (source.attack.frames==null || source.attack.frames.Length==0))
+            foreach(var sprite in frames)if(sprite!=null){if(Application.isPlaying)Destroy(sprite);else DestroyImmediate(sprite);}
+    }
+}

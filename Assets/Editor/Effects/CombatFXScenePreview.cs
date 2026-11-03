@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -128,6 +128,17 @@ static class CombatFXScenePreview
         catch (Exception ex) { Clear(); Debug.LogException(ex); }
         SceneView.RepaintAll();
     }
+    public static void SampleForReview(Animator animator,AnimationClip clip,float time)
+    {
+        Clear();owner=animator;activeClip=clip;
+        var boss=RuntimeFXPreviewSource.Boss(animator);if(boss==null)return;
+        string name=clip.name.ToLowerInvariant();float direction=Mathf.Sign(animator.transform.lossyScale.x);
+        bool run=name.Contains("run") || name.Contains("chase") || name.Contains("walk") && !(boss.stage==1 && !boss.mainBoss);
+        bool dash=name.Contains("dash") && !name.Contains("prepare") && !name.Contains("end");
+        if(run || dash)transient=boss.PreviewMovement(dash,direction,time-(run?boss.chaseStartDelay:0));
+        else PreviewBossAttacks(boss,name,time,direction);
+    }
+    public static void EndReview(){Clear();}
     static void PreviewBossAttacks(BossEffects boss, string name, float time, float direction)
     {
         var driver = owner.GetComponentInChildren<BossClipEffects>(true);
@@ -176,6 +187,9 @@ static class CombatFXScenePreview
                 float reach = controller is Stage1_MidBoss mid && (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam) ? mid.MeleeReachBonus : 0;
                 Vector3 center = SamplePosition(owner.transform, impact) + new Vector3(direction * (step.hitboxOffset.x + reach), step.hitboxOffset.y, 0);
                 if (step.hitboxSize.x <= 0 || step.hitboxSize.y <= 0) continue;
+                var arc=owner.GetComponent<BossWeaponSlashTrail>();
+                var kind=boss.ResolveForPreview(skill,index,step,pulse,out _);
+                if(!(boss.stage==3 && !boss.mainBoss && step.actionType==BossActionType.Slam) && arc!=null && arc.Covers(activeClip,time) && (kind==BossEffects.Kind.Spin || kind==BossEffects.Kind.Horizontal || kind==BossEffects.Kind.Down || kind==BossEffects.Kind.Up))continue;
                 var instance = boss.PreviewStep(skill, index, step, pulse, center, direction, time - impact);
                 if (instance != null) attacks.Add(instance);
             }

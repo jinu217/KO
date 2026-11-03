@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 // Editor-only movement display. Runtime movement remains owned by Stage5_MainBoss.
 [ExecuteAlways, DisallowMultipleComponent]
@@ -67,7 +67,7 @@ public sealed class Stage5MainBossPathPreview : MonoBehaviour
         else position = Vector3.Lerp(lastStart, lastEnd, progress);
         float direction = center.x >= origin.x ? 1 : -1;
         int mode = Mathf.RoundToInt(active);
-        if (mode == 2) position = origin + Vector3.right * direction * 3 * Mathf.Clamp01((frame - 22) / 8);
+        if (mode == 2) position = origin + Vector3.right * direction * 5.6f * Mathf.Clamp01((frame - 22) / 8);
         else if (mode == 3) position = Vector3.MoveTowards(origin, new Vector3(center.x - direction * .7f, origin.y, origin.z), Mathf.Clamp(frame - 12, 0, 72) / 12 * 1.25f);
         else if (mode == 4) position = origin + Vector3.up * .32f * Mathf.Clamp01(frame / 3) + Vector3.right * direction * 4 * Mathf.Clamp01((frame - 10) / 11);
         else if (mode == 5) { float t = Mathf.Clamp01(frame / 12); float u = t * t * (3 - 2 * t); position = origin + Vector3.right * direction * 3 * u + Vector3.up * Mathf.Sin(u * Mathf.PI) * 2.1f; }

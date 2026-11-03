@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 
 public class MainBoss2_AnimGenerators
@@ -1375,6 +1375,7 @@ public class MainBoss2_AnimGenerators
 
     static void Save(AnimationClip clip, string name)
     {
+        OrbitSwordSetup.BakeLayerCurve(clip);
         string assetPath = $"{SAVE_PATH}/{name}.anim";
         var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
         if (existing != null) { EditorUtility.CopySerialized(clip, existing); existing.name = name; AssetDatabase.SaveAssets(); }

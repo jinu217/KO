@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -76,8 +76,12 @@ public sealed class BossClipEffects : MonoBehaviour
     { foreach (var t in tracks) if (t.clip == clip) return t; return null; }
     public void Sample(AnimationClip clip, float time, bool runtime = false, bool supplementalOnly = false)
     {
+        var slashTrail=GetComponent<BossWeaponSlashTrail>();
+        if(!runtime && slashTrail!=null)slashTrail.Sample(clip,time);
         if (clip != contactClip || time < contactTime) contactPositions.Clear();
         contactClip = clip; contactTime = time;
+        if(runtime && clip.name.StartsWith("MainBoss5_skill1") && source!=null && source.GetComponent<Stage5_MainBoss>()?.OrbitSwordActive==true)
+        { ClearVisuals(); return; }
         Track track = Find(clip);
         if (track == null || (runtime && !track.runtime)) { ClearVisuals(); return; }
 
@@ -92,6 +96,7 @@ public sealed class BossClipEffects : MonoBehaviour
         {
             if (supplementalOnly && cue.style != Style.Buff && cue.style != Style.Sand) continue;
             if (runtime && clip.name.StartsWith("MidBoss 1") && cue.style != Style.Buff && cue.style != Style.Sand) continue;
+            if((cue.style==Style.Spin || cue.style==Style.Down || cue.style==Style.Up) && slashTrail!=null && slashTrail.Covers(clip,time))continue;
             float age = time - cue.time;
             if (age < -.0001f || age >= cue.duration) continue;
             MobEffects.Effect effect = cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy
@@ -152,6 +157,8 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.transform.rotation = Quaternion.Euler(0, 0, angle);
             float multiplier = cue.style == Style.Death ? 1 : 1.5f;
             sr.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale * cue.scale * multiplier);
+            if(combat && weapon!=null && (source==null || !source.mainBoss || source.stage!=4))
+                BossEffects.FitWeaponEffect(sr,weapon);
             if (cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy)
             {
                 Bounds bounds = BuffBounds();

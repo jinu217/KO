@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -72,6 +72,9 @@ public static class BossVisualReview
                     for(int i=0;i<chosen.Length;i++)
                     {
                         clip.SampleAnimation(animator.gameObject,chosen[i]);
+                        var clipFx=animator.GetComponent<BossClipEffects>();if(clipFx!=null)clipFx.Sample(clip,chosen[i],false,!(fx.mainBoss && fx.stage==5));
+                        CombatFXScenePreview.SampleForReview(animator,clip,chosen[i]);
+                        var trail=animator.GetComponent<BossWeaponSlashTrail>();if(trail!=null)trail.Sample(clip,chosen[i]);
                         camera.Render(); var old=RenderTexture.active; RenderTexture.active=rt;
                         tile.ReadPixels(new Rect(0,0,256,256),0,0); tile.Apply(); RenderTexture.active=old;
                         sheet.SetPixels(i*256,0,256,256,tile.GetPixels());
@@ -88,6 +91,7 @@ public static class BossVisualReview
             catch(Exception e){report.AppendLine("ERROR "+path+" "+e);}
             finally
             {
+                CombatFXScenePreview.EndReview();
                 if(cameraObject!=null)UnityEngine.Object.DestroyImmediate(cameraObject);
                 if(rt!=null)UnityEngine.Object.DestroyImmediate(rt);
                 if(tile!=null)UnityEngine.Object.DestroyImmediate(tile);

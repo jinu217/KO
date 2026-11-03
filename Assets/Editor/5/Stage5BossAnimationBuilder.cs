@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1088,10 +1088,11 @@ public static class Stage5BossAnimationBuilder
             return p;
         }).Cue(0, "Skill3.DashEnd").Cue(0, "Skill3.VaultStart").Cue(12, "Skill3.FollowImpact")
             .Cue(12, "Skill3.VaultEnd").Cue(22, "Action.End"));
-        list.Add(new Motion("skill3_Miss", 6, false, f => {
+        list.Add(new Motion("skill3_Miss", 8, false, frame => {
+            float f = frame * .75f;
             Pose p = Track(f, new Key(0, lift), new Key(3, hover), new Key(6, rest));
             p.scale[Weapon].x = f < 2 ? -1 : rest.scale[Weapon].x; p.scale[SF].x = f < 2 ? -1 : rest.scale[SF].x; p.scale[SB].x = f < 2 ? -1 : rest.scale[SB].x; return p;
-        }).Cue(0, "Skill3.DashEnd").Cue(6, "Action.End"));
+        }).Cue(0, "Skill3.DashEnd").Cue(8, "Action.End"));
         // Authored 2026-10-25 18:47 pose; preserve local joints rather than solving new IK.
         Pose crossBase = rest.Clone();
         crossBase.pos[Body] = new Vector3(.057f, -1.062f, 0); crossBase.rot[Body] = -45.938f;
@@ -1344,7 +1345,7 @@ public static class Stage5BossAnimationBuilder
             turn = frame < 9 ? 0 : frame < 11 ? -75 * S((frame - 9) / 2) : -75 * (1 - S((frame - 11) / 13));
         if (m.name == "skill3") turn = 6 * S((frame - 9));
         if (m.name == "skill3_Follow") turn = frame < 10 ? 6 : frame < 12 ? Mathf.Lerp(6, -45, S((frame - 10) / 2)) : frame < 13 ? -45 : -45 * (1 - S((frame - 13) / 5));
-        if (m.name == "skill3_Miss") turn = 6 * (1 - S(frame / 6));
+        if (m.name == "skill3_Miss") turn = 6 * (1 - S(frame / m.frames));
         if (m.name.StartsWith("Dskill", StringComparison.Ordinal))
         {
             float weight = S((frame - 11) / 5) * (1 - S((frame - 45) / 6));
@@ -1889,8 +1890,8 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackForce.x", 7f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackForce.y", 2f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackAwayFromCenter", 0f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].moveSpeed", 4.2f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].maxMoveDistance", 2.8f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].moveSpeed", 8.4f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].maxMoveDistance", 5.6f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].stopAtWall", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].stopOnPlayerHit", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].pullTargetOffset.x", 0f);
