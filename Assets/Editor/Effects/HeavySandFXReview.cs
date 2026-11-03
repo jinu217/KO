@@ -28,6 +28,16 @@ public static class HeavySandFXReview
         try
         {
             if(request.StartsWith("apply"))Apply();
+            else if(request.StartsWith("variants"))
+            {
+                var fx=UnityEngine.Object.FindFirstObjectByType<PlayerStressScreenFX>();
+                running=true;fx.StartCoroutine(ReviewVariants(fx));
+            }
+            else if(request.StartsWith("noise"))
+            {
+                var fx=UnityEngine.Object.FindFirstObjectByType<PlayerStressScreenFX>();
+                running=true;fx.StartCoroutine(ReviewNoise(fx));
+            }
             else if(request.StartsWith("room"))
             {
                 var fx=UnityEngine.Object.FindFirstObjectByType<PlayerStressScreenFX>();
@@ -134,6 +144,74 @@ public static class HeavySandFXReview
         yield return new WaitForEndOfFrame();
         var texture=ScreenCapture.CaptureScreenshotAsTexture();
         File.WriteAllBytes(Folder+"/"+name+".png",texture.EncodeToPNG());UnityEngine.Object.Destroy(texture);
+    }
+    static IEnumerator ReviewNoise(PlayerStressScreenFX fx)
+    {
+        var room=UnityEngine.Object.FindFirstObjectByType<EquipmentTestRoom>();
+        var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+        var equip=typeof(EquipmentTestRoom).GetMethod("Equip",flags);
+        var current=(System.Collections.Generic.Dictionary<EquipmentType,ItemData>)typeof(EquipmentTestRoom).GetField("equipped",flags).GetValue(room);
+        var original=current.Values.ToArray();
+        var types=new[]{EquipmentType.Weapon,EquipmentType.Hand,EquipmentType.Head,EquipmentType.Body,EquipmentType.Foot};
+        var report=new StringBuilder();bool preview=fx.preview;float bpm=room.previewBpm;
+        try
+        {
+            fx.preview=false;room.previewBpm=91;
+            foreach(var type in types)
+                equip.Invoke(room,new object[]{room.items.First(i=>i!=null && i.equipType==type && i.rarity!=ItemRarity.None && i.rarity!=ItemRarity.Mechanization)});
+            for(int n=0;n<=types.Length;n++)
+            {
+                if(n>0)equip.Invoke(room,new object[]{room.items.First(i=>i!=null && i.equipType==types[n-1] && i.rarity==ItemRarity.Mechanization)});
+                yield return new WaitForSecondsRealtime(2);
+                var noise=fx.GetComponentsInChildren<UnityEngine.UI.RawImage>().FirstOrDefault(i=>i.name=="Machine static noise");
+                report.AppendLine("equipped="+room.MachineEquipmentCount+" noiseAlpha="+(noise!=null?noise.color.a:0)+" heartbeat="+fx.CurrentPulseZoom);
+                if(n==1 || n==3 || n==5)yield return Capture("noise-"+n);
+            }
+            File.WriteAllText(Folder+"/noise.txt",report+"DONE\n");
+        }
+        finally
+        {
+            foreach(var item in original)equip.Invoke(room,new object[]{item});
+            fx.preview=preview;room.previewBpm=bpm;running=false;
+        }
+    }
+    static IEnumerator ReviewVariants(PlayerStressScreenFX fx)
+    {
+        var room=UnityEngine.Object.FindFirstObjectByType<EquipmentTestRoom>();
+        var flags=BindingFlags.NonPublic|BindingFlags.Instance;
+        var equip=typeof(EquipmentTestRoom).GetMethod("Equip",flags);
+        var current=(System.Collections.Generic.Dictionary<EquipmentType,ItemData>)typeof(EquipmentTestRoom).GetField("equipped",flags).GetValue(room);
+        var original=current.Values.ToArray();
+        var report=new StringBuilder();bool preview=fx.preview;float bpm=room.previewBpm;
+        var style=room.previewNoiseStyle;bool effects=room.previewScreenEffects;
+        try
+        {
+            fx.preview=false;room.previewBpm=91;room.previewScreenEffects=true;
+            foreach(var type in new[]{EquipmentType.Weapon,EquipmentType.Hand,EquipmentType.Head,EquipmentType.Body,EquipmentType.Foot})
+                equip.Invoke(room,new object[]{room.items.First(i=>i!=null && i.equipType==type && i.rarity==ItemRarity.Mechanization)});
+            typeof(EquipmentTestRoom).GetField("showScreenEffects",flags).SetValue(room,true);
+            typeof(EquipmentTestRoom).GetField("scroll",flags).SetValue(room,new Vector2(0,460));
+            foreach(var variant in new[]{MachineNoiseStyle.Static,MachineNoiseStyle.HorizontalInterference,MachineNoiseStyle.DigitalBlocks})
+            {
+                room.previewNoiseStyle=variant;yield return new WaitForSecondsRealtime(2);
+                var shader=Resources.Load<Shader>("MachineNoiseVariants");
+                var distortion=room.TestCamera.GetComponent<MachineNoisePostProcess>();
+                report.AppendLine(variant+" count="+room.MachineEquipmentCount+" shaderSupported="+(shader!=null && shader.isSupported)
+                    +" extraPass="+(distortion!=null && distortion.enabled)+" heartbeat="+fx.CurrentPulseZoom);
+                for(int i=0;i<3;i++)
+                {yield return Capture("variant-"+(int)variant+"-"+i);yield return new WaitForSecondsRealtime(.15f);}
+            }
+            room.previewScreenEffects=false;yield return null;
+            report.AppendLine("disabled extraPass="+room.TestCamera.GetComponent<MachineNoisePostProcess>().enabled);
+            room.previewScreenEffects=true;room.previewNoiseStyle=MachineNoiseStyle.Static;yield return null;
+            report.AppendLine("original extraPass="+room.TestCamera.GetComponent<MachineNoisePostProcess>().enabled);
+            File.WriteAllText(Folder+"/variants.txt",report+"DONE\n");
+        }
+        finally
+        {
+            foreach(var item in original)equip.Invoke(room,new object[]{item});
+            fx.preview=preview;room.previewBpm=bpm;room.previewNoiseStyle=style;room.previewScreenEffects=effects;running=false;
+        }
     }
 }
 #endif

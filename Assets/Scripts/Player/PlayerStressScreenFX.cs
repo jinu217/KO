@@ -11,6 +11,7 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
     EquipmentManager equipment;
     EquipmentTestRoom testRoom;
     Camera pulseCamera, renderingCamera;
+    MachineNoisePostProcess distortion;
     float savedSize, savedFov;
     float zoomAmount;
     public float CurrentPulseZoom => zoomAmount;
@@ -74,11 +75,13 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         SceneManager.activeSceneChanged -= SceneChanged;
         Camera.onPreCull -= BeforeCamera; Camera.onPostRender -= AfterCamera;
         RestoreProjection(); zoomAmount = 0;
+        StopDistortion();
         if (canvas != null) canvas.enabled = false;
     }
     void SceneChanged(Scene oldScene, Scene newScene)
     {
         RestoreProjection(); zoomAmount = 0; pulseCamera = null; testRoom = null;
+        StopDistortion();
         player = null; equipment = null; inventory = null;
         nextFind = 0; machineAmount = tension = phase = 0;
         if (canvas != null) canvas.enabled = false;
@@ -118,6 +121,7 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
             && Time.timeScale > .001f && (testing || inventory == null || !inventory.IsOpen);
         if (!visible)
         {
+            StopDistortion();
             if (canvas != null) canvas.enabled = false;
             return;
         }
@@ -135,6 +139,7 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         phase = Mathf.Repeat(phase + dt * Mathf.Clamp(bpm, 40, 220) / 60, 1);
         if (machineAmount < .001f && tension < .001f)
         {
+            StopDistortion();
             if (canvas != null) canvas.enabled = false;
             return;
         }
@@ -145,18 +150,34 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         noise.rectTransform.anchorMax = pulse.rectTransform.anchorMax = viewport.max;
         if (Time.unscaledTime >= nextNoise)
         {
-            nextNoise = Time.unscaledTime + 1 / Mathf.Clamp(settings.noiseFramesPerSecond, 2, 12);
-            noise.texture = grain[frame++ % grain.Length];
+            float noiseRate = Mathf.Clamp(settings.noiseFramesPerSecond, 2, 24) * Mathf.Lerp(.45f, 1, machineAmount);
+            nextNoise = Time.unscaledTime + 1 / noiseRate;
+            // A longer deterministic sequence, independent of combat's random stream and BPM.
+            noise.texture = grain[(frame * 5 + frame / 7) % grain.Length];
+            frame = (frame + 1) % (grain.Length * 7);
         }
         float strength = Mathf.Clamp01(settings.intensity);
-        noise.color = new Color(.65f, .78f, .8f,
-            Mathf.Clamp(settings.noiseOpacity, 0, .12f) * machineAmount * strength);
+        noise.color = new Color(.9f, .95f, 1,
+            Mathf.Clamp(settings.noiseOpacity, 0, .18f) * machineAmount * strength);
+        var style = testing ? testRoom.previewNoiseStyle : settings.noiseStyle;
+        if (style == MachineNoiseStyle.Static || machineAmount < .001f || pulseCamera == null)
+            StopDistortion();
+        else
+        {
+            if (distortion != null && distortion.gameObject != pulseCamera.gameObject)
+            { distortion.enabled = false; Destroy(distortion); distortion = null; }
+            if (distortion == null) distortion = pulseCamera.gameObject.AddComponent<MachineNoisePostProcess>();
+            float rate = Mathf.Clamp(settings.noiseFramesPerSecond, 2, 24) * Mathf.Lerp(.45f, 1, machineAmount);
+            if (distortion.Configure(style, machineAmount * strength * Mathf.Clamp(settings.noiseOpacity / .11f, 0, 1.64f), rate))
+                noise.color = Color.clear;
+        }
         float beat = Beat(phase, 0, .23f) + .55f * Beat(phase, .30f, .19f);
         zoomAmount = Mathf.Clamp(settings.pulseZoom, 0, .025f) * tension * beat * strength;
         Color color = settings.pulseColor;
         color.a = Mathf.Clamp(settings.pulseOpacity, 0, .25f) * tension * beat * strength;
         pulse.color = color;
     }
+    void StopDistortion() { if (distortion != null) distortion.enabled = false; }
 
     static float Beat(float p, float start, float width)
     {
@@ -174,10 +195,10 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         canvas.sortingOrder = -100; // Existing HUD/menu canvases stay above the effect.
         canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.None;
         var random = new System.Random(4181); // Never advance Unity's gameplay random stream.
-        grain = new Texture2D[4];
-        for (int i = 0; i < grain.Length; i++) grain[i] = MakeTexture(256, 144, random, true);
-        vignette = MakeTexture(128, 128, random, false);
-        noise = MakeImage("Machine edge noise", grain[0]);
+        grain = new Texture2D[8];
+        for (int i = 0; i < grain.Length; i++) grain[i] = MakeNoiseTexture(384, 216, random);
+        vignette = MakeVignette(128, 128);
+        noise = MakeImage("Machine static noise", grain[0]);
         pulse = MakeImage("BPM edge pulse", vignette);
     }
     RawImage MakeImage(string label, Texture texture)
@@ -191,18 +212,43 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         rect.offsetMin = rect.offsetMax = Vector2.zero;
         return image;
     }
-    static Texture2D MakeTexture(int w, int h, System.Random random, bool isNoise)
+    static Texture2D MakeVignette(int w, int h)
     {
         var tex = new Texture2D(w, h, TextureFormat.RGBA32, false)
-        { name = isNoise ? "Stress FX grain" : "Stress FX vignette", filterMode = isNoise ? FilterMode.Point : FilterMode.Bilinear,
+        { name = "Stress FX vignette", filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave };
         var pixels = new Color32[w * h];
         for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
         {
             float nx = Mathf.Abs(2f * (x + .5f) / w - 1), ny = Mathf.Abs(2f * (y + .5f) / h - 1);
-            float edge = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(isNoise ? .55f : .45f, 1, Mathf.Max(nx, ny)));
-            float alpha = isNoise ? edge * (.15f + .85f * (float)random.NextDouble()) : edge;
-            pixels[y * w + x] = new Color32(255, 255, 255, (byte)(255 * alpha));
+            float edge = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(.45f, 1, Mathf.Max(nx, ny)));
+            pixels[y * w + x] = new Color32(255, 255, 255, (byte)(255 * edge));
+        }
+        tex.SetPixels32(pixels); tex.Apply(false, true);
+        return tex;
+    }
+    static Texture2D MakeNoiseTexture(int w, int h, System.Random random)
+    {
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, false)
+        { name = "Machine static", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp,
+            hideFlags = HideFlags.DontSave };
+        var pixels = new Color32[w * h];
+        for (int y = 0; y < h; y++)
+        {
+            bool interference = random.NextDouble() < .025;
+            int gap = random.Next(w);
+            byte lineTone = random.NextDouble() < .5 ? (byte)15 : (byte)240;
+            for (int x = 0; x < w; x++)
+            {
+                float nx = Mathf.Abs(2f * (x + .5f) / w - 1), ny = Mathf.Abs(2f * (y + .5f) / h - 1);
+                float edge = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(.4f, 1, Mathf.Max(nx, ny)));
+                float alpha = (.45f + .55f * edge) * (.15f + .75f * (float)random.NextDouble());
+                byte tone = (byte)random.Next(256);
+                // Broken scanlines make electrical interference distinct from the smooth heartbeat.
+                if (interference && (x + gap) % w < w * .7f)
+                { alpha = Mathf.Max(alpha, .65f + .25f * edge); tone = lineTone; }
+                pixels[y * w + x] = new Color32(tone, tone, tone, (byte)(255 * alpha));
+            }
         }
         tex.SetPixels32(pixels); tex.Apply(false, true);
         return tex;
@@ -210,6 +256,7 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
     void OnDestroy()
     {
         if (instance == this) instance = null;
+        if (distortion != null) { distortion.enabled = false; Destroy(distortion); }
         if (grain != null) foreach (var texture in grain) if (texture != null) Destroy(texture);
         if (vignette != null) Destroy(vignette);
     }

@@ -382,6 +382,8 @@ public static class BossClipEffectsSetup
         {
             // Stage2's jump is tied to the landing pose, not the data's old summed delays.
             float impact = clip.name == "MainBoss2_Skill3" ? 19f / 12f : down.time;
+            // MidBoss1's slash begins during the downswing; ground dust waits for contact.
+            if (fx.stage == 1 && !fx.mainBoss) impact += .11f;
             if (cues.Any(c => c.style == S.Sand && Mathf.Abs(c.time - impact) < .15f)) continue;
             cues.Add(new BossClipEffects.Cue { style = S.Sand, anchor = A.WeaponTip,
                 time = impact, duration = .5f, scale = .65f, groundContact = true });

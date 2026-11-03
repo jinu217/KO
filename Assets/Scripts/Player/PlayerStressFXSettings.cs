@@ -1,15 +1,23 @@
 ﻿using UnityEngine;
 
+public enum MachineNoiseStyle
+{
+    [InspectorName("기존 지직거림")] Static = 0,
+    [InspectorName("가로 신호 간섭")] HorizontalInterference = 1,
+    [InspectorName("디지털 블록 오류")] DigitalBlocks = 2
+}
+
 [CreateAssetMenu(menuName = "Effects/Player Stress Screen Settings")]
 public sealed class PlayerStressFXSettings : ScriptableObject
 {
     [Header("전체 효과 / 0이면 즉시 해제")]
     public bool effectsEnabled = true;
     [Range(0, 1)] public float intensity = 1;
-    [Header("기계 장비: 화면 가장자리 노이즈")]
+    [Header("기계 장비: 전체 장착 개수에 비례하는 화면 지직거림")]
     public bool machineNoise = true;
-    [Range(0, .12f)] public float noiseOpacity = .065f;
-    [Range(2, 12)] public float noiseFramesPerSecond = 8;
+    public MachineNoiseStyle noiseStyle = MachineNoiseStyle.Static;
+    [Range(0, .18f)] public float noiseOpacity = .11f;
+    [Range(2, 24)] public float noiseFramesPerSecond = 20;
     [Header("BPM: 화면 확대 박동 + 가장자리 붉은빛")]
     public bool heartbeat = true;
     [Range(0, .25f)] public float pulseOpacity = .22f;
