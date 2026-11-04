@@ -1604,8 +1604,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     void GameOver()
     {
         if (isGameOver) return;
-
         isGameOver = true;
+        //============== 보스 HP바 즉시 숨기기 ==============
+        if (MainBossHealthUI.Instance != null)
+            MainBossHealthUI.Instance.HideImmediate();
+        if (MidBossHealthUI.Instance != null)
+            MidBossHealthUI.Instance.HideImmediate();
         StopAllCoroutines();
         if (bodyCollider != null && ignoredThinFloorCollider != null)
         { Physics2D.IgnoreCollision(bodyCollider, ignoredThinFloorCollider, false); ignoredThinFloorCollider = null; }

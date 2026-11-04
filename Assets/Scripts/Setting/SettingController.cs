@@ -30,6 +30,14 @@ public class SettingController : MonoBehaviour
     [Header("Display Cursor Target")]
     public RectTransform[] displayCursorTargets;
 
+    //============== Display 화살표 ==============
+    [Header("Display Arrows (항목 순서: 0 = 해상도, 1 = 디스플레이 모드)")]
+    public Image[] displayLeftArrows;
+    public Image[] displayRightArrows;
+    [SerializeField] private Color arrowActiveColor = Color.white;                   // 변경 가능 (불투명)
+    [SerializeField] private Color arrowDisabledColor = new Color(1f, 1f, 1f, 0.15f); // 변경 불가 (거의 투명)
+    //============== Display 화살표 끝 ==============
+
     [Header("Panels")]
     public GameObject audioPanel;
     public GameObject displayPanel;
@@ -124,6 +132,9 @@ public class SettingController : MonoBehaviour
         targetPosition = openPosition;
 
         ignoreInput = true;
+
+        // 저장된 값이 불러와진 상태일 수 있으므로 열 때 화살표 상태 갱신
+        UpdateDisplayArrows();
     }
 
     // ==== 설정창 닫기 ====
@@ -251,9 +262,29 @@ public class SettingController : MonoBehaviour
                 settingManager.SetDisplayMode(displayModeDropdown.value);
                 break;
         }
+
+        // 값이 바뀐 직후 화살표 밝기 갱신
+        UpdateDisplayArrows();
     }
 
     float Adjust(float value, int dir) => Mathf.Clamp01(value + dir * 0.1f);
+
+    //============== Display 화살표 갱신 ==============
+    void UpdateDisplayArrows()
+    {
+        SetArrowState(0, resolutionDropdown.value, resolutionDropdown.options.Count - 1);
+        SetArrowState(1, displayModeDropdown.value, 2);   // ChangeDisplay의 상한(2)과 동일
+    }
+
+    void SetArrowState(int index, int value, int maxValue)
+    {
+        if (displayLeftArrows != null && index < displayLeftArrows.Length && displayLeftArrows[index] != null)
+            displayLeftArrows[index].color = value > 0 ? arrowActiveColor : arrowDisabledColor;
+
+        if (displayRightArrows != null && index < displayRightArrows.Length && displayRightArrows[index] != null)
+            displayRightArrows[index].color = value < maxValue ? arrowActiveColor : arrowDisabledColor;
+    }
+    //============== Display 화살표 갱신 끝 ==============
 
     //====================================================
     // CONFIRM: 카테고리 -> 패널 안으로 진입
@@ -264,6 +295,12 @@ public class SettingController : MonoBehaviour
         Debug.Log("Confirm 호출");
         if(currentState == MenuState.Category)
         {
+            //============== Controls 카테고리는 진입 불가 ==============
+            // Controls(2)는 보기 전용 패널이라 Content로 들어가지 않음
+            if (categoryIndex == 2)
+                return;
+            //============== Controls 카테고리는 진입 불가 끝 ==============
+
             // 이미 미리보기 상태라 바로 조작 상태로 변경
             currentState = MenuState.Content;
             contentIndex = 0;
@@ -351,6 +388,9 @@ public class SettingController : MonoBehaviour
                     break;
             }
         }
+
+        // Display 화살표 상태도 같이 갱신
+        UpdateDisplayArrows();
     }
 
     int GetContentCount()

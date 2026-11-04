@@ -135,6 +135,25 @@ public class MainBossHealthUI : MonoBehaviour
         hideCoroutine = StartCoroutine(FadeOut());
     }
 
+    //============== HP바 즉시 숨기기 ==============
+    public void HideImmediate()
+    {
+        // 진행 중인 페이드아웃 중지
+        if (hideCoroutine != null)
+        {
+            StopCoroutine(hideCoroutine);
+            hideCoroutine = null;
+        }
+
+        // 즉시 투명하게 변경
+        if (canvasGroup != null)
+            canvasGroup.alpha = 0f;
+
+        // UI 비활성화
+        if (root != null)
+            root.SetActive(false);
+    }
+
     private IEnumerator FadeOut()
     {
         float startAlpha = canvasGroup.alpha;

@@ -82,6 +82,24 @@ public class ItemData : ScriptableObject
     public Sprite footLeftSprite;
     public Sprite footRightSprite;
 
+
+    // 무기 미리보기 개별 보정 ============================
+    // 스프라이트 Pivot은 애니메이션용이라 건드리지 않고, 인벤토리 미리보기용 값만 여기서 따로 관리
+    [Header("무기 미리보기 개별 보정 (무기 장비만 사용)")]
+
+    [Tooltip("손으로 쥐는 곳 (이미지 안에서의 0~1 비율). X: 0=왼쪽 끝, 1=오른쪽 끝 / Y: 0=아래 끝, 1=위 끝")]
+    public Vector2 previewGripPivot = new Vector2(0.5f, 0.5f);
+
+    [Tooltip("종류별 기본 길이에 곱해지는 배율. 1 = 그대로, 1.2 = 20% 크게")]
+    public float previewScaleMultiplier = 1f;
+
+    [Tooltip("종류별 기본 각도에 더해지는 각도. 이 무기만 기울기가 다를 때 사용")]
+    public float previewRotationOffset = 0f;
+
+    [Tooltip("종류별 위치 보정에 더해지는 위치. 잡는 곳이 어긋날 때 사용")]
+    public Vector2 previewPositionOffset = Vector2.zero;
+    // 무기 미리보기 개별 보정 끝 ============================
+
 #if UNITY_EDITOR
     private void OnValidate()
     {
@@ -89,6 +107,10 @@ public class ItemData : ScriptableObject
             rarity = ItemRarity.Normal;
         else if (itemType != ItemType.Equipment)
             rarity = ItemRarity.None;
+
+        // 배율이 0이면 무기가 안 보이므로 방지
+        if (previewScaleMultiplier <= 0f)
+            previewScaleMultiplier = 1f;
     }
 #endif
 }
