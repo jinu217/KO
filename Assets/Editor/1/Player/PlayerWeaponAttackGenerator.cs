@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Linq;
 using UnityEditor;
@@ -59,6 +59,9 @@ public static class PlayerWeaponAttackGenerator
         var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(target);
         // Preserve events and their absolute times. Extend the resting tail if needed.
         var events = existing != null ? AnimationUtility.GetAnimationEvents(existing) : new AnimationEvent[0];
+        events = events.Where(e => e.functionName != "Attack")
+            .Concat(new[] { new AnimationEvent { functionName = "Attack", time = motion.times[3] } })
+            .OrderBy(e => e.time).ToArray();
         float duration = Mathf.Max(motion.Duration, events.Length == 0 ? 0 : events.Max(e => e.time));
         GameObject preview = PrefabUtility.LoadPrefabContents(AssetDatabase.GetAssetPath(prefab));
         AnimationClip generated = null;

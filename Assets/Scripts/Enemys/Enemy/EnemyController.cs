@@ -299,7 +299,11 @@ public abstract class EnemyController : MonoBehaviour, IDamageable
         deathBodySimulated = rb != null && rb.simulated;
         var dummy = GetComponent<TutorialTrainingDummy>();
         dummy?.NotifyDefeated();
-        if (dummy == null && SaveData.Instance != null) SaveData.Instance.run.killCount++;
+        if (dummy == null)
+        {
+            StageClearManager.NotifyEnemyDefeated(this);
+            if (SaveData.Instance != null) SaveData.Instance.run.killCount++;
+        }
         if (!gameObject.activeInHierarchy) return;
         deathColliders = GetComponentsInChildren<Collider2D>(true);
         deathColliderEnabled = new bool[deathColliders.Length];

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 
 /// <summary>
@@ -121,6 +121,13 @@ public static class PlayerLandingGenerator
     static void SetPosY(AnimationClip clip, string path, params KeyPoint[] points)
     {
         var curve = BuildLinearCurve(points);
+        // Keep authored motion deltas while using the new head rest position.
+        if (path == HEAD)
+        {
+            var keys = curve.keys;
+            for (int i = 0; i < keys.Length; i++) keys[i].value += 0.042f;
+            curve.keys = keys;
+        }
         clip.SetCurve(path, typeof(Transform), "localPosition.y", curve);
     }
 

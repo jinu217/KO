@@ -91,6 +91,7 @@ public static class MainBoss3_AnimGenerators
     {
         return Generate("MainBoss3_" + Names[i], Durations[i], i < 3 || i == 10, t => Evaluate(i, t));
     }
+    public static void RebuildThrustAim() { Make(5); Make(6); AssetDatabase.SaveAssets(); }
     [MenuItem("Tools/3/MainBoss 3/Setup Animator")]
     public static void SetupAnimator()
     {
@@ -605,6 +606,9 @@ public static class MainBoss3_AnimGenerators
             World(rest, FB).y + .12f - World(p, FB).y));
         p.position[Body].y += clearance * airborne;
         p.angle[Cape] = Mathf.Lerp(p.angle[Cape], -40f, dash);
+        // Aim the complete sword arm down toward the smaller player's torso.
+        // Rotating at the shoulder retains the wrist, elbow and weapon attachment.
+        p.angle[SB] -= 30f * stance;
         return p;
     }
     private static Pose RushRetreat(float t)

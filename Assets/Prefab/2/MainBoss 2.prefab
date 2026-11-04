@@ -32,7 +32,7 @@ Transform:
   m_Children:
   - {fileID: 5105187171938841046}
   m_Father: {fileID: 284292392590005844}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 10}
 --- !u!212 &2248280643749473836
 SpriteRenderer:
   serializedVersion: 2
@@ -400,7 +400,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8067255995947082903}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 10}
 --- !u!212 &3096410831694970096
 SpriteRenderer:
   serializedVersion: 2
@@ -492,7 +492,7 @@ Transform:
   m_Children:
   - {fileID: 6548756361111733228}
   m_Father: {fileID: 3957877463497146824}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -35}
 --- !u!212 &6025149199711319403
 SpriteRenderer:
   serializedVersion: 2
@@ -686,6 +686,7 @@ GameObject:
   - component: {fileID: 2180545526437860108}
   - component: {fileID: 9204847795628581340}
   - component: {fileID: 6427413970732295669}
+  - component: {fileID: 8949272208334590117}
   m_Layer: 0
   m_Name: MainBoss 2
   m_TagString: Untagged
@@ -765,6 +766,9 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 1fc617b7ab5ac0640bd0bc957064461f, type: 2}
     runtime: 0
     cues:
@@ -778,6 +782,9 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 2420bcfe19db3664da4ca0a107b4d765, type: 2}
     runtime: 0
     cues:
@@ -791,6 +798,9 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 865b823882be6884f9ff89c35a70b70f, type: 2}
     runtime: 0
     cues:
@@ -804,29 +814,64 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: fbc3325f8add7b54b8242b281a7b35d4, type: 2}
     runtime: 0
     cues:
-    - time: 0.65
+    - time: 0.75
       duration: 0.28
       angle: 0
       scale: 1
       style: 0
       anchor: 3
-      offset: {x: 1.35, y: -0.1}
+      offset: {x: 1.695, y: -1.64}
       alignBlade: 0
       loop: 0
       weaponSide: 0
-    - time: 2.909899
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+    - time: 1.9166666
       duration: 0.28
       angle: 0
       scale: 1
       style: 0
       anchor: 3
-      offset: {x: 1.4, y: -0.35}
+      offset: {x: 1.94, y: -1.89}
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+    - time: 0.75
+      duration: 0.5
+      angle: 0
+      scale: 0.65
+      style: 10
+      anchor: 4
+      offset: {x: 0, y: 0}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      backwards: 0
+      groundContact: 1
+      buffKind: 0
+    - time: 1.9166666
+      duration: 0.5
+      angle: 0
+      scale: 0.65
+      style: 10
+      anchor: 4
+      offset: {x: 0, y: 0}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      backwards: 0
+      groundContact: 1
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 3aabafca407dc064195dbef1fd865ed2, type: 2}
     runtime: 0
     cues:
@@ -840,34 +885,82 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
-    - time: 1.12
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+    - time: 1.1666666
       duration: 0.28
       angle: 0
       scale: 1
       style: 1
       anchor: 3
-      offset: {x: 1.35, y: 0.3}
+      offset: {x: 1.68, y: -1.24}
       alignBlade: 0
       loop: 0
       weaponSide: 0
-    - time: 1.6
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+    - time: 2
       duration: 0.28
       angle: 0
       scale: 1
       style: 0
       anchor: 3
-      offset: {x: 1.45, y: -0.35}
+      offset: {x: 1.915, y: -1.89}
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+    - time: 2
+      duration: 0.5
+      angle: 0
+      scale: 0.65
+      style: 10
+      anchor: 4
+      offset: {x: 0, y: 0}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      backwards: 0
+      groundContact: 1
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 5f29867d741a7b546a29cf3aedb659e7, type: 2}
     runtime: 0
-    cues: []
-  - clip: {fileID: 7400000, guid: 2c93df258a67d8540a7c97c8fad9ca4f, type: 2}
-    runtime: 0
     cues:
-    - time: 0.7916667
+    - time: 2.2213202
+      duration: 0.28
+      angle: 0
+      scale: 1
+      style: 0
+      anchor: 3
+      offset: {x: 2.02, y: -1.89}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+    - time: 1.5833334
       duration: 0.5
+      angle: 0
+      scale: 0.65
+      style: 10
+      anchor: 4
+      offset: {x: 0, y: 0}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      backwards: 0
+      groundContact: 1
+      buffKind: 0
+  - clip: {fileID: 7400000, guid: 2c93df258a67d8540a7c97c8fad9ca4f, type: 2}
+    runtime: 1
+    cues:
+    - time: 0.58000004
+      duration: 0.7
       angle: 0
       scale: 1
       style: 9
@@ -876,6 +969,9 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 2
   - clip: {fileID: 7400000, guid: e3e6b60ac1d28c14880ba8e7e3bf2ffe, type: 2}
     runtime: 0
     cues:
@@ -889,6 +985,9 @@ MonoBehaviour:
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: f23778c216c732b4bab601f8ae3c2004, type: 2}
     runtime: 0
     cues:
@@ -898,23 +997,29 @@ MonoBehaviour:
       scale: 1
       style: 1
       anchor: 3
-      offset: {x: 1.35, y: 0.3}
+      offset: {x: 1.68, y: -1.24}
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: cd988ac8323a68b4e8732f3753e2f6a1, type: 2}
     runtime: 0
     cues:
-    - time: 0.45
+    - time: 1.3333334
       duration: 0.28
       angle: 0
       scale: 1
       style: 1
       anchor: 3
-      offset: {x: 1.35, y: 0.3}
+      offset: {x: 1.68, y: -1.24}
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
   - clip: {fileID: 7400000, guid: db0d0cc3ee1aa194a98e4b1335d40605, type: 2}
     runtime: 0
     cues:
@@ -924,10 +1029,26 @@ MonoBehaviour:
       scale: 1
       style: 0
       anchor: 3
-      offset: {x: 1.35, y: -0.1}
+      offset: {x: 1.695, y: -1.64}
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+    - time: 0.65
+      duration: 0.5
+      angle: 0
+      scale: 0.65
+      style: 10
+      anchor: 4
+      offset: {x: 0, y: 0}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      backwards: 0
+      groundContact: 1
+      buffKind: 0
   - clip: {fileID: 7400000, guid: eaa71f40d0fb3cb44b7a415b335698a3, type: 2}
     runtime: 0
     cues:
@@ -937,10 +1058,26 @@ MonoBehaviour:
       scale: 1
       style: 0
       anchor: 3
-      offset: {x: 1.35, y: -0.1}
+      offset: {x: 1.695, y: -1.64}
       alignBlade: 0
       loop: 0
       weaponSide: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+    - time: 0.65
+      duration: 0.5
+      angle: 0
+      scale: 0.65
+      style: 10
+      anchor: 4
+      offset: {x: 0, y: 0}
+      alignBlade: 0
+      loop: 0
+      weaponSide: 0
+      backwards: 0
+      groundContact: 1
+      buffKind: 0
   - clip: {fileID: 7400000, guid: 0ad2f6aa44a14db42b83670e71a2af84, type: 2}
     runtime: 0
     cues:
@@ -954,7 +1091,10 @@ MonoBehaviour:
       alignBlade: 0
       loop: 1
       weaponSide: 0
-  runtimeEnabled: 0
+      backwards: 0
+      groundContact: 0
+      buffKind: 0
+  runtimeEnabled: 1
   down:
     sheet: {fileID: 2800000, guid: 4c696c1001b33c943be90cb1f55f5d94, type: 3}
     frames: []
@@ -1051,8 +1191,68 @@ MonoBehaviour:
     offset: {x: 0, y: 0}
     artFacesRight: 1
     flipY: 0
+  sand:
+    sheet: {fileID: 2800000, guid: ba5e4f56df7f9f747a66d4ef0e0e40b4, type: 3}
+    frames: []
+    columns: 24
+    fps: 48
+    scale: 2
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  buffOffense:
+    sheet: {fileID: 2800000, guid: f5b9def926bb8fd4b88f610ecc98d7e4, type: 3}
+    frames: []
+    columns: 20
+    fps: 28.571428
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  buffDefense:
+    sheet: {fileID: 2800000, guid: 4e374ac463662c6488e76ca778d2d395, type: 3}
+    frames: []
+    columns: 20
+    fps: 28.571428
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  buffSpeed:
+    sheet: {fileID: 2800000, guid: eef5c83fe159ac1469f7fb432b5ec920, type: 3}
+    frames: []
+    columns: 20
+    fps: 28.571428
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
+  buffRecovery:
+    sheet: {fileID: 2800000, guid: d994a3f3cad3c104ea047ff7432d563d, type: 3}
+    frames: []
+    columns: 20
+    fps: 28.571428
+    scale: 1
+    offset: {x: 0, y: 0}
+    artFacesRight: 1
+    flipY: 0
   pixelsPerUnit: 64
   sortingOrder: 100
+--- !u!114 &8949272208334590117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3188457962255236641}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 297bf0e8eeccf2943a54e9fa769ca45b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MainBoss2WeaponLayer
+  weapon: {fileID: 6476626192404527354}
+  hand: {fileID: 6746451297597226088}
+  front: 0
 --- !u!1 &3344028299604578680
 GameObject:
   m_ObjectHideFlags: 0
@@ -1085,7 +1285,7 @@ Transform:
   m_Children:
   - {fileID: 8060997406319737281}
   m_Father: {fileID: 4218291511057264366}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 8}
 --- !u!212 &6746451297597226088
 SpriteRenderer:
   serializedVersion: 2
@@ -1269,7 +1469,7 @@ Transform:
   m_Children:
   - {fileID: 8067255995947082903}
   m_Father: {fileID: 338078460364284949}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -1}
 --- !u!212 &1491250384076843316
 SpriteRenderer:
   serializedVersion: 2
@@ -1364,7 +1564,7 @@ Transform:
   - {fileID: 3957877463497146824}
   - {fileID: 338078460364284949}
   m_Father: {fileID: 2180545526437860108}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
 --- !u!212 &223939767528510967
 SpriteRenderer:
   serializedVersion: 2
@@ -1456,7 +1656,7 @@ Transform:
   m_Children:
   - {fileID: 2028011168251174945}
   m_Father: {fileID: 338078460364284949}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -2}
 --- !u!212 &2915610400608987839
 SpriteRenderer:
   serializedVersion: 2
@@ -1548,7 +1748,7 @@ Transform:
   m_Children:
   - {fileID: 3802333298225993080}
   m_Father: {fileID: 1748937308023193867}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -12}
 --- !u!212 &1127603363605750121
 SpriteRenderer:
   serializedVersion: 2
@@ -1640,7 +1840,7 @@ Transform:
   m_Children:
   - {fileID: 4218291511057264366}
   m_Father: {fileID: 4756205975079822941}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -17}
 --- !u!212 &4358418730137106110
 SpriteRenderer:
   serializedVersion: 2
@@ -1731,7 +1931,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2028011168251174945}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 8}
 --- !u!212 &1013940938226424587
 SpriteRenderer:
   serializedVersion: 2
@@ -1821,7 +2021,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8060997406319737281}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
 --- !u!1 &9211888078968514831
 GameObject:
   m_ObjectHideFlags: 0
@@ -1853,7 +2053,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4756205975079822941}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 9}
 --- !u!212 &7560970981646381455
 SpriteRenderer:
   serializedVersion: 2

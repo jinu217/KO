@@ -119,6 +119,8 @@ public class SettingController : MonoBehaviour
     // ==== 설정창 열기 ====
     public void OpenPanel()
     {
+        if (!settingPanel.activeSelf || targetPosition != openPosition)
+            UISound.Play(UISoundId.SettingsOpen);
         // 검은 뒷배경은 즉시 표시
         settingBackground.SetActive(true);
 
@@ -138,6 +140,8 @@ public class SettingController : MonoBehaviour
     // ==== 설정창 닫기 ====
     public void ClosePanel()
     {
+        if (settingPanel.activeSelf && targetPosition != closedPosition)
+            UISound.Play(UISoundId.Cancel);
         targetPosition = closedPosition;
 
         StopAllCoroutines();
@@ -191,7 +195,10 @@ public class SettingController : MonoBehaviour
         switch (currentState)
         {
             case MenuState.Category:
+            int previousCategory = categoryIndex;
             categoryIndex = Mathf.Clamp(categoryIndex + dir, 0, 2);
+            if (previousCategory != categoryIndex)
+                UISound.Play(UISoundId.CategoryNavigate);
             UpdatePanel();      // 카테고리 이동 시 패널 미리보기
             contentIndex = 0;       // 패널이면 Content 선택 초기화
             break;

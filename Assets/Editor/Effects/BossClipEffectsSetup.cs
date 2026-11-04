@@ -1,6 +1,7 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -12,6 +13,168 @@ using A = BossClipEffects.Anchor;
 public static class BossClipEffectsSetup
 {
     static BossClipEffects preview;
+    [MenuItem("Tools/Effects/Bosses/Refresh Buff Effects Only")]
+    public static void RefreshBuffs()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
+            throw new InvalidOperationException("Edit Mode required.");
+        ClearPreview();
+        int count=0;
+        for(int stage=1;stage<=5;stage++) foreach(bool main in new[]{false,true})
+        {
+            string runtimePath=$"Assets/Prefabs/Stage{stage}_Enemy/Stage{stage}_{(main?"Main":"Mid")}Boss.prefab";
+            var template=AssetDatabase.LoadAssetAtPath<GameObject>(runtimePath)?.GetComponent<BossEffects>();
+            if(template==null)throw new InvalidOperationException("Boss source missing: "+runtimePath);
+            foreach(string path in new[]{runtimePath,$"Assets/Prefab/{stage}/{(main?"Main":"Mid")}Boss {stage}.prefab"})
+            {
+                string backup="C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/buff_motion_before/"+path;
+                Directory.CreateDirectory(Path.GetDirectoryName(backup));if(!File.Exists(backup))File.Copy(path,backup);
+                var root=PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    var driver=root.GetComponentInChildren<BossClipEffects>(true);
+                    if(driver==null)throw new InvalidOperationException("Boss clip driver missing: "+path);
+                    ConfigureBuffs(driver,root.GetComponent<BossEffects>() ?? template);
+                    PrefabUtility.SaveAsPrefabAsset(root,path);count++;
+                }
+                finally{PrefabUtility.UnloadPrefabContents(root);}
+            }
+        }
+        AssetDatabase.SaveAssets();Debug.Log("[Boss Buff FX] Updated "+count+" prefabs; attack and movement tracks preserved.");
+    }
+    static void ConfigureBuffs(BossClipEffects driver,BossEffects fx)
+    {
+        MobEffects.Effect Charge(string name)=>new MobEffects.Effect {
+            sheet=Sheet("공격&데미지받을시&사망&대쉬등 다있는곳/"+name+".png"),columns=20,fps=20/.7f,scale=1
+        };
+        driver.buffOffense=Charge("charge_red_01");driver.buffDefense=Charge("charge_blue_01");
+        driver.buffSpeed=Charge("charge_yellow_01");driver.buffRecovery=Charge("charge_green_01");
+        var controller=fx.GetComponent<MidBossController>();if(controller==null || controller.data==null)return;
+        foreach(var track in driver.tracks)
+        {
+            if(track.clip==null)continue;
+            string name=track.clip.name.ToLowerInvariant();
+            if(name.Contains("dskill") || name.Contains("desire"))continue;
+            var match=Regex.Match(name,@"skill([1-9])");
+            int index=match.Success?int.Parse(match.Groups[1].Value)-1:-1;
+            if(index<0 && name.Contains("buff"))index=fx.stage==1?0:2;
+            if(index<0)continue;
+            index=BossEffects.ClipSkillIndex(fx.stage,fx.mainBoss,track.clip.name,index);
+            if(index>=controller.data.skills.Count)continue;
+            var skill=controller.data.skills[index];if(skill.skillType!=BossSkillType.Buff)continue;
+            // Keep the user's existing MidBoss1 typhoon, including its original size/timing.
+            if(fx.stage==1 && !fx.mainBoss){track.runtime=true;driver.runtimeEnabled=true;continue;}
+            var kind=BossClipEffects.BuffKind.Speed;
+            if(skill.buff.effects.Any(e=>e.stat==BossBuffStat.Damage))kind=BossClipEffects.BuffKind.Offense;
+            if(skill.buff.effects.Any(e=>e.stat==BossBuffStat.Defense || e.stat==BossBuffStat.DamageReduction))kind=BossClipEffects.BuffKind.Defense;
+            if(skill.buff.effects.Any(e=>e.stat==BossBuffStat.HealthRegeneration || e.stat==BossBuffStat.MaxHp))kind=BossClipEffects.BuffKind.Recovery;
+            float impact=fx.stage==3 && !fx.mainBoss ? .9f : skill.preDelay;
+            var apply=AnimationUtility.GetAnimationEvents(track.clip).FirstOrDefault(e=>(e.stringParameter??"").Contains("BuffApply"));
+            if(apply!=null)impact=apply.time;
+            float start=Mathf.Clamp(impact-.22f,0,Mathf.Max(0,track.clip.length-.7f));
+            var cues=track.cues.Where(c=>c.style!=S.Buff).ToList();
+            cues.Add(new BossClipEffects.Cue{style=S.Buff,anchor=A.Body,buffKind=kind,time=start,duration=Mathf.Min(.7f,track.clip.length-start),scale=1});
+            track.cues=cues.ToArray();track.runtime=true;driver.runtimeEnabled=true;
+        }
+        EditorUtility.SetDirty(driver);
+    }
+    public static void RefreshCombatPolish()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
+            throw new InvalidOperationException("Edit Mode required");
+        ClearPreview();
+        for(int stage=1;stage<=5;stage++) foreach(bool main in new[]{false,true})
+        {
+            string sourcePath=$"Assets/Prefabs/Stage{stage}_Enemy/Stage{stage}_{(main?"Main":"Mid")}Boss.prefab";
+            var template=AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath).GetComponent<BossEffects>();
+            foreach(string path in new[]{sourcePath,$"Assets/Prefab/{stage}/{(main?"Main":"Mid")}Boss {stage}.prefab"})
+            {
+                string backup="C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/boss5_polish_before/"+path;
+                Directory.CreateDirectory(Path.GetDirectoryName(backup));if(!File.Exists(backup))File.Copy(path,backup);
+                var root=PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    var driver=root.GetComponentInChildren<BossClipEffects>(true);
+                    var fx=root.GetComponent<BossEffects>() ?? template;
+                    if(driver==null)continue;
+                    // Preserve all buff tuning; rebuild only the requested attack/movement cues.
+                    foreach(var track in driver.tracks)
+                    {
+                        if(track.clip==null)continue;
+                        var rebuilt=BuildTrack(track.clip,fx,stage,main);
+                        var buffs=track.cues.Where(c=>c.style==S.Buff).ToArray();
+                        track.cues=rebuilt.cues.Where(c=>c.style!=S.Buff).Concat(buffs).OrderBy(c=>c.time).ToArray();
+                    }
+                    if(stage==5 && main)driver.sand=MidOneSheet("sand_03");
+                    PrefabUtility.SaveAsPrefabAsset(root,path);
+                }
+                finally{PrefabUtility.UnloadPrefabContents(root);}
+            }
+        }
+        AssetDatabase.SaveAssets();
+    }
+    public static void VerifyCombatPolish()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Edit Mode required");
+        var report=new System.Text.StringBuilder();int contacts=0,rotations=0;
+        for(int stage=1;stage<=5;stage++)foreach(bool main in new[]{false,true})
+        {
+            string path=$"Assets/Prefabs/Stage{stage}_Enemy/Stage{stage}_{(main?"Main":"Mid")}Boss.prefab";
+            var root=PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                var fx=root.GetComponent<BossEffects>();var driver=root.GetComponentInChildren<BossClipEffects>(true);
+                var foot=root.GetComponentsInChildren<SpriteRenderer>(true).First(r=>r.name=="Foot_B");
+                foreach(float facing in new[]{-1f,1f})
+                {
+                    Vector3 scale=fx.motionAnimator.transform.localScale;scale.x=Mathf.Abs(scale.x)*facing;fx.motionAnimator.transform.localScale=scale;
+                    float travel=-facing;var contact=fx.MovementContact(travel,true);
+                    var instance=fx.PreviewMovement(true,travel,.12f,true);
+                    if(instance==null)throw new Exception("Missing retreat effect: "+path);
+                    try
+                    {
+                        var renderer=instance.GetComponent<SpriteRenderer>();var bounds=BossEffects.VisibleBounds(renderer);
+                        float edge=travel>0?bounds.max.x:bounds.min.x;
+                        float error=Mathf.Max(Mathf.Abs(edge-contact.x),Mathf.Abs(bounds.min.y-BossEffects.VisibleBounds(foot).min.y));
+                        if(error>.001f)throw new Exception("Retreat contact mismatch: "+path+" "+error);
+                        if(renderer.flipX!=(fx.dash.artFacesRight?travel<0:travel>0))throw new Exception("Retreat facing mismatch");
+                        report.AppendLine(path+" facing="+facing+" rear contact error="+error);contacts++;
+                    }
+                    finally{UnityEngine.Object.DestroyImmediate(instance.gameObject);}
+                }
+                foreach(var track in driver.tracks)
+                {
+                    int n=track.cues.Count(c=>c.style==S.Spin);rotations+=n;
+                    if(n>0 && driver.spin.sheet!=null && driver.spin.sheet.name.ToLowerInvariant().Contains("sting"))throw new Exception("Sting on rotation: "+path);
+                    if(stage==5 && main && track.clip.name=="MainBoss5_Attack" && track.cues.Any(c=>c.anchor==A.Feet))throw new Exception("Feet effect on sword attack");
+                    if(stage==5 && main && track.clip.name=="MainBoss5_skill3_Follow" && !track.cues.Any(c=>c.style==S.Sand))throw new Exception("Missing landing sand");
+                }
+            }
+            finally{PrefabUtility.UnloadPrefabContents(root);}
+        }
+        report.AppendLine("PASS: rear contacts="+contacts+", rotation cues without sting="+rotations);
+        File.WriteAllText("C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/combat_polish_verification.txt",report.ToString());
+        Debug.Log(report.ToString());
+    }
+    public static void RefreshStageFive()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Edit Mode required.");
+        foreach(var path in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Prefab/5","Assets/Prefabs/Stage5_Enemy"}).Select(AssetDatabase.GUIDToAssetPath))
+        {
+            var asset=AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if(asset.GetComponentInChildren<BossClipEffects>(true)==null)continue;
+            var root=PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                foreach(var fx in root.GetComponentsInChildren<BossClipEffects>(true))
+                    if(fx.animator!=null && fx.source!=null)
+                        Configure(fx.animator,fx.source,5,fx.animator.runtimeAnimatorController.animationClips.Any(c=>c.name.StartsWith("MainBoss5_")));
+                PrefabUtility.SaveAsPrefabAsset(root,path);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+        AssetDatabase.SaveAssets();
+    }
     const string InstallRequest = "Library/BossFX_R51.install";
     static bool installRequested = System.IO.File.Exists(InstallRequest); // R51: normalized sheet cells support imported texture resizing.
     static void InstallWhenReady()
@@ -138,11 +301,16 @@ public static class BossClipEffectsSetup
         driver.buff = new MobEffects.Effect { sheet = Sheet("공격&데미지받을시&사망&대쉬등 다있는곳/charge_spiral_01.png"), columns = 24, fps = 30, scale = 2 };
         // A visual-only prefab must not reference a component in a different prefab asset at runtime.
         driver.source = source.transform.IsChildOf(animator.transform.root) ? source : null;
-        driver.runtimeEnabled = stage == 5 && main;
+        driver.runtimeEnabled = (stage == 5 && main) || (stage == 1 && !main);
+        if ((stage == 5 && main) || source.UsesHeavyWeapon()) driver.sand = MidOneSheet("sand_03");
+        if (stage == 1 && !main)
+        {
+            driver.buff = MidOneSheet("typhoon_01"); driver.sand = MidOneSheet("sand_03");
+        }
         var transforms = animator.GetComponentsInChildren<Transform>(true);
         driver.body = transforms.FirstOrDefault(t => t.name == "Body") ?? animator.transform;
         driver.weapon = transforms.FirstOrDefault(t => new[] { "Sword", "Weapon", "Axe", "Scythe", "Spear", "Mace" }.Contains(t.name));
-        driver.feet = transforms.FirstOrDefault(t => t.name == "Foot_B") ?? transforms.FirstOrDefault(t => t.name.Contains("Foot")) ?? animator.transform;
+        driver.feet = transforms.FirstOrDefault(t => t.name == "Foot_F") ?? transforms.FirstOrDefault(t => t.name.Contains("Foot")) ?? animator.transform;
         var clips = animator.runtimeAnimatorController.animationClips.Distinct().ToList();
         var folders = clips.Select(c => System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(c)).Replace('\\', '/')).Distinct();
         foreach (var folder in folders.ToArray())
@@ -152,8 +320,18 @@ public static class BossClipEffectsSetup
                 if (clip != null && Regex.IsMatch(clip.name, "(?i)" + (main ? "main" : "mid") + @"boss\s*" + stage) && !clips.Contains(clip)) clips.Add(clip);
             }
         driver.tracks = clips.Select(c => BuildTrack(c, source, stage, main)).ToArray();
+        ConfigureHeavySand(driver, source);
+        ConfigureBuffs(driver,source);
         foreach (var track in driver.tracks) Validate(track);
         EditorUtility.SetDirty(driver);
+    }
+    static MobEffects.Effect MidOneSheet(string name)
+    {
+        string path = AssetDatabase.GetAssetPath(Sheet("공격&데미지받을시&사망&대쉬등 다있는곳/" + name + ".png"));
+        // Single import mode: use sheet cells instead of stale sliced sprite IDs.
+        int columns = 24;
+        return new MobEffects.Effect { sheet = AssetDatabase.LoadAssetAtPath<Texture2D>(path),
+            columns = columns, fps = columns / .5f, scale = 2 };
     }
     public static BossClipEffects.Track BuildTrack(AnimationClip clip, BossEffects fx, int stage, bool main)
     {
@@ -165,9 +343,51 @@ public static class BossClipEffectsSetup
             StageFive(clip, cues, main);
         else if (name.Contains("death")) Add(cues, S.Death, Mathf.Max(0, clip.length - .65f), .65f, A.Body);
         else if (name.Contains("hit")) Add(cues, S.Hit, 0, .3f, A.Body);
+        else if (stage == 1 && !main && name.Contains("walk")) { }
         else if (Regex.IsMatch(name, "walk|run|chase")) Add(cues, S.Dust, .3f, Mathf.Max(.01f, clip.length - .3f), A.Feet, true);
         else Generic(clip, cues, fx);
+        if (stage == 1 && !main)
+        {
+            runtime = name.Contains("buff") || name.Contains("combo3");
+            if (name.Contains("combo3"))
+            {
+                var down = cues.Where(c => c.style == S.Down).Skip(1).FirstOrDefault();
+                if (down != null) { down.time += .1f; down.style = S.Sand; down.anchor = A.WeaponTip;
+                    down.offset = Vector2.zero; down.duration = .5f; }
+            }
+        }
+        AddHeavySand(cues, fx, clip);
         return new BossClipEffects.Track { clip = clip, runtime = runtime, cues = cues.ToArray() };
+    }
+    // Supplemental only: retain the existing slash, timing and hitbox owners.
+    public static void ConfigureHeavySand(BossClipEffects driver, BossEffects fx)
+    {
+        if (fx == null || !fx.UsesHeavyWeapon()) return;
+        driver.sand = MidOneSheet("sand_03");
+        driver.runtimeEnabled = true;
+        foreach (var track in driver.tracks)
+        {
+            var cues = track.cues.ToList();
+            AddHeavySand(cues, fx, track.clip);
+            track.cues = cues.ToArray();
+        }
+        EditorUtility.SetDirty(driver);
+    }
+    static void AddHeavySand(List<BossClipEffects.Cue> cues, BossEffects fx, AnimationClip clip)
+    {
+        if (fx == null || !fx.UsesHeavyWeapon()) return;
+        cues.RemoveAll(c => c.style == S.Sand && c.groundContact);
+        if (clip == null || clip.name.IndexOf("Horizontal", StringComparison.OrdinalIgnoreCase) >= 0) return;
+        foreach (var down in cues.Where(c => c.style == S.Down).ToArray())
+        {
+            // Stage2's jump is tied to the landing pose, not the data's old summed delays.
+            float impact = clip.name == "MainBoss2_Skill3" ? 19f / 12f : down.time;
+            // MidBoss1's slash begins during the downswing; ground dust waits for contact.
+            if (fx.stage == 1 && !fx.mainBoss) impact += .11f;
+            if (cues.Any(c => c.style == S.Sand && Mathf.Abs(c.time - impact) < .15f)) continue;
+            cues.Add(new BossClipEffects.Cue { style = S.Sand, anchor = A.WeaponTip,
+                time = impact, duration = .5f, scale = .65f, groundContact = true });
+        }
     }
     static BossClipEffects.Cue Add(List<BossClipEffects.Cue> list, S style, float time, float duration = .28f, A anchor = A.Weapon, bool loop = false)
     {
@@ -181,7 +401,12 @@ public static class BossClipEffectsSetup
         foreach (var e in events)
         {
             string signal = e.stringParameter ?? "";
-            if (signal.EndsWith("Slam")) { Add(cues, S.Down, e.time); Add(cues, S.Punch, e.time, .22f, A.Feet).scale = .65f; }
+            if (signal.EndsWith("Slam")) { Add(cues, S.Down, e.time); if(!main) Add(cues, S.Punch, e.time, .22f, A.Feet).scale = .65f; }
+            else if (signal == "Skill3.FollowImpact" && main)
+            {
+                Add(cues,S.Down,e.time-1f/12,.25f,A.Weapon).scale=.8f;
+                Add(cues,S.Sand,e.time,.5f,A.WeaponTip).scale=.6f;
+            }
             else if (signal.Contains("SpinStart"))
             {
                 float end = events.FirstOrDefault(x => x.stringParameter == "Attack.SpinEnd")?.time ?? e.time + .6f;
@@ -189,6 +414,8 @@ public static class BossClipEffectsSetup
             }
             else if (signal.Contains("DashStart") || signal.Contains("PassStart"))
             {
+                // Ground dust does not belong to MainBoss5 flight.
+                if(main && (name.StartsWith("mainboss5_skill3") || name.Contains("attack")))continue;
                 string endName = signal.Replace("Start", "End");
                 float end = events.FirstOrDefault(x => x.stringParameter == endName)?.time
                     ?? events.FirstOrDefault(x => x.stringParameter == signal.Replace("Start", "Timeout"))?.time ?? clip.length;
@@ -208,7 +435,7 @@ public static class BossClipEffectsSetup
                 string[] parts = signal.Split('.'); int hit = int.Parse(parts[parts.Length - 1]);
                 if (hit == 2) continue; // The middle two damage slots are one uninterrupted rotation.
                 var cue = Add(cues, hit == 0 ? S.Down : hit == 1 ? S.Spin : S.Thrust,
-                    e.time - 1.5f / 12, hit == 1 ? 3.1f / 12 : 1.5f / 12);
+                    e.time - 1.5f / 12, hit == 1 ? 3.8f / 12 : 2.5f / 12);
                 cue.scale = .7f; cue.alignBlade = hit == 3; cue.weaponSide = true;
             }
             else if (signal.StartsWith("Skill1.Pulse"))
@@ -239,6 +466,7 @@ public static class BossClipEffectsSetup
         if (name.Contains("dskill")) return; // Dedicated desire systems must not invent damage or spawn FX.
         if (match.Success) index = int.Parse(match.Groups[1].Value) - 1;
         else if (name.Contains("combo3")) index = 1;
+        index = BossEffects.ClipSkillIndex(fx.stage, fx.mainBoss, clip.name, index);
         BossSkillData skill = index < 0 ? boss.data.basicAttack : index < boss.data.skills.Count ? boss.data.skills[index] : null;
         if (skill == null) return;
         if (name.Contains("dash")) { Add(cues, S.Dash, 0, clip.length, A.Feet, true); return; }
@@ -249,26 +477,31 @@ public static class BossClipEffectsSetup
         {
             if (step == null) continue;
             time += step.preDelay;
-            if (step.actionType == BossActionType.DashAttack) Add(cues, S.Dash, time, Mathf.Max(.01f, step.duration), A.Feet, true);
+            bool motionWindow = BossEffects.TryMovementWindow(clip, step.actionType, out float windowStart, out float windowEnd);
+            if (motionWindow) time = windowStart;
+            if (step.actionType == BossActionType.DashAttack || BossEffects.IsRetreatStep(step))
+                Add(cues, S.Dash, time, Mathf.Max(.01f, motionWindow ? windowEnd - windowStart : step.duration), A.Feet, true).backwards=BossEffects.IsRetreatStep(step);
             int count = step.damage > 0 && step.actionType != BossActionType.SpawnPrefab ? step.attackCount : 0;
             for (int pulse = 0; pulse < count; pulse++)
             {
                 float impact = time + pulse * step.interval;
-                var timing = fx.comboTimings?.FirstOrDefault(t => t.clip == clip);
-                if (timing?.impacts != null && ordinal < timing.impacts.Length) impact = timing.impacts[ordinal];
+                if ((step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam)
+                    && fx.TryMotionImpact(clip, ordinal + pulse, out float authoredImpact)) impact = authoredImpact;
                 var kind = fx.ResolveForPreview(skill, index, step, pulse, out float angle);
                 if (kind != BossEffects.Kind.None)
                 {
-                    S style = kind == BossEffects.Kind.Up ? S.Up : kind == BossEffects.Kind.Horizontal || kind == BossEffects.Kind.Thrust ? S.Thrust :
-                        kind == BossEffects.Kind.Spin ? S.Spin : kind == BossEffects.Kind.Punch || kind == BossEffects.Kind.Uppercut ? S.Punch : S.Down;
+                    S style = kind == BossEffects.Kind.Up ? S.Up : kind == BossEffects.Kind.Thrust ? S.Thrust :
+                        kind == BossEffects.Kind.Spin || kind == BossEffects.Kind.Horizontal ? S.Spin : kind == BossEffects.Kind.Punch || kind == BossEffects.Kind.Uppercut ? S.Punch : S.Down;
                     var cue = Add(cues, style, impact, .28f, A.Hitbox); cue.offset = step.hitboxOffset;
                     var rule = fx.overrides?.FirstOrDefault(r => r.skillIndex == index && r.stepIndex == skill.active.attackSteps.IndexOf(step) && r.pulse == pulse);
                     if (rule != null) cue.offset += rule.offset; cue.angle = kind == BossEffects.Kind.Uppercut ? 65 : angle;
                     if (kind == BossEffects.Kind.Horizontal && ((fx.stage == 1 && !fx.mainBoss) || (fx.stage == 2 && fx.mainBoss)))
                     { cue.scale = fx.midBoss1HorizontalScale; cue.offset.y += fx.midBoss1HorizontalHeight + fx.additionalHeavyHorizontalHeight; }
                 }
-                ordinal++;
             }
+            if (step.actionType == BossActionType.MeleeAttack || step.actionType == BossActionType.Slam
+                || (fx.stage == 4 && fx.mainBoss && step.actionType == BossActionType.DashAttack)) ordinal += Mathf.Max(1, step.attackCount);
+            if (motionWindow) { time = windowEnd + step.postDelay; continue; }
             float length = step.actionType == BossActionType.MeleeAttack ? Mathf.Max(0, step.attackCount - 1) * step.interval :
                 step.actionType == BossActionType.SpawnPrefab ? Mathf.Max(0, step.spawnCount - 1) * step.spawnInterval : step.duration;
             time += length + step.postDelay;
@@ -389,8 +622,14 @@ public static class BossClipEffectsSetup
         if (window == null || selected == null) { ClearPreview(); return; }
         var candidate = selected.GetComponentInParent<BossClipEffects>() ?? selected.GetComponentInChildren<BossClipEffects>(true);
         if (candidate == null || candidate.Find(window.animationClip) == null) { ClearPreview(); return; }
+        string clipName = window.animationClip.name.ToLowerInvariant();
+        // Movement is rendered by the same BossEffects factory used in-game.
+        if (clipName.Contains("run") || clipName.Contains("walk") ||
+            (clipName.Contains("dash") && !clipName.Contains("prepare") && !clipName.Contains("end")))
+        { ClearPreview(); return; }
         if (preview != candidate) { ClearPreview(); preview = candidate; }
-        preview.Sample(window.animationClip, window.time);
+        bool sharedTrack = candidate.runtimeEnabled && System.Text.RegularExpressions.Regex.IsMatch(window.animationClip.name, @"(?i)mainboss\s*5") && candidate.Find(window.animationClip).runtime;
+        preview.Sample(window.animationClip, window.time, false, !sharedTrack);
         SceneView.RepaintAll();
     }
 }

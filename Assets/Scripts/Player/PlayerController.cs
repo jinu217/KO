@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -430,7 +430,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     public bool MovementFXWalking => enabled
         && isGrounded
         && Mathf.Abs(moveInput.x) > 0.01f
-        && !isDashing && !isKnockback && !isMoveDelayed && !isMeditating
+        && !attackMovementLocked && !isDashing && !isKnockback && !isMoveDelayed && !isMeditating
         && !isDownJumping && !isInventoryOpen && !isKeyboardControlPaused
         && (playerStatus == null || playerStatus.CanMove)
         && !ChestRewardPanel.IsAnyOpen;
@@ -631,6 +631,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 매 프레임 상태 업데이트(지면 체크, 점프/낙하 상태 갱신)
     void Update()
     {
+        UpdateAttackMovementLock();
         if (isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
 
         // 지면 체크(일반 지면 + 점프스루 발판)
@@ -799,6 +800,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 입력 콜백: 점프/하향 점프(점프 버퍼 + 코요테 타임 적용)
     public void OnJump(InputAction.CallbackContext context)
     {
+        if (attackMovementLocked && !context.canceled) return;
         if (isGameOver) return;
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
@@ -934,7 +936,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isKeyboardControlPaused) return;
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDash()) return;
         if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
-        if (isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
+        if (attackMovementLocked || isKnockback || isMoveDelayed || isInventoryOpen || ChestRewardPanel.IsAnyOpen)
             return;
 
         if (!context.started)
@@ -1011,6 +1013,85 @@ public class PlayerController : MonoBehaviour, IDamageable
         canDash = availableDashCount > 0;
     }
 
+    private AnimatorOverrideController weaponMotionController;
+    private AnimationClip baseAttackMotion;
+    private readonly Dictionary<string, AnimationClip> weaponAttackMotions = new Dictionary<string, AnimationClip>();
+
+    public static string WeaponAttackClipName(WeaponType weapon)
+    {
+        switch (weapon)
+        {
+            case WeaponType.Dagger: return "Attack_SSword";
+            case WeaponType.Blunt: return "Attack_Club";
+            case WeaponType.Scythe: return "Attack_Sythe";
+            default: return "Attack_Sword"; // Axe has no dedicated motion yet.
+        }
+    }
+
+    public static WeaponType WeaponForAttackClip(string clipName, WeaponType fallback)
+    {
+        switch (clipName)
+        {
+            case "Attack_SSword": return WeaponType.Dagger;
+            case "Attack_Club": return WeaponType.Blunt;
+            case "Attack_Sythe": return WeaponType.Scythe;
+            case "Attack_Sword": return fallback == WeaponType.Axe ? WeaponType.Axe : WeaponType.Sword;
+            default: return fallback;
+        }
+    }
+
+    private void ApplyWeaponAttackMotion()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+        if (weaponMotionController == null)
+        {
+            foreach (var clip in animator.runtimeAnimatorController.animationClips)
+                weaponAttackMotions[clip.name] = clip;
+            if (!weaponAttackMotions.TryGetValue("Attack_Sword", out baseAttackMotion)) return;
+            weaponMotionController = new AnimatorOverrideController(animator.runtimeAnimatorController);
+            weaponMotionController.name = "Player weapon motions (runtime)";
+            animator.runtimeAnimatorController = weaponMotionController;
+        }
+        if (weaponAttackMotions.TryGetValue(WeaponAttackClipName(currentWeapon), out var motion))
+            weaponMotionController[baseAttackMotion] = motion;
+    }
+
+    private bool attackMovementLocked, attackMotionEntered;
+    private float attackMotionRequestedAt;
+    public bool AttackMovementLocked => attackMovementLocked;
+
+    private static bool IsWeaponAttackState(AnimatorStateInfo state)
+    {
+        return state.IsName("Attack_Sword") || state.IsName("Attack_SSword")
+            || state.IsName("Attack_Club") || state.IsName("Attack_Sythe");
+    }
+
+    private void UpdateAttackMovementLock()
+    {
+        if (!attackMovementLocked) return;
+        if (isGameOver || isKnockback || animator == null || !animator.isActiveAndEnabled)
+        {
+            attackMovementLocked = false;
+            if (animator != null) animator.ResetTrigger(AnimAttack);
+            return;
+        }
+        bool inAttack = IsWeaponAttackState(animator.GetCurrentAnimatorStateInfo(0))
+            || (animator.IsInTransition(0) && IsWeaponAttackState(animator.GetNextAnimatorStateInfo(0)));
+        if (inAttack) attackMotionEntered = true;
+        // Preserve held input; release only after the attack and its exit blend.
+        // A rejected trigger must not leave movement locked indefinitely.
+        else if (attackMotionEntered || Time.time - attackMotionRequestedAt > .5f)
+        {
+            attackMovementLocked = false;
+            animator.ResetTrigger(AnimAttack);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (weaponMotionController != null) Destroy(weaponMotionController);
+    }
+
     // 입력 콜백: 공격(인벤토리 열림 시에는 아이템 장착 확인 키)
     public void OnAttack(InputAction.CallbackContext context)
     {
@@ -1018,7 +1099,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         if (isMeditating) return;
         if (isKeyboardControlPaused) return;
         if (playerStatus != null && !playerStatus.CanAttackOrDash) return;
-        if (!context.started || isDashing || isKnockback || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
+        if (!context.started || attackMovementLocked || isDashing || isKnockback || isInventoryOpen || ChestRewardPanel.IsAnyOpen) return;
 
         if (TutorialManager.Instance != null && !TutorialManager.Instance.CanAttack()) return;
 
@@ -1032,7 +1113,15 @@ public class PlayerController : MonoBehaviour, IDamageable
             return;
 
         if (animator != null)
+        {
+            ApplyWeaponAttackMotion();
+            attackMovementLocked = true;
+            attackMotionEntered = false;
+            attackMotionRequestedAt = Time.time;
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            animator.SetFloat(AnimMoveSpeed, 0f);
             animator.SetTrigger(AnimAttack);
+        }
 
         playerStatus.OnAttack();
         lastAttackTime = Time.time;
@@ -1319,11 +1408,12 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         // 파괴 가능 오브젝트(모든 레이어 탐색)
         Collider2D[] breakableHits = Physics2D.OverlapBoxAll(pos, size, 0f, ~0);
+        var hitBreakables = new HashSet<BreakableObject>();
         foreach (var bHit in breakableHits)
         {
             if (bHit == null) continue;
             BreakableObject breakable = bHit.GetComponentInParent<BreakableObject>();
-            if (breakable != null) breakable.TakeDamage();
+            if (breakable != null && hitBreakables.Add(breakable)) breakable.TakeDamage();
         }
     }
 
@@ -1550,7 +1640,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 바라보는 방향 갱신(입력 기준)
     private void UpdateFacingDirection()
     {
-        if (isDashing || isKnockback || isMoveDelayed || isMeditating || isKeyboardControlPaused ||
+        if (attackMovementLocked || isDashing || isKnockback || isMoveDelayed || isMeditating || isKeyboardControlPaused ||
             isInventoryOpen || ChestRewardPanel.IsAnyOpen ||
             (playerStatus != null && !playerStatus.CanMove) || Mathf.Abs(moveInput.x) <= 0.01f)
             return;
@@ -1683,6 +1773,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     // 점프 입력 버퍼를 실제 점프로 소비
     private bool TryConsumeBufferedJump()
     {
+        if (attackMovementLocked) return false;
         if (jumpBufferTimer <= 0f) return false;
         if (!CanJumpNow()) return false;
 
@@ -2014,7 +2105,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         if (isDashing || isKnockback) return;
 
-        if (isAutoMovingForward)
+        if (isAutoMovingForward && !attackMovementLocked)
         {
             HandleCornerCorrection();
             rb.gravityScale = originalGravity;
@@ -2044,7 +2135,7 @@ public class PlayerController : MonoBehaviour, IDamageable
             maxSpeed *= playerStatus.MoveSpeedMultiplier;
         // 대쉬/피격/이동 지연이 풀린 뒤에도 이동 입력과 보는 방향이 일치하게 합니다.
         UpdateFacingDirection();
-        float targetSpeedX = moveInput.x * maxSpeed;
+        float targetSpeedX = attackMovementLocked ? 0f : moveInput.x * maxSpeed;
 
         // 관성/미끄러짐 완전 제거: 항상 즉시 목표 속도로 고정
         if (Mathf.Abs(moveInput.x) <= 0.01f)

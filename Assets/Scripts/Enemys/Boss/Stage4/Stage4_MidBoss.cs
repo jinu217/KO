@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,6 +24,7 @@ public sealed class Stage4_MidBoss : MidBossController
     private bool jumpOwned, slamHit;
     private float pushTravel;
     private static readonly string[] StateNames = { "MidBoss4_Attack", "MidBoss4_Skill1", "MidBoss4_Skill2", "MidBoss4_Buff" };
+    private static readonly float[] BasicImpacts = { .60f, 1.30f, 2.25f };
     private static readonly float[] Durations = { 3.1f, 3.3f, 3.6f, 3f };
 
     protected override void Awake()
@@ -128,15 +129,13 @@ public sealed class Stage4_MidBoss : MidBossController
                     var push = Step(2); float distance = Mathf.Min(push.maxMoveDistance - pushTravel, push.moveSpeed * Time.deltaTime * actionRate);
                     if (distance > 0) { MoveSafely(new Vector2(lockedDirection * distance, 0)); pushTravel += distance; }
                 }
-                float hitTime = 0;
                 for (int i = 0; i < 3; i++)
                 {
                     BossAttackStepData step = Step(i);
                     if (step == null) continue;
-                    hitTime += Mathf.Max(0, step.preDelay);
+                    float hitTime = BasicImpacts[i];
                     if (previous < hitTime && clock >= hitTime)
                         Damage(step, RootCenter(step));
-                    hitTime += Mathf.Max(0, step.postDelay);
                 }
             }
             else if (index == 0)
@@ -249,6 +248,9 @@ public sealed class Stage4_MidBoss : MidBossController
         if (step.damage <= 0) return;
         Effects?.PlayStep(step, center, lockedDirection);
         hitTargets.Clear();
+#if UNITY_EDITOR
+        BossSkillExecutor.ObserveHitbox(this, step, center, Physics2D.OverlapBox(center, step.hitboxSize, 0, playerLayer));
+#endif
         foreach (Collider2D hit in Physics2D.OverlapBoxAll(center, step.hitboxSize, 0, playerLayer))
         {
             if (!BossSkillExecutor.CanDamagePlayer(hit)) continue;

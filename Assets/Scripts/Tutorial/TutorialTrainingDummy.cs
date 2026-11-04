@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public enum TutorialDummyKind
 {
@@ -57,6 +57,7 @@ public class TutorialTrainingDummy : MonoBehaviour
 
     public void NotifyDamagedByEmpoweredDownJump()
     {
+        PlayHitReaction(destroyOnEmpoweredDownJump);
         TutorialManager.Instance?.NotifyEmpoweredDownJumpHit(this);
 
         if (destroyOnEmpoweredDownJump)
@@ -65,6 +66,7 @@ public class TutorialTrainingDummy : MonoBehaviour
 
     public void NotifyDamagedByAttack()
     {
+        PlayHitReaction(dummyKind != TutorialDummyKind.Next && destroyOnAttack);
         AddAttackBpmBonus();
 
         if (dummyKind == TutorialDummyKind.Next)
@@ -97,6 +99,13 @@ public class TutorialTrainingDummy : MonoBehaviour
         }
 
         targetObject.SetActive(false);
+    }
+
+    private void PlayHitReaction(bool finalHit)
+    {
+        var enemy = GetComponentInParent<EnemyController>();
+        var target = objectToDisable != null ? objectToDisable : enemy != null ? enemy.gameObject : gameObject;
+        ObjectHitReaction.Play(target, finalHit);
     }
 
     private void CachePlayerStatus()

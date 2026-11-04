@@ -4,6 +4,9 @@ using UnityEngine;
 // 2스테이지 메인보스의 안전 욕구 전용 상태와 행동을 모두 소유한다.
 public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
 {
+    // 임시 테스트: 전투 시작 직후 안전 필드를 한 번 강제 시전한다.
+    private bool combatStartTestUsed;
+
     [Header("발동")]
     [SerializeField, Min(0f), Tooltip("욕망 스킬 재사용 대기시간입니다. 발동 시작 순간부터 계산합니다.")]
     private float cooldown = 60f;
@@ -15,7 +18,13 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     private float damageEffectDuration = 30f;
     [SerializeField, Tooltip("욕망 스킬 발동 위치에 생성할 안전 필드 프리팹입니다. 2스테이지 안전 필드 컴포넌트와 트리거 방식의 2D 충돌체가 필요합니다.")]
     private GameObject fieldPrefab;
-    [SerializeField, InspectorName("필드 생성 Y 오프셋"), Tooltip("보스 위치를 기준으로 한 필드의 세로 생성 위치입니다. 양수는 위쪽, 음수는 아래쪽으로 이동합니다. X 위치는 항상 보스와 동일합니다.")]
+    [SerializeField, Tooltip("안전 필드가 나타나기 전에 한 번 재생할 효과 프리팹입니다. Animator와 등장 클립이 필요합니다.")]
+    private GameObject fieldSpawnEffectPrefab;
+    [SerializeField, Min(0f), Tooltip("이펙트 종료 전 필드를 15%까지 천천히 여는 시간입니다.")]
+    private float fieldSlowRevealDuration = 0.1f;
+    [SerializeField, Min(0f), Tooltip("이펙트 종료 후 나머지 85%를 빠르게 여는 시간입니다.")]
+    private float fieldFastRevealDuration = 0.1f;
+    [SerializeField, InspectorName("필드 생성 Y 오프셋"), Tooltip("필드 이미지 아래쪽을 지면에 맞춘 뒤 더할 높이입니다. 0이면 지면에 닿습니다.")]
     private float fieldSpawnYOffset;
     [SerializeField, Min(0f), Tooltip("욕망 스킬 발동 시 플레이어를 밀어내는 원형 범위입니다.")]
     private float activationKnockbackRadius = 4.5f;
@@ -58,6 +67,7 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
 
     private Stage2_MainBoss owner;
     private Stage2_SafetyField fieldVisual;
+    private GameObject fieldSpawnEffectInstance;
     private Vector2 fieldCenter;
     private float lastUseTime = -999f;
     private float fieldEndTime;
@@ -93,6 +103,16 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     public bool Tick(int phase)
     {
         if (owner == null || owner.DesireIsDead) return false;
+        if (!combatStartTestUsed && owner.DesireInCombat)
+        {
+            combatStartTestUsed = true;
+            if (!fieldActive && !casting)
+            {
+                owner.DesireInterruptSkill();
+                StartCoroutine(Activate());
+                return true;
+            }
+        }
         // 컴포넌트 Update보다 보스 AI가 먼저 호출되는 프레임에도 만료된 필드를 사용하지 않는다.
         if (fieldActive && (fieldVisual == null || Time.time >= fieldEndTime)) RemoveField();
         if (phase >= 3 && owner.DesireInCombat && !fieldActive
@@ -183,15 +203,50 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
         owner.DesireIsAttacking = true;
         owner.DesireStop();
         lastUseTime = Time.time;
-        fieldCenter = (Vector2)transform.position + Vector2.up * fieldSpawnYOffset;
+        fieldCenter = GetFieldSpawnPosition();
+        owner.PlayDesireAnimation();
+
+        float effectDuration = 0f;
+        if (fieldSpawnEffectPrefab != null)
+        {
+            fieldSpawnEffectInstance = Instantiate(fieldSpawnEffectPrefab, fieldCenter, Quaternion.identity);
+            Animator effectAnimation = fieldSpawnEffectInstance.GetComponent<Animator>();
+            if (effectAnimation != null && effectAnimation.runtimeAnimatorController != null
+                && effectAnimation.runtimeAnimatorController.animationClips.Length > 0)
+            {
+                effectAnimation.Rebind();
+                effectAnimation.Update(0f);
+                effectDuration = effectAnimation.runtimeAnimatorController.animationClips[0].length;
+                Destroy(fieldSpawnEffectInstance, effectDuration);
+            }
+            else
+            {
+                Debug.LogWarning($"[{name}] 안전 필드 등장 효과에 재생 가능한 Animator 클립이 없습니다.", fieldSpawnEffectInstance);
+                Destroy(fieldSpawnEffectInstance);
+                fieldSpawnEffectInstance = null;
+            }
+        }
+
+        float slowRevealDuration = Mathf.Min(fieldSlowRevealDuration, effectDuration);
+        float fastRevealDuration = effectDuration > 0f ? fieldFastRevealDuration : 0f;
+        float waitBeforeReveal = effectDuration - slowRevealDuration;
+        if (waitBeforeReveal > 0f)
+            yield return new WaitForSeconds(waitBeforeReveal);
+
         if (!CreateField())
         {
             casting = false;
             owner.DesireIsAttacking = false;
+            owner.CancelDesireAnimation();
             yield break;
         }
 
-        owner.PlayDesireAnimation();
+        if (slowRevealDuration + fastRevealDuration > 0f)
+        {
+            fieldVisual.PrepareReveal();
+            yield return fieldVisual.RevealFromCenter(slowRevealDuration, fastRevealDuration);
+        }
+
         fieldEndTime = Time.time + fieldDuration;
         damageEffectEndTime = Time.time + damageEffectDuration;
         fieldActive = true;
@@ -202,7 +257,8 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
         nextHealTime = Time.time + healInterval;
         PushPlayer();
         owner.DesireLog("욕망 스킬 시작", "안전에 대한 강박", cooldown);
-        if (castDelay > 0f) yield return new WaitForSeconds(castDelay);
+        float remainingCastDelay = castDelay - effectDuration - fastRevealDuration;
+        if (remainingCastDelay > 0f) yield return new WaitForSeconds(remainingCastDelay);
         yield return owner.WaitForDesireAnimation();
         casting = false;
         owner.DesireIsAttacking = false;
@@ -302,6 +358,19 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
         owner.DesireStop();
     }
 
+    private Vector2 GetFieldSpawnPosition()
+    {
+        Collider2D bossCollider = owner.GetComponent<Collider2D>();
+        Vector2 origin = bossCollider != null ? (Vector2)bossCollider.bounds.center : (Vector2)transform.position;
+        RaycastHit2D ground = Physics2D.Raycast(origin, Vector2.down, 30f, owner.wallLayer);
+        float groundY = ground.collider != null ? ground.point.y
+            : bossCollider != null ? bossCollider.bounds.min.y : transform.position.y;
+        SpriteRenderer fieldRenderer = fieldPrefab != null ? fieldPrefab.GetComponent<SpriteRenderer>() : null;
+        float bottomOffset = fieldRenderer != null && fieldRenderer.sprite != null
+            ? fieldRenderer.bounds.min.y - fieldPrefab.transform.position.y : 0f;
+        return new Vector2(transform.position.x, groundY - bottomOffset + fieldSpawnYOffset);
+    }
+
     private bool CreateField()
     {
         if (fieldPrefab == null)
@@ -340,6 +409,8 @@ public sealed class Stage2_MainBossDesireSkill : MonoBehaviour
     private void RemoveField()
     {
         CancelFieldAction();
+        if (fieldSpawnEffectInstance != null) Destroy(fieldSpawnEffectInstance);
+        fieldSpawnEffectInstance = null;
         if (returning && owner != null) owner.DesireStop();
         fieldActive = returning = stunned = combatEngaged = false;
         outsideSince = -1f;

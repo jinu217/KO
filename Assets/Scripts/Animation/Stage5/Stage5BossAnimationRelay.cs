@@ -166,6 +166,9 @@ public sealed class Stage5BossAnimationRelay : MonoBehaviour
         if (!a.HasState(0, hash)) { Debug.LogWarning("Stage5 state missing: " + state, this); return; }
         foreach (var p in a.parameters) if (p.type == AnimatorControllerParameterType.Trigger) a.ResetTrigger(p.name);
         a.SetFloat("AttackSpeed", rate); a.SetBool("IsAttacking", true); a.Play(hash, 0, 0);
+        // Special actions wait immediately; expose the requested state before
+        // WaitForEnd can mistake the previous looping Idle for the new action.
+        a.Update(0f);
     }
     public void SeekFrame(string state, float frame, float totalFrames, float rate)
     {

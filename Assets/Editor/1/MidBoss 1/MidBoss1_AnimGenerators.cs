@@ -522,9 +522,9 @@ public class MidBoss1_AnimGenerators
             float second = secondStart + 40f / 60f;
             if (!(first < second && second < horizontal))
                 throw new System.InvalidOperationException(clip.name + ": 콤보 구간 시간이 맞지 않습니다. 콤보를 재생성하세요.");
-            return new[] { first, second, horizontal };
+            return new[] { first - .1f, second - .1f, horizontal };
         }
-        return new[] { first, horizontal };
+        return new[] { first - .1f, horizontal };
     }
 
     static void CopyComboHandRotation(AnimationClip combo, AnimationClip source, float start, float duration)

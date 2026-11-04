@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -41,6 +41,12 @@ public sealed class PlayerMovementEffects : MonoBehaviour
     void Awake()
     {
         player = GetComponent<PlayerController>();
+        EnsureWalkFrames();
+        walking = NewParticle("Walk FX");
+    }
+    void EnsureWalkFrames()
+    {
+        if (walkFrames != null) return;
         if (walkSheet != null && walkColumns > 0 && walkSheet.width % walkColumns == 0)
         {
             walkFrames = new Sprite[walkColumns];
@@ -48,7 +54,6 @@ public sealed class PlayerMovementEffects : MonoBehaviour
             for (int i = 0; i < walkColumns; i++)
                 walkFrames[i] = Sprite.Create(walkSheet, new Rect(i * width, 0, width, walkSheet.height), new Vector2(.5f, 0), Mathf.Max(1, pixelsPerUnit));
         }
-        walking = NewParticle("Walk FX");
     }
     void OnEnable()
     {
@@ -64,6 +69,9 @@ public sealed class PlayerMovementEffects : MonoBehaviour
     }
     Vector3 Origin()
     {
+#if UNITY_EDITOR
+        if (!Application.isPlaying && previewOrigin.HasValue) return previewOrigin.Value;
+#endif
         Transform anchor = groundAnchor != null ? groundAnchor : player.groundCheck;
         if (anchor != null) return anchor.position;
         Collider2D col = GetComponent<Collider2D>();
@@ -144,6 +152,50 @@ public sealed class PlayerMovementEffects : MonoBehaviour
             p.renderer.sprite = p.frames[frame];
         }
     }
+#if UNITY_EDITOR
+    Particle previewParticle;
+    Vector3? previewOrigin;
+    public void PreviewMovement(string kind, Vector3 origin, float direction, float age)
+    {
+        if (Application.isPlaying) return;
+        EnsureWalkFrames();
+        if (previewParticle == null) previewParticle = NewParticle("Player Movement FX Preview");
+        previewParticle.obj.hideFlags = HideFlags.HideAndDontSave;
+        var scene = gameObject.scene;
+        if (scene.IsValid() && scene.isLoaded && previewParticle.obj.scene != scene)
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(previewParticle.obj, scene);
+        previewParticle.obj.SetActive(false);
+        if (age < 0) return;
+        bool run = kind == "run", dash = kind == "dash";
+        var frames = run ? walkFrames : dash ? dashFrames : jumpFrames;
+        if (frames == null || frames.Length == 0) return;
+        float fps = run ? walkFPS : dash ? dashFPS : jumpFPS;
+        float scale = run ? walkScale : dash ? dashScale : jumpScale;
+        Vector2 offset = run ? walkOffset : dash ? dashOffset : jumpOffset;
+        bool facesRight = run ? walkArtFacesRight : dash ? dashArtFacesRight : jumpArtFacesRight;
+        bool flip = (facesRight ? direction < 0 : direction > 0) ^ (dash && reverseDashImage);
+        previewOrigin = origin;
+        try { StartParticle(previewParticle, frames, fps, scale, offset, direction, flip); }
+        finally { previewOrigin = null; }
+        int frame = Mathf.FloorToInt(age * Mathf.Max(1, fps));
+        if (run) frame %= frames.Length;
+        previewParticle.obj.SetActive(frame < frames.Length);
+        if (frame < frames.Length) previewParticle.renderer.sprite = frames[frame];
+
+    }
+    public void ClearPreview()
+    {
+        if (Application.isPlaying) return;
+        if (previewParticle != null)
+        {
+            particles.Remove(previewParticle);
+            if (previewParticle.obj != null) DestroyImmediate(previewParticle.obj);
+            previewParticle = null;
+        }
+        if (walkFrames != null) foreach (var frame in walkFrames) if (frame != null) DestroyImmediate(frame);
+        walkFrames = null;
+    }
+#endif
     void OnDestroy()
     {
         foreach (Particle p in particles) if (p.obj != null) Destroy(p.obj);

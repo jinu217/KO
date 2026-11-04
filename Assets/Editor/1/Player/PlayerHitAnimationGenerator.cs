@@ -536,6 +536,13 @@ public class PlayerHitAnimationGenerator
             new AnimationCurve();
 
 
+        // Rebase the authored head keys to the photo-aligned Player rest pose.
+        if (path == HEAD)
+        {
+            var delta = new Vector3(0.019f, 0.042f, 0f);
+            p0 += delta; p1 += delta; p2 += delta; p3 += delta; p4 += delta;
+        }
+
         x.AddKey(times[0], p0.x);
         x.AddKey(times[1], p1.x);
         x.AddKey(times[2], p2.x);

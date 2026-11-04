@@ -59,24 +59,8 @@ public class CameraFollow2D : MonoBehaviour
         // 카메라 경계 제한
         if (cameraBounds != null)
         {
-            Bounds bounds = cameraBounds.bounds;
-
             Camera cam = GetComponent<Camera>();
-
-            float halfHeight = cam.orthographicSize;
-            float halfWidth = halfHeight * cam.aspect;
-
-            desiredPosition.x = Mathf.Clamp(
-                desiredPosition.x,
-                bounds.min.x + halfWidth,
-                bounds.max.x - halfWidth
-            );
-
-            desiredPosition.y = Mathf.Clamp(
-                desiredPosition.y,
-                bounds.min.y + halfHeight,
-                bounds.max.y - halfHeight
-            );
+            if (cam != null) desiredPosition = ClampToBounds(desiredPosition, cam.orthographicSize);
         }
 
         // smoothTime 0 입력 시 튐 방지
@@ -111,9 +95,11 @@ public class CameraFollow2D : MonoBehaviour
 
         if (bounds.size.x >= halfWidth * 2f)
             position.x = Mathf.Clamp(position.x, bounds.min.x + halfWidth, bounds.max.x - halfWidth);
+        else position.x = bounds.center.x;
 
         if (bounds.size.y >= halfHeight * 2f)
             position.y = Mathf.Clamp(position.y, bounds.min.y + halfHeight, bounds.max.y - halfHeight);
+        else position.y = bounds.center.y;
 
         return position;
     }
