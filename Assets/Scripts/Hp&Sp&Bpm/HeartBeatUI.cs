@@ -14,6 +14,22 @@ public class HeartBeatUI : MonoBehaviour
         defaultScale = rect.localScale;
     }
 
+    //============== 오브젝트가 꺼질 때 상태 초기화 (추가) ==============
+    // 기계장비 5개가 되어 이 조각이 비활성화되면 코루틴이 중간에 멈추고
+    // isBeating이 true로 남아, 다시 켜졌을 때 박동이 시작되지 않는 문제를 막습니다.
+    void OnDisable()
+    {
+        StopAllCoroutines();
+        isBeating = false;
+
+        if (rect != null)
+        {
+            rect.localScale = defaultScale;
+            rect.localRotation = Quaternion.identity;
+        }
+    }
+    //====================================================================
+
     void Update()
     {
         if (playerStatus == null)
