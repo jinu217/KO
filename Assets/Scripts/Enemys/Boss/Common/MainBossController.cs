@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class MainBossController : MidBossController
@@ -20,7 +20,7 @@ public class MainBossController : MidBossController
     //============== 메인보스 대화 ==============
     [Header("메인보스 대화")]
     [SerializeField] private MainBossDialogueController dialogueController;
-    [SerializeField] private string bossId = "Knight1";
+    [SerializeField] private string bossId = "";
     [SerializeField] private bool playEncounterDialogue = true;
     private bool encounterDialogueStarted;
     private bool encounterDialogueRunning;
@@ -34,11 +34,30 @@ public class MainBossController : MidBossController
     protected virtual bool WaitForAnimationExit => true;
     protected virtual string SkillAnimationAction(int index) => index < 0 ? "Attack" : "skill" + (index + 1);
 
+    private string DefaultBossId
+    {
+        get
+        {
+            foreach (char c in AnimationPrefix)
+                if (c >= '1' && c <= '5') return "Knight" + c;
+            return "Knight1";
+        }
+    }
+    protected virtual void Reset() { bossId = DefaultBossId; }
+    protected virtual void OnValidate() { InitializeDialogueId(); }
+    private void InitializeDialogueId()
+    {
+        // Migrate the old shared default while preserving custom dialogue IDs.
+        if (string.IsNullOrWhiteSpace(bossId) || (bossId == "Knight1" && DefaultBossId != "Knight1"))
+            bossId = DefaultBossId;
+    }
+
 
     protected override void Awake()
     {
         //============== 기본 초기화 ==============
         base.Awake();
+        InitializeDialogueId();
         if (bossAnimator == null) bossAnimator = GetComponentInChildren<Animator>(true);
         if (visualRoot == null) visualRoot = transform.Find(VisualRootName);
 
@@ -201,7 +220,8 @@ public class MainBossController : MidBossController
         activeAnimation = state;
         animationReturningToIdle = false;
         SetBusy(true);
-        bossAnimator.SetTrigger(action);
+        bossAnimator.Play(Animator.StringToHash("Base Layer." + state), 0, 0f);
+        bossAnimator.Update(0f);
         return true;
     }
 

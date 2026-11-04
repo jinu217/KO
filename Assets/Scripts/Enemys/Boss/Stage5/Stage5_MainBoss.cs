@@ -18,11 +18,18 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     [SerializeField, Min(.2f)] private float crossUpperHeight = 1.8f;
     [SerializeField, Min(1f)] private float finalRushDistance = 8f;
     private Vector2 crossOrigin, crossCenter;
+    private Vector2 crossReturnPosition;
+    private bool? crossTrigger;
     private readonly RaycastHit2D[] crossWallHits = new RaycastHit2D[16];
     private readonly Collider2D[] crossOverlaps = new Collider2D[16];
 
+    [Header("이기어검 예비 버전")]
+    public bool useOrbitSword;
+    private Stage5OrbitSword orbitSword;
+    public bool OrbitSwordActive => orbitSword != null && orbitSword.Active;
     private BossSkillData executingSkill;
     private bool dashHitPlayer;
+    private int lastSwordCrossing;
     private int lockedDashDirection;
     private Stage5BossAnimationRelay animationRelay;
     private float actionDelay = 1f;
@@ -35,7 +42,16 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     private void Play(string action, bool unscaled = false)
     { if (Relay != null) Relay.PlayState("MainBoss5_" + action, unscaled ? 1 : 1f / Mathf.Max(.01f, actionDelay)); }
     protected override IEnumerator WaitForSkillAnimation(BossSkillData skill, int index)
-    { if (Relay != null) yield return Relay.WaitForEnd(); }
+    {
+        if (Relay != null) yield return Relay.WaitForEnd();
+        if(index==4 && crossTrigger.HasValue && rb!=null && !isDead)
+        {
+            Vector2 start=rb.position,target=CrossGroundPosition();
+            for(float t=0;t<.2f;t+=Time.fixedDeltaTime)
+            { rb.MovePosition(Vector2.Lerp(start,target,Mathf.SmoothStep(0,1,t/.2f)));yield return new WaitForFixedUpdate(); }
+            rb.position=target;
+        }
+    }
     private Coroutine specialRoutine;
     public void BeginDesirePose() { StartSpecial(DesirePose()); }
     public void BeginDesireSuccessPose() { StartSpecial(DesireSuccessPose()); }
@@ -67,7 +83,20 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         specialAnimation = false; isAttacking = false;
     }
     private void RestoreAir()
-    { if (airGravity.HasValue && rb != null) rb.gravityScale = airGravity.Value; airGravity = null; if (Relay != null) Relay.SetRuntimeHidden(false); }
+    {
+        if(crossTrigger.HasValue && bossCollider!=null)
+        {
+            if(rb!=null)rb.position=CrossGroundPosition();
+            bossCollider.isTrigger=crossTrigger.Value;crossTrigger=null;
+        }
+        if (airGravity.HasValue && rb != null) rb.gravityScale = airGravity.Value;
+        airGravity = null; if (Relay != null) Relay.SetRuntimeHidden(false);
+    }
+    private Vector2 CrossGroundPosition()
+    {
+        Vector2 target=AboveFloor(rb.position);
+        return CanOccupy(target)?target:crossReturnPosition;
+    }
 
 
     protected override string AnimationPrefix => "MainBoss5_";
@@ -109,7 +138,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     public bool DesireInCombat => isChasing;
     public Transform DesirePlayer => playerTransform;
     public void DesireStop() => StopMove();
-    public void DesireInterrupt() { InterruptCurrentSkill(); RestoreAir(); executingSkill = null; }
+    public void DesireInterrupt() { orbitSword?.Cancel(); InterruptCurrentSkill(); RestoreAir(); executingSkill = null; }
     public void DesireLog(string message)
         => LogSkillDebug(message, new BossSkillData { skillName = "시간을 되돌리는 애정" });
     public void DesireRestoreHp(float value)
@@ -121,6 +150,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
 
     protected override void Die()
     {
+        orbitSword?.Cancel();
         RestoreAir();
         desireSkill?.Cancel();
         if (specialRoutine != null) StopCoroutine(specialRoutine);
@@ -138,21 +168,32 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     {
         actionDelay = GetSkillDelay(1f);
         executingSkill = skill;
+        lastSwordCrossing = 0;
         dashHitPlayer = false;
         lockedDashDirection = lookDirection < 0 ? -1 : 1;
         if (index == 4 && rb != null)
         {
             crossOrigin = rb.position;
+            crossReturnPosition = rb.position;
             crossCenter = playerTransform != null ? (Vector2)playerTransform.position : crossOrigin;
-            crossCenter.y = Mathf.Max(crossCenter.y, crossOrigin.y);
+            // The four screen-space passes must straddle the target even when it
+            // is left of the caster. Keep the authored 16-unit travel and poses.
+            crossOrigin = crossCenter + new Vector2(-finalRushDistance,-crossUpperHeight);
+            if(bossCollider!=null) { crossTrigger=bossCollider.isTrigger;bossCollider.isTrigger=true; }
             airGravity = rb.gravityScale; rb.gravityScale = 0; rb.linearVelocity = Vector2.zero;
         }
         base.OnSkillExecutionStarted(skill, index);
         Play(index < 0 ? "Attack" : "skill" + (index + 1));
+        if(index==0 && useOrbitSword)
+        {
+            orbitSword=GetComponent<Stage5OrbitSword>() ?? gameObject.AddComponent<Stage5OrbitSword>();
+            orbitSword.Begin(this,playerTransform);
+        }
     }
 
     protected override void OnSkillExecutionFinished(int index)
     {
+        orbitSword?.Cancel();
         RestoreAir();
         executingSkill = null;
         dashHitPlayer = false;
@@ -172,7 +213,8 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     }
 
     public bool ShouldExecuteStep(BossAttackStepData step)
-        => currentSkillIndex != 2 || StepIndex(step) != 2 || dashHitPlayer;
+        => !(currentSkillIndex == 0 && useOrbitSword && StepIndex(step) % 2 == 1)
+            && (currentSkillIndex != 2 || StepIndex(step) != 2 || dashHitPlayer);
 
     public bool UsesTimedMovement(BossAttackStepData step)
     {
@@ -237,25 +279,40 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         ApplyFacingDirection();
     }
 
+    protected override void FixedUpdate()
+    {
+        base.FixedUpdate();
+        if (isDead || !isAttacking || executingSkill == null || currentSkillIndex != 0 || rb == null) return;
+        var animator = Relay != null ? Relay.GetComponent<Animator>() : null;
+        if (animator == null || !animator.isActiveAndEnabled) { StopMove(); return; }
+        var clips = animator.GetCurrentAnimatorClipInfo(0);
+        if (clips.Length == 0 || !clips[0].clip.name.StartsWith("MainBoss5_skill1")) { StopMove(); return; }
+        float frame = animator.GetCurrentAnimatorStateInfo(0).normalizedTime * clips[0].clip.length * 12f;
+        bool active = frame >= 12 && frame < 84;
+        if (active && playerTransform != null) FaceTowards(playerTransform.position.x);
+        bool walk = active && playerTransform != null && Mathf.Abs(playerTransform.position.x - rb.position.x) > .7f && !IsWallAhead();
+        var steps = executingSkill.active.attackSteps;
+        float speed = steps.Count > 0 ? steps[0].moveSpeed : 1.25f;
+        // Own velocity for the entire casting walk, including the intervening attack steps.
+        rb.linearVelocity = new Vector2(walk ? lookDirection * speed / Mathf.Max(.01f, actionDelay) : 0, rb.linearVelocity.y);
+        int crossing = Mathf.FloorToInt((frame - 12) / 9f);
+        if (!useOrbitSword && active && crossing > lastSwordCrossing && crossing <= 7 && frame >= 12 + crossing * 9 + .6f)
+        {
+            lastSwordCrossing = crossing;
+            // Once per side change: close contact through the body, never a continuous damage aura.
+            if (steps.Count > 1 && bossCollider != null)
+            {
+                Bounds close = bossCollider.bounds;
+                close.Expand(new Vector3(.8f, .1f, 0));
+                BossSkillExecutor.HitPlayerAt(steps[1], this, close);
+            }
+        }
+    }
+
     private IEnumerator WalkOneStep(BossAttackStepData step)
     {
         if (step.preDelay > 0f) yield return new WaitForSeconds(Delay(step.preDelay));
-        float elapsed = 0f;
-        float duration = Delay(step.duration);
-        try
-        {
-            while (!isDead && rb != null && elapsed < duration)
-            {
-                if (playerTransform != null) FaceTowards(playerTransform.position.x);
-                bool walk = playerTransform != null
-                    && Mathf.Abs(playerTransform.position.x - transform.position.x) > .7f
-                    && !IsWallAhead();
-                rb.linearVelocity = new Vector2(walk ? lookDirection * step.moveSpeed / Mathf.Max(.01f, actionDelay) : 0f, rb.linearVelocity.y);
-                elapsed += Time.fixedDeltaTime;
-                yield return new WaitForFixedUpdate();
-            }
-        }
-        finally { StopMove(); }
+        yield return new WaitForSeconds(Delay(step.duration));
     }
 
     private IEnumerator VaultBehindPlayer(BossAttackStepData step)
@@ -282,10 +339,17 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
             rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             rb.linearVelocity = Vector2.zero;
             float elapsed = 0f;
+            bool turned = false;
             while (!isDead && elapsed < duration)
             {
                 float u = Mathf.Clamp01(elapsed / duration);
                 float progress = u * u * (3 - 2 * u);
+                if (!turned && u >= .5f)
+                {
+                    // The landing slash faces the player after vaulting past them.
+                    lookDirection = playerTransform.position.x >= target.x ? 1 : -1;
+                    ApplyFacingDirection(); turned = true;
+                }
                 Vector2 arc = Vector2.Lerp(start, target, progress)
                     + Vector2.up * (Mathf.Sin(progress * Mathf.PI) * vaultArcHeight);
                 rb.MovePosition(arc);
@@ -314,39 +378,41 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
         if (rb == null || index < 0 || index >= 4) yield break;
         if (step.preDelay > 0) yield return new WaitForSeconds(Delay(step.preDelay));
         Vector2 start = rb.position;
-        if (index == 2) start = crossOrigin + Vector2.right * finalRushDistance * 2;
-        else if (index == 3) start = crossOrigin;
-        start = AboveFloor(start);
+        if (index == 0) start = crossOrigin;
+        else if (index == 2) start = crossOrigin + Vector2.right * finalRushDistance * 2;
+        else if (index == 3) start = new Vector2(crossOrigin.x,crossCenter.y);
         try
         {
             rb.linearVelocity = Vector2.zero;
             // Keep the character visible during the pre-pass pause and reposition.
             yield return new WaitForSeconds(Delay(2f / 12f));
             if (isDead) yield break;
-            if (index >= 2)
+            if (index == 0 || index >= 2)
             {
-                // A wall may now occupy the intended reappearance position; never teleport into it.
-                if (CanOccupy(start)) rb.position = start;
-                else start = rb.position;
+                // Ground overlap is intentional during this attack; restore a
+                // solid grounded body only after the last motion finishes.
+                rb.position = start;
+                transform.position = new Vector3(start.x,start.y,transform.position.z);
             }
             else start = rb.position;
-            // Equal screen-space X travel for all four attacks; keep the second pass above ground.
+            // Symmetric paths around the player, including the low halves below ground.
             float direction = index == 0 || index == 3 ? 1 : -1;
             float endY = index == 0 || index == 2
-                ? Mathf.Max(start.y, crossCenter.y + crossUpperHeight * 2)
-                : index == 1 ? crossOrigin.y + .25f : start.y;
-            Vector2 end = AboveFloor(new Vector2(start.x + direction * finalRushDistance * 2, endY));
+                ? crossCenter.y + crossUpperHeight
+                : index == 1 ? crossOrigin.y : start.y;
+            Vector2 end = new Vector2(start.x + direction * finalRushDistance * 2, endY);
             if (Relay != null) Relay.SetRuntimeHidden(false);
             lookDirection = end.x >= start.x ? 1 : -1; ApplyFacingDirection();
             float duration = Mathf.Max(.01f, Delay(step.duration)), elapsed = 0;
             bool dealtDamage = false, blocked = false;
+            Bounds previous=BossSkillExecutor.AttackBounds(step,this);
             while (!isDead && elapsed < duration)
             {
                 float next = Mathf.Min(duration, elapsed + Time.fixedDeltaTime);
                 // Two frames of fast attack, followed by the unchanged six-frame inertial brake.
                 float u = next / duration;
                 float progress = CrossSlashProgress(u);
-                Vector2 target = AboveFloor(Vector2.Lerp(start, end, progress));
+                Vector2 target = Vector2.Lerp(start, end, progress);
                 if (!blocked)
                 {
                     Vector2 delta = target - rb.position; float distance = delta.magnitude;
@@ -356,15 +422,18 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
                         int count = bossCollider.Cast(delta / distance, filter, crossWallHits, distance + .02f);
                         float allowed = distance;
                         for (int i = 0; i < count; i++)
-                            if (crossWallHits[i].collider != null && crossWallHits[i].collider.attachedRigidbody != rb)
+                            if (crossWallHits[i].collider != null && crossWallHits[i].collider.attachedRigidbody != rb
+                                && crossWallHits[i].distance>.001f && Mathf.Abs(crossWallHits[i].normal.x)>.65f)
                                 allowed = Mathf.Min(allowed, Mathf.Max(0, crossWallHits[i].distance - .02f));
                         if (allowed < distance) { target = rb.position + delta / distance * allowed; blocked = true; }
                     }
                     rb.MovePosition(target);
                 }
                 yield return new WaitForFixedUpdate(); elapsed = next;
-                if (!isDead && !dealtDamage && PlayerInHitbox(step))
-                { dealtDamage = true; yield return BossSkillExecutor.ExecuteRepeatedAttacks(step, this); }
+                Bounds current=BossSkillExecutor.AttackBounds(step,this);
+                if (!isDead && !dealtDamage)
+                    dealtDamage=Stage5PatternMotion.SweepAttack(step,this,previous,current);
+                previous=current;
             }
         }
         finally
@@ -384,7 +453,7 @@ public sealed class Stage5_MainBoss : MainBossController, IBossTimedMovementCont
     {
         if (bossCollider == null || rb == null) return target;
         float footOffset = rb.position.y - bossCollider.bounds.min.y;
-        Vector2 origin = new Vector2(target.x, Mathf.Max(crossOrigin.y, crossCenter.y) + crossUpperHeight + 2);
+        Vector2 origin = new Vector2(target.x, Mathf.Max(crossReturnPosition.y, target.y) + crossUpperHeight + 2);
         var hit = Physics2D.Raycast(origin, Vector2.down, 30, wallLayer);
         if (hit.collider != null) target.y = Mathf.Max(target.y, hit.point.y + footOffset + .025f);
         return target;

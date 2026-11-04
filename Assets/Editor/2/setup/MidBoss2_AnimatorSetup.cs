@@ -26,8 +26,8 @@ public static class MidBoss2_AnimatorSetup
                 controller = found;
             }
             if (controller == null) throw new InvalidOperationException("MidBoss2_AC를 찾을 수 없습니다.");
-            // 같은 원본 Walk를 공유하고 Chase 상태에서만 배속합니다.
-            clips.Add("Chase", clips["Walk"]);
+            // Chase has its own wider stride; never replace it with the walking clip.
+            clips.Add("Chase", FindClip("MidBoss2_Chase"));
             var machine = controller.layers[0].stateMachine;
             var states = new Dictionary<string, AnimatorState>();
             int i = 0;
@@ -39,7 +39,7 @@ public static class MidBoss2_AnimatorSetup
                 i++;
                 state.motion = item.Value;
                 state.writeDefaultValues = false;
-                state.speed = item.Key == "Chase" ? 2.5f :
+                state.speed = item.Key == "Chase" ? 2.2f :
                     (item.Key == "Attack" || item.Key == "Skill2" ? 1.5f : 1f);
                 bool loop = item.Key == "Idle" || item.Key == "Walk" || item.Key == "Chase";
                 state.speedParameterActive = !loop;
@@ -98,20 +98,20 @@ public static class MidBoss2_AnimatorSetup
                     }
                 }
             }
-            foreach (var layer in controller.layers) FixChaseStates(layer.stateMachine, clips["Walk"]);
+            foreach (var layer in controller.layers) FixChaseStates(layer.stateMachine, clips["Chase"]);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
             EditorGUIUtility.PingObject(controller);
-            Debug.Log("[MidBoss2] 설정 완료. Walk/Chase가 원본 Walk를 공유합니다. Chase 상태 Speed = 2.5.");
+            Debug.Log("[MidBoss2] 설정 완료. Chase 전용 보폭 / Speed = 2.2.");
         }
         catch (Exception error) { Debug.LogError("[MidBoss2] " + error.Message); }
     }
-    [MenuItem("Tools/2/MidBoss 2/Apply Chase Walk Speed 2.5")]
+    [MenuItem("Tools/2/MidBoss 2/Apply Chase Run Speed 2.2")]
     public static void ApplyChaseWalkSpeed()
     {
         try
         {
-            var walk = FindClip("MidBoss2_Walk");
+            var walk = FindClip("MidBoss2_Chase");
             int count = 0;
             foreach (string guid in AssetDatabase.FindAssets("MidBoss2_AC t:AnimatorController"))
             {
@@ -122,7 +122,7 @@ public static class MidBoss2_AnimatorSetup
             }
             AssetDatabase.SaveAssets();
             if (count == 0) Debug.LogError("[MidBoss2] MidBoss2_AC에서 Chase 상태를 찾지 못했습니다.");
-            else Debug.Log("[MidBoss2] Chase 수정 완료 (" + count + "): Motion=MidBoss2_Walk, Speed=2.5, Speed Parameter OFF");
+            else Debug.Log("[MidBoss2] Chase 수정 완료 (" + count + "): Motion=MidBoss2_Chase, Speed=2.2, Speed Parameter OFF");
         }
         catch (Exception error) { Debug.LogError("[MidBoss2] " + error.Message); }
     }
@@ -133,9 +133,9 @@ public static class MidBoss2_AnimatorSetup
         {
             var state = child.state;
             if (state.name != "MidBoss2_Chase" && state.name != "Chase") continue;
-            Undo.RecordObject(state, "Use Walk at Speed 2.5");
+            Undo.RecordObject(state, "Use Chase at Speed 2.2");
             state.motion = walk;
-            state.speed = 2.5f;
+            state.speed = 2.2f;
             state.speedParameterActive = false;
             state.speedParameter = "";
             EditorUtility.SetDirty(state);

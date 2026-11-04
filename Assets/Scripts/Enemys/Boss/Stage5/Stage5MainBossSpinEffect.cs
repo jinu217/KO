@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Clip-driven, so the same typhoon is visible in Animation preview and in Play mode.
@@ -41,6 +41,9 @@ public sealed class Stage5MainBossSpinEffect : MonoBehaviour
 #endif
     void Render()
     {
+        var trail=GetComponent<BossWeaponSlashTrail>();
+        if(trail!=null && System.Array.Exists(trail.tracks,t=>t.clip!=null && t.clip.name=="MainBoss5_skill3_Follow"))
+        { if(effect!=null)effect.enabled=false;return; }
         if(active < .5f || sheet==null || body==null || sword==null || sword.sprite==null)
         { if(effect!=null) effect.enabled=false; radius=0; return; }
         if(cachedSheet!=sheet || frames==null)

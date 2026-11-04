@@ -16,6 +16,8 @@ public static class Stage5PatternMotion
         float rate = 1f / Mathf.Max(.01f, owner.GetSkillDelay(1));
         float elapsed = 0, startX = body.position.x;
         bool hit = false, stopped = false;
+        // The swing is visible even on a miss; damage uses the same moving blade.
+        owner.BossTransform.GetComponent<BossEffects>()?.PlayStep(step,BossSkillExecutor.AttackBounds(step,owner).center,owner.LookDirection);
         try
         {
             while (!dead() && elapsed < duration)
@@ -30,8 +32,7 @@ public static class Stage5PatternMotion
                 if (!stopped && !hit && ContainsPlayer(step,owner))
                 {
                     // Dash steps in the supplied data have exactly one hit.
-                    yield return BossSkillExecutor.ExecuteRepeatedAttacks(step,owner);
-                    hit = true;
+                    hit = BossSkillExecutor.HitPlayerAt(step,owner,BossSkillExecutor.AttackBounds(step,owner));
                     if (step.stopOnPlayerHit) break;
                 }
                 yield return new WaitForFixedUpdate();
@@ -45,9 +46,20 @@ public static class Stage5PatternMotion
     }
     public static bool ContainsPlayer(BossAttackStepData step, IBossSkillContext owner)
     {
-        Vector2 center=(Vector2)owner.BossTransform.position+new Vector2(owner.LookDirection*step.hitboxOffset.x,step.hitboxOffset.y);
-        foreach(var hit in Physics2D.OverlapBoxAll(center,step.hitboxSize,0,owner.PlayerLayer))
+        Bounds bounds=BossSkillExecutor.AttackBounds(step,owner);
+        foreach(var hit in Physics2D.OverlapBoxAll(bounds.center,bounds.size,0,owner.PlayerLayer))
             if (!(owner is IBossHitValidationContext validation) || validation.CanHitPlayer(hit)) return true;
+        return false;
+    }
+    public static bool SweepAttack(BossAttackStepData step, IBossSkillContext owner, Bounds previous, Bounds current)
+    {
+        float spacing=Mathf.Max(.08f,Mathf.Min(current.size.x,current.size.y)*.4f);
+        int count=Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(previous.center,current.center)/spacing),1,64);
+        for(int i=0;i<=count;i++)
+        {
+            float t=(float)i/count;
+            if(BossSkillExecutor.HitPlayerAt(step,owner,new Bounds(Vector3.Lerp(previous.center,current.center,t),Vector3.Lerp(previous.size,current.size,t))))return true;
+        }
         return false;
     }
 }

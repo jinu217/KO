@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 
 public class MainBoss2_AnimGenerators
@@ -1068,6 +1068,7 @@ public class MainBoss2_AnimGenerators
         L(FOOT_B, "localPosition.x", -0.060f); L(FOOT_B, "localPosition.y", -0.875f); L(FOOT_B, "localPosition.z", 0f);
         C(FOOT_B, "localEulerAngles.z", BUFF2_FOOT_B_ROT);
 
+        BossMotionPolish.GroundBuff(clip);
         Save(clip, clipName);
         GenerateAC();
     }
@@ -1374,6 +1375,7 @@ public class MainBoss2_AnimGenerators
 
     static void Save(AnimationClip clip, string name)
     {
+        OrbitSwordSetup.BakeLayerCurve(clip);
         string assetPath = $"{SAVE_PATH}/{name}.anim";
         var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
         if (existing != null) { EditorUtility.CopySerialized(clip, existing); existing.name = name; AssetDatabase.SaveAssets(); }

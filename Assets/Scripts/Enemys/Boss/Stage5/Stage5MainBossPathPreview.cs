@@ -34,7 +34,7 @@ public sealed class Stage5MainBossPathPreview : MonoBehaviour
                 catch (UnityException) { }
             }
             center = player != null ? player.position : origin + Vector3.right * 2.5f;
-            center.y = Mathf.Max(center.y, origin.y); center.z = origin.z;
+            center.z = origin.z;
             foreach (string axis in new[] { "x", "y", "z" })
             {
                 float value = axis == "x" ? localOrigin.x : axis == "y" ? localOrigin.y : localOrigin.z;
@@ -49,25 +49,26 @@ public sealed class Stage5MainBossPathPreview : MonoBehaviour
             }
             captured = true;
         }
-        Vector3 up = new Vector3(origin.x + 16, Mathf.Max(origin.y, center.y + 3.6f), origin.z);
-        Vector3 down = new Vector3(up.x - 16, origin.y + .25f, origin.z);
-        Vector3 thirdStart = origin + Vector3.right * 16;
-        thirdStart.y = Mathf.Max(thirdStart.y, origin.y);
-        Vector3 thirdEnd = new Vector3(thirdStart.x - 16, Mathf.Max(thirdStart.y, center.y + 3.6f), origin.z);
-        Vector3 lastEnd = origin + Vector3.right * 16;
+        Vector3 firstStart = center + new Vector3(-8,-1.8f,0);
+        Vector3 up = center + new Vector3(8,1.8f,0);
+        Vector3 down = firstStart;
+        Vector3 thirdStart = center + new Vector3(8,-1.8f,0);
+        Vector3 thirdEnd = center + new Vector3(-8,1.8f,0);
+        Vector3 lastStart = center + Vector3.left * 8;
+        Vector3 lastEnd = center + Vector3.right * 8;
         Vector3 position;
         int pass = Mathf.Clamp(Mathf.FloorToInt((frame - 8) / 14), 0, 3);
         float uPass = Mathf.Clamp01((frame - (8 + pass * 14)) / 8);
         float progress = Stage5_MainBoss.CrossSlashProgress(uPass);
         if (frame < 8) position = origin;
-        else if (pass == 0) position = Vector3.Lerp(origin, up, progress);
+        else if (pass == 0) position = Vector3.Lerp(firstStart, up, progress);
         else if (pass == 1) position = Vector3.Lerp(up, down, progress);
         else if (pass == 2) position = Vector3.Lerp(thirdStart, thirdEnd, progress);
-        else position = Vector3.Lerp(origin, lastEnd, progress);
+        else position = Vector3.Lerp(lastStart, lastEnd, progress);
         float direction = center.x >= origin.x ? 1 : -1;
         int mode = Mathf.RoundToInt(active);
-        if (mode == 2) position = origin + Vector3.right * direction * 3 * Mathf.Clamp01((frame - 22) / 8);
-        else if (mode == 3) position = Vector3.MoveTowards(origin, new Vector3(center.x - direction * .7f, origin.y, origin.z), Mathf.Clamp(frame - 12, 0, 72) / 12 * .8f);
+        if (mode == 2) position = origin + Vector3.right * direction * 5.6f * Mathf.Clamp01((frame - 22) / 7);
+        else if (mode == 3) position = Vector3.MoveTowards(origin, new Vector3(center.x - direction * .7f, origin.y, origin.z), Mathf.Clamp(frame - 12, 0, 72) / 12 * 1.25f);
         else if (mode == 4) position = origin + Vector3.up * .32f * Mathf.Clamp01(frame / 3) + Vector3.right * direction * 4 * Mathf.Clamp01((frame - 10) / 11);
         else if (mode == 5) { float t = Mathf.Clamp01(frame / 12); float u = t * t * (3 - 2 * t); position = origin + Vector3.right * direction * 3 * u + Vector3.up * Mathf.Sin(u * Mathf.PI) * 2.1f; }
         else if (mode == 6) position = origin;
@@ -75,6 +76,12 @@ public sealed class Stage5MainBossPathPreview : MonoBehaviour
         {
             bool left = frame >= 22 && frame < 50;
             Vector3 scale = originalScale; scale.x = Mathf.Abs(scale.x) * (left ? -1 : 1);
+            transform.localScale = scale;
+        }
+        else if (mode == 5)
+        {
+            Vector3 scale = originalScale;
+            if (frame >= 6) scale.x *= -1;
             transform.localScale = scale;
         }
         else transform.localScale = originalScale;

@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 17251654683163090}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.068, y: -0.015, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -150,7 +150,7 @@ Transform:
   m_GameObject: {fileID: 1577264810106288441}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.03, y: -0.016, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -242,7 +242,7 @@ Transform:
   m_GameObject: {fileID: 2129500675051070948}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.06904018, y: 0.03794643, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -434,7 +434,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
@@ -875,8 +875,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 907e038b999a66e46bd948f5d5817ffa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitFlashEffect
-  flashDuration: 0.2
-  blinkInterval: 0.04
 --- !u!114 &7018842537890649716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -889,6 +887,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c058282cee80244bac4a6647d487f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAppearance
+  weaponRenderer: {fileID: 0}
   headRenderer: {fileID: 706237963104943344}
   bodyRenderer: {fileID: 5350431844375571751}
   shoulderLeftRenderer: {fileID: 517163760334950253}
@@ -897,6 +896,7 @@ MonoBehaviour:
   handRightRenderer: {fileID: 8863010788874389916}
   footLeftRenderer: {fileID: 4148858794878470645}
   footRightRenderer: {fileID: 801661023692580465}
+  applyEquipmentPositionOffsets: 1
 --- !u!114 &2985752587352441579
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1021,6 +1021,8 @@ MonoBehaviour:
   sortingLayer: Front
   sortingOrder: 20
   groundAnchor: {fileID: 2304696995304926367}
+  walkStartDelay: 0.15
+  additionalWalkStartDelay: 0.15
 --- !u!114 &7203148277524791480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1042,6 +1044,7 @@ MonoBehaviour:
   framesPerSecond: 24
   effectScale: 1
   attackOffset: {x: 0, y: 0.15}
+  daggerEffectPullback: 0.8
   damageOffset: {x: 0, y: 0.1}
   sortingLayerOverride: 
   sortingOrderOffset: 5
@@ -1167,7 +1170,7 @@ Transform:
   m_GameObject: {fileID: 4036401764160619431}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.144, y: 0.013, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1259,7 +1262,7 @@ Transform:
   m_GameObject: {fileID: 5088546947606851214}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.07828125, y: 0.03794643, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1473,7 +1476,7 @@ Transform:
   m_GameObject: {fileID: 6677748873318891864}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.006, y: 0.002, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1660,7 +1663,7 @@ Transform:
   m_GameObject: {fileID: 8737517466248462358}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.054, y: 0.298, z: 0}
+  m_LocalPosition: {x: 0.073, y: 0.34, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

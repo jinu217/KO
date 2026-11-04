@@ -264,17 +264,23 @@ public static class Stage5BossAnimationBuilder
         p.rot[Head] -= p.rot[Body] * .65f;
         p.pos[Body].y -= (run ? .09f : .045f) * (1 - Mathf.Cos(phase * Mathf.PI * 4)) * .5f;
         p.rot[Bottom] = -p.rot[Body] * .85f;
-        p.rot[SF] += (run ? -8 : 0) + (run ? 18 : 9) * w; p.rot[AF] += run ? 22 : 8;
-        p.rot[SB] += (run ? 12 : 4) - (run ? 9 : 5) * w; p.rot[AB] += run ? 20 : 8;
+        p.rot[SF] += (run ? -8 : 0) + (run ? (r.main ? 7 : 18) : 9) * w; p.rot[AF] += run ? 22 : 8;
+        p.rot[SB] += (run ? 12 : 4) - (run ? (r.main ? 3 : 9) : 5) * w; p.rot[AB] += run ? 20 : 8;
         p.rot[HB] -= 5;
+        if (run && r.main)
+        {
+            p.pos[Body].y *= .8f;
+            // Counter the remaining shoulder/body sway without moving the grip.
+            p.rot[Weapon] -= (1.8f - 3f) * w * .8f;
+        }
         // Keep the authored weapon grip; do not spin the blade during locomotion.
         for (int side = 0; side < 2; side++)
         {
             bool front = side == 0; int foot = front ? FF : FB;
             float u = Mathf.Repeat(phase + side * .5f, 1);
-            float stride = run ? .32f : .18f;
+            float stride = run ? (r.main ? .70f : .50f) : .18f;
             float x = u < .5f ? Mathf.Lerp(stride, -stride, S(u * 2)) : Mathf.Lerp(-stride, stride, S((u - .5f) * 2));
-            float lift = u < .5f ? 0 : (run ? .20f : .10f) * Mathf.Pow(Mathf.Sin((u - .5f) * 2 * Mathf.PI), 2);
+            float lift = u < .5f ? 0 : (run ? (r.main ? .24f : .27f) : .10f) * Mathf.Pow(Mathf.Sin((u - .5f) * 2 * Mathf.PI), 2);
             Vector2 target = r.World(r.rest, foot) + new Vector2(x, lift);
             r.Leg(p, front, target, u > .68f && u < .94f ? 10 * Mathf.Sin((u - .68f) / .26f * Mathf.PI) : 0);
         }
@@ -932,6 +938,15 @@ public static class Stage5BossAnimationBuilder
             target = f < 88 ? Vector2.Lerp(end[3], approach, back) : Vector2.Lerp(approach, catchGrip, S((f - 88) / 2));
             angle = Mathf.LerpAngle(toAngle[3], r.Angle(p, Weapon), back);
         }
+        int group = Mathf.FloorToInt((f - 12) / 9f);
+        float crossFrame = f - (12 + group * 9);
+        if (group > 0 && group < 8 && crossFrame < 1.25f)
+        {
+            Pose crossingPose = MainFlyingSword(r, 12 + group * 9 - .001f, variant);
+            float blend = S(crossFrame / 1.25f);
+            target = Vector2.Lerp(r.World(crossingPose, Weapon), target, blend);
+            angle = Mathf.LerpAngle(r.Angle(crossingPose, Weapon), angle, blend);
+        }
         r.WeaponAt(p, target, angle); return p;
     }
     static void MainMotions(Rig r, List<Motion> list)
@@ -959,19 +974,19 @@ public static class Stage5BossAnimationBuilder
         dashEnd.rot[Weapon] = spinEnd.rot[Weapon] + Mathf.DeltaAngle(spinEnd.rot[Weapon], dash.rot[Weapon]);
         Pose final = rest.Clone();
         final.rot[Weapon] = dashEnd.rot[Weapon] + Mathf.DeltaAngle(dashEnd.rot[Weapon], rest.rot[Weapon]);
-        list.Add(new Motion("Attack", 35, false, f =>
+        list.Add(new Motion("Attack", 34, false, f =>
         {
             Pose p = Track(f, new Key(0, rest), new Key(3, charge), new Key(5, slam), new Key(8, slam),
-                new Key(11, spin), new Key(20, spinEnd), new Key(22, dashEnd), new Key(30, dashEnd), new Key(35, final));
+                new Key(11, spin), new Key(20, spinEnd), new Key(22, dashEnd), new Key(29, dashEnd), new Key(34, final));
             if (f >= 8 && f <= 20)
                 p.rot[Weapon] = Mathf.Lerp(slam.rot[Weapon], spinEnd.rot[Weapon], S((f - 8) / 14));
             // Compensate shoulder/body motion so the blade does not pitch during the dash transition.
-            if (f >= 20 && f <= 30) r.BladeAt(p, Vector2.right);
+            if (f >= 20 && f <= 29) r.BladeAt(p, Vector2.right);
             return p;
         })
             .Cue(5, "Attack.Slam").Cue(8, "Attack.SpinStart").Cue(8, "Attack.Pulse1").Cue(11, "Attack.Pulse2")
             .Cue(14, "Attack.Pulse3").Cue(17, "Attack.Pulse4").Cue(20, "Attack.SpinEnd")
-            .Cue(22, "Attack.DashStart").Cue(30, "Attack.DashEnd").Cue(35, "Action.End"));
+            .Cue(22, "Attack.DashStart").Cue(29, "Attack.DashEnd").Cue(34, "Action.End"));
         AddSwordVariants(r, list);
         Pose frontBuff = CapeSpread(r, false), backBuff = CapeSpread(r, true);
         Pose capeReady = rest.Clone(); capeReady.rot[SF] = 32.5f; capeReady.rot[AF] = 45; capeReady.rot[HF] = 15;
@@ -1037,7 +1052,8 @@ public static class Stage5BossAnimationBuilder
         Pose lift = rest.Clone(); lift.pos[Body] = new Vector3(.060f, -.080f, 0);
         lift.rot[Body] = -85; lift.rot[Head] = 14.3f;
         lift.rot[SF] = 160; lift.rot[AF] = -25; lift.rot[HF] = 0;
-        lift.rot[SB] = 180; lift.rot[AB] = 0; lift.rot[HB] = 0;
+        // Bring the forward grip down to player height while keeping the airborne body pose.
+        lift.rot[SB] = 150; lift.rot[AB] = 0; lift.rot[HB] = 0;
         lift.pos[Weapon] = new Vector3(.230f, -.228f, 0); lift.rot[Weapon] = 90;
         lift.rot[Bottom] = 15; lift.rot[TF] = -5; lift.rot[CF] = -12; lift.rot[FF] = -60;
         lift.rot[TB] = 15; lift.rot[CB] = -45; lift.rot[FB] = -45;
@@ -1057,35 +1073,26 @@ public static class Stage5BossAnimationBuilder
         over.rot[TF] = 115; over.rot[CF] = -145; over.rot[FF] = -30;
         over.rot[TB] = 125; over.rot[CB] = -150; over.rot[FB] = -30;
         over.rot[SF] = 95; over.rot[AF] = 90; over.rot[SB] = 105; over.rot[AB] = 95;
-        // The sword is tucked before the fast revolution, with no reflection switch at frame 10.
-        Pose landing = rest.Clone(); landing.rot[Body] -= 720;
+        // Finish the revolution into a raised blade, then cut down as both feet land.
+        Pose landing = slam.Clone(); landing.rot[Body] -= 720;
+        Pose landingWind = charge.Clone(); landingWind.rot[Body] -= 720;
         Pose followEnd = rest.Clone(); followEnd.rot[Body] -= 720;
-        Pose tucked = over.Clone(); tucked.rot[Body] = Mathf.Lerp(lift.rot[Body], landing.rot[Body], .5f);
-        list.Add(new Motion("skill3_Follow", 18, false, f =>
+        Pose tucked = over.Clone(); tucked.rot[Body] = Mathf.Lerp(lift.rot[Body], -720, .5f);
+        list.Add(new Motion("skill3_Follow", 22, false, f =>
         {
             Pose p = Track(f, new Key(0, followStart), new Key(2, over), new Key(6, tucked),
-                new Key(12, landing), new Key(18, followEnd));
-            p.rot[Body] = Mathf.Lerp(lift.rot[Body], landing.rot[Body], S(f / 12));
+                new Key(9, landingWind), new Key(12, landing), new Key(14, landing), new Key(22, followEnd));
+            if (f < 9) p.rot[Body] = Mathf.Lerp(lift.rot[Body], landingWind.rot[Body], S(f / 9));
             p.scale[SF] = rest.scale[SF]; p.scale[SB] = rest.scale[SB];
             p.scale[Weapon] = rest.scale[Weapon];
-            // The weapon remains attached to the hand as the tucked pose opens toward Rest.
-            if (f >= 9 && r.vertices[Weapon] != null)
-            {
-                Matrix4x4 blade = r.Matrix(p, Weapon);
-                float low = r.vertices[Weapon].Min(v => blade.MultiplyPoint3x4(v).y);
-                if (low < r.floor)
-                {
-                    Vector3 correction = r.Matrix(p, HB).inverse.MultiplyVector(Vector3.up * (r.floor - low));
-                    p.pos[Weapon] += correction;
-                }
-            }
             return p;
         }).Cue(0, "Skill3.DashEnd").Cue(0, "Skill3.VaultStart").Cue(12, "Skill3.FollowImpact")
-            .Cue(12, "Skill3.VaultEnd").Cue(18, "Action.End"));
-        list.Add(new Motion("skill3_Miss", 6, false, f => {
+            .Cue(12, "Skill3.VaultEnd").Cue(22, "Action.End"));
+        list.Add(new Motion("skill3_Miss", 8, false, frame => {
+            float f = frame * .75f;
             Pose p = Track(f, new Key(0, lift), new Key(3, hover), new Key(6, rest));
             p.scale[Weapon].x = f < 2 ? -1 : rest.scale[Weapon].x; p.scale[SF].x = f < 2 ? -1 : rest.scale[SF].x; p.scale[SB].x = f < 2 ? -1 : rest.scale[SB].x; return p;
-        }).Cue(0, "Skill3.DashEnd").Cue(6, "Action.End"));
+        }).Cue(0, "Skill3.DashEnd").Cue(8, "Action.End"));
         // Authored 2026-10-25 18:47 pose; preserve local joints rather than solving new IK.
         Pose crossBase = rest.Clone();
         crossBase.pos[Body] = new Vector3(.057f, -1.062f, 0); crossBase.rot[Body] = -45.938f;
@@ -1240,6 +1247,24 @@ public static class Stage5BossAnimationBuilder
 
     }
 
+    public static void RebuildMainCombatPolish()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
+            throw new InvalidOperationException("Edit Mode required");
+        using(var r=new Rig(true))
+            foreach(var motion in Motions(r).Where(m=>m.name=="Run" || m.name.StartsWith("skill1",StringComparison.Ordinal) || m.name=="skill3_Follow"))
+                BuildClip(r,motion,r.folder+"/"+r.prefix+motion.name+".anim");
+        AssetDatabase.SaveAssets();
+    }
+    public static void RebuildMainFlightAim()
+    {
+        if(EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
+            throw new InvalidOperationException("Edit Mode required");
+        using(var r=new Rig(true))
+            foreach(var motion in Motions(r).Where(m=>m.name=="skill3" || m.name.StartsWith("skill3_",StringComparison.Ordinal)))
+                BuildClip(r,motion,r.folder+"/"+r.prefix+motion.name+".anim");
+        AssetDatabase.SaveAssets();
+    }
     public static void Generate(bool main, string only = null, bool setupOnly = false)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || AnimationMode.InAnimationMode())
@@ -1320,7 +1345,7 @@ public static class Stage5BossAnimationBuilder
             turn = frame < 9 ? 0 : frame < 11 ? -75 * S((frame - 9) / 2) : -75 * (1 - S((frame - 11) / 13));
         if (m.name == "skill3") turn = 6 * S((frame - 9));
         if (m.name == "skill3_Follow") turn = frame < 10 ? 6 : frame < 12 ? Mathf.Lerp(6, -45, S((frame - 10) / 2)) : frame < 13 ? -45 : -45 * (1 - S((frame - 13) / 5));
-        if (m.name == "skill3_Miss") turn = 6 * (1 - S(frame / 6));
+        if (m.name == "skill3_Miss") turn = 6 * (1 - S(frame / m.frames));
         if (m.name.StartsWith("Dskill", StringComparison.Ordinal))
         {
             float weight = S((frame - 11) / 5) * (1 - S((frame - 45) / 6));
@@ -1567,7 +1592,9 @@ public static class Stage5BossAnimationBuilder
             if (r.main && m.name == "skill3") continue;
             for (int to = 0; to < 3; to++)
             {
-                var back = Transition(states[m.name], states[moving[to]], true); Moving(back, to);
+                // Runtime releases IsAttacking after the action ends; an exit-time
+                // window at 1 can already have passed by then.
+                var back = Transition(states[m.name], states[moving[to]], false); Moving(back, to);
                 back.AddCondition(AnimatorConditionMode.IfNot, 0, "IsAttacking");
             }
         }
@@ -1808,7 +1835,7 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.preDelay", 0f);
             Number(so, "basicAttack.postDelay", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[0].actionType", 2f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[0].preDelay", 0.75f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[0].preDelay", 5f / 12f);
             Number(so, "basicAttack.active.attackSteps.Array.data[0].postDelay", 0.25f);
             Number(so, "basicAttack.active.attackSteps.Array.data[0].duration", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[0].interval", 0f);
@@ -1850,9 +1877,9 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.active.attackSteps.Array.data[1].pullTargetOffset.y", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[1].persistentFixedCadence", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].actionType", 4f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].preDelay", 0.5f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].preDelay", 2f / 12f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].postDelay", 0.416666667f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].duration", 0.333333333f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].duration", 7f / 12f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].interval", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].attackCount", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].damage", 16f);
@@ -1863,8 +1890,8 @@ public static class Stage5BossAnimationBuilder
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackForce.x", 7f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackForce.y", 2f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].knockbackAwayFromCenter", 0f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].moveSpeed", 8.4f);
-            Number(so, "basicAttack.active.attackSteps.Array.data[2].maxMoveDistance", 2.8f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].moveSpeed", 9.6f);
+            Number(so, "basicAttack.active.attackSteps.Array.data[2].maxMoveDistance", 5.6f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].stopAtWall", 1f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].stopOnPlayerHit", 0f);
             Number(so, "basicAttack.active.attackSteps.Array.data[2].pullTargetOffset.x", 0f);

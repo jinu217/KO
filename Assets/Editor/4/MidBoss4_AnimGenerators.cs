@@ -521,8 +521,8 @@ public static class MidBoss4_AnimGenerators
         float phase = t / duration, w = Mathf.Sin(phase * 2 * Mathf.PI);
         var p = P(0, -.045f - (run ? .06f : .025f) * (1 - Mathf.Cos(phase * 4 * Mathf.PI)) * .5f,
             run ? -12 : -3, 10 - 5 * w, 15 + 3 * w, 0, 8 + (run ? 18 : 9) * w, 10, -50);
-        float stride = run ? .34f : .20f;
-        Step(p, true, phase, stride, run ? .19f : .10f); Step(p, false, phase + .5f, stride, run ? .19f : .10f);
+        float stride = run ? .55f : .20f;
+        Step(p, true, phase, stride, run ? .28f : .10f); Step(p, false, phase + .5f, stride, run ? .28f : .10f);
         return Ground(p);
     }
     [MenuItem("Tools/4/MidBoss 4/Clips/Run2")] public static void GenerateRun2() => GenerateSingle(2);

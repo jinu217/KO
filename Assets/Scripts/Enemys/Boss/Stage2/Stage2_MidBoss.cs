@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public sealed class Stage2_MidBoss : MidBossController
@@ -93,7 +93,8 @@ public sealed class Stage2_MidBoss : MidBossController
             bossAnimator.SetFloat("AttackSpeed", 1f / Mathf.Max(.01f, GetSkillDelay(1f)));
         if (Has("IsAttacking", AnimatorControllerParameterType.Bool)) bossAnimator.SetBool("IsAttacking", true);
         activeState = state;
-        bossAnimator.SetTrigger(action);
+        bossAnimator.Play(Animator.StringToHash("Base Layer." + state), 0, 0f);
+        bossAnimator.Update(0f);
     }
     protected override IEnumerator WaitForSkillAnimation(BossSkillData skill, int index)
     {
