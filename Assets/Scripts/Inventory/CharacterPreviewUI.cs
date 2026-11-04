@@ -77,7 +77,7 @@ public class CharacterPreviewUI : MonoBehaviour
             weaponImage.enabled = weapon != null;
             weaponImage.sprite = weapon != null ? weapon.previewSprite : null;
 
-            // 무기 종류 + 무기 개별 보정을 적용
+            // 무기 종류별 설정 적용
             if (weapon != null)
                 ApplyWeaponSetting(weapon);
         }
@@ -89,7 +89,7 @@ public class CharacterPreviewUI : MonoBehaviour
     }
     //============== 미리보기 갱신 끝 ==============
 
-    //============== 무기 종류별 + 개별 보정 적용 ==============
+    //============== 무기 종류별 설정 적용 ==============
     void ApplyWeaponSetting(ItemData weapon)
     {
         if (weaponImage == null || weaponImage.sprite == null)
@@ -106,24 +106,20 @@ public class CharacterPreviewUI : MonoBehaviour
         Sprite sprite = weaponImage.sprite;
         RectTransform rt = weaponImage.rectTransform;
 
-        // ----- 크기: 긴 변을 종류별 targetLength에 맞추고, 무기별 배율을 곱함 -----
+        // ----- 크기: 긴 변을 종류별 targetLength에 맞춤 (수정: 무기별 배율 제거) -----
         Vector2 spriteSize = sprite.rect.size;
         float longSide = Mathf.Max(spriteSize.x, spriteSize.y);
         float factor = longSide > 0f ? setting.targetLength / longSide : 1f;
-        factor *= weapon.previewScaleMultiplier;
 
         rt.sizeDelta = spriteSize * factor;
 
-        // ----- 잡는 곳(Pivot): 스프라이트 Pivot이 아니라 ItemData의 previewGripPivot 사용 -----
-        rt.pivot = weapon.previewGripPivot;
+        // ----- 잡는 곳(Pivot): (수정) 씬에 설정해 둔 Pivot을 그대로 사용하므로 코드에서 건드리지 않음 -----
 
-        // ----- 위치: 종류별 보정 + 무기별 보정 -----
-        rt.anchoredPosition = weaponBasePosition
-                              + setting.positionOffset
-                              + weapon.previewPositionOffset;
+        // ----- 위치: (수정) 종류별 보정만 적용 -----
+        rt.anchoredPosition = weaponBasePosition + setting.positionOffset;
 
-        // ----- 각도: 종류별 기본 각도 + 무기별 보정 각도 -----
-        rt.localRotation = Quaternion.Euler(0f, 0f, setting.rotationZ + weapon.previewRotationOffset);
+        // ----- 각도: (수정) 종류별 기본 각도만 적용 -----
+        rt.localRotation = Quaternion.Euler(0f, 0f, setting.rotationZ);
 
         // ----- 반전 -----
         rt.localScale = new Vector3(setting.flipX ? -1f : 1f, 1f, 1f);
@@ -142,7 +138,7 @@ public class CharacterPreviewUI : MonoBehaviour
 
         return null;
     }
-    //============== 무기 종류별 + 개별 보정 적용 끝 ==============
+    //============== 무기 종류별 설정 적용 끝 ==============
 
     void UpdateSlot(ItemData item)
     {
@@ -159,7 +155,7 @@ public class CharacterPreviewUI : MonoBehaviour
                     ApplyWeaponSetting(item);
                 }
                 break;
-                
+
             case EquipmentType.Head:
                 if (headImage != null)
                     headImage.sprite = item.previewSprite;

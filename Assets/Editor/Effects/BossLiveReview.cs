@@ -17,7 +17,8 @@ using UnityEditor.SceneManagement;
 [InitializeOnLoad]
 public static class BossLiveReview
 {
-    const string Folder = "C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/boss_live_review";
+    // (수정) 권한 문제가 없는 프로젝트 폴더 옆(Assets 밖)에 저장
+    static readonly string Folder = Path.GetFullPath(Path.Combine(Application.dataPath, "../boss_live_review")).Replace("\\", "/");
     const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     [Serializable] class Command { public string id, op, scene; public int index=-1, phase=1, facing=1; public float distance=3, height; }
     [Serializable] class State { public string commandId, scene, boss, clip, error, run, interpolation, bossId; public bool playing, attacking; public float time, hp, normalized; public Vector3 bossPosition, playerPosition; public int skills, captures, hits; }
@@ -59,9 +60,9 @@ public static class BossLiveReview
         if(EditorApplication.timeSinceStartup>=nextPoll)
         {
             nextPoll=EditorApplication.timeSinceStartup+.2;
-            Directory.CreateDirectory(Folder);
             try
             {
+                Directory.CreateDirectory(Folder);   // (수정) try 안으로 이동
                 string file=Path.Combine(Folder,"command.json");
                 if(File.Exists(file))
                 {
@@ -71,7 +72,12 @@ public static class BossLiveReview
                 }
                 Status();
             }
-            catch(Exception e) { error=e.ToString(); File.WriteAllText(Path.Combine(Folder,"error.txt"),error); }
+            catch(Exception e)
+            {
+                error=e.ToString();
+                // (수정) 에러 파일 저장까지 실패해도 에디터 오류가 쌓이지 않게 보호
+                try { File.WriteAllText(Path.Combine(Folder,"error.txt"),error); } catch { }
+            }
         }
         if(!Application.isPlaying || boss==null) return;
         // Suppress autonomous casts even when a desire component swaps skill data.
