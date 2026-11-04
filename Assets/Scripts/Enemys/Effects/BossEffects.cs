@@ -425,6 +425,8 @@ public sealed class BossEffects : MonoBehaviour
         angle = 0;
         int ordinal = Ordinal(step, pulse), index = StepIndex(step);
         if (step.actionType == BossActionType.SpawnPrefab) return Kind.None;
+        if (MainBoss1SlashComparison.UseOriginal(this))
+            return MainBoss1SlashComparison.Settings.Resolve(step, skillIndex, ordinal, TotalHits(), out angle);
         if (stage == 4 && mainBoss)
         {
             if (skillIndex == 1 && ordinal == 1) return Kind.Uppercut;
@@ -563,6 +565,8 @@ public sealed class BossEffects : MonoBehaviour
         { var sr = weaponAnchor.GetComponent<SpriteRenderer>(); center = sr != null ? sr.bounds.center : weaponAnchor.position; }
         var effect = kind == Kind.Up ? upward : kind == Kind.Thrust ? horizontal :
             kind == Kind.Spin || kind == Kind.Horizontal ? spin : kind == Kind.Punch || kind == Kind.Uppercut ? punch : attack;
+        bool mainOneOriginal = MainBoss1SlashComparison.UseOriginal(this);
+        if (mainOneOriginal) effect = MainBoss1SlashComparison.Settings.SelectEffect(kind, effect);
         if (TryWeaponImpact(step, out var weaponPoint))
             center = weaponPoint - new Vector3(effect.offset.x * direction, effect.offset.y, 0);
         if (kind == Kind.Uppercut) angle = 65;
@@ -571,6 +575,14 @@ public sealed class BossEffects : MonoBehaviour
         Bounds weaponBounds = default;
         bool fromWeapon = UsesWeaponContact(step) && TryAttackBounds(step, out weaponBounds);
         if (fromWeapon) center = weaponBounds.center - new Vector3((effect.offset.x + extra.x) * direction, effect.offset.y + extra.y, 0);
+        // The dash slash follows the blade visually without changing the dash hitbox.
+        bool originalDash = mainOneOriginal && step.actionType == BossActionType.DashAttack && weaponAnchor != null;
+        if (originalDash)
+        {
+            var blade = weaponAnchor.GetComponent<SpriteRenderer>();
+            if (blade != null && blade.sprite != null)
+                center = VisibleBounds(blade).center - new Vector3((effect.offset.x + extra.x) * direction, effect.offset.y + extra.y, 0);
+        }
         if(mainBoss && stage==2)center.y+=.15f;
         bool heavyHorizontal = !fromWeapon && UsesHeavyWeapon() && kind == Kind.Horizontal;
         if (heavyHorizontal) center.y += HeavyHorizontalHeight;
@@ -586,6 +598,7 @@ public sealed class BossEffects : MonoBehaviour
                 worldAngle = Mathf.Atan2(blade.y, blade.x) * Mathf.Rad2Deg - (direction < 0 ? 180f : 0f);
             }
             if (fromWeapon) instance.FollowAnchor(weaponAnchor, weaponBounds.center + (mainBoss && stage==2 ? Vector3.up*.15f : Vector3.zero));
+            if (originalDash) instance.FollowAnchor(weaponAnchor, center + new Vector3((effect.offset.x + extra.x) * direction, effect.offset.y + extra.y, 0));
             if (fromFist)
             {
                 var arm = fist.transform.parent.GetComponent<SpriteRenderer>();

@@ -19,6 +19,7 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
     readonly SpriteRenderer[] echoes = new SpriteRenderer[3];
     public bool Covers(AnimationClip clip, float time)
     {
+        if (MainBoss1SlashComparison.UseOriginal(source)) return false;
         foreach(var track in tracks)if(track.clip==clip)
             foreach(var window in track.windows)if(time>=window.x && time<=window.y)return true;
         return false;
@@ -26,6 +27,7 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
     // A sheet started just before a rotation would otherwise overlap its first echoes.
     public bool CoversImpact(AnimationClip clip, float time)
     {
+        if (MainBoss1SlashComparison.UseOriginal(source)) return false;
         foreach(var track in tracks)if(track.clip==clip)
             foreach(var window in track.windows)if(time<=window.y && time+.16f>=window.x)return true;
         return false;
@@ -47,6 +49,7 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
     public void Sample(AnimationClip clip,float time)
     {
         Clear();
+        if (MainBoss1SlashComparison.UseOriginal(source)) return;
         if(source==null || weapon==null || source.GetComponent<Stage5_MainBoss>()?.OrbitSwordActive==true)return;
         Track track=Array.Find(tracks,t=>t.clip==clip);
         if(track==null || (!Covers(clip,time) && !Covers(clip,time-.145f)))return;
