@@ -15,6 +15,8 @@ public sealed class Stage5OrbitSword : MonoBehaviour
     Transform target, blade;
     SpriteRenderer art;
     Animator animator;
+    Stage5BossAnimationRelay relay;
+    bool launchInFront;
     Vector3 localPosition, launch, aim;
     Quaternion localRotation;
     bool posed, hit, entryCaptured;
@@ -32,6 +34,7 @@ public sealed class Stage5OrbitSword : MonoBehaviour
         blade = fx != null ? fx.weaponAnchor : null;
         art = blade != null ? blade.GetComponent<SpriteRenderer>() : null;
         animator = fx != null ? fx.motionAnimator : null;
+        relay = animator != null ? animator.GetComponent<Stage5BossAnimationRelay>() : null;
         Active = art != null && animator != null;
         nextAttack = 1.5f; attackStart = -100; lastStrike = -1; hit = false; entryCaptured = false;
         strike = new BossAttackStepData { actionType = BossActionType.MeleeAttack, damage = damage, attackCount = 1, hitboxSize = Vector2.one };
@@ -39,6 +42,7 @@ public sealed class Stage5OrbitSword : MonoBehaviour
     public void Cancel()
     {
         if (posed && blade != null) { blade.localPosition = localPosition; blade.localRotation = localRotation; }
+        if (relay != null) relay.SetOrbitBladeDepth(null);
         Active = posed = entryCaptured = false;
     }
     void OnDisable() { Cancel(); }
@@ -58,7 +62,7 @@ public sealed class Stage5OrbitSword : MonoBehaviour
         if (clips.Length == 0 || !clips[0].clip.name.StartsWith("MainBoss5_skill1")) { Cancel(); return; }
         float t = animator.GetCurrentAnimatorStateInfo(0).normalizedTime * clips[0].clip.length;
         localPosition = blade.localPosition; localRotation = blade.localRotation; posed = true;
-        if (t < .75f || t >= 7.5f) return;
+        if (t < .75f || t >= 7.5f) { if (relay != null) relay.SetOrbitBladeDepth(null); return; }
         Vector3 authored = art.bounds.center;
         Quaternion authoredRotation = blade.rotation;
         // Take over before the authored flying-sword attack starts at frame 12.
@@ -70,6 +74,9 @@ public sealed class Stage5OrbitSword : MonoBehaviour
             entryCaptured = true;
         }
         float orbitAngle = (t - 1) * 1.7f;
+        // Upper half of the ellipse passes behind the body, lower half in front.
+        // The boundary lies at its left/right extremes, outside the torso silhouette.
+        bool inFront = Mathf.Sin(orbitAngle) < 0;
         Vector3 orbit = transform.position + new Vector3(Mathf.Cos(orbitAngle) * orbitRadius,
             .5f + Mathf.Sin(orbitAngle) * 1.1f + Mathf.Sin(t * 4) * .18f, 0);
         // A full turn during each floating cycle, with a quiet interval between turns.
@@ -82,6 +89,7 @@ public sealed class Stage5OrbitSword : MonoBehaviour
         if (t <= 7 - EndSequence && t >= nextAttack && Vector2.Distance(target.position, transform.position) <= triggerDistance)
         {
             attackStart = t; launch = orbit; frozenAngle = floatingAngle;
+            launchInFront = inFront;
             var col = target.GetComponent<Collider2D>(); aim = col != null ? col.bounds.center : target.position;
             Vector2 direction = aim - launch;
             baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -90,6 +98,7 @@ public sealed class Stage5OrbitSword : MonoBehaviour
         float age = t - attackStart;
         if (age >= 0 && age < EndSequence)
         {
+            inFront = age < Pause ? launchInFront : age < EndHold + Return * .8f || inFront;
             if (age < Pause) { point = launch; desiredAngle = frozenAngle; }
             else if (age < EndStrikes)
             {
@@ -124,6 +133,7 @@ public sealed class Stage5OrbitSword : MonoBehaviour
         blade.rotation = Quaternion.Slerp(Quaternion.Slerp(entryRotation, orbitRotation, enter), authoredRotation, leave);
         Vector3 center = Vector3.Lerp(Vector3.Lerp(transform.TransformPoint(entryCenter), point, enter), authored, leave);
         blade.position += center - art.bounds.center;
+        if (relay != null) relay.SetOrbitBladeDepth(t >= 7.35f ? (bool?)null : inFront);
         Bounds contact = BossEffects.VisibleBounds(art); contact.Expand(.12f);
         if (damagingStrike >= 0)
         {

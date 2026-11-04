@@ -772,6 +772,7 @@ public static class MainBoss4_AnimGenerators
             AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve(Paths[part], typeof(MainBoss4ArmLayerPreview), "forceFront"),
                 AnimationCurve.Constant(0, spec.length, front));
         var settings = AnimationUtility.GetAnimationClipSettings(clip); settings.loopTime = spec.loop; AnimationUtility.SetAnimationClipSettings(clip, settings);
+        BossMotionSortingSetup.BakeGeneratedClip(clip, 4, true);
         string path = Folder + "/" + clip.name + ".anim"; var old = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
         if (old != null) { var events = AnimationUtility.GetAnimationEvents(old); EditorUtility.CopySerialized(clip, old); AnimationUtility.SetAnimationEvents(old, events); UnityEngine.Object.DestroyImmediate(clip); EditorUtility.SetDirty(old); return old; }
         AssetDatabase.CreateAsset(clip, path); return clip;

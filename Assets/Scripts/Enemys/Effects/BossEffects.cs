@@ -422,6 +422,14 @@ public sealed class BossEffects : MonoBehaviour
     }
     Kind Resolve(BossAttackStepData step, int pulse, out float angle)
     {
+        Kind kind = ResolveExisting(step, pulse, out angle);
+        if (!BossMotionFXSettings.Applies(this)) return kind;
+        kind = BossMotionFXSettings.Resolve(this, step, skillIndex, Ordinal(step, pulse), kind);
+        if (kind == Kind.Horizontal) angle = -90;
+        return kind;
+    }
+    Kind ResolveExisting(BossAttackStepData step, int pulse, out float angle)
+    {
         angle = 0;
         int ordinal = Ordinal(step, pulse), index = StepIndex(step);
         if (step.actionType == BossActionType.SpawnPrefab) return Kind.None;
@@ -554,6 +562,9 @@ public sealed class BossEffects : MonoBehaviour
                 if (rule.skillIndex == skillIndex && rule.stepIndex == StepIndex(step) && rule.pulse == pulse)
                 { kind = rule.kind; angle = rule.angle; extra = rule.offset; break; }
         if (kind == Kind.None) return;
+        // MainBoss3's sustained rotation is rendered once from its motion, not per damage tick.
+        if (BossMotionFXSettings.Applies(this) && stage == 3 && step.actionType == BossActionType.PersistentHitbox) return;
+        if (BossMotionFXSettings.Applies(this) && stage == 3 && step.actionType == BossActionType.DashAttack) return;
         if(!(stage==3 && !mainBoss && step.actionType==BossActionType.Slam) && (kind==Kind.Spin || kind==Kind.Horizontal || kind==Kind.Down || kind==Kind.Up) && motionAnimator!=null)
         {
             var trail=motionAnimator.GetComponent<BossWeaponSlashTrail>();
@@ -567,6 +578,9 @@ public sealed class BossEffects : MonoBehaviour
             kind == Kind.Spin || kind == Kind.Horizontal ? spin : kind == Kind.Punch || kind == Kind.Uppercut ? punch : attack;
         bool mainOneOriginal = MainBoss1SlashComparison.UseOriginal(this);
         if (mainOneOriginal) effect = MainBoss1SlashComparison.Settings.SelectEffect(kind, effect);
+        bool motionMatched = BossMotionFXSettings.Applies(this);
+        if (motionMatched && BossMotionFXSettings.Settings != null)
+            effect = BossMotionFXSettings.Settings.Effect(kind, effect);
         if (TryWeaponImpact(step, out var weaponPoint))
             center = weaponPoint - new Vector3(effect.offset.x * direction, effect.offset.y, 0);
         if (kind == Kind.Uppercut) angle = 65;
@@ -576,7 +590,7 @@ public sealed class BossEffects : MonoBehaviour
         bool fromWeapon = UsesWeaponContact(step) && TryAttackBounds(step, out weaponBounds);
         if (fromWeapon) center = weaponBounds.center - new Vector3((effect.offset.x + extra.x) * direction, effect.offset.y + extra.y, 0);
         // The dash slash follows the blade visually without changing the dash hitbox.
-        bool originalDash = mainOneOriginal && step.actionType == BossActionType.DashAttack && weaponAnchor != null;
+        bool originalDash = (mainOneOriginal || motionMatched && stage != 2 && stage != 4) && step.actionType == BossActionType.DashAttack && weaponAnchor != null;
         if (originalDash)
         {
             var blade = weaponAnchor.GetComponent<SpriteRenderer>();
@@ -609,6 +623,13 @@ public sealed class BossEffects : MonoBehaviour
             }
             instance.transform.rotation = Quaternion.Euler(0, 0, worldAngle);
             if(!fromFist && weaponAnchor!=null)FitWeaponEffect(instance.GetComponent<SpriteRenderer>(),weaponAnchor);
+            if(motionMatched && stage == 2 && step.actionType == BossActionType.DashAttack)
+            {
+                var sr = instance.GetComponent<SpriteRenderer>();
+                float height = body != null ? body.bounds.size.y * .45f : 1f;
+                instance.transform.localScale = Vector3.one * height / Mathf.Max(.01f, sr.sprite.bounds.size.y);
+                instance.FollowAnchor(transform, center);
+            }
             if(stage==3 && !mainBoss && step.actionType==BossActionType.Slam)
             {
                 // Preserve the weapon-tip X and world-fixed impact, but keep every sheet frame above the floor.

@@ -1388,6 +1388,11 @@ public class PlayerController : MonoBehaviour, IDamageable
 
             IDamageable target = hit.GetComponentInParent<IDamageable>();
             if (target == null) continue;
+            if (target is Stage1_BossSwordWave wave)
+            {
+                wave.TakeDamage(dmg, transform.position);
+                continue;
+            }
             MonoBehaviour targetBehaviour = target as MonoBehaviour;
             if (targetBehaviour == null) continue;
             int id = (target as UnityEngine.Object)?.GetInstanceID() ?? 0;
@@ -1412,6 +1417,9 @@ public class PlayerController : MonoBehaviour, IDamageable
         foreach (var bHit in breakableHits)
         {
             if (bHit == null) continue;
+            // Projectile destruction does not count as hitting a monster or grant hit rewards.
+            var swordWave = bHit.GetComponentInParent<Stage1_BossSwordWave>();
+            if (swordWave != null) swordWave.TakeDamage(dmg, transform.position);
             BreakableObject breakable = bHit.GetComponentInParent<BreakableObject>();
             if (breakable != null && hitBreakables.Add(breakable)) breakable.TakeDamage();
         }
@@ -1924,6 +1932,9 @@ public class PlayerController : MonoBehaviour, IDamageable
         {
             if (tutorialHit == null) continue;
 
+            var swordWave = tutorialHit.GetComponentInParent<Stage1_BossSwordWave>();
+            if (swordWave != null) swordWave.TakeDamage(totalDamage, transform.position);
+
             TutorialTrainingDummy tutorialDummy = FindTutorialDummy(tutorialHit);
             if (tutorialDummy == null) continue;
             if (TutorialManager.Instance != null && !TutorialManager.Instance.CanDamageTarget(tutorialDummy)) continue;
@@ -1951,6 +1962,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
             IDamageable target = hit.GetComponentInParent<IDamageable>();
             if (target == null) continue;
+            if (target is Stage1_BossSwordWave) continue; // already handled by the all-layer projectile query
             int rootId = (target as UnityEngine.Object)?.GetInstanceID() ?? 0;
             if (!damagedRootIds.Add(rootId)) continue;
             target.TakeDamage(totalDamage, (Vector2)transform.position);

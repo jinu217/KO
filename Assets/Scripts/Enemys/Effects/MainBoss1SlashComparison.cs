@@ -6,7 +6,8 @@ public sealed class MainBoss1SlashComparison : ScriptableObject
     public enum DisplayMode
     {
         [InspectorName("현재 방식 — 무기 궤적 잔상")] WeaponTrail = 0,
-        [InspectorName("이전 방식 — Slash 원형 그대로")] OriginalSlash = 1
+        [InspectorName("이전 방식 — 메보1 패턴표 기준")] OriginalSlash = 1,
+        [InspectorName("새 방식 — 메인보스 1~5 모션 기준")] MotionMatched = 2
     }
 
     [Header("메인보스1 베기 이펙트 비교")]
