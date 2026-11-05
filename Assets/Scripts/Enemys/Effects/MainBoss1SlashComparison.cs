@@ -44,6 +44,8 @@ public sealed class MainBoss1SlashComparison : ScriptableObject
         if (!horizontal && !(step.stepName ?? "").Contains("세로"))
             horizontal = skillIndex < 0 || (skillIndex == 0 && totalHits == 4)
                 ? ordinal % 2 == 1 : skillIndex == 0 && (ordinal == 2 || ordinal == 4);
+        // The authored basic attack is horizontal then downward, regardless of legacy step labels.
+        if (skillIndex < 0 && ordinal < 2) horizontal = ordinal == 0;
         angle = horizontal ? horizontalAngle : verticalAngle;
         return horizontal ? BossEffects.Kind.Horizontal : BossEffects.Kind.Down;
     }

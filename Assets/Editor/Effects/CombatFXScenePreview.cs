@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -141,6 +141,13 @@ static class CombatFXScenePreview
     public static void EndReview(){Clear();}
     static void PreviewBossAttacks(BossEffects boss, string name, float time, float direction)
     {
+        if(MainBoss1AttackSlash.Applies(boss,activeClip))
+        {
+            MainBoss1AttackSlash slash = null;
+            var instance = MainBoss1AttackSlash.Sample(boss,activeClip,time,direction,ref slash);
+            if(instance != null) attacks.Add(instance);
+            return;
+        }
         var driver = owner.GetComponentInChildren<BossClipEffects>(true);
         if (boss.mainBoss && boss.stage == 5 && driver != null && driver.runtimeEnabled && driver.Find(activeClip)?.runtime == true) return;
         if (!name.Contains("attack") && !name.Contains("combo") && !name.Contains("skill")) return;

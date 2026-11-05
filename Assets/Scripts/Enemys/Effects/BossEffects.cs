@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
@@ -64,7 +64,8 @@ public sealed class BossEffects : MonoBehaviour
 
     void Awake() { enemy = GetComponent<MidBossController>(); body = GetComponent<Collider2D>(); if (motionAnimator == null) motionAnimator = GetComponentInChildren<Animator>(true); }
     void OnEnable() { nextDust = 0; movingTime = 0; noticed = false; previousPosition = transform.position; }
-    void OnDisable() { EndSkill(); if (dust != null) Destroy(dust.gameObject); dust = null; }
+    MainBoss1AttackSlash basicSlash;
+    void OnDisable() { MainBoss1AttackSlash.Clear(ref basicSlash); EndSkill(); if (dust != null) Destroy(dust.gameObject); dust = null; }
     Vector3 Center() { return body != null ? body.bounds.center : transform.position; }
     Vector3 Feet() { Vector3 p = Center(); if (body != null) p.y = body.bounds.min.y; return p; }
     void Update()
@@ -101,6 +102,7 @@ public sealed class BossEffects : MonoBehaviour
     }
     void LateUpdate()
     {
+        MainBoss1AttackSlash.UpdateRuntime(this, ref basicSlash);
         if (enemy != null && dust != null)
             AlignTrail(dust.GetComponent<SpriteRenderer>(), MovementContact(enemy.FXDirection), enemy.FXDirection);
         if (ClipOwnsAttack) { ClearDash(); previousPosition = transform.position; return; }
@@ -265,9 +267,9 @@ public sealed class BossEffects : MonoBehaviour
     // authored attack poses; movement/landing-only actions keep their own clocks.
     static readonly Dictionary<string, float[]> MotionImpacts = new Dictionary<string, float[]>
     {
-        { "MainBoss1_Attack", new[] { 9f / 12f, 24f / 12f } },
-        { "MainBoss1_Prepared_Attack", new[] { 9f / 12f, 24f / 12f } },
-        { "MainBoss1_Prepared_Attack_Phase3", new[] { 9f / 12f, 24f / 12f } },
+        { "MainBoss1_Attack", new[] { 8f / 12f, 19f / 12f } },
+        { "MainBoss1_Prepared_Attack", new[] { 8f / 12f, 19f / 12f } },
+        { "MainBoss1_Prepared_Attack_Phase3", new[] { 8f / 12f, 19f / 12f } },
         { "MainBoss1_skill1", new[] { 3f / 12f, 12f / 12f, 24f / 12f } },
         { "MainBoss1_Prepared_skill1", new[] { 3f / 12f, 12f / 12f, 24f / 12f } },
         { "MainBoss1_Prepared_skill1_Phase3", new[] { 3f / 12f, 12f / 12f, 24f / 12f } },
@@ -554,6 +556,11 @@ public sealed class BossEffects : MonoBehaviour
         if (step == null || step.damage <= 0) return;
         int pulse = pulses.TryGetValue(step, out int n) ? n : 0;
         pulses[step] = pulse + 1;
+        if(Application.isPlaying && mainBoss && stage == 1 && skillIndex < 0 && Ordinal(step,pulse) < 2 && motionAnimator != null)
+        {
+            foreach(var info in motionAnimator.GetCurrentAnimatorClipInfo(0))
+                if(info.weight > .5f && MainBoss1AttackSlash.Applies(this,info.clip)) return;
+        }
         if (stage == 1 && !mainBoss && skillIndex == 1 && Ordinal(step, pulse) == 1) return;
         Kind kind = Resolve(step, pulse, out float angle);
         Vector2 extra = Vector2.zero;
@@ -623,6 +630,8 @@ public sealed class BossEffects : MonoBehaviour
             }
             instance.transform.rotation = Quaternion.Euler(0, 0, worldAngle);
             if(!fromFist && weaponAnchor!=null)FitWeaponEffect(instance.GetComponent<SpriteRenderer>(),weaponAnchor);
+            if(!fromFist && weaponAnchor!=null && (kind==Kind.Down || kind==Kind.Up || kind==Kind.Horizontal || kind==Kind.Spin))
+                instance.FollowWeaponSlash(weaponAnchor);
             if(motionMatched && stage == 2 && step.actionType == BossActionType.DashAttack)
             {
                 var sr = instance.GetComponent<SpriteRenderer>();
@@ -667,13 +676,16 @@ public sealed class BossEffects : MonoBehaviour
         if (heavy) position.y += HeavyHorizontalHeight;
         var instance = Play(spin, position, direction, false, 1.5f);
         if (instance != null && weaponAnchor != null)
+        {
             FitWeaponEffect(instance.GetComponent<SpriteRenderer>(), weaponAnchor);
+            instance.FollowWeaponSlash(weaponAnchor);
+        }
     }
     public void PlayShot(Vector3 position, float direction) { } // 생성물에는 추가 FX를 붙이지 않음
     public void PlayAttack(Vector3 position, float direction, bool ranged = false)
     {
         var instance=Play(ranged ? shot : attack, position, direction, false, 1.5f);
-        if(!ranged && instance!=null && weaponAnchor!=null)FitWeaponEffect(instance.GetComponent<SpriteRenderer>(),weaponAnchor);
+        if(!ranged && instance!=null && weaponAnchor!=null) { FitWeaponEffect(instance.GetComponent<SpriteRenderer>(),weaponAnchor); instance.FollowWeaponSlash(weaponAnchor); }
     }
     public void PlayHit(Vector2 source) { Play(hit, Center(), source.x < transform.position.x ? -1 : 1); }
     public void PlayDeath() { Play(death, Center(), enemy != null ? enemy.FXDirection : 1); }

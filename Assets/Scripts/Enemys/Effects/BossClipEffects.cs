@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Deterministic clip sampling: the same frame is rendered when playing or scrubbing backwards.
-[ExecuteAlways, DisallowMultipleComponent, DefaultExecutionOrder(1000)]
+[ExecuteAlways, DisallowMultipleComponent, DefaultExecutionOrder(1300)]
 public sealed class BossClipEffects : MonoBehaviour
 {
     public enum Style { Down, Up, Thrust, Spin, Punch, Dash, Dust, Hit, Death, Buff, Sand }
@@ -179,6 +179,9 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale * cue.scale * multiplier);
             if(combat && weapon!=null && (source==null || !source.mainBoss || source.stage!=4))
                 BossEffects.FitWeaponEffect(sr,weapon);
+            if(weapon!=null && (cue.style==Style.Down || cue.style==Style.Up || cue.style==Style.Spin
+                || motionMatched && motionKind==BossEffects.Kind.Horizontal))
+                BossWeaponSlashAttachment.Apply(sr,weapon.GetComponent<SpriteRenderer>());
             if (cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy)
             {
                 Bounds bounds = BuffBounds();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 // Pose-sampled slash echoes: the same clip time gives the same arc in preview and play.
@@ -90,7 +90,7 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
             var scale=sr.transform.localScale;scale.x*=.5f;sr.transform.localScale=scale;
             sr.transform.position=center;
             sr.transform.position+=center-BossEffects.VisibleBounds(sr).center;
-            if(source.mainBoss && source.stage==2)sr.transform.position+=Vector3.up*.15f;
+            BossWeaponSlashAttachment.Apply(sr,blade,.04f+i*.025f,null,axis,1+i);
             sr.color=new Color(1,1,1,i==0?.2f:i==1?.06f:.015f);
         }
     }
@@ -139,6 +139,7 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
         BossEffects.FitWeaponEffect(sr,weapon,1.05f);
         sr.transform.position=center;
         sr.transform.position+=center-BossEffects.VisibleBounds(sr).center;
+        BossWeaponSlashAttachment.Apply(sr,blade,.04f,null,axis);
         sr.color=Color.white;
     }
     public void Clear(){foreach(var sr in echoes)if(sr!=null)sr.enabled=false;}
