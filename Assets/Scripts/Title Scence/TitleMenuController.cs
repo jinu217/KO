@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections;
@@ -64,6 +64,7 @@ public class TitleMenuController : MonoBehaviour
     // 상태 변수
     //==================================================
 
+    private AudioClip playingTitleBGM;
     private int index = 0;
     private int lastMenuSoundIndex = -1;
     private int lastSlotSoundIndex = -1;
@@ -114,6 +115,12 @@ public class TitleMenuController : MonoBehaviour
 
         yield return null;
 
+        var audioLibrary = Resources.Load<UIAudioLibrary>("Audio/UIAudioLibrary");
+        if (AudioManager.Instance != null && audioLibrary != null && audioLibrary.titleBGM != null)
+        {
+            playingTitleBGM = audioLibrary.titleBGM;
+            AudioManager.Instance.PlayBGM(playingTitleBGM);
+        }
         UpdateSelection();
     }
 
@@ -121,6 +128,14 @@ public class TitleMenuController : MonoBehaviour
     //==================================================
     // 메인 메뉴 입력
     //==================================================
+
+    private void OnDestroy()
+    {
+        var audio = AudioManager.Instance;
+        if (playingTitleBGM != null && audio != null && audio.bgmSource != null &&
+            audio.bgmSource.clip == playingTitleBGM)
+            audio.StopBGM();
+    }
 
     void Update()
     {

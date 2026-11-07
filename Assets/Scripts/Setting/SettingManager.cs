@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
@@ -33,6 +33,7 @@ public class SettingManager : MonoBehaviour
     private int appliedResolutionIndex = -1;
     private int appliedDisplayMode = -1;
     private bool settingsLoaded;
+    private float lastVolumeSoundTime = float.NegativeInfinity;
 
     //====================================================
     // FIXED ASPECT RATIO
@@ -183,17 +184,33 @@ public class SettingManager : MonoBehaviour
 
     public void SetMaster(float value)
     {
+        if (AudioManager.Instance == null) return;
+        bool changed = !Mathf.Approximately(AudioManager.Instance.GetMasterVolume(), Mathf.Clamp01(value));
         AudioManager.Instance.SetMasterVolume(value);
+        if (changed) PlayVolumeAdjustment();
     }
 
     public void SetBGM(float value)
     {
+        if (AudioManager.Instance == null) return;
+        bool changed = !Mathf.Approximately(AudioManager.Instance.GetBGMVolume(), Mathf.Clamp01(value));
         AudioManager.Instance.SetBGMVolume(value);
+        if (changed) PlayVolumeAdjustment();
     }
 
     public void SetSFX(float value)
     {
+        if (AudioManager.Instance == null) return;
+        bool changed = !Mathf.Approximately(AudioManager.Instance.GetSFXVolume(), Mathf.Clamp01(value));
         AudioManager.Instance.SetSFXVolume(value);
+        if (changed) PlayVolumeAdjustment();
+    }
+
+    private void PlayVolumeAdjustment()
+    {
+        if (!settingsLoaded || Time.unscaledTime - lastVolumeSoundTime < 0.14f) return;
+        lastVolumeSoundTime = Time.unscaledTime;
+        UISound.Play(UISoundId.VolumeAdjust);
     }
 
     //====================================================
