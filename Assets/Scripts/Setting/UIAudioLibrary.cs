@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Audio;
 
 public enum UISoundId
@@ -11,7 +11,8 @@ public enum UISoundId
     DisplayAdjust,
     DeleteConfirm,
     DialogOpen,
-    SettingsOpen
+    SettingsOpen,
+    VolumeAdjust
 }
 
 [CreateAssetMenu(menuName = "Audio/UI Audio Library")]
@@ -25,6 +26,7 @@ public sealed class UIAudioLibrary : ScriptableObject
         [Range(0f, 1f)] public float volume = 0.75f;
     }
 
+    public AudioClip titleBGM;
     public AudioMixer mixer;
     public AudioMixerGroup bgmGroup;
     public AudioMixerGroup sfxGroup;
