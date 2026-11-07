@@ -11,7 +11,9 @@ using UnityEngine.Playables;
 // Read-only pose capture. Runtime collision/conditional execution is a separate test.
 public static class BossVisualReview
 {
-    const string Folder = "C:/Users/User/Documents/Codex/2026-10-26/new-chat-3/work/boss_visual_review";
+    //============== 저장 경로 ==============
+
+    static readonly string Folder = Path.Combine(Application.dataPath, "../BossVisualReview");
     [InitializeOnLoadMethod] static void Once()
     {
         if (SessionState.GetBool("BossVisualReview.1", false)) return;
