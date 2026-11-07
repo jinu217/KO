@@ -4204,7 +4204,9 @@ MonoBehaviour:
   HP: {fileID: 620427821}
   hpWaveRect: {fileID: 1889835411}
   SP: {fileID: 325605080}
-  BPM: {fileID: 1636011690}
+  baseBpmImages: []
+  replaceStartStage: 2
+  machineBpmImages: []
   displayHp: 1
   hpSmoothSpeed: 5
 --- !u!114 &310240032
@@ -4240,6 +4242,7 @@ MonoBehaviour:
   handRightRenderer: {fileID: 1470152284}
   footLeftRenderer: {fileID: 208418485}
   footRightRenderer: {fileID: 1662768327}
+  applyEquipmentPositionOffsets: 1
 --- !u!114 &310240034
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4831,6 +4834,7 @@ MonoBehaviour:
   framesPerSecond: 24
   effectScale: 1
   attackOffset: {x: 0, y: 0.15}
+  daggerEffectPullback: 0.8
   damageOffset: {x: 0, y: 0.1}
   sortingLayerOverride: 
   sortingOrderOffset: 5
@@ -5995,6 +5999,10 @@ MonoBehaviour:
   displayCursorTargets:
   - {fileID: 747543386}
   - {fileID: 1820457821}
+  displayLeftArrows: []
+  displayRightArrows: []
+  arrowActiveColor: {r: 1, g: 1, b: 1, a: 1}
+  arrowDisabledColor: {r: 1, g: 1, b: 1, a: 0.15}
   audioPanel: {fileID: 1786580981}
   displayPanel: {fileID: 945865841}
   controlsPanel: {fileID: 164465997}
@@ -9394,6 +9402,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 0
   icon: {fileID: 1199868113}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &624805089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10682,6 +10691,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 4
   icon: {fileID: 1434010391}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &686226719
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12757,6 +12767,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 1
   icon: {fileID: 742857208}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &855469409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16004,6 +16015,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 3
   icon: {fileID: 1066027169}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &1091302889
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16291,6 +16303,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 2
   icon: {fileID: 1593147187}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &1105491954
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18035,7 +18048,7 @@ MonoBehaviour:
     fadeOutDuration: 1.5
     objectToDisable: {fileID: 0}
   - triggerStep: 3
-    message: "E\uD0A4\uB85C \uB2E4\uC2DC \uCC45\uC744 \uC77D\uC744 \uC218 \uC788\uB314\uC9C0?"
+    message: "T\uD0A4\uB85C \uB2E4\uC2DC \uCC45\uC744 \uC77D\uC744 \uC218 \uC788\uB314\uC9C0?"
     startDelay: 0
     speechDuration: 2
     moveTarget: {fileID: 1355436347}
@@ -26194,6 +26207,8 @@ MonoBehaviour:
   statText: {fileID: 198099699}
   tooltipTransform: {fileID: 1763636844}
   fixedPosition: {x: 500, y: 0}
+  neonNameMaterial: {fileID: 0}
+  neonNameColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!114 &1763636846
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31729,6 +31744,9 @@ MonoBehaviour:
   handRightImage: {fileID: 1505397056}
   footLeftImage: {fileID: 829113869}
   footRightImage: {fileID: 568184028}
+  weaponSettings: []
+  weaponItemOverrides: []
+  liveTune: 0
 --- !u!1 &2011027372
 GameObject:
   m_ObjectHideFlags: 0

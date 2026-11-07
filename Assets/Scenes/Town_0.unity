@@ -4983,6 +4983,7 @@ MonoBehaviour:
   handRightRenderer: {fileID: 1879067881}
   footLeftRenderer: {fileID: 1510712303}
   footRightRenderer: {fileID: 481244718}
+  applyEquipmentPositionOffsets: 1
 --- !u!114 &285381913
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5221,7 +5222,9 @@ MonoBehaviour:
   HP: {fileID: 925542711}
   hpWaveRect: {fileID: 57242554}
   SP: {fileID: 792544059}
-  BPM: {fileID: 266280306}
+  baseBpmImages: []
+  replaceStartStage: 2
+  machineBpmImages: []
   displayHp: 1
   hpSmoothSpeed: 5
 --- !u!114 &285381920
@@ -5613,6 +5616,7 @@ MonoBehaviour:
   framesPerSecond: 24
   effectScale: 1
   attackOffset: {x: 0, y: 0.15}
+  daggerEffectPullback: 0.8
   damageOffset: {x: 0, y: 0.1}
   sortingLayerOverride: 
   sortingOrderOffset: 5
@@ -6944,6 +6948,9 @@ MonoBehaviour:
   handRightImage: {fileID: 1514031640}
   footLeftImage: {fileID: 2062526290}
   footRightImage: {fileID: 1110268260}
+  weaponSettings: []
+  weaponItemOverrides: []
+  liveTune: 0
 --- !u!224 &413373303
 RectTransform:
   m_ObjectHideFlags: 0
@@ -7120,6 +7127,8 @@ MonoBehaviour:
   statText: {fileID: 37718554}
   tooltipTransform: {fileID: 428031254}
   fixedPosition: {x: 500, y: 0}
+  neonNameMaterial: {fileID: 0}
+  neonNameColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!224 &428031254
 RectTransform:
   m_ObjectHideFlags: 0
@@ -12355,6 +12364,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 1
   icon: {fileID: 1974064754}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!1 &817157546
 GameObject:
   m_ObjectHideFlags: 0
@@ -26432,7 +26442,14 @@ MonoBehaviour:
   speechRoot: {fileID: 1082522614}
   speechText: {fileID: 899951299}
   message: "\uAE84\uC544\uC545!!!"
+  firstMessageDisplayDuration: -1
+  firstMessageSizeMultiplier: 1
+  followUpMessages:
+  - text: "\uC601\uC560\uB2D8\uC774 \uB0A9\uCE58\uB410\uB2E4!!!"
+    displayDuration: -1
+    sizeMultiplier: 1
   displayDuration: 2.5
+  gapBetweenMessages: 0.2
   playOnlyOnce: 1
   effectStrength: 3
   popScale: 1.25
@@ -26687,6 +26704,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 4
   icon: {fileID: 1222654797}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!224 &1499130169
 RectTransform:
   m_ObjectHideFlags: 0
@@ -28597,6 +28615,10 @@ MonoBehaviour:
   displayCursorTargets:
   - {fileID: 958831481}
   - {fileID: 309980820}
+  displayLeftArrows: []
+  displayRightArrows: []
+  arrowActiveColor: {r: 1, g: 1, b: 1, a: 1}
+  arrowDisabledColor: {r: 1, g: 1, b: 1, a: 0.15}
   audioPanel: {fileID: 2143680258}
   displayPanel: {fileID: 560720631}
   controlsPanel: {fileID: 1753346221}
@@ -29706,6 +29728,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 0
   icon: {fileID: 1191917841}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!1 &1655543238
 GameObject:
   m_ObjectHideFlags: 0
@@ -30582,6 +30605,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 3
   icon: {fileID: 1227429743}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!1 &1685514169
 GameObject:
   m_ObjectHideFlags: 0
@@ -41203,6 +41227,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 2
   icon: {fileID: 1036602208}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!1 &1950314198
 GameObject:
   m_ObjectHideFlags: 0
