@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -25,6 +26,22 @@ public class MidBossHealthUI : MonoBehaviour
 
     private CanvasGroup canvasGroup;
     private Coroutine hideCoroutine;
+
+    //============== 중간보스 이름 ==============
+    // 프리팹 이름 "Stage숫자_MidBoss"의 숫자로 이름을 고릅니다. (인덱스 0 = 스테이지 1)
+    // 예) "Stage1_MidBoss", "Stage3_MidBoss(Clone)"
+    // 이름을 바꾸고 싶으면 이 목록의 문자열만 수정하면 됩니다.
+    private static readonly string[] MidBossNames =
+    {
+        "도적단 행동대장",   // Stage1 : 성 밖의 도적단
+        "성문 파수대장",     // Stage2 : 블랙우드 성문
+        "철갑 돌격대장",     // Stage3 : 나이트테크로 무장한 병력
+        "침식 실험 감독관",  // Stage4 : 기계화 실험이 이뤄지는 연구동
+        "심층부 근위대장",   // Stage5 : 라스트보스 직전의 최심부
+    };
+
+    private static readonly Regex StagePattern =
+        new Regex(@"stage\s*_?\s*(\d+)", RegexOptions.IgnoreCase);
 
     private void Awake()
     {
@@ -69,8 +86,9 @@ public class MidBossHealthUI : MonoBehaviour
 
         this.maxHp = maxHp;
 
+        // 이름 표시: "Stage숫자_MidBoss" 형식이면 스테이지별 이름으로 바꿔서 보여줍니다.
         if (bossName != null)
-            bossName.text = name;
+            bossName.text = FormatBossName(name);
 
         float hpPercent = Mathf.Clamp01(currentHp / maxHp);
 
@@ -86,6 +104,26 @@ public class MidBossHealthUI : MonoBehaviour
             armorUI.ResetArmor();
             armorUI.UpdateArmor(hpPercent);
         }
+    }
+
+    //============== 보스 이름 변환 ==============
+    // 규칙에 맞지 않는 이름(1~5 밖의 스테이지 등)은 그대로 표시합니다.
+    private static string FormatBossName(string rawName)
+    {
+        if (string.IsNullOrEmpty(rawName))
+            return rawName;
+
+        Match stage = StagePattern.Match(rawName);
+
+        if (stage.Success
+            && int.TryParse(stage.Groups[1].Value, out int stageNumber)
+            && stageNumber >= 1
+            && stageNumber <= MidBossNames.Length)
+        {
+            return MidBossNames[stageNumber - 1];
+        }
+
+        return rawName;
     }
 
     //============== HP 갱신 ==============

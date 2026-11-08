@@ -17,7 +17,7 @@ public class HeroineDialogueController : MonoBehaviour
         public Line(string name, string text, bool machine = false)
         {
             this.name = name;
-            this.text = text;
+            this.text = machine ? text : Highlight(text);   // 기계 목소리는 색 태그를 넣지 않음
             this.machine = machine;
         }
     }
@@ -161,6 +161,20 @@ public class HeroineDialogueController : MonoBehaviour
 
     private const string GlitchChars = "#@%&?!/|*+~";
 
+    //============== 대사 강조 단어 색 (#RRGGBB) ==============
+    // 영애 대사 안에서 아래 단어가 나오면 자동으로 색이 입혀집니다. 색을 바꾸고 싶으면 값만 수정하세요.
+    private const string BlackwoodColor = "#E05050";   // 블랙우드
+    private const string ResearchColor = "#5CE1E6";    // 연구 기록 (청록색)
+    private const string KnightTechColor = "#FFD76A";  // 나이트테크 (금색)
+
+    private static string Highlight(string text)
+    {
+        text = text.Replace("블랙우드", "<color=" + BlackwoodColor + ">블랙우드</color>");
+        text = text.Replace("연구 기록", "<color=" + ResearchColor + ">연구 기록</color>");
+        text = text.Replace("나이트테크", "<color=" + KnightTechColor + ">나이트테크</color>");
+        return text;
+    }
+
     // 죽이는 연출 타이밍 / 색
     private static readonly Color HurtTint = new Color(1f, 0.25f, 0.25f, 1f);
     private static readonly Color DimTint = new Color(0.6f, 0.55f, 0.6f, 1f);
@@ -291,15 +305,67 @@ public class HeroineDialogueController : MonoBehaviour
     }
 
     //============== 대사 정의 ==============
-    //============== 히로인 첫 대사 ==============
+    //============== 히로인 조우 대사 (수정본) ==============
+    // 마지막 줄("나와 함께 가줄래?") 뒤에 기계장비 개수별 기계 목소리(속삭임/침식)가 이어지고, 그다음 선택지가 나옵니다.
     private static Line[] BuildIntroLines()
     {
         return new[]
         {
+            //---------- 재회 ----------
             new Line(HeroineName, "…왔구나."),
-            new Line(HeroineName, "여기까지 오는 길, 쉽지 않았을텐데.."),
-            new Line(HeroineName, "그래도 결국 여기까지 왔네.. 이제 진실을 알게 됐지..?"),
-            new Line(HeroineName, "마지막으로 물을게. 나를… 어떻게 할 거야?"),
+            new Line(HeroineName, "여기까지 오는 길, 정말 힘들었을 텐데."),
+            new Line(HeroineName, "그래도 결국 나를 찾아왔네."),
+            new Line(HeroineName, "로이드… 나한테 묻고 싶은 게 많겠지?"),
+
+            //---------- 주인공이 궁금해할 것들 ----------
+            new Line(HeroineName, "블랙우드가 왜 나를 납치했는지."),
+            new Line(HeroineName, "임무를 나간 기사들이 왜 하나둘씩 변해버렸는지."),
+            new Line(HeroineName, "그리고… 네 형이 왜 너에게 도망치라고 했는지."),
+
+            //---------- 아버지의 연구 기록 ----------
+            new Line(HeroineName, "사실 나도 처음부터 모든 걸 알고 있었던 건 아니야."),
+            new Line(HeroineName, "아버지가 돌아가신 뒤, 연구실을 정리하다가\n오래된 연구 기록을 발견했어."),
+            new Line(HeroineName, "거기에는 나이트테크의 개발 과정과… 기계화의 부작용에 관한\n내용이 적혀 있었어."),
+
+            //---------- 나이트테크와 침식 ----------
+            new Line(HeroineName, "나이트테크는 인간의 신체적 한계를 극복하기 위해\n만들어진 기술이야."),
+            new Line(HeroineName, "하지만 기계장치가 인간의 정신까지 침식하기 시작하면…"),
+            new Line(HeroineName, "주변에서 무슨 말을 하든 들리지 않게 돼."),
+            new Line(HeroineName, "가족도, 동료도.. 기억하고 있지만\n기계장치가 정신을 침식하기 시작하면… "),
+            new Line(HeroineName, "그들을 더 이상 소중한 사람으로 받아들이지 못하게 돼."),
+            new Line(HeroineName, "자신을 해치려는 존재로 여기고, 눈앞에 있는\n모든 사람을 적으로 판단하게 되는 거야."),
+            new Line(HeroineName, "결국 함께했던 기억조차 남아 있는데도..\n자신의 의지와는 상관없이 그들에게 칼을 겨누게 되지."),
+
+            //---------- 아버지의 연구 / 블랙우드 ----------
+            new Line(HeroineName, "아버지는 이 현상을 막기 위해 오랫동안 연구하셨어."),
+            new Line(HeroineName, "그리고 마침내 침식을 억제할 수 있는 방법을 찾아내셨지."),
+            new Line(HeroineName, "하지만 그 연구가 완성되었다는 사실은 아무에게도 알리지 않았어"),
+            new Line(HeroineName, "나조차도 그 사실을 숨겨야만 했어."),
+            new Line(HeroineName, "그 기술이 블랙우드의 손에 들어가면 어떤 일이 벌어질지\n알고 있었으니까."),
+            new Line(HeroineName, "블랙우드는 인간의 한계를 뛰어넘는 군대를 만들려고 했어."),
+            new Line(HeroineName, "하지만 그들이 원하는 건 사람을 구하는 기술이 아니야."),
+            new Line(HeroineName, "아무런 대가 없이 강한 힘만 얻으려는 거지."),
+
+            //---------- 납치와 감금 ----------
+            new Line(HeroineName, "처음 나를 납치한 건 1기사였어."),
+            new Line(HeroineName, "하지만 블랙우드에 있던 2기사가 나를 다시 데려갔지."),
+            new Line(HeroineName, "그자가 왜 블랙우드에 있었는지, 어떤 이유로 그들과 함께했는지는\n나도 정확히 알지 못해."),
+            new Line(HeroineName, "다만 그때부터 나는 블랙우드의 손에 붙잡혀 있었어."),
+            new Line(HeroineName, "그들은 아버지의 연구 기록을 원했지만, 내가 침식을\n억제하는 방법을 알고 있다는 사실은 숨겼어."),
+            new Line(HeroineName, "그 방법이 알려지는 순간, 블랙우드가 그 기술을 차지하려\n할 테니까."),
+            new Line(HeroineName, "그리고… 네 형도 그 과정에서…"),
+
+            //---------- 사과와 고백 ----------
+            new Line(HeroineName, "…미안해."),
+            new Line(HeroineName, "더 일찍 말했어야 했는데."),
+            new Line(HeroineName, "네가 진실을 알게 되면 나를 두고 떠나버릴 것 같았어."),
+            new Line(HeroineName, "어쩌면 나도… 네가 끝까지\n나를 지켜주길 바랐던 걸지도 몰라."),
+
+            //---------- 선택을 넘김 ----------
+            new Line(HeroineName, "이제 선택은 네 몫이야."),
+            new Line(HeroineName, "나를 용서할 수 없더라도 괜찮아."),
+            new Line(HeroineName, "그래도… 한 번만 더 물어볼게."),
+            new Line(HeroineName, "로이드. 나와 함께 가줄래?"),
         };
     }
 
@@ -334,16 +400,20 @@ public class HeroineDialogueController : MonoBehaviour
         };
     }
 
-    //============== 히로인을 살렸을 때 ==============
+    //============== 히로인을 살렸을 때 (수정본) ==============
     private static Line[] BuildAliveReactionLines()
     {
         return new[]
         {
-            new Line(HeroineName, "…정말 날 살려 주는 거야?"),
-            new Line(HeroineName, "고마워. 이번엔 끝까지 네 곁에 있을게."),
+            new Line(HeroineName, "모든 걸 알게 됐는데도… 나를 버리지 않는 거야?"),
+            new Line(HeroineName, "…고마워."),
+            new Line(HeroineName, "하지만 아직 끝난 게 아니야."),
+            new Line(HeroineName, "이 길 너머에 네 형이 기다리고 있어."),
+            new Line(HeroineName, "그 사람도… 너에게 꼭 해야 할 말이 있을 거야."),
+            new Line(HeroineName, "로이드… 이번에는 부디 네가 원하는 선택을 해."),
         };
     }
-    
+
     //============== 히로인을 죽였을 때 ==============
     private static Line[] BuildDeadReactionLines(int machineCount)
     {
@@ -369,7 +439,7 @@ public class HeroineDialogueController : MonoBehaviour
                 new Line(HeroineName, "…미안해. 끝까지 네 손을 잡아 주지 못해서."),
             };
         }
-        // 기계장비 4개: 기존 대사 유지
+        // 기계장비 0~2개, 4개
         return new[]
         {
             new Line(HeroineName, "…괜찮아. 널 원망하지 않을게."),
@@ -425,7 +495,7 @@ public class HeroineDialogueController : MonoBehaviour
             EndingManager.Instance.SetHeroineChoice(
                 alive ? HeroineEndingChoice.Alive : HeroineEndingChoice.Dead);
         }
-        
+
         //============== 선택 후 죽음 연출 ==============
         bool erosionKill = !alive && machineCount >= 5;
 
@@ -899,8 +969,32 @@ public class HeroineDialogueController : MonoBehaviour
             yield break;
 
         target.text = "";
+        target.maxVisibleCharacters = 99999;
 
         lineDamage = glitchLevel >= 2 ? RollDamage(line, 0.2f) : null;
+
+        //============== 깨짐 없는 일반 대사: 태그(<color>, <br>)가 중간에 잘리지 않도록 보이는 글자 수로 출력 ==============
+        if (glitchLevel <= 0)
+        {
+            target.text = line;
+            target.maxVisibleCharacters = 0;
+            target.ForceMeshUpdate();
+
+            int total = target.textInfo.characterCount;
+
+            for (int i = 1; i <= total; i++)
+            {
+                target.maxVisibleCharacters = i;
+
+                if (speed > 0f)
+                    yield return new WaitForSecondsRealtime(speed);
+                else
+                    yield return null;
+            }
+
+            target.maxVisibleCharacters = 99999;
+            yield break;
+        }
 
         int tailCount = glitchLevel >= 2 ? 6 : 3;
         float tailChance = glitchLevel >= 2 ? 0.65f : 0.4f;
@@ -1083,7 +1177,7 @@ public class HeroineDialogueController : MonoBehaviour
         if (choiceInputDelay > 0f)
             yield return new WaitForSecondsRealtime(choiceInputDelay);
 
-        
+
         while (true)
         {
             Keyboard keyboard = Keyboard.current;

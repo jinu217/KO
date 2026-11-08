@@ -35,10 +35,10 @@ public class MainBossDialogueController : MonoBehaviour
     //============== 대사 설정 ==============
     [Header("대사 설정")]
     [SerializeField] private string csvResourcePath = "BossDialogue/MainBossDialogue";
-    [SerializeField, Min(0f)] private float typeSpeed = 0.12f;
+    [SerializeField, Min(0f)] private float typeSpeed = 0.05f;
 
     [Tooltip("각 대사 출력이 끝난 뒤 다음 대사로 넘어가기 전까지 기다리는 시간(초)")]
-    [SerializeField, Min(0f)] private float lineHoldTime = 2f;
+    [SerializeField, Min(0f)] private float lineHoldTime = 1.5f;
 
     [Tooltip("마지막 대사 출력이 끝난 뒤 대사창이 사라지기 전까지 기다리는 시간(초)")]
     [SerializeField, Min(0f)] private float lastLineHoldTime = 2f;
@@ -94,6 +94,7 @@ public class MainBossDialogueController : MonoBehaviour
         public int order;
         public string characterName;
         public string dialogue;
+        public string condition;
     }
 
     private class CameraSnapshot
@@ -574,17 +575,25 @@ public class MainBossDialogueController : MonoBehaviour
 
     private IEnumerator TypeLine(string line)
     {
-        dialogueText.text = "";
+        //============== 리치 텍스트 태그 대응: 전체 문자열을 넣고 보이는 글자 수만 늘림 ==============
+        dialogueText.text = line;
+        dialogueText.maxVisibleCharacters = 0;
+        dialogueText.ForceMeshUpdate();
 
-        for (int i = 0; i < line.Length; i++)
+        int totalCharacters = dialogueText.textInfo.characterCount;
+
+        for (int i = 1; i <= totalCharacters; i++)
         {
-            dialogueText.text = line.Substring(0, i + 1);
+            dialogueText.maxVisibleCharacters = i;
 
             if (typeSpeed > 0f)
                 yield return new WaitForSecondsRealtime(typeSpeed);
             else
                 yield return null;
         }
+
+        // 다음 대사나 다른 텍스트 사용에 영향이 없도록 전체 표시로 복구합니다.
+        dialogueText.maxVisibleCharacters = int.MaxValue;
     }
 
     //============== 플레이어 제어 ==============
@@ -818,6 +827,7 @@ public class MainBossDialogueController : MonoBehaviour
             string orderText = GetColumn(row, columns, "order").Trim();
             string characterName = GetColumn(row, columns, "characterName").Trim();
             string dialogue = GetColumn(row, columns, "dialogue").Trim();
+            string condition = GetColumn(row, columns, "condition").Trim();
 
             if (string.IsNullOrEmpty(bossId)
                 || string.IsNullOrEmpty(phase)
@@ -833,7 +843,8 @@ public class MainBossDialogueController : MonoBehaviour
                 phase = phase,
                 order = order,
                 characterName = characterName,
-                dialogue = dialogue
+                dialogue = dialogue,
+                condition = condition
             });
         }
 
@@ -865,7 +876,8 @@ public class MainBossDialogueController : MonoBehaviour
         foreach (DialogueLine line in allLines)
         {
             if (string.Equals(line.bossId, bossId, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(line.phase, phase, StringComparison.OrdinalIgnoreCase))
+                && string.Equals(line.phase, phase, StringComparison.OrdinalIgnoreCase)
+                && MatchesCondition(line.condition))
             {
                 result.Add(line);
             }
@@ -875,6 +887,40 @@ public class MainBossDialogueController : MonoBehaviour
         return result;
     }
 
+    //============== 기계장비 개수 조건 판정 ==============
+    // 빈 값 / Any : 항상 재생
+    // M0          : 기계장비 0개일 때만
+    // M1Plus      : 기계장비 1개 이상일 때만
+    // M2Minus     : 기계장비 2개 이하일 때만 (0~2개)
+    // M3Plus      : 기계장비 3개 이상일 때만
+    private bool MatchesCondition(string condition)
+    {
+        if (string.IsNullOrEmpty(condition)
+            || string.Equals(condition, "Any", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // EndingManager가 없는 씬에서 단독 테스트할 때는 기계장비 0개로 취급합니다.
+        int count = EndingManager.Instance != null
+            ? EndingManager.Instance.MachineEquipmentCount
+            : 0;
+
+        if (string.Equals(condition, "M0", StringComparison.OrdinalIgnoreCase))
+            return count == 0;
+
+        if (string.Equals(condition, "M1Plus", StringComparison.OrdinalIgnoreCase))
+            return count >= 1;
+
+        if (string.Equals(condition, "M2Minus", StringComparison.OrdinalIgnoreCase))
+            return count <= 2;
+
+        if (string.Equals(condition, "M3Plus", StringComparison.OrdinalIgnoreCase))
+            return count >= 3;
+
+        Debug.LogWarning(
+            $"[MainBossDialogueController] 알 수 없는 condition '{condition}' → 항상 재생으로 처리합니다.", this);
+        return true;
+    }
+    
     private List<List<string>> ParseCsv(string text)
     {
         List<List<string>> rows = new List<List<string>>();

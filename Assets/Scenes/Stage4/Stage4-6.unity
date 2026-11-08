@@ -2627,6 +2627,10 @@ MonoBehaviour:
   displayCursorTargets:
   - {fileID: 716174640}
   - {fileID: 507498428}
+  displayLeftArrows: []
+  displayRightArrows: []
+  arrowActiveColor: {r: 1, g: 1, b: 1, a: 1}
+  arrowDisabledColor: {r: 1, g: 1, b: 1, a: 0.15}
   audioPanel: {fileID: 2088094359}
   displayPanel: {fileID: 1844660355}
   controlsPanel: {fileID: 1824776847}
@@ -7847,6 +7851,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 0
   icon: {fileID: 263703928}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &487656180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12940,6 +12945,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 2
   icon: {fileID: 1506920854}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &899998227
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14354,6 +14360,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 3
   icon: {fileID: 2067084412}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &1026576978
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15840,6 +15847,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 4
   icon: {fileID: 881463798}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &1171601795
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18408,8 +18416,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
-  m_fontSizeBase: 18
+  m_fontSize: 24
+  m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -20096,6 +20104,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 1
   icon: {fileID: 1734381092}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &1492978347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -42590,6 +42599,8 @@ MonoBehaviour:
   statText: {fileID: 842100720}
   tooltipTransform: {fileID: 1719746064}
   fixedPosition: {x: 500, y: 0}
+  neonNameMaterial: {fileID: 0}
+  neonNameColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!224 &1719746064
 RectTransform:
   m_ObjectHideFlags: 0
@@ -43567,6 +43578,9 @@ MonoBehaviour:
   handRightImage: {fileID: 684793670}
   footLeftImage: {fileID: 23990453}
   footRightImage: {fileID: 1232388397}
+  weaponSettings: []
+  weaponItemOverrides: []
+  liveTune: 0
 --- !u!1 &1748346454
 GameObject:
   m_ObjectHideFlags: 0
@@ -43949,8 +43963,8 @@ MonoBehaviour:
   cameraZoomSize: 5
   cameraBlendTime: 0.35
   csvResourcePath: BossDialogue/MainBossDialogue
-  typeSpeed: 0.12
-  lineHoldTime: 2
+  typeSpeed: 0.05
+  lineHoldTime: 0.5
   lastLineHoldTime: 2
   panelShowDelay: 1
   lastBossId: Knight5
@@ -50971,7 +50985,9 @@ MonoBehaviour:
   HP: {fileID: 1274466682}
   hpWaveRect: {fileID: 1281191461}
   SP: {fileID: 1339597093}
-  BPM: {fileID: 1117001785}
+  baseBpmImages: []
+  replaceStartStage: 2
+  machineBpmImages: []
   displayHp: 1
   hpSmoothSpeed: 5
 --- !u!212 &5255676311422413628
