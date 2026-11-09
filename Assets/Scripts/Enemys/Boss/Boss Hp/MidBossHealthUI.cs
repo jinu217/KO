@@ -16,6 +16,13 @@ public class MidBossHealthUI : MonoBehaviour
     [SerializeField] private TMP_Text bossName;
     [SerializeField] private TMP_Text hpText;
 
+    //============== 데미지 잔상(흰색 바) 추가 ==============
+    [Header("데미지 잔상 (흰색 바)")]
+    [SerializeField] private Image damageFill;           // hpFill 뒤에 깔리는 흰색 바
+    [SerializeField] private float damageDelayTime = 0.5f;   // 데미지 후 흰 바가 머무는 시간(초)
+    [SerializeField] private float damageShrinkSpeed = 0.6f; // 흰 바가 줄어드는 속도 (초당 fillAmount)
+    //============== 데미지 잔상(흰색 바) 추가 끝 ==============
+
     [Header("Armor UI")]
     [SerializeField] private BossArmorUI armorUI;
 
@@ -23,6 +30,11 @@ public class MidBossHealthUI : MonoBehaviour
     [SerializeField] private float hideFadeDuration = 1f;
 
     private float maxHp;
+
+    //============== 데미지 잔상 내부 변수 ==============
+    private float targetFill = 1f;   // 현재 체력 비율 (흰 바가 따라갈 목표)
+    private float damageDelayTimer;  // 흰 바 지연 타이머
+    //============== 데미지 잔상 내부 변수 끝 ==============
 
     private CanvasGroup canvasGroup;
     private Coroutine hideCoroutine;
@@ -68,6 +80,30 @@ public class MidBossHealthUI : MonoBehaviour
         root.SetActive(false);
     }
 
+    //============== 데미지 잔상 연출 ==============
+    // 흰 바는 지연 시간 동안 유지된 뒤, 현재 체력 위치까지 부드럽게 내려옵니다.
+    private void Update()
+    {
+        if (damageFill == null)
+            return;
+
+        if (damageFill.fillAmount <= targetFill)
+            return;
+
+        // 지연 시간 동안은 흰 바 유지
+        if (damageDelayTimer > 0f)
+        {
+            damageDelayTimer -= Time.deltaTime;
+            return;
+        }
+
+        damageFill.fillAmount = Mathf.MoveTowards(
+            damageFill.fillAmount,
+            targetFill,
+            damageShrinkSpeed * Time.deltaTime);
+    }
+    //============== 데미지 잔상 연출 끝 ==============
+
     //============== HP바 표시 ==============
 
     public void Show(string name, float currentHp, float maxHp)
@@ -94,6 +130,13 @@ public class MidBossHealthUI : MonoBehaviour
 
         if (hpFill != null)
             hpFill.fillAmount = hpPercent;
+
+        // 흰 바도 같은 위치로 맞추고 잔상 상태 초기화
+        targetFill = hpPercent;
+        damageDelayTimer = 0f;
+
+        if (damageFill != null)
+            damageFill.fillAmount = hpPercent;
 
         // HP 텍스트 갱신
         UpdateHPText(currentHp);
@@ -137,6 +180,21 @@ public class MidBossHealthUI : MonoBehaviour
 
         if (hpFill != null)
             hpFill.fillAmount = hpPercent;
+
+        //============== 데미지 잔상 처리 ==============
+        if (hpPercent < targetFill)
+        {
+            // 데미지를 받음: 흰 바는 그대로 두고 지연 타이머 시작
+            damageDelayTimer = damageDelayTime;
+        }
+        else if (damageFill != null)
+        {
+            // 회복 등으로 체력이 늘어남: 흰 바가 체력바보다 앞서지 않도록 맞춤
+            damageFill.fillAmount = hpPercent;
+        }
+
+        targetFill = hpPercent;
+        //============== 데미지 잔상 처리 끝 ==============
 
         // HP 텍스트 갱신
         UpdateHPText(currentHp);
