@@ -1125,6 +1125,7 @@ GameObject:
   - component: {fileID: 6312892877663798275}
   - component: {fileID: 6713624075347997968}
   - component: {fileID: 2284812413708409316}
+  - component: {fileID: 3511901253078608350}
   m_Layer: 0
   m_Name: MidBoss 3
   m_TagString: Untagged
@@ -1205,6 +1206,8 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: c8357d99caeb15347a2f22e16e94239b, type: 2}
     runtime: 0
@@ -1220,6 +1223,8 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: a8f43cf71cbd1834db1c0f73d4f4db42, type: 2}
     runtime: 0
@@ -1235,6 +1240,8 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 0
     - time: 1.42
       duration: 0.28
@@ -1247,6 +1254,8 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 4872ab89f07751a40a5b50decb4fdf1a, type: 2}
     runtime: 1
@@ -1262,6 +1271,8 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 3
   - clip: {fileID: 7400000, guid: 5f6b079b20e9ab443b6e3355d54a7c47, type: 2}
     runtime: 0
@@ -1277,6 +1288,8 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 803a4c34dd62bc844b6692d947a3bb38, type: 2}
     runtime: 0
@@ -1292,6 +1305,8 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 6039b445b06644a4082e71f417e7b026, type: 2}
     runtime: 0
@@ -1307,6 +1322,8 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 2d70ec80e388ba2489b9632b37c5bc2a, type: 2}
     runtime: 0
@@ -1322,6 +1339,8 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
+      motionOnly: 0
       buffKind: 0
   runtimeEnabled: 1
   down:
@@ -1467,6 +1486,27 @@ MonoBehaviour:
     flipY: 0
   pixelsPerUnit: 64
   sortingOrder: 100
+--- !u!114 &3511901253078608350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6297424649790759476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46a214fb73893dd4bba9ff8dd7dd1571, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossRearWeaponSorting
+  active: 0
+  front: 0
+  hand: {fileID: 7455444445663097612}
+  weapon: {fileID: 6889342425303807256}
+  followExistingWeapon: 1
+  handLayer: 1905774021
+  weaponLayer: 1905774021
+  handOrder: 3
+  weaponOrder: 2
 --- !u!1 &6963062250885420930
 GameObject:
   m_ObjectHideFlags: 0

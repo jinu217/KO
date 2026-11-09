@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Independent lifetime: death effects finish even when the enemy is disabled or pooled.
@@ -11,6 +11,7 @@ public sealed class MobEffectInstance : MonoBehaviour
     SpriteRenderer spriteRenderer;
     bool ownsFrames;
     bool looping;
+    bool manualFrame;
     float elapsed, fps;
     bool fading;
     float fadeAge, fadeHold, fadeDuration, fadeAlpha;
@@ -51,6 +52,12 @@ public sealed class MobEffectInstance : MonoBehaviour
         // Update owns the lifetime so stop-fade can finish past the last animation frame.
         return instance;
     }
+    BossWeaponSlashAttachment weaponSlash;
+    public void FollowWeaponSlash(Transform weapon)
+    {
+        weaponSlash=GetComponent<BossWeaponSlashAttachment>() ?? gameObject.AddComponent<BossWeaponSlashAttachment>();
+        weaponSlash.Configure(spriteRenderer,weapon);
+    }
     Transform followAnchor;
     Vector3 anchorPoint;
     float? groundHeight;
@@ -66,6 +73,7 @@ public sealed class MobEffectInstance : MonoBehaviour
         if (spriteRenderer == null || spriteRenderer.sprite == null) return;
         if(followAnchor!=null)transform.position += followAnchor.TransformPoint(anchorPoint) - BossEffects.VisibleBounds(spriteRenderer).center;
         if(groundHeight.HasValue)transform.position+=Vector3.up*(groundHeight.Value-BossEffects.VisibleBounds(spriteRenderer).min.y);
+        if(weaponSlash!=null)weaponSlash.Align();
     }
     public void SetFacing(float direction, bool artFacesRight)
     {
@@ -84,8 +92,15 @@ public sealed class MobEffectInstance : MonoBehaviour
         // Freeze both current sprite and world position; emitter may immediately create a new trail.
         transform.SetParent(null, true);
     }
+    public void SetManualFrame(int index)
+    {
+        manualFrame = true;
+        spriteRenderer.enabled = index >= 0 && index < frames.Length;
+        if(spriteRenderer.enabled) spriteRenderer.sprite = frames[index];
+    }
     void Update()
     {
+        if(manualFrame) return;
         if (frames == null || frames.Length == 0) { Destroy(gameObject); return; }
         if (fading)
         {

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class Stage1_BossSwordWave : MonoBehaviour, IBossSpawnedSkillObject
+public sealed class Stage1_BossSwordWave : MonoBehaviour, IBossSpawnedSkillObject, IDamageable
 {
     [SerializeField] private float speed = 9f;
     [SerializeField] private float lifeTime = 3f;
@@ -33,6 +33,9 @@ public sealed class Stage1_BossSwordWave : MonoBehaviour, IBossSpawnedSkillObjec
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (hasHit || (playerLayer.value & (1 << other.gameObject.layer)) == 0) return;
+        // A dodged wave remains alive and never calls the player's hit/blink path.
+        var player = other.GetComponentInParent<PlayerController>();
+        if (player != null && player.IsDodging) return;
         IDamageable target = other.GetComponentInParent<IDamageable>();
         if (target == null) return;
         hasHit = true;
@@ -43,6 +46,16 @@ public sealed class Stage1_BossSwordWave : MonoBehaviour, IBossSpawnedSkillObjec
             targetBody.linearVelocity = Vector2.zero;
             targetBody.AddForce(new Vector2(direction * currentKnockbackForce.x, currentKnockbackForce.y), ForceMode2D.Impulse);
         }
+        Destroy(gameObject);
+    }
+
+    // The existing wave trigger is also its hurtbox. One positive player hit breaks it.
+    public void TakeDamage(float incomingDamage, Vector2 sourcePos, bool applyKnockback = true, bool applyIFrame = true)
+    {
+        if (hasHit || incomingDamage <= 0f) return;
+        hasHit = true;
+        foreach (var hitbox in GetComponentsInChildren<Collider2D>()) hitbox.enabled = false;
+        foreach (var visual in GetComponentsInChildren<SpriteRenderer>()) visual.enabled = false;
         Destroy(gameObject);
     }
 }

@@ -18,6 +18,13 @@ public sealed class Stage5BossAnimationRelay : MonoBehaviour
     [SerializeField, HideInInspector] private SpriteRenderer[] visualRenderers;
     [SerializeField, HideInInspector] private bool[] rendererEnabled;
     private bool runtimeHidden;
+    // Runtime spare sword owns only blade depth; the hand keeps its authored layer.
+    private int orbitBladeLayer = -1;
+    public void SetOrbitBladeDepth(bool? inFront)
+    {
+        orbitBladeLayer = inFront.HasValue ? SortingLayer.NameToID(inFront.Value ? "Front" : "Back") : -1;
+        ApplyVisuals();
+    }
 
     public void ConfigureVisuals(SpriteRenderer hand, SpriteRenderer weapon, SpriteRenderer[] renderers)
     {
@@ -70,7 +77,7 @@ public sealed class Stage5BossAnimationRelay : MonoBehaviour
     }
 #endif
     private void RestoreVisuals()
-    { frontWeapon = 0; frontBlade = 0; frontRearArm = 0; npcBlade = 0; hideVisual = 0; runtimeHidden = false; ApplyVisuals(); }
+    { frontWeapon = 0; frontBlade = 0; frontRearArm = 0; npcBlade = 0; hideVisual = 0; runtimeHidden = false; orbitBladeLayer = -1; ApplyVisuals(); }
     private void ApplyVisuals()
     {
         // Resolve the new reference on already-configured scene instances as well.
@@ -85,6 +92,7 @@ public sealed class Stage5BossAnimationRelay : MonoBehaviour
         if (npcBlade > .5f)
             foreach (var layer in SortingLayer.layers)
                 if (layer.name == "Npc") { desiredBlade = layer.id; break; }
+        if (orbitBladeLayer != -1) desiredBlade = orbitBladeLayer;
         SetLayer(blade, desiredBlade);
         if (visualRenderers == null || rendererEnabled == null) return;
         for (int i = 0; i < visualRenderers.Length && i < rendererEnabled.Length; i++)

@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Deterministic clip sampling: the same frame is rendered when playing or scrubbing backwards.
-[ExecuteAlways, DisallowMultipleComponent, DefaultExecutionOrder(1000)]
+[ExecuteAlways, DisallowMultipleComponent, DefaultExecutionOrder(1300)]
 public sealed class BossClipEffects : MonoBehaviour
 {
     public enum Style { Down, Up, Thrust, Spin, Punch, Dash, Dust, Hit, Death, Buff, Sand }
@@ -16,7 +16,7 @@ public sealed class BossClipEffects : MonoBehaviour
         public Style style;
         public Anchor anchor = Anchor.Weapon;
         public Vector2 offset;
-        public bool alignBlade, loop, weaponSide, backwards, groundContact;
+        public bool alignBlade, loop, weaponSide, backwards, groundContact, motionOnly;
         public BuffKind buffKind;
     }
     [Serializable] public class Track
@@ -38,6 +38,7 @@ public sealed class BossClipEffects : MonoBehaviour
     readonly HashSet<Sprite> owned = new HashSet<Sprite>();
     readonly List<SpriteRenderer> renderers = new List<SpriteRenderer>();
     readonly Dictionary<Cue, Vector3> contactPositions = new Dictionary<Cue, Vector3>();
+    readonly Dictionary<Track, Track> motionTracks = new Dictionary<Track, Track>();
     AnimationClip contactClip;
     float contactTime;
     public int VisibleCount => renderers.FindAll(r => r != null && r.enabled && r.sprite != null).Count;
@@ -84,6 +85,8 @@ public sealed class BossClipEffects : MonoBehaviour
         { ClearVisuals(); return; }
         Track track = Find(clip);
         if (track == null) { ClearVisuals(); return; }
+        bool motionMatched = BossMotionFXSettings.Applies(source, clip);
+        if (motionMatched) track = MotionTrack(track);
         // Supplemental dust must never take ownership of the existing attack FX.
         if(runtime && !track.runtime) supplementalOnly = true;
 
@@ -96,13 +99,20 @@ public sealed class BossClipEffects : MonoBehaviour
         }
         foreach (var cue in track.cues)
         {
-            if (supplementalOnly && cue.style != Style.Buff && cue.style != Style.Sand) continue;
+            if (supplementalOnly && cue.style != Style.Buff && cue.style != Style.Sand && !(motionMatched && cue.motionOnly)) continue;
             if (runtime && clip.name.StartsWith("MidBoss 1") && cue.style != Style.Buff && cue.style != Style.Sand) continue;
             if((cue.style==Style.Spin || cue.style==Style.Down || cue.style==Style.Up) && slashTrail!=null && slashTrail.CoversImpact(clip,cue.time))continue;
             float age = time - cue.time;
             if (age < -.0001f || age >= cue.duration) continue;
             MobEffects.Effect effect = cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy
                 ? BuffEffect(cue.buffKind) : GetEffect(cue.style);
+            BossEffects.Kind motionKind = cue.style == Style.Up ? BossEffects.Kind.Up : cue.style == Style.Thrust ? BossEffects.Kind.Thrust
+                : cue.style == Style.Spin ? BossEffects.Kind.Spin : cue.style == Style.Punch ? BossEffects.Kind.Punch : BossEffects.Kind.Down;
+            // The cross passes swing the blade; their old thrust cue must not emit Sting.
+            if(motionMatched && clip.name.ToLowerInvariant().Contains("mainboss5_skill5") && cue.style == Style.Thrust)
+                motionKind = BossEffects.Kind.Horizontal;
+            if(motionMatched && cue.style <= Style.Punch && BossMotionFXSettings.Settings != null)
+                effect = BossMotionFXSettings.Settings.Effect(motionKind, effect);
             Sprite[] sheet = Frames(effect);
             if (sheet.Length == 0) continue;
             bool combat = cue.style <= Style.Punch;
@@ -118,6 +128,11 @@ public sealed class BossClipEffects : MonoBehaviour
             Transform anchor = cue.anchor == Anchor.Weapon ? weapon : cue.anchor == Anchor.Feet ? feet : body;
             Vector3 position = anchor != null ? anchor.position : transform.position;
             if (cue.anchor == Anchor.Hitbox) position = source != null ? source.transform.position : transform.position;
+            if(motionMatched && cue.style == Style.Spin && weapon != null)
+            {
+                var blade = weapon.GetComponent<SpriteRenderer>();
+                position = blade != null ? blade.bounds.center : weapon.position;
+            }
             if (cue.anchor == Anchor.Weapon && weapon != null)
             {
                 var blade = weapon.GetComponent<SpriteRenderer>();
@@ -153,6 +168,7 @@ public sealed class BossClipEffects : MonoBehaviour
             if(combat && source!=null && source.mainBoss && source.stage==2)position.y+=.15f;
             sr.transform.position = position;
             float angle = cue.angle * facing;
+            if(motionMatched && motionKind == BossEffects.Kind.Horizontal) angle = -90 * facing;
             if (cue.alignBlade && weapon != null)
             {
                 Vector3 axis = weapon.TransformVector(Vector3.up);
@@ -163,6 +179,9 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale * cue.scale * multiplier);
             if(combat && weapon!=null && (source==null || !source.mainBoss || source.stage!=4))
                 BossEffects.FitWeaponEffect(sr,weapon);
+            if(weapon!=null && (cue.style==Style.Down || cue.style==Style.Up || cue.style==Style.Spin
+                || motionMatched && motionKind==BossEffects.Kind.Horizontal))
+                BossWeaponSlashAttachment.Apply(sr,weapon.GetComponent<SpriteRenderer>());
             if (cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy)
             {
                 Bounds bounds = BuffBounds();
@@ -181,6 +200,21 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.color = color;
         }
         for (int i = count; i < renderers.Count; i++) if (renderers[i] != null) renderers[i].enabled = false;
+    }
+    Track MotionTrack(Track track)
+    {
+        if(motionTracks.TryGetValue(track, out var cached)) return cached;
+        var cues = new List<Cue>(track.cues);
+        if(track.clip.name == "MainBoss3_Skill2" || track.clip.name == "MainBoss3_Skill3")
+            cues.Add(new Cue { time=track.clip.name == "MainBoss3_Skill2" ? 1.38f : .42f,
+                duration=.24f, style=Style.Thrust, anchor=Anchor.Weapon, alignBlade=true, motionOnly=true });
+        if(track.clip.name.StartsWith("MainBoss5_"))
+            foreach(var e in track.clip.events)
+                if(e.stringParameter == "Attack.DashStart" || e.stringParameter == "Skill3.DashStart")
+                    cues.Add(new Cue { time=e.time, duration=.24f, style=Style.Thrust, anchor=Anchor.Weapon, alignBlade=true });
+        cached = new Track { clip=track.clip, runtime=track.runtime, cues=cues.ToArray() };
+        motionTracks.Add(track, cached);
+        return cached;
     }
     float GroundHeight(Vector3 contact)
     {
@@ -300,6 +334,7 @@ public sealed class BossClipEffects : MonoBehaviour
     {
         foreach (var sr in renderers) if (sr != null) Dispose(sr.gameObject);
         contactPositions.Clear();
+        motionTracks.Clear();
         renderers.Clear(); foreach (var sprite in owned) if (sprite != null) Dispose(sprite);
         owned.Clear(); frames.Clear();
     }

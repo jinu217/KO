@@ -1459,6 +1459,7 @@ public static class Stage5BossAnimationBuilder
         if (old != null)
             events.AddRange(AnimationUtility.GetAnimationEvents(old).Where(e => e.functionName != "OnStage5AnimationCue"));
         AnimationUtility.SetAnimationEvents(clip, events.OrderBy(e => e.time).ToArray());
+        BossMotionSortingSetup.BakeClip(clip, r.visual.GetComponent<Animator>(), 5, r.main);
         if (old == null) AssetDatabase.CreateAsset(clip, path);
         else
         {

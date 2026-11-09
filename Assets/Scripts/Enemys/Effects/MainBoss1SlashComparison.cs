@@ -6,7 +6,8 @@ public sealed class MainBoss1SlashComparison : ScriptableObject
     public enum DisplayMode
     {
         [InspectorName("현재 방식 — 무기 궤적 잔상")] WeaponTrail = 0,
-        [InspectorName("이전 방식 — Slash 원형 그대로")] OriginalSlash = 1
+        [InspectorName("이전 방식 — 메보1 패턴표 기준")] OriginalSlash = 1,
+        [InspectorName("새 방식 — 메인보스 1~5 모션 기준")] MotionMatched = 2
     }
 
     [Header("메인보스1 베기 이펙트 비교")]
@@ -43,6 +44,8 @@ public sealed class MainBoss1SlashComparison : ScriptableObject
         if (!horizontal && !(step.stepName ?? "").Contains("세로"))
             horizontal = skillIndex < 0 || (skillIndex == 0 && totalHits == 4)
                 ? ordinal % 2 == 1 : skillIndex == 0 && (ordinal == 2 || ordinal == 4);
+        // The authored basic attack is horizontal then downward, regardless of legacy step labels.
+        if (skillIndex < 0 && ordinal < 2) horizontal = ordinal == 0;
         angle = horizontal ? horizontalAngle : verticalAngle;
         return horizontal ? BossEffects.Kind.Horizontal : BossEffects.Kind.Down;
     }
