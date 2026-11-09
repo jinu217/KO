@@ -45,7 +45,9 @@ GameObject:
   - component: {fileID: 1221640104977840777}
   - component: {fileID: 6828079844074179072}
   - component: {fileID: 4852412736794429684}
+  - component: {fileID: -2247695187270596860}
   - component: {fileID: 8632146059797032558}
+  - component: {fileID: 8413909620466165195}
   m_Layer: 11
   m_Name: Stage3_MainBoss
   m_TagString: MainBoss
@@ -292,6 +294,19 @@ MonoBehaviour:
   followupDamage: 20
   missedFinisherGroggy: 5
   timeoutGroggy: 3
+--- !u!114 &-2247695187270596860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5eedb97f8bef444872492dc8767078, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinReward
+  coinAmount: 100
 --- !u!114 &8632146059797032558
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -429,6 +444,25 @@ MonoBehaviour:
   comboTimings: []
   overrides: []
   chaseStartDelay: 0.3
+--- !u!114 &8413909620466165195
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0396de420ad90a4ea22b6d824089a0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossHitFeedback
+  flashDuration: 0.14
+  flashCount: 1
+  flashMaterialOverride: {fileID: 0}
+  useHitStop: 1
+  hitStopDuration: 0.04
+  animator: {fileID: 0}
+  spriteRenderers: []
 --- !u!1 &7738030062326856143
 GameObject:
   m_ObjectHideFlags: 0

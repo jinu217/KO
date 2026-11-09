@@ -107,6 +107,20 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         && rb != null && Mathf.Abs(rb.linearVelocity.x) > 0.05f;
     //============== FX 연동 끝 ==============
 
+    //============== 피격 연출 연동 시작 ==============
+    // BossHitFeedback은 같은 오브젝트에 붙어 있으면 자동으로 찾고, 없으면 아무 일도 하지 않습니다.
+    private BossHitFeedback hitFeedbackCache;
+    private bool hitFeedbackSearched;
+    protected BossHitFeedback HitFeedback
+    {
+        get
+        {
+            if (!hitFeedbackSearched) { hitFeedbackCache = GetComponent<BossHitFeedback>(); hitFeedbackSearched = true; }
+            return hitFeedbackCache;
+        }
+    }
+    //============== 피격 연출 연동 끝 ==============
+
     
     //============== 대화 중 AI 정지 ==============
     protected bool dialoguePaused;
@@ -394,7 +408,18 @@ public class MidBossController : MonoBehaviour, IDamageable, IBossSkillContext
         if (actualDamage > 0f) Effects?.PlayHit(sourcePos);
         UpdateHealthUI();
         isChasing = true;
-        if (currentHp <= 0f) Die();
+
+        if (currentHp <= 0f)
+        {
+            // 마지막 일격: 피격 연출을 끊고 색/속도를 복구한 뒤 사망 처리
+            HitFeedback?.Cancel();
+            Die();
+        }
+        else if (actualDamage > 0f)
+        {
+            // 공격 중/대화 중에는 히트스톱을 건너뛰고 깜빡임만 재생
+            HitFeedback?.Play(!isAttacking && !dialoguePaused);
+        }
     }
 
     protected virtual void Die()

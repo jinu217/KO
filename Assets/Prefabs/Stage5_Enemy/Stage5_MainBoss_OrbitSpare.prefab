@@ -810,6 +810,7 @@ GameObject:
   - component: {fileID: 6809402136160022145}
   - component: {fileID: 331296484771597446}
   - component: {fileID: 7684188126676970768}
+  - component: {fileID: 3512842931956133350}
   m_Layer: 11
   m_Name: Stage5_MainBoss_OrbitSpare
   m_TagString: MainBoss
@@ -1118,6 +1119,25 @@ MonoBehaviour:
   triggerDistance: 8
   orbitRadius: 3.5
   damage: 8
+--- !u!114 &3512842931956133350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5511675779628149850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0396de420ad90a4ea22b6d824089a0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossHitFeedback
+  flashDuration: 0.14
+  flashCount: 1
+  flashMaterialOverride: {fileID: 0}
+  useHitStop: 1
+  hitStopDuration: 0.04
+  animator: {fileID: 0}
+  spriteRenderers: []
 --- !u!1 &6363893961893440519
 GameObject:
   m_ObjectHideFlags: 0
@@ -1869,6 +1889,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 587da2b1bff97574e88fabb05fb775ab, type: 2}
     runtime: 0
@@ -1884,6 +1905,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 4ff59bbd20530f84fbbb113f7c658bdb, type: 2}
     runtime: 0
@@ -1899,6 +1921,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 0d00206d7eabd3745b0ea908847a6fd7, type: 2}
     runtime: 1
@@ -1914,6 +1937,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 0.6666667
       duration: 0.99999994
@@ -1926,6 +1950,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 9d9ce02d45e5f32478782abddab0c3ea, type: 2}
     runtime: 1
@@ -1941,6 +1966,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.25
       duration: 0.31666666
@@ -1953,6 +1979,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.625
       duration: 0.20833333
@@ -1965,6 +1992,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.8125
       duration: 0.20833333
@@ -1977,6 +2005,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2
       duration: 0.31666666
@@ -1989,6 +2018,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.375
       duration: 0.20833333
@@ -2001,6 +2031,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.5625
       duration: 0.20833333
@@ -2013,6 +2044,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.75
       duration: 0.31666666
@@ -2025,6 +2057,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.125
       duration: 0.20833333
@@ -2037,6 +2070,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.3125
       duration: 0.20833333
@@ -2049,6 +2083,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.5
       duration: 0.31666666
@@ -2061,6 +2096,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.875
       duration: 0.20833333
@@ -2073,6 +2109,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.0625
       duration: 0.20833333
@@ -2085,6 +2122,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.25
       duration: 0.31666666
@@ -2097,6 +2135,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.625
       duration: 0.20833333
@@ -2109,6 +2148,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.8125
       duration: 0.20833333
@@ -2121,6 +2161,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5
       duration: 0.31666666
@@ -2133,6 +2174,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.375
       duration: 0.20833333
@@ -2145,6 +2187,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.5625
       duration: 0.20833333
@@ -2157,6 +2200,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.75
       duration: 0.31666666
@@ -2169,6 +2213,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.125
       duration: 0.20833333
@@ -2181,6 +2226,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.3125
       duration: 0.20833333
@@ -2193,6 +2239,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.5
       duration: 0.31666666
@@ -2205,6 +2252,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.875
       duration: 0.20833333
@@ -2217,6 +2265,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 26bf1ef989072914c94713facca7c0a3, type: 2}
     runtime: 1
@@ -2232,6 +2281,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 3
   - clip: {fileID: 7400000, guid: 957827805fb15e54280a92ea4fea2b06, type: 2}
     runtime: 1
@@ -2250,6 +2300,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1
       duration: 0.5
@@ -2262,6 +2313,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 24294d8be732715479540e58823657d5, type: 2}
     runtime: 1
@@ -2280,6 +2332,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 3
     - time: 1.5
       duration: 0.22
@@ -2292,6 +2345,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 584857599fa9b8b408f59281ef30a8d2, type: 2}
     runtime: 1
@@ -2307,6 +2361,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 0.75
       duration: 0.22
@@ -2319,6 +2374,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.8333334
       duration: 0.6666666
@@ -2331,6 +2387,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.875
       duration: 0.22
@@ -2343,6 +2400,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3
       duration: 0.66666675
@@ -2355,6 +2413,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.0833333
       duration: 0.22
@@ -2367,6 +2426,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.1666665
       duration: 0.666667
@@ -2379,6 +2439,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.25
       duration: 0.22
@@ -2391,6 +2452,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 02cbac71e4d98d74d80b13b38c3e0603, type: 2}
     runtime: 1
@@ -2406,6 +2468,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 5019b94a61292814195d72e13488f97f, type: 2}
     runtime: 1
@@ -2421,6 +2484,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 8af86a4fef079da4881829c9047c8429, type: 2}
     runtime: 0
@@ -2445,6 +2509,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.25
       duration: 0.31666666
@@ -2457,6 +2522,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.625
       duration: 0.20833333
@@ -2469,6 +2535,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.8125
       duration: 0.20833333
@@ -2481,6 +2548,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2
       duration: 0.31666666
@@ -2493,6 +2561,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.375
       duration: 0.20833333
@@ -2505,6 +2574,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.5625
       duration: 0.20833333
@@ -2517,6 +2587,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.75
       duration: 0.31666666
@@ -2529,6 +2600,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.125
       duration: 0.20833333
@@ -2541,6 +2613,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.3125
       duration: 0.20833333
@@ -2553,6 +2626,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.5
       duration: 0.31666666
@@ -2565,6 +2639,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.875
       duration: 0.20833333
@@ -2577,6 +2652,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.0625
       duration: 0.20833333
@@ -2589,6 +2665,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.25
       duration: 0.31666666
@@ -2601,6 +2678,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.625
       duration: 0.20833333
@@ -2613,6 +2691,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.8125
       duration: 0.20833333
@@ -2625,6 +2704,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5
       duration: 0.31666666
@@ -2637,6 +2717,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.375
       duration: 0.20833333
@@ -2649,6 +2730,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.5625
       duration: 0.20833333
@@ -2661,6 +2743,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.75
       duration: 0.31666666
@@ -2673,6 +2756,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.125
       duration: 0.20833333
@@ -2685,6 +2769,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.3125
       duration: 0.20833333
@@ -2697,6 +2782,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.5
       duration: 0.31666666
@@ -2709,6 +2795,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.875
       duration: 0.20833333
@@ -2721,6 +2808,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 78d529fe17d48f84fbf6ae13d5ce3dd8, type: 2}
     runtime: 1
@@ -2736,6 +2824,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.25
       duration: 0.31666666
@@ -2748,6 +2837,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.625
       duration: 0.20833333
@@ -2760,6 +2850,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 1.8125
       duration: 0.20833333
@@ -2772,6 +2863,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2
       duration: 0.31666666
@@ -2784,6 +2876,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.375
       duration: 0.20833333
@@ -2796,6 +2889,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.5625
       duration: 0.20833333
@@ -2808,6 +2902,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 2.75
       duration: 0.31666666
@@ -2820,6 +2915,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.125
       duration: 0.20833333
@@ -2832,6 +2928,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.3125
       duration: 0.20833333
@@ -2844,6 +2941,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.5
       duration: 0.31666666
@@ -2856,6 +2954,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 3.875
       duration: 0.20833333
@@ -2868,6 +2967,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.0625
       duration: 0.20833333
@@ -2880,6 +2980,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.25
       duration: 0.31666666
@@ -2892,6 +2993,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.625
       duration: 0.20833333
@@ -2904,6 +3006,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 4.8125
       duration: 0.20833333
@@ -2916,6 +3019,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5
       duration: 0.31666666
@@ -2928,6 +3032,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.375
       duration: 0.20833333
@@ -2940,6 +3045,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.5625
       duration: 0.20833333
@@ -2952,6 +3058,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 5.75
       duration: 0.31666666
@@ -2964,6 +3071,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.125
       duration: 0.20833333
@@ -2976,6 +3084,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.3125
       duration: 0.20833333
@@ -2988,6 +3097,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.5
       duration: 0.31666666
@@ -3000,6 +3110,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
     - time: 6.875
       duration: 0.20833333
@@ -3012,6 +3123,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 1
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: 9d40467dc4dd2c84bae56d9c3e5188f6, type: 2}
     runtime: 1
@@ -3027,6 +3139,7 @@ MonoBehaviour:
       loop: 1
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   - clip: {fileID: 7400000, guid: f8eec5120e2daa1429c32734bc200b1b, type: 2}
     runtime: 1
@@ -3042,6 +3155,7 @@ MonoBehaviour:
       loop: 0
       weaponSide: 0
       backwards: 0
+      groundContact: 0
       buffKind: 0
   runtimeEnabled: 1
   down:

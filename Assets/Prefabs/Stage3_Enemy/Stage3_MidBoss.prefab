@@ -46,6 +46,7 @@ GameObject:
   - component: {fileID: 5698277376260916318}
   - component: {fileID: 7684500972580315856}
   - component: {fileID: 1267625239392050785}
+  - component: {fileID: 7757911806874555026}
   m_Layer: 9
   m_Name: Stage3_MidBoss
   m_TagString: MIdBoss
@@ -377,6 +378,25 @@ MonoBehaviour:
   comboTimings: []
   overrides: []
   chaseStartDelay: 0.3
+--- !u!114 &7757911806874555026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0396de420ad90a4ea22b6d824089a0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossHitFeedback
+  flashDuration: 0.14
+  flashCount: 1
+  flashMaterialOverride: {fileID: 0}
+  useHitStop: 1
+  hitStopDuration: 0.04
+  animator: {fileID: 0}
+  spriteRenderers: []
 --- !u!1 &7738030062326856143
 GameObject:
   m_ObjectHideFlags: 0

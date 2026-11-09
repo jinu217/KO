@@ -321,6 +321,7 @@ GameObject:
   - component: {fileID: 1221640104977840777}
   - component: {fileID: 2486274900373757063}
   - component: {fileID: 6652292889413984458}
+  - component: {fileID: -7063983892871671756}
   m_Layer: 8
   m_Name: Stage5_Elite_1
   m_TagString: Enemy
@@ -472,6 +473,8 @@ MonoBehaviour:
   knockbackProbeSize: {x: 0.2, y: 0.5}
   currentHp: 0
   visualTransform: {fileID: 0}
+  waitForAttackAnimation: 0
+  movementLockAttackClips: []
   hitAnimation: {fileID: 0}
   deathAnimation: {fileID: 0}
   hitAnimationState: 
@@ -553,6 +556,19 @@ MonoBehaviour:
   chaseInterval: 0.18
   sortingLayerOverride: 
   sortingOrderOffset: 5
+--- !u!114 &-7063983892871671756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4196881363146405425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5eedb97f8bef444872492dc8767078, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinReward
+  coinAmount: 26
 --- !u!1 &5676474598932166288
 GameObject:
   m_ObjectHideFlags: 0
