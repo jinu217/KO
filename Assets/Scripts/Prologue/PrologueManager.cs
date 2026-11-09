@@ -17,6 +17,20 @@ public class PrologueDialogue
     public string dialogue;
 }
 
+//============== 키워드 색상 설정 ==============
+[System.Serializable]
+public class KeywordColor
+{
+    public string keyword;
+    public Color color = Color.white;
+
+    public KeywordColor(string keyword, Color color)
+    {
+        this.keyword = keyword;
+        this.color = color;
+    }
+}
+
 public class PrologueManager : MonoBehaviour
 {
     [Header("Fade")]
@@ -48,6 +62,17 @@ public class PrologueManager : MonoBehaviour
     [SerializeField] private float typeSpeed = 0.04f;
     [Header("Cutscene Dialogue Settings")]
     [SerializeField] private float cutsceneTypeSpeed = 0.1f;
+
+
+    //============== 키워드 색상 ==============
+    [Header("Keyword Colors")]
+    [SerializeField]
+    private List<KeywordColor> keywordColors = new List<KeywordColor>
+    {
+        new KeywordColor("나이트테크", new Color32(0xE8, 0xB8, 0x4A, 255)), // 금색
+        new KeywordColor("블랙우드",   new Color32(0xD9, 0x4A, 0x4A, 255)), // 붉은색
+        new KeywordColor("연구일지",   new Color32(0x4F, 0xC3, 0xD9, 255))  // 청록색
+    };
 
 
     [Header("Flash Settings")]
@@ -306,6 +331,36 @@ public class PrologueManager : MonoBehaviour
 
 
         return values.ToArray();
+    }
+
+
+
+    //==================================================
+    // 키워드 색상 적용
+    // "나이트테크" -> <color=#E8B84A>나이트테크</color>
+    // CSV에는 태그를 넣지 않고, 화면에 올리기 직전에만 적용
+    //==================================================
+
+    private string ApplyKeywordColors(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        foreach (KeywordColor k in keywordColors)
+        {
+            if (string.IsNullOrEmpty(k.keyword))
+                continue;
+
+            string hex =
+                ColorUtility.ToHtmlStringRGB(k.color);
+
+            text = text.Replace(
+                k.keyword,
+                "<color=#" + hex + ">" + k.keyword + "</color>"
+            );
+        }
+
+        return text;
     }
 
 
@@ -577,10 +632,9 @@ public class PrologueManager : MonoBehaviour
     {
         isTyping = true;
 
-        cutsceneText.text = "";
-
         // 마지막 대사인지 확인
-        if (currentFullText == "나한테서.. 도망쳐..")
+        // (대사 문구가 바뀌어도 동작하도록 문자열 비교 대신 마지막 데이터 여부로 판단)
+        if (currentDialogueIndex == dialogues.Count - 1)
         {
             cutsceneText.color = Color.red;
         }
@@ -589,12 +643,9 @@ public class PrologueManager : MonoBehaviour
             cutsceneText.color = Color.white;
         }
 
-        foreach (char c in currentFullText)
-        {
-            cutsceneText.text += c;
-
-            yield return new WaitForSeconds(cutsceneTypeSpeed);
-        }
+        yield return StartCoroutine(
+            TypeText(cutsceneText, currentFullText, cutsceneTypeSpeed)
+        );
 
         isTyping = false;
 
@@ -637,16 +688,9 @@ public class PrologueManager : MonoBehaviour
     {
         isTyping = true;
 
-        dialogueText.text = "";
-
-        foreach (char c in currentFullText)
-        {
-            dialogueText.text += c;
-
-            yield return new WaitForSeconds(
-                typeSpeed
-            );
-        }
+        yield return StartCoroutine(
+            TypeText(dialogueText, currentFullText, typeSpeed)
+        );
 
         isTyping = false;
 
@@ -654,8 +698,38 @@ public class PrologueManager : MonoBehaviour
     }
 
 
+    //============== 공통 타이핑 (TMP maxVisibleCharacters 방식) ==============
+    // 태그가 들어간 전체 문장을 한 번에 넣고, 보이는 글자 수만 하나씩 늘림
+    // -> <color=...> 태그가 화면에 글자로 보이지 않음
+    private IEnumerator TypeText(
+        TMP_Text target,
+        string fullText,
+        float speed)
+    {
+        target.text = ApplyKeywordColors(fullText);
+
+        target.maxVisibleCharacters = 0;
+
+        // 글자 수를 정확히 얻기 위해 메쉬 갱신
+        target.ForceMeshUpdate();
+
+        int totalCount =
+            target.textInfo.characterCount;
+
+        for (int i = 1; i <= totalCount; i++)
+        {
+            target.maxVisibleCharacters = i;
+
+            yield return new WaitForSeconds(speed);
+        }
+
+        // 타이핑 완료 후 전체 표시
+        target.maxVisibleCharacters = int.MaxValue;
+    }
+
+
     //==================================================
-    // 타이핑 중 Enter → 즉시 완성
+    // 타이핑 중 F → 즉시 완성
     //==================================================
     private void CompleteDialogue()
     {
@@ -670,14 +744,13 @@ public class PrologueManager : MonoBehaviour
         }
 
         // 현재 데이터가 컷씬인지 확인
-        if (dialogues[currentDialogueIndex].type == "Cutscene")
-        {
-            cutsceneText.text = currentFullText;
-        }
-        else
-        {
-            dialogueText.text = currentFullText;
-        }
+        TMP_Text target =
+            dialogues[currentDialogueIndex].type == "Cutscene"
+            ? cutsceneText
+            : dialogueText;
+
+        target.text = ApplyKeywordColors(currentFullText);
+        target.maxVisibleCharacters = int.MaxValue;
 
         isTyping = false;
     }

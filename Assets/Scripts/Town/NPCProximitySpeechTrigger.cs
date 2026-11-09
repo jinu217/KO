@@ -3,6 +3,21 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+//============== 이어서 띄울 대사 한 줄의 설정 ==============
+[System.Serializable]
+public class SpeechLine
+{
+    [TextArea(2, 4)]
+    public string text;
+
+    [Tooltip("이 대사를 표시하는 시간입니다. 0 이하이면 위의 Display Duration을 사용합니다.")]
+    public float displayDuration = -1f;
+
+    [Tooltip("이 대사의 말풍선 크기 배율입니다. 1.5는 원래 크기의 1.5배입니다.")]
+    [Min(0.1f)]
+    public float sizeMultiplier = 1f;
+}
+
 [RequireComponent(typeof(Collider2D))]
 public class NPCProximitySpeechTrigger : MonoBehaviour
 {
@@ -13,12 +28,29 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
     [Tooltip("말풍선에 표시할 TextMeshPro 텍스트입니다.")]
     [SerializeField] private TMP_Text speechText;
 
+    [Tooltip("첫 번째로 띄울 대사입니다.")]
     [TextArea(2, 4)]
     [SerializeField] private string message = "안녕하세요.";
 
-    [Tooltip("말풍선을 화면에 표시하는 시간입니다.")]
+    //============== 추가: 이어서 띄울 대사 ==============
+    [Tooltip("첫 번째 대사를 표시하는 시간입니다. 0 미만이면 Display Duration을 사용합니다.")]
+    [SerializeField] private float firstMessageDisplayDuration = -1f;
+
+    [Tooltip("첫 번째 대사의 말풍선 크기 배율입니다.")]
+    [Min(0.1f)]
+    [SerializeField] private float firstMessageSizeMultiplier = 1f;
+
+    [Tooltip("첫 번째 대사 뒤에 순서대로 이어서 띄울 대사입니다. 비워두면 첫 번째 대사만 표시합니다.")]
+    [SerializeField] private SpeechLine[] followUpMessages;
+
+    [Tooltip("대사 하나를 화면에 표시하는 시간입니다.")]
     [Min(0f)]
     [SerializeField] private float displayDuration = 2.5f;
+
+    //============== 추가: 대사 사이 간격 ==============
+    [Tooltip("말풍선이 사라진 뒤 다음 대사가 나타나기까지 기다리는 시간입니다.")]
+    [Min(0f)]
+    [SerializeField] private float gapBetweenMessages = 0.2f;
 
     [Tooltip("체크하면 이 지역에 처음 들어왔을 때 한 번만 실행합니다.")]
     [SerializeField] private bool playOnlyOnce = true;
@@ -79,7 +111,20 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
     [SerializeField] private string targetSpawnId;
     [SerializeField] private bool saveBeforeSceneLoad;
 
+    //============== 스크립트 고정 설정 (납치 말풍선) ==============
+    // 씬/프리팹에 저장된 Inspector 값과 상관없이 코드의 값이 적용된다.
+    // 첫 번째 대사(Message)가 아래 문구와 같은 트리거에만 적용된다.
+    // 값을 바꾸고 싶으면 아래 상수만 수정하면 된다.
+    private const string KidnapTriggerMessage = "꺄아악!!!";
+    private const float KidnapFirstDisplayDuration = 0.4f;
+    private const float KidnapHideEffectDuration = 0.08f;
+    private const float KidnapGapBetweenMessages = 0f;
+    private const string KidnapFollowText = "영애님이 납치됐다!!!";
+    private const float KidnapFollowDisplayDuration = 2f;
+    private const float KidnapFollowSizeMultiplier = 1.8f;
+
     private bool hasPlayed;
+    private float currentSizeMultiplier = 1f;
     private Coroutine hideRoutine;
     private Vector3 speechOriginalScale = Vector3.one;
     private Vector3 speechOriginalPosition;
@@ -101,12 +146,35 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
 
     private void Awake()
     {
+        ApplyScriptPreset();
         CacheReferences();
         CacheSpeechEffectReferences();
         CacheCameraFollow();
         CacheFocusCamera();
         SetSpeechVisible(false);
         RestoreSpeechVisual();
+    }
+
+    //============== 스크립트 고정 설정 적용 ==============
+    private void ApplyScriptPreset()
+    {
+        if (message == null || message.Trim() != KidnapTriggerMessage)
+            return;
+
+        firstMessageDisplayDuration = KidnapFirstDisplayDuration;
+        firstMessageSizeMultiplier = 1f;
+        hideEffectDuration = KidnapHideEffectDuration;
+        gapBetweenMessages = KidnapGapBetweenMessages;
+
+        followUpMessages = new SpeechLine[]
+        {
+            new SpeechLine
+            {
+                text = KidnapFollowText,
+                displayDuration = KidnapFollowDisplayDuration,
+                sizeMultiplier = KidnapFollowSizeMultiplier
+            }
+        };
     }
 
     private void OnDisable()
@@ -134,6 +202,8 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
         StartSequence(player);
     }
 
+    //============== 시퀀스 시작 ==============
+    // 말풍선 표시/텍스트 세팅은 PlaySequence에서 대사마다 처리한다.
     private void StartSequence(PlayerController player)
     {
         if (speechRoot == null)
@@ -142,9 +212,6 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
             return;
         }
 
-        if (speechText != null)
-            speechText.text = message;
-
         player.PauseKeyboardControl();
 
         Rigidbody2D playerBody = player.GetComponent<Rigidbody2D>();
@@ -152,8 +219,6 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
             playerBody.linearVelocity = new Vector2(0f, playerBody.linearVelocity.y);
 
         StartCoroutine(MoveAndZoomToFocus());
-        SetSpeechVisible(true);
-        PrepareSpeechVisual();
 
         if (hideRoutine != null)
             StopCoroutine(hideRoutine);
@@ -161,15 +226,62 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
         hideRoutine = StartCoroutine(PlaySequence(player));
     }
 
+    //============== 대사 목록 만들기 ==============
+    // 첫 번째 대사(message) + 이어지는 대사(followUpMessages) 순서대로
+    private SpeechLine[] BuildMessageList()
+    {
+        int followCount = followUpMessages != null ? followUpMessages.Length : 0;
+        SpeechLine[] list = new SpeechLine[1 + followCount];
+
+        list[0] = new SpeechLine
+        {
+            text = message,
+            displayDuration = firstMessageDisplayDuration,
+            sizeMultiplier = firstMessageSizeMultiplier
+        };
+
+        for (int i = 0; i < followCount; i++)
+            list[i + 1] = followUpMessages[i];
+
+        return list;
+    }
+
+    //============== 시퀀스 진행 ==============
     private IEnumerator PlaySequence(PlayerController player)
     {
-        yield return PlayShowEffect();
+        //============== 대사 하나씩 말풍선 띄우기 ==============
+        SpeechLine[] lines = BuildMessageList();
 
-        if (displayDuration > 0f)
-            yield return new WaitForSeconds(displayDuration);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            SpeechLine line = lines[i];
 
-        yield return PlayHideEffect();
-        SetSpeechVisible(false);
+            // 이 대사의 크기 배율, 표시 시간
+            currentSizeMultiplier = Mathf.Max(0.1f, line.sizeMultiplier);
+
+            float duration =
+                line.displayDuration > 0f ? line.displayDuration : displayDuration;
+
+            if (speechText != null)
+                speechText.text = line.text;
+
+            SetSpeechVisible(true);
+            PrepareSpeechVisual();
+
+            yield return PlayShowEffect();
+
+            if (duration > 0f)
+                yield return new WaitForSeconds(duration);
+
+            yield return PlayHideEffect();
+            SetSpeechVisible(false);
+
+            // 마지막 대사가 아니면 다음 대사 전에 잠깐 쉼
+            if (i < lines.Length - 1 && gapBetweenMessages > 0f)
+                yield return new WaitForSeconds(gapBetweenMessages);
+        }
+
+        //============== 대사 끝 ==============
 
         if (player == null)
         {
@@ -261,10 +373,11 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
         Transform rootTransform = speechRoot.transform;
         float strength = Mathf.Max(3f, effectStrength);
         float strongPopScale = 1f + (popScale - 1f) * strength;
-        Vector3 overshootScale = speechOriginalScale * strongPopScale;
+        Vector3 targetScale = speechOriginalScale * currentSizeMultiplier;
+        Vector3 overshootScale = targetScale * strongPopScale;
 
         yield return AnimateSpeechScale(rootTransform, Vector3.zero, overshootScale, popDuration);
-        yield return AnimateSpeechScale(rootTransform, overshootScale, speechOriginalScale, settleDuration);
+        yield return AnimateSpeechScale(rootTransform, overshootScale, targetScale, settleDuration);
 
         if (shakeDuration <= 0f)
             yield break;
@@ -334,7 +447,7 @@ public class NPCProximitySpeechTrigger : MonoBehaviour
             SetSpeechPosition(
                 Vector3.Lerp(startPosition, endPosition, progress),
                 Vector2.Lerp(startAnchoredPosition, endAnchoredPosition, progress));
-            rootTransform.localScale = Vector3.Lerp(speechOriginalScale, Vector3.zero, progress);
+            rootTransform.localScale = Vector3.Lerp(speechOriginalScale * currentSizeMultiplier, Vector3.zero, progress);
             SetSpeechAlpha(1f - progress);
         }
     }

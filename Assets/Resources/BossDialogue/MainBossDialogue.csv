@@ -1,32 +1,87 @@
-﻿bossId,phase,order,characterName,characterImage,dialogue
-Knight1,Encounter,1,1기사,,애송이가 감히 누굴 찾는 거냐? 그 아이는 이미 우리 '자산'이다.
-Knight1,AfterDefeat,1,1기사,,명예 따윈... 형에게 당한 상처만 아니었어도 이따위 꼬마에게…
-Knight2,Encounter,1,2기사,,도망치는 건 자신 있지. 너의 절망을 구경하는 게 제일 즐겁거든!
-Knight2,AfterDefeat,1,2기사,,흐흐... 너도 결국 형처럼 미쳐버릴 거야. 그 칩이 널 먹어치울걸?
-Knight3,Encounter,1,3기사,,영지? 정의? 그런건 배를 채워주지 않아. 돈이 되는건 다 가져간다!
-Knight3,AfterDefeat,1,3기사,,기계 찌꺼기가 내 몸을... 딸년이 숨긴 일지만 있었어도...!
-Knight4,Encounter,1,4기사,,폭주는 진화의 과정일 뿐. 실패작인 너는 여기서 폐기처분이다.
-Knight4,AfterDefeat,1,4기사,,연구는 완벽했어... 다만 인간의 '감정'이 변수였을 뿐이지...
-Knight5,Encounter_M0,1,5기사,,여기까지 왔구나. 오직 네 두 손으로.
-Knight5,Encounter_M0,2,5기사,,인간의 몸으로 나를 막겠다는 건가.
-Knight5,Encounter_M1,1,5기사,,여기까지 왔구나. 그 몸에서 쇠의 냄새가 난다.
-Knight5,Encounter_M1,2,5기사,,하나쯤은 괜찮다고 생각했겠지.
-Knight5,Encounter_M2,1,5기사,,"절반이 되어가는구나. 인간도, 기계도 아닌 채로."
-Knight5,Encounter_M2,2,5기사,,그 몸으로 나를 막을 수 있을 것 같은가.
-Knight5,Encounter_M3_HeroineAlive,1,5기사,,그 몸... 이미 많은 부분이 나와 같구나.
-Knight5,Encounter_M3_HeroineAlive,2,5기사,,하지만 네 곁의 그 손을 놓지 않았군.
-Knight5,Encounter_M3_HeroineAlive,3,5기사,,그렇다면 증명해라. 그 몸으로 무엇을 지킬 수 있는지.
-Knight5,Encounter_M3_HeroineDead,1,5기사,,그 몸... 이미 많은 부분이 나와 같구나.
-Knight5,Encounter_M3_HeroineDead,2,5기사,,네 곁의 손도 스스로 놓았다지.
-Knight5,Encounter_M3_HeroineDead,3,5기사,,이제 너를 붙잡는 것은 아무것도 없다.
-Knight5,Persuade,1,5기사,,싸울 필요 없다. 네가 놓아버린 것과 네가 쌓아온 것이 너를 이곳으로 데려왔다.
-Knight5,Persuade,2,???,,(손이... 움직이지 않는다.)
-Knight5,Persuade,3,5기사,,이리 오너라. 이제 같은 곳에서 끝을 보자.
-Knight5,Encounter_M4,1,5기사,,몸이 말을 듣지 않는구나. 이미 침식이 시작되었다.
-Knight5,Encounter_M4,2,5기사,,남은 의지로 둘 중 하나만 지킬 수 있겠지.
-Knight5,Encounter_M5,1,5기사,,"더는 네 것이 아니구나. 그 몸도, 그 의지도."
-Knight5,Encounter_M5,2,5기사,,...불쌍하게도.
-Knight5,AfterDefeat,1,5기사,,...졌구나. 내가.
-Knight5,AfterDefeat,2,5기사,,어서 끝내라.
-Knight5,Kill,1,5기사,,...이게 네 선택이라면.
-Knight5,Spare,1,5기사,,...왜 살려두지? 어리석군. 하지만 고맙다.
+﻿bossId,phase,order,characterName,condition,dialogue
+Knight1,Encounter,1,1기사,Any,애송이가 감히 여기가 어디라고 찾아온 거냐?
+Knight1,Encounter,2,1기사,Any,그 아이는 이미 <color=#E05050>블랙우드</color>의 자산이다.
+Knight1,Encounter,3,1기사,Any,네 형이 그토록 지키려 했던 것을 이제 우리가 손에 넣었지.
+Knight1,Encounter,4,1기사,Any,네가 되찾을 수 있을 거라 생각하나?
+Knight1,Encounter,5,1기사,M1Plus,그런데 너도 그 힘을 받아들였나 보군.<br>네 형과 똑같은 길을 걷고 있구나.
+Knight1,AfterDefeat,1,1기사,Any,크윽… 아직도 그때의 상처가…
+Knight1,AfterDefeat,2,1기사,Any,5기사 그 녀석에게 당하지만 않았어도…
+Knight1,AfterDefeat,3,1기사,Any,이따위 꼬마에게 짓밟히는 일은....
+Knight1,AfterDefeat,4,1기사,Any,영애는 내 것이여야 하는데...
+Knight1,AfterDefeat,5,1기사,Any,비겁한 <color=#E05050>블랙...우...ㄷ...</color>
+Knight2,Encounter,1,2기사,Any,난 도망치는 것 하나는 자신 있지.
+Knight2,Encounter,2,2기사,Any,영애도 내가 이곳에 데려왔다고 크하하!!
+Knight2,Encounter,3,2기사,M0,아직도 인간의 몸으로 버티고 있군.
+Knight2,Encounter,4,2기사,M0,그 정도로는 이곳에서 살아남을 수 없어.
+Knight2,Encounter,5,2기사,M1Plus,오호… 벌써 기계의 힘을 받아들였나.
+Knight2,Encounter,6,2기사,M1Plus,"처음에는 편리하겠지. 몸이 가벼워지고, 힘도 강해질 테니까."
+Knight2,Encounter,7,2기사,M1Plus,하지만 그 힘이 언제까지 네 말을 들어줄까?
+Knight2,Encounter,8,2기사,Any,얼른 네가 절망하는 모습을 보여줘 난 그게 가장 즐겁거든!!!
+Knight2,AfterDefeat,1,2기사,Any,흐흐... 그 칩은 네가 생각하는 것보다 몸 속 깊이 파고들지..
+Knight2,AfterDefeat,2,2기사,Any,처음에는 힘을 얻었다고 생각할거야.
+Knight2,AfterDefeat,3,2기사,Any,하지만 머지않아 의지와 상관없이 몸이 움직이게 될 거다.
+Knight2,AfterDefeat,4,2기사,Any,그때가 되면… 네가 누구였는지조차 기억하지 못하겠지.
+Knight3,Encounter,1,3기사,Any,영지? 정의? 그런 게 무슨 소용이지?
+Knight3,Encounter,2,3기사,Any,"힘이 없으면 빼앗기고, 가진 게 없으면 짓밟히는 법이다."
+Knight3,Encounter,3,3기사,M0,인간의 몸으로는 아무것도 못지킬게 뻔하지.
+Knight3,Encounter,4,3기사,M1Plus,너도 <color=#FFD76A>나이트테크</color>의 힘을 받아들였군.
+Knight3,Encounter,5,3기사,M1Plus,하지만 약하면 오히려 잡아먹히는 법.
+Knight3,Encounter,6,3기사,M1Plus,아무것도 들리지 않는 채.. 적을 벨 뿐이다..
+Knight3,Encounter,7,3기사,Any,너의 모든것은 나의것이다. 내놓아라!!!
+Knight3,AfterDefeat,1,3기사,Any,크윽… 이 몸이… 기계의 힘에 삼켜지다니…!
+Knight3,AfterDefeat,2,3기사,Any,설마 나조차 그 힘을 다스리지 못했던 건가…
+Knight3,AfterDefeat,3,3기사,Any,내가 속이고 있었단 말이다.. 이 적진 속에서!!!
+Knight3,AfterDefeat,4,3기사,Any,그 계집이 숨겨둔 <color=#5CE1E6>연구일지</color>만 손에 넣었어도…!
+Knight3,AfterDefeat,5,3기사,Any,그랬다면 이런 꼴이 되지는 않았을 텐데…
+Knight4,Encounter,1,4기사,M0,결국 여기까지 왔군.
+Knight4,Encounter,2,4기사,M0,아직도 인간의 몸을 고집하는 건가?
+Knight4,Encounter,3,4기사,M0,인간의 신체에는 분명한 한계가 있다.
+Knight4,Encounter,4,4기사,M1Plus,네 몸에 이식된 기계장치가 보이는군.
+Knight4,Encounter,5,4기사,M1Plus,기계의 힘은 인간의 한계를 뛰어넘게 해주지.
+Knight4,Encounter,6,4기사,Any,폭주는 진화의 과정일 뿐...
+Knight4,Encounter,7,4기사,Any,실패작인 네가 이해할 수 있는 영역이 아니지.<br>여기서 폐기처분해 주마.
+Knight4,AfterDefeat,1,4기사,Any,말도 안 돼… 연구는 완벽했어…
+Knight4,AfterDefeat,2,4기사,Any,"신체의 한계를 극복하고, 기계화의 부작용을 억제하는 데<br>성공했는데…"
+Knight4,AfterDefeat,3,4기사,Any,어째서… 어째서 다시 폭주하는 거지?
+Knight4,AfterDefeat,4,4기사,Any,분명 억제할 방법을 찾아냈을 텐데… 설마...
+Knight4,AfterDefeat,5,4기사,Any,결국 마지막까지 인간의 감정이 변수였던 건가…
+Knight5,Encounter_M0,1,형,Any,"여기까지 왔구나, 로이드."
+Knight5,Encounter_M0,2,형,Any,결국 네 두 발로 이곳까지 도착했네.
+Knight5,Encounter_M0,3,형,Any,<color=#FFD76A>나이트테크</color>의 힘을 빌리지 않고도 여기까지 오다니…
+Knight5,Encounter_M0,4,형,Any,형이 가르쳐 준 것보다 훨씬 강해졌는걸?
+Knight5,Encounter_M0,5,형,Any,그래도.. 도망가라고 했잖아.. 로이..ㄷ...
+Knight5,Encounter_M1,1,형,Any,"여기까지 왔구나, 로이드."
+Knight5,Encounter_M1,2,형,Any,네 몸에서 쇠의 냄새가 나네..
+Knight5,Encounter_M1,3,형,Any,하나쯤은 괜찮다고 생각했겠지.
+Knight5,Encounter_M1,4,형,Any,"처음에는 몸이 가벼워지고, 힘도 강해지니까."
+Knight5,Encounter_M1,5,형,Any,하지만 그 힘이 언제까지 네 말을 들어줄까?
+Knight5,Encounter_M2,1,형,Any,제법 많은 힘을 받아들였구나.
+Knight5,Encounter_M2,2,형,Any,이제 인간의 몸이라고 부르기도 어렵겠어.
+Knight5,Encounter_M2,3,형,Any,기계의 힘에 익숙해질수록 네 의지는 조금씩 희미해질 거다.
+Knight5,Encounter_M2,4,형,Any,그 끝에 무엇이 기다리는지… 너도 이미 알고 있겠지?
+Knight5,Encounter_M3_HeroineAlive,1,5기사,Any,그 몸… 이미 많은 부분이 나와 같네...
+Knight5,Encounter_M3_HeroineAlive,2,5기사,Any,그런데도 아직 영애의 손을 잡고 있군.
+Knight5,Encounter_M3_HeroineAlive,3,5기사,Any,날 이렇게 만든 여자를..<br>가족을 버려도 놓지 않겠다는 건가?
+Knight5,Encounter_M3_HeroineAlive,4,5기사,Any,그렇다면 증명해라. 그 정도의 힘만으로 무엇을 지킬 수 있는지.
+Knight5,Encounter_M3_HeroineDead,1,5기사,Any,그 몸… 이미 많은 부분이 나와 같네...
+Knight5,Encounter_M3_HeroineDead,2,5기사,Any,혼자 온걸보니 너도 진실을 알았구나.
+Knight5,Encounter_M3_HeroineDead,3,5기사,Any,이제 너를 붙잡는 것은 아무것도 없겠군.
+Knight5,Encounter_M3_HeroineDead,4,5기사,Any,영애.. 그 여자를 지키겠다는 약속도…<br>이제는 의미가 없겠지.
+Knight5,Persuade,1,5기사,Any,"이리 와. 로이드, 내 동생.. 나와 함께 가자."
+Knight5,Encounter_M4,1,5기사,Any,몸이 말을 듣지 않는 모양이군.
+Knight5,Encounter_M4,2,5기사,Any,로이드라 불러도 닿지 않겠지...
+Knight5,Encounter_M4,3,5기사,Any,눈앞에 있는 사람이 누구인지도 구분할 수 없을 테고...
+Knight5,Encounter_M4,4,5기사,Any,나조차 네게는 쓰러뜨려야 할 적일 뿐이겠지...
+Knight5,Encounter_M4,5,5기사,Any,이제 남은 의지로 무엇을 지킬 수 있을까?
+Knight5,Encounter_M5,1,5기사,Any,…더는 네가 아니구나.
+Knight5,Encounter_M5,2,5기사,Any,"그 몸도, 그 의지도…"
+Knight5,Encounter_M5,3,5기사,Any,이제 네 눈에는 이 세상 모든 것이 적으로 보이겠지.
+Knight5,Encounter_M5,4,5기사,Any,영애님을 지키겠다는 약속조차 기억하지 못하는 건가…
+Knight5,Encounter_M5,5,5기사,Any,…불쌍하게도.
+Knight5,AfterDefeat,1,5기사,Any,크윽… 진건가. 내가…
+Knight5,AfterDefeat,2,5기사,Any,네 손에 쓰러지게 될 줄은...
+Knight5,AfterDefeat,3,5기사,Any,로이드… 아직 내 목소리가 들리니?
+Knight5,AfterDefeat,4,5기사,Any,혹시라도 네가 나처럼 될까 봐 걱정했는데…
+Knight5,AfterDefeat,5,5기사,Any,아직 네 안에 네 의지가 남아 있기를 바래...
+Knight5,AfterDefeat,6,5기사,Any,우리가 했던 약속…
+Knight5,AfterDefeat,7,5기사,Any,이제는 네가 원하는 방식으로 지켜줘...

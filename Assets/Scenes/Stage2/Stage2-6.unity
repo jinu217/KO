@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!29 &1
 OcclusionCullingSettings:
@@ -1775,10 +1775,23 @@ MonoBehaviour:
   cameraZoomSize: 5
   cameraBlendTime: 0.35
   csvResourcePath: BossDialogue/MainBossDialogue
-  typeSpeed: 0.12
-  lineHoldTime: 2
+  typeSpeed: 0.05
+  lineHoldTime: 1.5
   lastLineHoldTime: 2
   panelShowDelay: 1
+  lastBossId: Knight5
+  choicePanel: {fileID: 0}
+  choicePromptText: {fileID: 0}
+  spareOptionText: {fileID: 0}
+  killOptionText: {fileID: 0}
+  choicePrompt: "\uC5B4\uB5BB\uAC8C \uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?"
+  spareLabel: "\uC0B4\uB9B0\uB2E4"
+  killLabel: "\uC8FD\uC778\uB2E4"
+  selectedColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  unselectedColor: {r: 1, g: 1, b: 1, a: 0.45}
+  choiceInputDelay: 0.3
+  endingSceneName: EndingScene
+  fadeManager: {fileID: 0}
 --- !u!1 &129133360
 GameObject:
   m_ObjectHideFlags: 0
@@ -2429,6 +2442,10 @@ MonoBehaviour:
   displayCursorTargets:
   - {fileID: 716174640}
   - {fileID: 507498428}
+  displayLeftArrows: []
+  displayRightArrows: []
+  arrowActiveColor: {r: 1, g: 1, b: 1, a: 1}
+  arrowDisabledColor: {r: 1, g: 1, b: 1, a: 0.15}
   audioPanel: {fileID: 2088094359}
   displayPanel: {fileID: 1844660355}
   controlsPanel: {fileID: 1824776847}
@@ -7176,6 +7193,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 0
   icon: {fileID: 263703928}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &487656180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9977,8 +9995,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
-  m_fontSizeBase: 18
+  m_fontSize: 24
+  m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -12360,6 +12378,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 2
   icon: {fileID: 1506920854}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &899998227
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14196,6 +14215,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 3
   icon: {fileID: 2067084412}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &1026576978
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15575,6 +15595,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 4
   icon: {fileID: 881463798}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &1171601795
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19916,6 +19937,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
   slotType: 1
   icon: {fileID: 1734381092}
+  mechanizedBackgroundImage: {fileID: 0}
 --- !u!114 &1492978347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -37304,6 +37326,8 @@ MonoBehaviour:
   statText: {fileID: 842100720}
   tooltipTransform: {fileID: 1719746064}
   fixedPosition: {x: 500, y: 0}
+  neonNameMaterial: {fileID: 0}
+  neonNameColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!224 &1719746064
 RectTransform:
   m_ObjectHideFlags: 0
@@ -38194,6 +38218,9 @@ MonoBehaviour:
   handRightImage: {fileID: 684793670}
   footLeftImage: {fileID: 23990453}
   footRightImage: {fileID: 1232388397}
+  weaponSettings: []
+  weaponItemOverrides: []
+  liveTune: 0
 --- !u!1001 &1743852091
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -45616,6 +45643,7 @@ MonoBehaviour:
   handRightRenderer: {fileID: 3790281734865872609}
   footLeftRenderer: {fileID: 4724661043891030852}
   footRightRenderer: {fileID: 4852030713588111621}
+  applyEquipmentPositionOffsets: 1
 --- !u!1 &1646323090833634256
 GameObject:
   m_ObjectHideFlags: 0
@@ -46365,7 +46393,9 @@ MonoBehaviour:
   HP: {fileID: 1274466682}
   hpWaveRect: {fileID: 1281191461}
   SP: {fileID: 1339597093}
-  BPM: {fileID: 1117001785}
+  baseBpmImages: []
+  replaceStartStage: 2
+  machineBpmImages: []
   displayHp: 1
   hpSmoothSpeed: 5
 --- !u!212 &5255676311422413628
@@ -47055,6 +47085,7 @@ MonoBehaviour:
   framesPerSecond: 24
   effectScale: 1
   attackOffset: {x: 0, y: 0.15}
+  daggerEffectPullback: 0.8
   damageOffset: {x: 0, y: 0.1}
   sortingLayerOverride: 
   sortingOrderOffset: 5
