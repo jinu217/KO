@@ -631,7 +631,7 @@ public sealed class BossEffects : MonoBehaviour
             instance.transform.rotation = Quaternion.Euler(0, 0, worldAngle);
             if(!fromFist && weaponAnchor!=null)FitWeaponEffect(instance.GetComponent<SpriteRenderer>(),weaponAnchor);
             if(!fromFist && weaponAnchor!=null && (kind==Kind.Down || kind==Kind.Up || kind==Kind.Horizontal || kind==Kind.Spin))
-                instance.FollowWeaponSlash(weaponAnchor);
+                instance.FollowWeaponSlash(weaponAnchor,kind==Kind.Horizontal || kind==Kind.Spin ? BossSlashSweepVisual.Plane.Horizontal : kind==Kind.Up ? BossSlashSweepVisual.Plane.Up : BossSlashSweepVisual.Plane.Down);
             if(motionMatched && stage == 2 && step.actionType == BossActionType.DashAttack)
             {
                 var sr = instance.GetComponent<SpriteRenderer>();
@@ -681,7 +681,7 @@ public sealed class BossEffects : MonoBehaviour
         if (instance != null && weaponAnchor != null)
         {
             FitWeaponEffect(instance.GetComponent<SpriteRenderer>(), weaponAnchor);
-            instance.FollowWeaponSlash(weaponAnchor);
+            instance.FollowWeaponSlash(weaponAnchor,BossSlashSweepVisual.Plane.Horizontal);
         }
     }
     public void PlayShot(Vector3 position, float direction) { } // 생성물에는 추가 FX를 붙이지 않음

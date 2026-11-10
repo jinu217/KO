@@ -14,11 +14,9 @@ public sealed class MainBoss1SlashComparisonEditor : Editor
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
-        EditorGUILayout.HelpBox("원본 비율과 타격 타이밍을 유지하면서 무기 뒤를 따라갑니다. 크기는 원본과 무기 길이의 중간으로 조율합니다.",MessageType.Info);
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("mode"),new GUIContent("메보1 이펙트 방식"));
-        if(serializedObject.FindProperty("mode").intValue==1)
+        EditorGUILayout.HelpBox("손잡이 중심의 베기 궤적을 원본 Slash 질감으로 감쌉니다. 세로베기는 큰 원호, 가로베기는 낮은 타원으로 표현합니다.",MessageType.Info);
         {
-            foreach(string field in new[]{"verticalSlash","horizontalSlash","verticalAngle","horizontalAngle"})
+            foreach(string field in new[]{"verticalSlash","horizontalSlash","verticalAngle","horizontalAngle","basicAttackPoses"})
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(field),true);
         }
         if(serializedObject.ApplyModifiedProperties())

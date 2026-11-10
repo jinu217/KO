@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-// A complete animated slash with one faint pose-sampled echo behind the blade.
+// Legacy clip-window driver for one continuous sweep. No sampled pose echoes.
 // Both preview and gameplay use the same authored attack windows.
 [ExecuteAlways, DefaultExecutionOrder(1200)]
 public sealed class BossWeaponSlashTrail : MonoBehaviour
@@ -17,7 +17,30 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
     public Transform weapon;
     public Track[] tracks = Array.Empty<Track>();
     Sprite[] frames;
-    readonly SpriteRenderer[] echoes = new SpriteRenderer[2];
+    readonly System.Collections.Generic.Dictionary<Track,float[]> travel=new System.Collections.Generic.Dictionary<Track,float[]>();
+    public bool TrySweepDegrees(AnimationClip clip,float from,float to,float time,out float degrees)
+    {
+        degrees=0;var track=Array.Find(tracks,t=>t.clip==clip);
+        if(track==null || track.centers==null || track.tips==null || track.centers.Length<2 || track.tips.Length!=track.centers.Length)return false;
+        if(!travel.TryGetValue(track,out var angles))
+        {
+            angles=new float[track.centers.Length];float last=0;
+            for(int i=0;i<angles.Length;i++)
+            {
+                Vector3 axis=track.tips[i]-track.centers[i];float a=Mathf.Atan2(axis.y,axis.x)*Mathf.Rad2Deg;
+                angles[i]=i==0?a:angles[i-1]+Mathf.DeltaAngle(last,a);last=a;
+            }
+            travel[track]=angles;
+        }
+        degrees=Mathf.Clamp(TravelAt(angles,Mathf.Clamp(time,from,to))-TravelAt(angles,from),-240,240);
+        return true;
+    }
+    static float TravelAt(float[] values,float time)
+    {
+        float frame=Mathf.Clamp(time*48,0,values.Length-1);int a=Mathf.FloorToInt(frame);
+        return Mathf.Lerp(values[a],values[Mathf.Min(a+1,values.Length-1)],frame-a);
+    }
+    readonly SpriteRenderer[] echoes = new SpriteRenderer[1];
     public bool Covers(AnimationClip clip, float time)
     {
         if (MainBoss1SlashComparison.UseOriginal(source)) return false;
@@ -89,9 +112,10 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
             BossEffects.FitWeaponEffect(sr,weapon,.92f);
             sr.transform.position=center;
             sr.transform.position+=center-BossEffects.VisibleBounds(sr).center;
-            BossWeaponSlashAttachment.Apply(sr,blade,.04f+i*.025f,null,axis,1+i);
             float fade=Mathf.Clamp01((window.y-time)/Mathf.Min(.06f,(window.y-window.x)*.25f));
-            sr.color=new Color(1,1,1,(i==0?.7f:.1f)*fade);
+            sr.color=new Color(1,1,1,fade);
+            float? sweep=TrySweepDegrees(clip,window.x,window.y,time,out float angleTravel)?angleTravel:(float?)null;
+            BossWeaponSlashAttachment.Apply(sr,blade,.04f,plane:BossSlashSweepVisual.Plane.Horizontal,sweepDegrees:sweep);
         }
     }
     void BuildFrames()
@@ -102,7 +126,7 @@ public sealed class BossWeaponSlashTrail : MonoBehaviour
         frames=new Sprite[effect.columns];int width=effect.sheet.width/effect.columns;
         for(int i=0;i<frames.Length;i++)frames[i]=Sprite.Create(effect.sheet,new Rect(i*width,0,width,effect.sheet.height),new Vector2(.5f,.5f),source.pixelsPerUnit);
     }
-    public void Clear(){foreach(var sr in echoes)if(sr!=null)sr.enabled=false;}
+    public void Clear(){foreach(var sr in echoes)if(sr!=null){sr.enabled=false;BossSlashSweepVisual.Hide(sr);}}
     void OnDisable(){Clear();}
     void OnDestroy()
     {

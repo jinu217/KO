@@ -13,6 +13,7 @@ public sealed class MobEffectInstance : MonoBehaviour
     bool looping;
     bool manualFrame;
     float elapsed, fps;
+    public float SlashProgress => frames!=null && frames.Length>0?Mathf.Clamp01(elapsed*fps/frames.Length):0;
     bool fading;
     float fadeAge, fadeHold, fadeDuration, fadeAlpha;
     public static MobEffectInstance Spawn(MobEffects.Effect effect, Vector3 position, float direction,
@@ -53,10 +54,10 @@ public sealed class MobEffectInstance : MonoBehaviour
         return instance;
     }
     BossWeaponSlashAttachment weaponSlash;
-    public void FollowWeaponSlash(Transform weapon)
+    public void FollowWeaponSlash(Transform weapon, BossSlashSweepVisual.Plane plane=BossSlashSweepVisual.Plane.Down)
     {
         weaponSlash=GetComponent<BossWeaponSlashAttachment>() ?? gameObject.AddComponent<BossWeaponSlashAttachment>();
-        weaponSlash.Configure(spriteRenderer,weapon);
+        weaponSlash.Configure(spriteRenderer,weapon,plane);
     }
     Transform followAnchor;
     Vector3 anchorPoint;
@@ -123,6 +124,7 @@ public sealed class MobEffectInstance : MonoBehaviour
     {
         if (Application.isPlaying || spriteRenderer == null) return;
         gameObject.hideFlags = HideFlags.HideAndDontSave;
+        elapsed=Mathf.Max(0,age);
         int index = Mathf.FloorToInt(Mathf.Max(0, age) * fps);
         if (looping) index %= frames.Length;
         spriteRenderer.enabled = age >= 0 && index < frames.Length;

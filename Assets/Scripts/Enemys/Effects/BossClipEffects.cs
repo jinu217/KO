@@ -179,9 +179,6 @@ public sealed class BossClipEffects : MonoBehaviour
             sr.transform.localScale = Vector3.one * Mathf.Max(.01f, effect.scale * cue.scale * multiplier);
             if(combat && weapon!=null && (source==null || !source.mainBoss || source.stage!=4))
                 BossEffects.FitWeaponEffect(sr,weapon);
-            if(weapon!=null && (cue.style==Style.Down || cue.style==Style.Up || cue.style==Style.Spin
-                || motionMatched && motionKind==BossEffects.Kind.Horizontal))
-                BossWeaponSlashAttachment.Apply(sr,weapon.GetComponent<SpriteRenderer>());
             if (cue.style == Style.Buff && cue.buffKind != BuffKind.Legacy)
             {
                 Bounds bounds = BuffBounds();
@@ -198,8 +195,14 @@ public sealed class BossClipEffects : MonoBehaviour
                 cue.style == Style.Buff && !clip.name.StartsWith("MidBoss 1") ? new Color(.55f, .85f, 1, .55f) : Color.white;
             color.a *= Mathf.Clamp01((cue.duration - age) / Mathf.Min(.12f, cue.duration * .35f));
             sr.color = color;
+            if(weapon!=null && (cue.style==Style.Down || cue.style==Style.Up || cue.style==Style.Spin
+                || motionMatched && motionKind==BossEffects.Kind.Horizontal))
+            {
+                float? sweep=slashTrail!=null && slashTrail.TrySweepDegrees(clip,Mathf.Max(0,cue.time-.075f),cue.time+cue.duration,time,out float travel)?travel:(float?)null;
+                BossWeaponSlashAttachment.Apply(sr,weapon.GetComponent<SpriteRenderer>(),plane:cue.style==Style.Spin ? BossSlashSweepVisual.Plane.Horizontal : cue.style==Style.Up ? BossSlashSweepVisual.Plane.Up : BossSlashSweepVisual.Plane.Down,sweepDegrees:sweep);
+            }
         }
-        for (int i = count; i < renderers.Count; i++) if (renderers[i] != null) renderers[i].enabled = false;
+        for (int i = count; i < renderers.Count; i++) if (renderers[i] != null) { renderers[i].enabled = false;BossSlashSweepVisual.Hide(renderers[i]); }
     }
     Track MotionTrack(Track track)
     {
@@ -326,10 +329,11 @@ public sealed class BossClipEffects : MonoBehaviour
             if (gameObject.scene.IsValid() && gameObject.scene.isLoaded) SceneManager.MoveGameObjectToScene(obj, gameObject.scene);
             renderers.Add(obj.AddComponent<SpriteRenderer>());
         }
+        BossSlashSweepVisual.Hide(renderers[index]);
         return renderers[index];
     }
     public void ClearVisuals()
-    { foreach (var sr in renderers) if (sr != null) sr.enabled = false; }
+    { foreach (var sr in renderers) if (sr != null) {sr.enabled = false;BossSlashSweepVisual.Hide(sr);} }
     public void Release()
     {
         foreach (var sr in renderers) if (sr != null) Dispose(sr.gameObject);
