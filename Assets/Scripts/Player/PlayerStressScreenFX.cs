@@ -102,6 +102,8 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
     void Update()
     {
         zoomAmount = 0;
+
+        //============== 대상(플레이어/장비/카메라) 탐색 ==============
         if (Time.unscaledTime >= nextFind)
         {
             nextFind = Time.unscaledTime + .5f;
@@ -116,9 +118,12 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         }
         bool testing = testRoom != null && testRoom.isActiveAndEnabled;
         pulseCamera = testing ? testRoom.TestCamera : Camera.main;
+
+        //============== [수정] 효과 표시 조건 ==============
+        // 기존: && Time.timeScale > .001f && (testing || inventory == null || !inventory.IsOpen)
+        // → 정지패널/인벤토리를 열면 효과가 꺼지던 원인이라 제거
         bool visible = settings != null && settings.effectsEnabled && settings.intensity > 0
-            && (testing ? testRoom.previewScreenEffects : player != null && player.isActiveAndEnabled && player.currentHp > 0)
-            && Time.timeScale > .001f && (testing || inventory == null || !inventory.IsOpen);
+            && (testing ? testRoom.previewScreenEffects : player != null && player.isActiveAndEnabled && player.currentHp > 0);
         if (!visible)
         {
             StopDistortion();
@@ -130,8 +135,11 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
 #if UNITY_EDITOR
         if (preview) { count = previewMachineCount; bpm = previewBpm; }
 #endif
-        float dt = Time.deltaTime;
-        float blend = 1 - Mathf.Exp(-dt * 4);
+
+        //============== [수정] 정지 상태 판단 및 시간 값 ==============
+        bool paused = Time.timeScale <= .001f;
+        float dt = Time.deltaTime;                            // 정지 중에는 0 → 박동 위상이 멈춤
+        float blend = 1 - Mathf.Exp(-Time.unscaledDeltaTime * 4); // 정지 중에도 효과 강도가 반영되도록 unscaled 사용
         machineAmount = Mathf.Lerp(machineAmount, settings.machineNoise ? Mathf.Clamp01(count / 5f) : 0, blend);
         float target = settings.heartbeat ? Mathf.InverseLerp(settings.pulseStartBpm,
             Mathf.Max(settings.pulseStartBpm + 1, settings.pulseFullBpm), bpm) : 0;
@@ -143,6 +151,8 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
             if (canvas != null) canvas.enabled = false;
             return;
         }
+
+        //============== 오버레이 / 노이즈 텍스처 ==============
         if (canvas == null) BuildOverlay();
         canvas.enabled = true;
         Rect viewport = testing && pulseCamera != null ? pulseCamera.rect : new Rect(0, 0, 1, 1);
@@ -159,6 +169,8 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         float strength = Mathf.Clamp01(settings.intensity);
         noise.color = new Color(.9f, .95f, 1,
             Mathf.Clamp(settings.noiseOpacity, 0, .18f) * machineAmount * strength);
+
+        //============== 카메라 왜곡(지지직) 후처리 ==============
         var style = testing ? testRoom.previewNoiseStyle : settings.noiseStyle;
         if (style == MachineNoiseStyle.Static || machineAmount < .001f || pulseCamera == null)
             StopDistortion();
@@ -171,7 +183,9 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
             if (distortion.Configure(style, machineAmount * strength * Mathf.Clamp(settings.noiseOpacity / .11f, 0, 1.64f), rate))
                 noise.color = Color.clear;
         }
-        float beat = Beat(phase, 0, .23f) + .55f * Beat(phase, .30f, .19f);
+
+        //============== [수정] 심장박동 줌 / 가장자리 펄스 (정지 중에는 끔) ==============
+        float beat = paused ? 0 : Beat(phase, 0, .23f) + .55f * Beat(phase, .30f, .19f);
         zoomAmount = Mathf.Clamp(settings.pulseZoom, 0, .025f) * tension * beat * strength;
         Color color = settings.pulseColor;
         color.a = Mathf.Clamp(settings.pulseOpacity, 0, .25f) * tension * beat * strength;
