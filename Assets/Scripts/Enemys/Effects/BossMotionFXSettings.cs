@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Third comparison mode: authored motion cues, one full-proportion sheet per action.
+// Legacy asset compatibility only. The third comparison mode is no longer selectable or active.
 public sealed class BossMotionFXSettings : ScriptableObject
 {
     public MobEffects.Effect down = new MobEffects.Effect { flipY = true };
@@ -13,8 +13,7 @@ public sealed class BossMotionFXSettings : ScriptableObject
     {
         get { if(instance == null) instance = Resources.Load<BossMotionFXSettings>("BossMotionFXSettings"); return instance; }
     }
-    public static bool Enabled => MainBoss1SlashComparison.Settings != null
-        && MainBoss1SlashComparison.Settings.mode == MainBoss1SlashComparison.DisplayMode.MotionMatched;
+    public static bool Enabled => false;
     public static bool Applies(BossEffects source) => Enabled && source != null && source.mainBoss && source.stage >= 1 && source.stage <= 5;
     public static bool Applies(BossEffects source, AnimationClip clip)
         => Applies(source) || (Enabled && source == null && clip != null && clip.name.StartsWith("MainBoss"));

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -17,7 +17,10 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
     public float CurrentPulseZoom => zoomAmount;
     InventoryUI inventory;
     Canvas canvas;
-    RawImage noise, pulse;
+    RawImage noise, pulse, machineRed;
+    Material machineRedMaterial;
+    float redAmount;
+    public float CurrentMechanizationRed => redAmount;
     Texture2D[] grain;
     Texture2D vignette;
     float nextFind, nextNoise, phase, machineAmount, tension;
@@ -83,7 +86,7 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         RestoreProjection(); zoomAmount = 0; pulseCamera = null; testRoom = null;
         StopDistortion();
         player = null; equipment = null; inventory = null;
-        nextFind = 0; machineAmount = tension = phase = 0;
+        nextFind = 0; machineAmount = redAmount = tension = phase = 0;
         if (canvas != null) canvas.enabled = false;
     }
 
@@ -111,7 +114,7 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
                 player = FindFirstObjectByType<PlayerStatus>();
                 equipment = player != null ? player.GetComponent<EquipmentManager>() : null;
                 inventory = FindFirstObjectByType<InventoryUI>();
-                phase = machineAmount = tension = 0;
+                phase = machineAmount = redAmount = tension = 0;
             }
         }
         bool testing = testRoom != null && testRoom.isActiveAndEnabled;
@@ -133,11 +136,12 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         float dt = Time.deltaTime;
         float blend = 1 - Mathf.Exp(-dt * 4);
         machineAmount = Mathf.Lerp(machineAmount, settings.machineNoise ? Mathf.Clamp01(count / 5f) : 0, blend);
+        redAmount = Mathf.Lerp(redAmount, settings.machineRed ? Mathf.Clamp01(count / 5f) : 0, blend);
         float target = settings.heartbeat ? Mathf.InverseLerp(settings.pulseStartBpm,
             Mathf.Max(settings.pulseStartBpm + 1, settings.pulseFullBpm), bpm) : 0;
         tension = Mathf.Lerp(tension, target, blend);
         phase = Mathf.Repeat(phase + dt * Mathf.Clamp(bpm, 40, 220) / 60, 1);
-        if (machineAmount < .001f && tension < .001f)
+        if (machineAmount < .001f && redAmount < .001f && tension < .001f)
         {
             StopDistortion();
             if (canvas != null) canvas.enabled = false;
@@ -146,8 +150,8 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         if (canvas == null) BuildOverlay();
         canvas.enabled = true;
         Rect viewport = testing && pulseCamera != null ? pulseCamera.rect : new Rect(0, 0, 1, 1);
-        noise.rectTransform.anchorMin = pulse.rectTransform.anchorMin = viewport.min;
-        noise.rectTransform.anchorMax = pulse.rectTransform.anchorMax = viewport.max;
+        noise.rectTransform.anchorMin = pulse.rectTransform.anchorMin = machineRed.rectTransform.anchorMin = viewport.min;
+        noise.rectTransform.anchorMax = pulse.rectTransform.anchorMax = machineRed.rectTransform.anchorMax = viewport.max;
         if (Time.unscaledTime >= nextNoise)
         {
             float noiseRate = Mathf.Clamp(settings.noiseFramesPerSecond, 2, 24) * Mathf.Lerp(.45f, 1, machineAmount);
@@ -157,6 +161,13 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
             frame = (frame + 1) % (grain.Length * 7);
         }
         float strength = Mathf.Clamp01(settings.intensity);
+        if(machineRedMaterial != null)
+        {
+            machineRedMaterial.SetFloat("_Progress", redAmount);
+            Color red = settings.machineRedColor;
+            red.a = Mathf.Clamp(settings.machineRedOpacity, 0, .4f) * strength;
+            machineRed.color = red;
+        }
         noise.color = new Color(.9f, .95f, 1,
             Mathf.Clamp(settings.noiseOpacity, 0, .18f) * machineAmount * strength);
         var style = testing ? testRoom.previewNoiseStyle : settings.noiseStyle;
@@ -198,6 +209,13 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         grain = new Texture2D[8];
         for (int i = 0; i < grain.Length; i++) grain[i] = MakeNoiseTexture(384, 216, random);
         vignette = MakeVignette(128, 128);
+        machineRed = MakeImage("Mechanization red edge", Texture2D.whiteTexture);
+        var redShader = Resources.Load<Shader>("MechanizationRedEdge");
+        if(redShader != null && redShader.isSupported)
+        {
+            machineRedMaterial = new Material(redShader) { hideFlags = HideFlags.DontSave };
+            machineRed.material = machineRedMaterial;
+        }
         noise = MakeImage("Machine static noise", grain[0]);
         pulse = MakeImage("BPM edge pulse", vignette);
     }
@@ -259,5 +277,6 @@ public sealed class PlayerStressScreenFX : MonoBehaviour
         if (distortion != null) { distortion.enabled = false; Destroy(distortion); }
         if (grain != null) foreach (var texture in grain) if (texture != null) Destroy(texture);
         if (vignette != null) Destroy(vignette);
+        if (machineRedMaterial != null) Destroy(machineRedMaterial);
     }
 }

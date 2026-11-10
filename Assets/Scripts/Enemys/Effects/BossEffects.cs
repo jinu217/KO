@@ -654,7 +654,8 @@ public sealed class BossEffects : MonoBehaviour
             }
         }
     }
-    // Use the full cell extent, not each animated frame's changing silhouette.
+    // Keep the authored sheet proportions and blend its size halfway toward the blade length.
+    // Full-cell sizing avoids pumping as the animated silhouette changes.
     public static void FitWeaponEffect(SpriteRenderer effect,Transform weapon,float multiplier=1.1f)
     {
         var blade=weapon!=null?weapon.GetComponent<SpriteRenderer>():null;
@@ -662,7 +663,9 @@ public sealed class BossEffects : MonoBehaviour
         Vector3 size=blade.sprite.bounds.size;
         float length=Mathf.Max(weapon.TransformVector(Vector3.right*size.x).magnitude,weapon.TransformVector(Vector3.up*size.y).magnitude);
         float cell=Mathf.Max(effect.sprite.rect.width,effect.sprite.rect.height)/effect.sprite.pixelsPerUnit;
-        effect.transform.localScale=Vector3.one*Mathf.Max(.01f,length*multiplier/Mathf.Max(.01f,cell));
+        float fitted=Mathf.Max(.01f,length*multiplier/Mathf.Max(.01f,cell));
+        float authored=Mathf.Max(.01f,Mathf.Abs(effect.transform.localScale.x));
+        effect.transform.localScale=Vector3.one*Mathf.Lerp(authored,fitted,.5f);
     }
     bool Grounded()
     {

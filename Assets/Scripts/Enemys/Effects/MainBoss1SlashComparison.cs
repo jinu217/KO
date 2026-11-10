@@ -5,14 +5,16 @@ public sealed class MainBoss1SlashComparison : ScriptableObject
 {
     public enum DisplayMode
     {
-        [InspectorName("현재 방식 — 무기 궤적 잔상")] WeaponTrail = 0,
-        [InspectorName("이전 방식 — 메보1 패턴표 기준")] OriginalSlash = 1,
-        [InspectorName("새 방식 — 메인보스 1~5 모션 기준")] MotionMatched = 2
+        [InspectorName("무기 궤적 잔상")] WeaponTrail = 0,
+        [InspectorName("원본 Slash + 무기 추종")] OriginalSlash = 1
     }
 
     [Header("메인보스1 베기 이펙트 비교")]
-    [Tooltip("현재 방식은 여러 잔상을 조합합니다. 이전 방식은 원래 Slash 시트를 비율 변형 없이 재생합니다. 모션과 판정은 바뀌지 않습니다.")]
+    [Tooltip("원본 Slash의 비율과 타격 타이밍을 살리고, 무기 뒤를 따라가도록 조율합니다. 무기 궤적은 옅은 잔상 한 장을 더합니다.")]
     public DisplayMode mode = DisplayMode.WeaponTrail;
+
+    // Old serialized third-mode values fall back to the original sprite effect.
+    void OnEnable() { if((int)mode > 1) mode = DisplayMode.OriginalSlash; }
 
     [Header("이전 방식 전용 — 원래 시트 비율 유지")]
     public MobEffects.Effect verticalSlash = new MobEffects.Effect { columns = 10, fps = 24, flipY = true };

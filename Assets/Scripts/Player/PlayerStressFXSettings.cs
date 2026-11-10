@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public enum MachineNoiseStyle
 {
@@ -18,6 +18,10 @@ public sealed class PlayerStressFXSettings : ScriptableObject
     public MachineNoiseStyle noiseStyle = MachineNoiseStyle.Static;
     [Range(0, .18f)] public float noiseOpacity = .11f;
     [Range(2, 24)] public float noiseFramesPerSecond = 20;
+    [Header("기계 장비: 가장자리에서 중앙으로 번지는 붉은빛")]
+    public bool machineRed = true;
+    [Range(0, .4f)] public float machineRedOpacity = .4f;
+    public Color machineRedColor = new Color(.65f, .015f, .025f, 1);
     [Header("BPM: 화면 확대 박동 + 가장자리 붉은빛")]
     public bool heartbeat = true;
     [Range(0, .25f)] public float pulseOpacity = .22f;
